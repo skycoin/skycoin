@@ -13,17 +13,17 @@ export class AddressConfirmationParams {
   /**
    * Wallet which contains the address to sonfirm.
    */
-  wallet: WalletBase;
+  wallet!: WalletBase;
   /**
    * Index of the address inside the wallet.
    */
-  addressIndex: number;
+  addressIndex!: number;
   /**
    * If true, the UI will show the complete confirmation text after the user confirms the address.
    * If false, a short text will be shown. The complete text should be displayed only the first
    * time the user confirms the address.
    */
-  showCompleteConfirmation: boolean;
+  showCompleteConfirmation!: boolean;
 }
 
 /**

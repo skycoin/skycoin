@@ -14,14 +14,14 @@ import { MatDialogRef, MatDialog } from '@angular/material/dialog';
     standalone: false
 })
 export class ModalComponent {
-  @Input() useRedTitle = false;
-  @Input() headline: string;
+  @Input() useRedTitle: boolean | undefined = false;
+  @Input() headline!: string;
   // This disables all the ways provided by default by the UI for closing the modal window.
-  @Input() disableDismiss: boolean;
+  @Input() disableDismiss: boolean | undefined;
 
   // MatDialogRef of the modal window component which is using this component for wrapping
   // the contents.
-  private dialogInternal: MatDialogRef<any>;
+  private dialogInternal!: MatDialogRef<any>;
   @Input() set dialog(val: MatDialogRef<any>) {
     val.disableClose = true;
     this.dialogInternal = val;

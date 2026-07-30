@@ -71,9 +71,9 @@ export class NetworkService {
   /**
    * List of default addresses to which the local node will always try connect to when started.
    */
-  private dataRefreshSubscription: Subscription;
+  private dataRefreshSubscription!: Subscription;
 
-  private trustedAddresses: string[];
+  private trustedAddresses!: string[];
 
   /**
    * Emits the lists of remote nodes to which the local node is currently connected.

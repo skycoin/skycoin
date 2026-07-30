@@ -13,7 +13,7 @@ import { WalletsAndAddressesService } from './wallet-operations/wallets-and-addr
 
 @Injectable()
 export class PurchaseService {
-  private configSubject: Subject<TellerConfig> = new BehaviorSubject<TellerConfig>(null);
+  private configSubject: Subject<TellerConfig> = new BehaviorSubject<TellerConfig>(null!);
   private purchaseOrders: Subject<any[]> = new BehaviorSubject<any[]>([]);
   private purchaseUrl = environment.tellerUrl;
 
@@ -65,11 +65,11 @@ export class PurchaseService {
       }));
   }
 
-  private get(url): Observable<any> {
+  private get(url: any): Observable<any> {
     return this.httpClient.get(this.purchaseUrl + url);
   }
 
-  private post(url, parameters = {}): Observable<any> {
+  private post(url: any, parameters = {}): Observable<any> {
     return this.httpClient.post(this.purchaseUrl + url, parameters);
   }
 }

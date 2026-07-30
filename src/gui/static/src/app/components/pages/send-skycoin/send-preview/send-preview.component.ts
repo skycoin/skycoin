@@ -25,16 +25,16 @@ import { GeneratedTransaction } from '../../../../services/wallet-operations/tra
     standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {
-  @ViewChild('sendButton') sendButton: ButtonComponent;
-  @ViewChild('backButton') backButton: ButtonComponent;
+  @ViewChild('sendButton') sendButton!: ButtonComponent;
+  @ViewChild('backButton') backButton!: ButtonComponent;
   // Transaction which is going to be shown.
-  @Input() transaction: GeneratedTransaction;
+  @Input() transaction!: GeneratedTransaction;
   // Emits when the preview must be removed from the UI and the form must be shown again. The
   // boolean value indicates if the form must be cleaned before showing it (true) or if it must
   // show the previously entered data again (false).
   @Output() onBack = new EventEmitter<boolean>();
 
-  private sendSubscription: SubscriptionLike;
+  private sendSubscription!: SubscriptionLike;
 
   constructor(
     private msgBarService: MsgBarService,
@@ -121,11 +121,11 @@ export class SendVerifyComponent implements OnDestroy {
   private finishSending(passwordDialog?: any) {
     this.showBusy();
 
-    const note = this.transaction.note.trim();
+    const note = this.transaction.note!.trim();
 
     // Sign the transaction.
     this.sendSubscription = this.spendingService.signTransaction(
-      this.transaction.wallet,
+      this.transaction.wallet!,
       passwordDialog ? passwordDialog.password : null,
       this.transaction,
     ).pipe(mergeMap(encodedSignedTx => {
@@ -163,7 +163,7 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   // Stops showing the UI busy and shows the error msg.
-  private showError(error) {
+  private showError(error: any) {
     this.msgBarService.showError(error);
     this.sendButton.resetState();
     this.backButton.resetState().setEnabled();

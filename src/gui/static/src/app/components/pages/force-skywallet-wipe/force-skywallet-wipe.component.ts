@@ -32,7 +32,7 @@ export class ForceSkywalletWipeComponent {
     // Data for the modal window.
     config.data = <ChildHwDialogParams> {
       wallet: null,
-      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
+      requestOptionsComponentRefresh: ((error: string | null = null, recheckSecurityOnly: boolean = false) => {
         if (!error) {
           // Return to the wallet list after the operation is done.
           this.router.navigate([''], {replaceUrl: true});

@@ -14,8 +14,8 @@ import { LanguageData, LanguageService } from '../../../services/language.servic
     standalone: false
 })
 export class SelectLanguageComponent implements OnInit {
-  languages: LanguageData[];
-  disableDismiss: boolean;
+  languages!: LanguageData[];
+  disableDismiss: boolean | undefined;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -41,7 +41,7 @@ export class SelectLanguageComponent implements OnInit {
     this.languages = this.languageService.languages;
   }
 
-  closePopup(language: LanguageData = null) {
+  closePopup(language: LanguageData | null = null) {
     if (language) {
       this.languageService.changeLanguage(language.code);
     }

@@ -20,13 +20,13 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
     standalone: false
 })
 export class BuyComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button') button!: ButtonComponent;
 
-  address: AddressBase;
+  address!: AddressBase;
   config: any;
-  form: UntypedFormGroup;
-  order: PurchaseOrder;
-  wallets: WalletBase[];
+  form!: UntypedFormGroup;
+  order: PurchaseOrder | null = null;
+  wallets!: WalletBase[];
 
   private subscriptionsGroup: SubscriptionLike[] = [];
 
@@ -48,10 +48,10 @@ export class BuyComponent implements OnInit, OnDestroy {
 
   checkStatus() {
     this.button.setLoading();
-    this.purchaseService.scan(this.order.recipient_address).subscribe(
+    this.purchaseService.scan(this.order!.recipient_address).subscribe(
       response => {
         this.button.setSuccess();
-        this.order.status = response.status;
+        this.order!.status = response.status;
       },
       // On this part the error was shown on the button. Now it would have to be shown on the msg bar.
       error => this.button.resetState(),
@@ -68,10 +68,10 @@ export class BuyComponent implements OnInit, OnDestroy {
       wallet: ['', Validators.required],
     });
 
-    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(id => {
+    this.subscriptionsGroup.push(this.form.get('wallet')!.valueChanges.subscribe(id => {
       const wallet = this.wallets.find(wlt => wlt.id === id);
       console.log('changing wallet value', id);
-      this.purchaseService.generate(wallet).subscribe(
+      this.purchaseService.generate(wallet!).subscribe(
         order => this.saveData(order),
         error => this.msgBarService.showError(error.toString()),
       );
@@ -92,13 +92,13 @@ export class BuyComponent implements OnInit, OnDestroy {
       this.wallets = wallets;
 
       if (this.order) {
-        this.form.get('wallet').setValue(this.order.filename, { emitEvent: false });
+        this.form.get('wallet')!.setValue(this.order.filename, { emitEvent: false });
       }
     }));
   }
 
   private loadOrder() {
-    const order: PurchaseOrder = JSON.parse(window.localStorage.getItem('purchaseOrder'));
+    const order: PurchaseOrder = JSON.parse(window.localStorage.getItem('purchaseOrder')!);
     if (order) {
       this.order = order;
       this.updateOrder();
@@ -111,8 +111,8 @@ export class BuyComponent implements OnInit, OnDestroy {
   }
 
   private updateOrder() {
-    this.purchaseService.scan(this.order.recipient_address).pipe(first()).subscribe(
-      response => this.order.status = response.status,
+    this.purchaseService.scan(this.order!.recipient_address).pipe(first()).subscribe(
+      response => this.order!.status = response.status,
       error => console.log(error),
     );
   }

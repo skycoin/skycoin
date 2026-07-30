@@ -29,7 +29,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   deviceInBootloaderMode = false;
   deviceHasFirmware = true;
 
-  private checkDeviceSubscription: SubscriptionLike;
+  private checkDeviceSubscription!: SubscriptionLike;
 
   // The texts shown on the modal window depend on the features of the connected device.
 
@@ -81,7 +81,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     this.closeCheckDeviceSubscription();
   }
 
-  setConfirmed(event) {
+  setConfirmed(event: any) {
     this.confirmed = event.checked;
   }
 

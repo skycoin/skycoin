@@ -30,13 +30,13 @@
         }
         <!-- Content for showing the selected filters. -->
         <mat-select-trigger>
-          @if (form.get('filter').value.length === 1) {
+          @if (form.get('filter')!.value.length === 1) {
             <span>{{ 'history.filter' | translate }}</span>
           }
-          @if (form.get('filter').value.length > 1) {
+          @if (form.get('filter')!.value.length > 1) {
             <span>{{ 'history.filters' | translate }}</span>
           }
-          @for (filter of form.get('filter').value; track filter; let i = $index) {
+          @for (filter of form.get('filter')!.value; track filter; let i = $index) {
             @if (filter.label || !filter.showingWholeWallet) {
               <div class="filter text-truncate">
                 @if (filter.label) {
@@ -52,7 +52,7 @@
           }
         </mat-select-trigger>
       </mat-select>
-      @if (form.get('filter').value.length > 0) {
+      @if (form.get('filter')!.value.length > 0) {
         <img class="x-button image-button" src="assets/img/delete-grey.png" (click)="removeFilters()">
       }
     </div>
@@ -130,7 +130,7 @@
             <h4>{{ transaction.balance.toString() | amount }}</h4>
             @if (price) {
               <p [matTooltip]="'tx.current-rate-help' | translate">
-                {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+                {{ $any(transaction.balance) * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
               </p>
             }
           </div>

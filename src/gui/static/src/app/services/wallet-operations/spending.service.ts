@@ -131,7 +131,7 @@ export class SpendingService {
 
     const useUnsignedTxEndpoint = !wallet || !!wallet.isHardware;
 
-    const params = {
+    const params: any = {
       hours_selection: hoursDistributionOptions,
       wallet_id: !useUnsignedTxEndpoint ? wallet.id : null,
       password: password,
@@ -173,8 +173,8 @@ export class SpendingService {
 
       let hoursToSend = new BigNumber(0);
       data.transaction.outputs
-        .filter(o => destinations.map(dest => dest.address).find(addr => addr === o.address))
-        .map(o => hoursToSend = hoursToSend.plus(new BigNumber(o.hours)));
+        .filter((o: any) => destinations.map(dest => dest.address).find(addr => addr === o.address))
+        .map((o: any) => hoursToSend = hoursToSend.plus(new BigNumber(o.hours)));
 
       // Process the node response and create a known object.
       const tx: GeneratedTransaction = {
@@ -237,7 +237,7 @@ export class SpendingService {
   signTransaction(
     wallet: WalletBase,
     password: string|null,
-    transaction: GeneratedTransaction,
+    transaction: GeneratedTransaction|null,
     rawTransactionString = ''): Observable<string> {
 
     // Code for signing a software wallet. The node is responsible for making the operation.
@@ -247,7 +247,7 @@ export class SpendingService {
         {
           wallet_id: wallet.id,
           password: password,
-          encoded_transaction: rawTransactionString ? rawTransactionString : transaction.encoded,
+          encoded_transaction: rawTransactionString ? rawTransactionString : transaction!.encoded,
         },
         {
           useV2: true,
@@ -269,17 +269,17 @@ export class SpendingService {
       wallet.addresses.forEach((address, i) => addressesMap.set(address.address, i));
 
       // Convert all inputs and outputs to the format used by the hw wallet.
-      transaction.outputs.forEach(output => {
+      transaction!.outputs.forEach(output => {
         hwOutputs.push({
           address: output.address,
           coins: new BigNumber(output.coins).toString(),
           hours: new BigNumber(output.hours).toFixed(0),
         });
       });
-      transaction.inputs.forEach(input => {
+      transaction!.inputs.forEach(input => {
         hwInputs.push({
           hash: input.hash,
-          index: addressesMap.get(input.address),
+          index: addressesMap.get(input.address)!,
         });
       });
 
@@ -301,7 +301,7 @@ export class SpendingService {
           hwInputs,
           hwOutputs,
           signatures.rawResponse,
-          transaction.innerHash,
+          transaction!.innerHash,
         );
 
         return rawTransaction;

@@ -16,45 +16,45 @@ export class TradingPair {
   /**
    * Coin to deposit.
    */
-  from: string;
+  from!: string;
   /**
    * Coin that will be received.
    */
-  to: string;
+  to!: string;
   /**
    * How many coins will be received per deposited coin.
    */
-  price: number;
+  price!: number;
   /**
    * Name of the trading pair. Works as the ID of the trading pair.
    */
-  pair: string;
+  pair!: string;
   /**
    * Minimum number of coins that can be deposited per order.
    */
-  min: number;
+  min!: number;
   /**
    * Maximum number of coins that can be deposited per order.
    */
-  max: number;
+  max!: number;
 }
 
 /**
  * Response returned by the service when creating or checking an order.
  */
 export class ExchangeOrder {
-  pair: string;
-  fromAmount: number|null;
-  toAmount: number;
-  toAddress: string;
-  toTag: string|null;
-  refundAddress: string|null;
-  refundTag: string|null;
-  id: string;
-  exchangeAddress: string;
-  exchangeTag: string|null;
+  pair!: string;
+  fromAmount!: number|null;
+  toAmount!: number;
+  toAddress!: string;
+  toTag!: string|null;
+  refundAddress!: string|null;
+  refundTag!: string|null;
+  id!: string;
+  exchangeAddress!: string;
+  exchangeTag!: string|null;
   toTx?: string|null;
-  status: string;
+  status!: string;
   message?: string;
 }
 
@@ -65,33 +65,33 @@ export class StoredExchangeOrder {
   /**
    * ID of the order.
    */
-  id: string;
+  id!: string;
   /**
    * Name of the coins pair.
    */
-  pair: string;
+  pair!: string;
   /**
    * How many coins the user must sent.
    */
-  fromAmount: number;
+  fromAmount!: number;
   /**
    * Approximately how many coins the user will receive. The amount can change and will be
    * final only after the order has been completed.
    */
-  toAmount: number;
+  toAmount!: number;
   /**
    * Address where the user will receive the coins.
    */
-  address: string;
+  address!: string;
   /**
    * Unix date indicating when the order was saved.
    */
-  timestamp: number;
+  timestamp!: number;
   /**
    * Approximately how many coins the user will receive per deposited coin, at the time
    * the order was created.
    */
-  price: number;
+  price!: number;
 }
 
 /**
@@ -128,14 +128,14 @@ export class ExchangeService {
    */
   lastViewedOrderLoaded: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  private saveLastViewedSubscription: SubscriptionLike;
+  private saveLastViewedSubscription!: SubscriptionLike;
 
   /**
    * Last order the user has checked. Must be updated manually. It is used to show the status
    * of that order again when opening the exchange section, so it must be erased if it is not
    * longer appropriate to show the status again immediately after opening the exchange section.
    */
-  set lastViewedOrder(order: StoredExchangeOrder) {
+  set lastViewedOrder(order: StoredExchangeOrder | null) {
     this._lastViewedOrder = order;
 
     if (this.saveLastViewedSubscription) {
@@ -143,10 +143,10 @@ export class ExchangeService {
     }
     this.saveLastViewedSubscription = this.storageService.store(StorageType.CLIENT, this.LAST_VIEWED_STORAGE_KEY, JSON.stringify(order)).subscribe();
   }
-  get lastViewedOrder(): StoredExchangeOrder {
+  get lastViewedOrder(): StoredExchangeOrder | null {
     return this._lastViewedOrder;
   }
-  private _lastViewedOrder: StoredExchangeOrder;
+  private _lastViewedOrder: StoredExchangeOrder | null = null;
 
   constructor(
     private http: HttpClient,
@@ -234,7 +234,7 @@ export class ExchangeService {
    * @param body Object with the key/value pairs to be sent to the backend.
    * @param headers Additional headers to send.
    */
-  private post(url: string, body?: object, headers?: object): Observable<any> {
+  private post(url: string, body?: object, headers?: object | null): Observable<any> {
     return this.http.post(this.buildUrl(url), body, {
       responseType: 'json',
       headers: new HttpHeaders({
@@ -277,7 +277,7 @@ export class ExchangeService {
         const newOrder: StoredExchangeOrder = {
           id: order.id,
           pair: order.pair,
-          fromAmount: order.fromAmount,
+          fromAmount: order.fromAmount!,
           toAmount: order.toAmount,
           address: order.toAddress,
           timestamp: moment().unix(),

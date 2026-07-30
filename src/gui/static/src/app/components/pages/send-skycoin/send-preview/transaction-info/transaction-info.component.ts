@@ -20,11 +20,11 @@ import { GeneratedTransaction, OldTransaction } from '../../../../../services/wa
 })
 export class TransactionInfoComponent implements OnDestroy {
   // Transaction which is going to be shown.
-  @Input() transaction: GeneratedTransaction|OldTransaction;
+  @Input() transaction!: GeneratedTransaction|OldTransaction;
   // True if the provided transaction was created to be sent, false if it is from the history.
-  @Input() isPreview: boolean;
+  @Input() isPreview!: boolean;
   // Current price per coin, in usd.
-  price: number;
+  price!: number;
   showInputsOutputs = false;
 
   private subscription: SubscriptionLike;
@@ -72,7 +72,7 @@ export class TransactionInfoComponent implements OnDestroy {
   }
 
   // Makes visible the list of the inputs and outputs.
-  toggleInputsOutputs(event) {
+  toggleInputsOutputs(event: any) {
     event.preventDefault();
 
     this.showInputsOutputs = !this.showInputsOutputs;

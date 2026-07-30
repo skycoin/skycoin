@@ -13,12 +13,12 @@ import { SeedWordDialogParams } from '../components/layout/seed-word-dialog/seed
 export class HwWalletSeedWordService {
 
   // Set to SeedWordDialogComponent on AppComponent to avoid a circular reference.
-  private requestWordComponentInternal;
+  private requestWordComponentInternal: any;
   /**
    * Sets the class of the modal window used for entering a seed word requested
    * by the hw wallet.
    */
-  set requestWordComponent(value) {
+  set requestWordComponent(value: any) {
     this.requestWordComponentInternal = value;
   }
 

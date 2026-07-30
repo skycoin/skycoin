@@ -42,7 +42,7 @@
         <app-hw-message
           [text]="'hardware-wallet.options.configured-detected' | translate"
           [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
-          [lowerBigText]="wallet.label"
+          [lowerBigText]="wallet!.label"
           [icon]="msgIcons.HardwareWallet"
         ></app-hw-message>
       }

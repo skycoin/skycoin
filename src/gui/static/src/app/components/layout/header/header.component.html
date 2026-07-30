@@ -19,7 +19,7 @@
               @if (price) {
                 <span>
                   @if (synchronized && balanceObtained) {
-                    <span>{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+                    <span>{{ ($any(coins) * price) | currency:'USD':'symbol':'1.2-2' }}</span>
                   }
                   @if (!synchronized || !balanceObtained) {
                     <span>-</span>

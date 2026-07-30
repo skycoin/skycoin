@@ -27,7 +27,7 @@ export class Bip39WordListService {
   /**
    * Array with all the BIP39 words.
    */
-  private wordList: string[];
+  private wordList!: string[];
   /**
    * Map with all the BIP39 words, used mainly to know if a word is on the list.
    */

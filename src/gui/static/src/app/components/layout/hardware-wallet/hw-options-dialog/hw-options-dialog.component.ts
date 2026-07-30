@@ -30,7 +30,7 @@ export interface ChildHwDialogParams {
    * Wallet object representing the connected device. It will be null if the connected device
    * have not been added to the wallet list.
    */
-  wallet: WalletBase;
+  wallet: WalletBase | null;
   /**
    * If the connected device has PIN code protection activated.
    */
@@ -76,20 +76,20 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   // Wallet object corresponding to the current device, if it has been already added to the
   // wallet list.
-  wallet: WalletBase;
+  wallet: WalletBase | null = null;
 
   // Security warning texts to show on the UI.
   securityWarnings: string[] = [];
   // Vars for knowing which security warnings were found.
-  firmwareVersionNotVerified: boolean;
-  outdatedFirmware: boolean;
-  needsBackup: boolean;
-  needsPin: boolean;
+  firmwareVersionNotVerified!: boolean;
+  outdatedFirmware!: boolean;
+  needsBackup!: boolean;
+  needsPin!: boolean;
   // Indicates if the security warning are being updated. The Security warnings are used as
   // a way to know the state of the device and show the appropiate options.
   refreshingWarnings = false;
 
-  private dialogSubscription: SubscriptionLike;
+  private dialogSubscription!: SubscriptionLike;
 
   // If true, the last openned modal window requested, after closing it, this window to refesh
   // all its data.
@@ -178,7 +178,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
    * Opens a modal window for making a specific operation related to the hw wallet.
    * @param dialogType Class of the modal window to open.
    */
-  private openDialog(dialogType) {
+  private openDialog(dialogType: any) {
     this.customErrorMsg = '';
 
     this.removeDialogSubscription();
@@ -191,7 +191,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       // Include the current wallet, if there is one.
       wallet: this.wallet,
       walletHasPin: !this.needsPin,
-      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
+      requestOptionsComponentRefresh: ((error: string | undefined = undefined, recheckSecurityOnly: boolean = false) => {
         if (!error) {
           // Set the data to be updated after closing the window, as requested.
           if (!recheckSecurityOnly) {
@@ -238,7 +238,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private updateSecurityWarningsAndData(): Observable<HwFeaturesResponse> {
     return of(1).pipe(
       tap(() => this.refreshingWarnings = true),
-      mergeMap(() => this.hardwareWalletService.getFeaturesAndUpdateData(this.wallet)),
+      mergeMap(() => this.hardwareWalletService.getFeaturesAndUpdateData(this.wallet!)),
       map((response: HwFeaturesResponse) => {
         this.refreshingWarnings = false;
         this.securityWarnings = [];

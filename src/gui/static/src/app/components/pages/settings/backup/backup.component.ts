@@ -21,12 +21,12 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 })
 export class BackupComponent implements OnInit, OnDestroy {
   // Path of the folder which contains the software wallet files.
-  folder: string;
+  folder!: string;
   // Wallet list.
   wallets: WalletBase[] = [];
 
-  private folderSubscription: Subscription;
-  private walletSubscription: Subscription;
+  private folderSubscription!: Subscription;
+  private walletSubscription!: Subscription;
 
   constructor(
     private dialog: MatDialog,

@@ -28,7 +28,7 @@ export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePi
     super(hwWalletService, dialogRef);
   }
 
-  setConfirmed(event) {
+  setConfirmed(event: any) {
     this.confirmed = event.checked;
   }
 
@@ -43,7 +43,7 @@ export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePi
           icon: this.msgIcons.Success,
         });
         // Request the hw wallet options modal window to refresh the security warnings.
-        this.data.requestOptionsComponentRefresh(null, true);
+        this.data.requestOptionsComponentRefresh(undefined, true);
       },
       err => this.processHwOperationError(err),
     );

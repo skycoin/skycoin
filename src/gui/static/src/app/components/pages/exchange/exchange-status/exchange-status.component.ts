@@ -47,14 +47,14 @@ export class ExchangeStatusComponent implements OnDestroy {
   // If the UI must show the detailed information panel openned.
   expanded = false;
 
-  private subscription: SubscriptionLike;
+  private subscription!: SubscriptionLike;
   // If in test mode, the index inside the statuses var of the status currently being shown.
   private testStatusIndex = 0;
   // Data obtained from the backend.
-  private order: ExchangeOrder;
+  order!: ExchangeOrder;
 
   // Previously saved order for which the data will be shown.
-  _orderDetails: StoredExchangeOrder;
+  _orderDetails!: StoredExchangeOrder;
   @Input() set orderDetails(val: StoredExchangeOrder) {
     const oldOrderDetails = this._orderDetails;
     this._orderDetails = val;
@@ -175,7 +175,7 @@ export class ExchangeStatusComponent implements OnDestroy {
       // predefined ID is provided if the tests mode is being used, and a simulated status.
       return this.exchangeService.status(
         !this.TEST_MODE ? this._orderDetails.id : '4729821d-390d-4ef8-a31e-2465d82a142f',
-        !this.TEST_MODE ? null : this.statuses[this.testStatusIndex++],
+        !this.TEST_MODE ? undefined : this.statuses[this.testStatusIndex++],
       );
     })).subscribe(order => {
       // Restore the amount of coins the user must send, as the backend may have not included it.

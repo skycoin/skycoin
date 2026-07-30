@@ -17,12 +17,12 @@ import { SelectLanguageComponent } from '../../select-language/select-language.c
     standalone: false
 })
 export class TopBarComponent implements OnInit, OnDestroy {
-  @Input() headline: string;
+  @Input() headline!: string;
 
   // Currently selected language.
-  language: LanguageData;
+  language!: LanguageData;
 
-  private subscription: Subscription;
+  private subscription!: Subscription;
 
   constructor(
     public appService: AppService,

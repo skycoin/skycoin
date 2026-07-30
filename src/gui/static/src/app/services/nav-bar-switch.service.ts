@@ -34,7 +34,7 @@ export class NavBarSwitchService {
   get leftText(): string {
     return this.leftTextInternal;
   }
-  private leftTextInternal: string;
+  private leftTextInternal!: string;
 
   /**
    * Text of the right option.
@@ -42,7 +42,7 @@ export class NavBarSwitchService {
   get rightText(): string {
     return this.rightTextInternal;
   }
-  private rightTextInternal: string;
+  private rightTextInternal!: string;
 
   /**
    * Indicates if the switch must be shown disabled.
@@ -68,7 +68,7 @@ export class NavBarSwitchService {
    * @param rightText Text for the option at the right.
    * @param selectedButton Which option must be shown selected.
    */
-  showSwitch(leftText, rightText, selectedButton = DoubleButtonActive.LeftButton) {
+  showSwitch(leftText: any, rightText: any, selectedButton = DoubleButtonActive.LeftButton) {
     this.setActiveComponent(selectedButton);
     this.switchDiabledInternal = false;
     this.switchVisibleInternal = true;

@@ -23,9 +23,9 @@ import { AppService } from '../../../../services/app.service';
     standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
+  @ViewChild('formControl') formControl!: CreateWalletFormComponent;
   // Data for filling the form just after loading it.
-  @Input() fill: WalletFormData = null;
+  @Input() fill: WalletFormData | null = null;
   // Emits when the user presses the button for going to the next step of the wizard, after
   // filling the form. Includes an object with the data entered on the form.
   @Output() onLabelAndSeedCreated = new EventEmitter<WalletFormData>();

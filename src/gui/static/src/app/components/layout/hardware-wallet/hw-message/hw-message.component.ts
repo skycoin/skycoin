@@ -31,28 +31,28 @@ export class HwMessageComponent implements OnDestroy {
   // Icon to show at the left.
   @Input() icon: MessageIcons = MessageIcons.None;
   // Text to show.
-  @Input() text: string;
+  @Input() text!: string;
   // Link to show after the main text.
-  @Input() link: string;
+  @Input() link: string | undefined;
   // Text to show in the UI for the link (optional).
-  @Input() linkText: string;
+  @Input() linkText!: string;
   // If true, the link is not openned in a new tab.
-  @Input() linkIsInternal: boolean;
+  @Input() linkIsInternal: boolean | undefined;
   // URL for the link. If no URL is set, the linkClicked event is dispatched when the user
   // clicks the link.
   @Input() linkIsUrl = false;
   // Outputs to show as a list. It is used to show the list of coins going out during a
   // transaction, so the user can check it before confirming the tx. It is shown under
   // the main text.
-  @Input() outputsList: HwWalletTxRecipientData[];
+  @Input() outputsList!: HwWalletTxRecipientData[];
   // Text shown after the main text, the link and the outputs list.
-  @Input() lowerText: string;
+  @Input() lowerText!: string;
   // Big text shown at the top of the main text. Can be used as a title.
-  @Input() upperBigText: string;
+  @Input() upperBigText!: string;
   // Big text shown below the main text.
-  @Input() lowerBigText: string;
+  @Input() lowerBigText!: string;
   // Light text shown at the bottom of the component.
-  @Input() lowerLightText: string;
+  @Input() lowerLightText!: string;
   // Event dispatched when the user clicks the link if no URL for it was provided.
   @Output() linkClicked = new EventEmitter();
 

@@ -6,14 +6,14 @@ import BigNumber from 'bignumber.js';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 
 class ListElement {
-  label: string;
+  label!: string;
   addresses: ElementAddress[] = [];
 }
 
 class ElementAddress {
-  address: string;
-  coins: BigNumber;
-  hours: BigNumber;
+  address!: string;
+  coins!: BigNumber;
+  hours!: BigNumber;
 }
 
 @Component({

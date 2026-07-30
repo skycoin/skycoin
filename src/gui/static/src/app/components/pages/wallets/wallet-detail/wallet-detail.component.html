@@ -88,7 +88,7 @@
       }
       <div class="-records">
         @for (address of account.externalAddresses; track address.address; let i = $index) {
-          @if (!hideEmpty || (address.coins && address.coins.isGreaterThan(0))) {
+          @if (!hideEmpty || ($any(address).coins && $any(address).coins.isGreaterThan(0))) {
             <div class="-record">
               <div class="-width-50 grey-text" [title]="'Child index: ' + (address.childNumber != null ? address.childNumber : i)">{{ address.childNumber != null ? address.childNumber : i + 1 }}</div>
               <div class="-flex-fill address-column">
@@ -100,8 +100,8 @@
                   </span>
                 </p>
               </div>
-              <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
-              <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+              <div class="-width-130 text-right">{{ ($any(address).coins ? $any(address).coins : 0) | amount:true:'first' }}</div>
+              <div class="-width-130 text-right grey-text">{{ ($any(address).hours ? $any(address).hours : 0) | amount:false:'first' }}</div>
               <div class="-width-85 options-column">
                 <mat-icon [matMenuTriggerFor]="extMenu">more_vert</mat-icon>
                 <mat-menu #extMenu="matMenu" [overlapTrigger]="false">
@@ -147,7 +147,7 @@
         @if (account.showChangeAddresses) {
           <div class="-records">
             @for (address of account.changeAddresses; track address.address; let i = $index) {
-              @if (!hideEmpty || (address.coins && address.coins.isGreaterThan(0))) {
+              @if (!hideEmpty || ($any(address).coins && $any(address).coins.isGreaterThan(0))) {
                 <div class="-record">
                   <div class="-width-50 grey-text" [title]="'Child index: ' + (address.childNumber != null ? address.childNumber : i)">{{ address.childNumber != null ? address.childNumber : i + 1 }}</div>
                   <div class="-flex-fill address-column">
@@ -159,8 +159,8 @@
                       </span>
                     </p>
                   </div>
-                  <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
-                  <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+                  <div class="-width-130 text-right">{{ ($any(address).coins ? $any(address).coins : 0) | amount:true:'first' }}</div>
+                  <div class="-width-130 text-right grey-text">{{ ($any(address).hours ? $any(address).hours : 0) | amount:false:'first' }}</div>
                   <div class="-width-85 options-column">
                     <mat-icon [matMenuTriggerFor]="chgMenu">more_vert</mat-icon>
                     <mat-menu #chgMenu="matMenu" [overlapTrigger]="false">
@@ -186,7 +186,7 @@
 } @else {
   <!-- Deterministic flat address list -->
   @for (address of wallet.addresses; track address; let i = $index) {
-    @if (!hideEmpty || address.coins.isGreaterThan(0)) {
+    @if (!hideEmpty || $any(address).coins.isGreaterThan(0)) {
       <div class="-record">
         <!-- Address number. -->
         <div class="-width-50 grey-text">{{ i + 1 }}</div>
@@ -219,8 +219,8 @@
           }
         </div>
         <!-- Coins and hours. -->
-        <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
-        <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+        <div class="-width-130 text-right">{{ ($any(address).coins ? $any(address).coins : 0) | amount:true:'first' }}</div>
+        <div class="-width-130 text-right grey-text">{{ ($any(address).hours ? $any(address).hours : 0) | amount:false:'first' }}</div>
         <!-- Options. -->
         <div class="-width-85 options-column">
           <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>

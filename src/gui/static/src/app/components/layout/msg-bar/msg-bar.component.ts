@@ -24,7 +24,7 @@ export enum MsgBarColors {
  */
 export class MsgBarConfig {
   title?: string;
-  text: string;
+  text!: string;
   /**
    * If set, the link will be shown after the text. Must be a valid URL.
    */

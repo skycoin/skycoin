@@ -16,16 +16,16 @@ export class ResultData {
   /**
    * Text to show.
    */
-  text: String;
+  text!: string;
   /**
    * Link to show after the text. Must be a valid URL.
    */
-  link?: String;
+  link?: string;
   /**
    * Text to show for the link, in case the raw value set in the "link" var is not what the
    * UI must show. If not set, the value of the "link" var is used.
    */
-  linkText?: String;
+  linkText?: string;
   /**
    * If true, the route set in the "link" var is used as an internal link, so it is not openned
    * in a new tab.
@@ -34,7 +34,7 @@ export class ResultData {
   /**
    * Icon to show.
    */
-  icon: MessageIcons;
+  icon!: MessageIcons;
 }
 
 /**
@@ -66,7 +66,7 @@ export enum States {
 export class HwDialogBaseComponent<T> implements OnDestroy {
   // Reference to the close button. For it to work the implementation must have "#closeButton"
   // added to the close button tag.
-  @ViewChild('closeButton') closeButton: ButtonComponent;
+  @ViewChild('closeButton') closeButton!: ButtonComponent;
 
   // If true, the modal window will be automatically closed if the device is disconnected.
   closeIfHwDisconnected = true;
@@ -78,10 +78,10 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
   // Allows to access from the HTML files the states in which the window can be.
   states = States;
   // Result to show on the UI when the state indicates a result must be shown.
-  result: ResultData;
+  result!: ResultData;
 
   // Add operation subscriptions to this var to close them automatically when closing the window.
-  protected operationSubscription: SubscriptionLike;
+  protected operationSubscription!: SubscriptionLike;
   private hwConnectionSubscription: SubscriptionLike;
 
   constructor(

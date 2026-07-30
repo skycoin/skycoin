@@ -14,9 +14,9 @@ import { NetworkService, Connection } from '../../../../services/network.service
     standalone: false
 })
 export class NetworkComponent implements OnInit, OnDestroy {
-  peers: Connection[];
+  peers!: Connection[];
 
-  private subscription: SubscriptionLike;
+  private subscription!: SubscriptionLike;
 
   constructor(
     public networkService: NetworkService,

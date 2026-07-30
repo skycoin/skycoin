@@ -36,8 +36,8 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
   okButtonText = 'offline-transactions.sign-tx.sign-button';
   validateForm = true;
 
-  private walletsSubscription: SubscriptionLike;
-  private operationSubscription: SubscriptionLike;
+  private walletsSubscription!: SubscriptionLike;
+  private operationSubscription!: SubscriptionLike;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -85,7 +85,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
         setTimeout(() => {
           try {
             if (wallets.length === 1) {
-              this.form.get('dropdown').setValue(wallets[0]);
+              this.form.get('dropdown')!.setValue(wallets[0]);
             }
           } catch (e) { }
         });
@@ -113,8 +113,8 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     this.msgBarService.hide();
 
     // Get the wallet password, if needed, and start signing the transaction.
-    if ((this.form.get('dropdown').value as WalletBase).encrypted) {
-      PasswordDialogComponent.openDialog(this.dialog, { wallet: this.form.get('dropdown').value }).componentInstance.passwordSubmit
+    if ((this.form.get('dropdown')!.value as WalletBase).encrypted) {
+      PasswordDialogComponent.openDialog(this.dialog, { wallet: this.form.get('dropdown')!.value }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           passwordDialog.close();
           this.signTransaction(passwordDialog.password);
@@ -125,16 +125,16 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
   }
 
   // Signs the transaction with the selected wallet.
-  private signTransaction(password: string) {
+  private signTransaction(password: string | null) {
     this.working = true;
     this.okButton.setLoading();
 
     this.closeOperationSubscription();
     this.operationSubscription = this.spendingService.signTransaction(
-      this.form.get('dropdown').value,
+      this.form.get('dropdown')!.value,
       password,
       null,
-      this.form.get('input').value).subscribe(encodedSignedTx => {
+      this.form.get('input')!.value).subscribe(encodedSignedTx => {
         this.cancelPressed();
         setTimeout(() => this.msgBarService.showDone('offline-transactions.sign-tx.signed'));
 

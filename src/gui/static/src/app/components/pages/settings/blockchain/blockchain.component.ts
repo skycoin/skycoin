@@ -16,10 +16,10 @@ import { AppService } from '../../../../services/app.service';
     standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
-  block: BasicBlockInfo;
-  coinSupply: CoinSupply;
+  block!: BasicBlockInfo;
+  coinSupply!: CoinSupply;
 
-  private operationSubscription: SubscriptionLike;
+  private operationSubscription!: SubscriptionLike;
 
   // Time interval in which periodic data updates will be made.
   private readonly updatePeriod = 5 * 1000;

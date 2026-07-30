@@ -68,7 +68,7 @@ export class HardwareWalletService {
   getFeaturesAndUpdateData(wallet: WalletBase): Observable<HwFeaturesResponse> {
     if (!wallet || wallet.isHardware) {
 
-      let lastestFirmwareVersion: string;
+      let lastestFirmwareVersion: string | null;
 
       // Get the number of the most recent firmware version.
       return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
@@ -172,7 +172,7 @@ export class HardwareWalletService {
         return response;
       }));
     } else {
-      return null;
+      return null!;
     }
   }
 

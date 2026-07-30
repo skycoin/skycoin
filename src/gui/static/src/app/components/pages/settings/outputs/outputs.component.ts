@@ -17,9 +17,9 @@ import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet
     standalone: false
 })
 export class OutputsComponent implements OnDestroy {
-  wallets: WalletWithOutputs[]|null;
+  wallets!: WalletWithOutputs[]|null;
 
-  private outputsSubscription: SubscriptionLike;
+  private outputsSubscription!: SubscriptionLike;
 
   constructor(
     route: ActivatedRoute,

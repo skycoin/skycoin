@@ -28,7 +28,7 @@ export class HwWalletDaemonService {
    * Allows to know when a devices has be connected/disconnected.
    */
   private connectionEventSubject = new BehaviorSubject<boolean>(false);
-  private checkHwSubscription: SubscriptionLike;
+  private checkHwSubscription!: SubscriptionLike;
   private hwConnected = false;
 
   /**
@@ -231,7 +231,7 @@ export class HwWalletDaemonService {
 
         // Process the error to get its details.
         response.originalServerErrorMsg = getErrorMsg(error);
-        response.type = this.getHardwareWalletErrorType(response.originalServerErrorMsg);
+        response.type = this.getHardwareWalletErrorType(response.originalServerErrorMsg || '');
         response.translatableErrorMsg = this.getHardwareWalletErrorMsg(response.type);
 
         return observableThrowError(response);
@@ -271,7 +271,7 @@ export class HwWalletDaemonService {
         .subscribe({
           // After the response is obtained, the procedure in charge of processing all the
           // responses obtained from the daemon automatically updates the connection status.
-          next: null,
+          next: undefined,
           error: () => this.ngZone.run(() => this.updateHwConnected(false)),
         });
     });

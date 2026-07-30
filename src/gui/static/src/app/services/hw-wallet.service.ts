@@ -16,9 +16,9 @@ import { getErrorMsg } from '../utils/errors';
  * Data about a transaction recipient.
  */
 export class HwWalletTxRecipientData {
-  address: string;
-  coins: BigNumber;
-  hours: BigNumber;
+  address!: string;
+  coins!: BigNumber;
+  hours!: BigNumber;
 }
 
 /**
@@ -30,7 +30,7 @@ export class OperationResult {
   /**
    * Operation result.
    */
-  result: HWOperationResults;
+  result!: HWOperationResults;
   /**
    * Raw response returned by the hw wallet daemon.
    */
@@ -81,14 +81,14 @@ export class HwWalletService {
   /**
    * Last modal window openned for asking the user confirmation for signing a transaction.
    */
-  private signTransactionDialog: MatDialogRef<{}, any>;
+  private signTransactionDialog!: MatDialogRef<{}, any> | null;
 
   // Set on AppComponent to avoid a circular reference.
-  private signTransactionConfirmationComponentInternal;
+  private signTransactionConfirmationComponentInternal: any;
   /**
    * Sets the class of the modal window used for asking the user confirmation for signing a tx.
    */
-  set signTransactionConfirmationComponent(value) {
+  set signTransactionConfirmationComponent(value: any) {
     this.signTransactionConfirmationComponentInternal = value;
   }
 
@@ -328,7 +328,7 @@ export class HwWalletService {
     return this.cancelLastAction().pipe(mergeMap(() => {
       this.prepare();
 
-      const params = {};
+      const params: any = {};
       params['remove_pin'] = true;
 
       return this.processDaemonResponse(
@@ -349,7 +349,7 @@ export class HwWalletService {
     return this.cancelLastAction().pipe(mergeMap(() => {
       this.prepare();
 
-      const params = {};
+      const params: any = {};
       params['word_count'] = wordCount;
       params['use_passphrase'] = false;
 
@@ -376,7 +376,7 @@ export class HwWalletService {
     return this.cancelLastAction().pipe(mergeMap(() => {
       this.prepare();
 
-      const params = {};
+      const params: any = {};
       params['word_count'] = wordCount;
       params['use_passphrase'] = false;
       params['dry_run'] = dryRun;
@@ -547,7 +547,7 @@ export class HwWalletService {
    * @returns daemonResponse, but with extra steps for making all appropiate operations with
    * the daemon response before emiting it to the subscription.
    */
-  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false): Observable<any> {
+  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] | null = null, responseShouldBeArray = false): Observable<any> {
     return daemonResponse.pipe(catchError((error: any) => {
       // Process the error to get it in an appropiate format.
       return observableThrowError(this.buildResponseObject(error, false));

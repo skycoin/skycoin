@@ -35,7 +35,7 @@ export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialo
           icon: this.msgIcons.Success,
         });
         // Request the hw wallet options modal window to refresh the security warnings.
-        this.data.requestOptionsComponentRefresh(null, true);
+        this.data.requestOptionsComponentRefresh(undefined, true);
       },
       err => this.processHwOperationError(err),
     );

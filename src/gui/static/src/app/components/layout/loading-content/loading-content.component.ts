@@ -16,5 +16,5 @@ export class LoadingContentComponent {
   // When true, the loading animation and a predefined loading msg is shown.
   @Input() isLoading = true;
   // Msg shown if isLoading is false.
-  @Input() noDataText: string;
+  @Input() noDataText!: string;
 }

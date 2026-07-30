@@ -12,17 +12,17 @@ export class LanguageData {
   /**
    * ID of the language.
    */
-  code: string;
+  code!: string;
   /**
    * Language name.
    */
-  name: string;
+  name!: string;
   /**
    * Name of the file containing the flag which is used for identifying the language.
    */
-  iconName: string;
+  iconName!: string;
 
-  constructor(langObj) {
+  constructor(langObj: any) {
     Object.assign(this, langObj);
   }
 }
@@ -58,7 +58,7 @@ export class LanguageService {
   private languagesInternal: LanguageData[] = [];
 
   private readonly storageKey = 'lang';
-  private subscription: SubscriptionLike;
+  private subscription!: SubscriptionLike;
 
   constructor(
     private translate: TranslateService,
@@ -99,7 +99,7 @@ export class LanguageService {
    * change and saves the code of the new selection.
    */
   private onLanguageChanged(event: LangChangeEvent) {
-    this.currentLanguageInternal.next(this.languages.find(val => val.code === event.lang));
+    this.currentLanguageInternal.next(this.languages.find(val => val.code === event.lang)!);
 
     if (this.subscription) {
       this.subscription.unsubscribe();

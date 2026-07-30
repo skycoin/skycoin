@@ -17,10 +17,10 @@ export class ArrowLinkComponent implements OnDestroy {
   @Input() pointDown = true;
   @Input() text = '';
   // If the link must be white.
-  @Input() whiteText: boolean;
+  @Input() whiteText!: boolean;
   @Output() pressed = new EventEmitter<any>();
 
-  onClick(event) {
+  onClick(event: any) {
     this.pressed.emit(event);
   }
 

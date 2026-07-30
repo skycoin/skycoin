@@ -36,8 +36,8 @@ export interface NumberOfAddressesEventData {
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {
   // Confirmation button.
-  @ViewChild('button') button: ButtonComponent;
-  form: UntypedFormGroup;
+  @ViewChild('button') button!: ButtonComponent;
+  form!: UntypedFormGroup;
   // Emits when the user request the addresses to be added.
   @Output() createRequested = new EventEmitter<NumberOfAddressesEventData>();
 
@@ -108,10 +108,10 @@ export class NumberOfAddressesComponent implements OnInit, OnDestroy {
     let valid = true;
 
     // The number must be an integer from 1 to 100.
-    const value = this.form.get('quantity').value as number;
+    const value = this.form.get('quantity')!.value as number;
     if (!value || value < 1 || value > 100 || value !== Math.round(value)) {
       valid = false;
-      if (this.form.get('quantity').touched) {
+      if (this.form.get('quantity')!.touched) {
         this.inputErrorMsg = 'wallet.add-addresses.quantity-error-info';
       }
     }

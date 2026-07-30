@@ -19,46 +19,46 @@ export class WalletFormData {
   /**
    * If the form is for creating a new wallet (true) or loading a walled using a seed (false).
    */
-  creatingNewWallet: boolean;
+  creatingNewWallet!: boolean;
   /**
    * Label for the wallet.
    */
-  label: string;
+  label!: string;
   /**
    * Seed for the wallet.
    */
-  seed: string;
+  seed!: string;
   /**
    * If set, the wallet must be encrypted with this password.
    */
-  password: string;
+  password!: string;
   /**
    * If true, the seed was entered using the assisted mode.
    */
-  enterSeedWithAssistance: boolean;
+  enterSeedWithAssistance!: boolean;
   /**
    * If creating a new wallet, the last automatically generated seed for the assisted mode. If
    * loading a wallet, the last valid seed the user entered using the assisted procedure.
    */
-  lastAssistedSeed: string;
+  lastAssistedSeed!: string;
   /**
    * Last seed the user entered using the manual mode.
    */
-  lastCustomSeed: string;
+  lastCustomSeed!: string;
   /**
    * If creating a new wallet, how many words the automatically generated seed for the
    * assisted mode has. If loading a wallet, how many words the seed entered by the user with
    * the assisted mode has.
    */
-  numberOfWords: number;
+  numberOfWords!: number;
   /**
    * If the user entered a standard seed, if the manual mode was being used.
    */
-  customSeedIsNormal: boolean;
+  customSeedIsNormal!: boolean;
   /**
    * If the advanced options panel was open.
    */
-   advancedOptionsShown: boolean;
+   advancedOptionsShown!: boolean;
   /**
    * If the user selected that the wallet must be loaded temporarily.
    */
@@ -70,7 +70,7 @@ export class WalletFormData {
   /**
    * Optional seed passphrase for BIP44 wallets.
    */
-  seedPassphrase: string;
+  seedPassphrase!: string;
 }
 
 /**
@@ -84,18 +84,18 @@ export class WalletFormData {
     standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {
-  @ViewChild('temporalWalletCheck') temporalWalletCheck: MatCheckbox;
+  @ViewChild('temporalWalletCheck') temporalWalletCheck!: MatCheckbox;
 
   // If the form is for creating a new wallet (true) or loading a walled using a seed (false).
-  @Input() create: boolean;
+  @Input() create!: boolean;
   // If the form is being shown on the wizard (true) or not (false).
-  @Input() onboarding: boolean;
+  @Input() onboarding!: boolean;
   // Allows to deactivate the form while the system is busy.
   @Input() busy = false;
   // Emits when the user asks for the wallet ot be created.
   @Output() createRequested = new EventEmitter<void>();
 
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
   // If true, the user must enter the ssed using the asisted mode.
   enterSeedWithAssistance = true;
   // If the user confirmed the seed using the asisted mode, while creating a new wallet.
@@ -130,11 +130,11 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   // Emits every time the seed should be checked again, to know if it is a standard seed.
   private seed: Subject<string> = new Subject<string>();
 
-  private statusSubscription: SubscriptionLike;
-  private seedValiditySubscription: SubscriptionLike;
+  private statusSubscription!: SubscriptionLike;
+  private seedValiditySubscription!: SubscriptionLike;
 
   // Saves the words the user enters while using the assisted mode.
-  private partialSeed: string[];
+  private partialSeed!: string[];
 
   constructor(
     private apiService: ApiService,
@@ -171,12 +171,12 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   // Sets if the user has acepted to use a manually entered non-standard seed.
-  onCustomSeedAcceptance(event) {
+  onCustomSeedAcceptance(event: any) {
     this.customSeedAccepted = event.checked;
   }
 
   // Sets the user selection regarding whether the wallet must be encrypted or not.
-  setEncrypt(event) {
+  setEncrypt(event: any) {
     this.encrypt = event.checked;
     this.form.updateValueAndValidity();
   }
@@ -194,7 +194,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   // Sets the user selection regarding whether the wallet must be loaded temporarily or not.
-  setTemporal(event) {
+  setTemporal(event: any) {
     if (event.checked) {
       this.temporalWalletCheck.checked = false;
 
@@ -249,7 +249,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       const confirmationParams: ConfirmationParams = {
         text: this.create ? 'wallet.new.seed.custom-seed-warning-text' : 'wallet.new.seed.custom-seed-warning-text-recovering',
         headerText: 'common.warning-title',
-        checkboxText: this.create ? 'common.generic-confirmation-check' : null,
+        checkboxText: this.create ? 'common.generic-confirmation-check' : undefined,
         defaultButtons: DefaultConfirmationButtons.ContinueCancel,
         redTitle: true,
       };
@@ -345,7 +345,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
    * a seed (false). Use null to avoid changing the value set using the html tag.
    * @param data Data to populate the form.
    */
-  initForm(create: boolean = null, data: WalletFormData = null) {
+  initForm(create: boolean | null = null, data: WalletFormData | null = null) {
     this.msgBarService.hide();
 
     create = create !== null ? create : this.create;
@@ -394,7 +394,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.statusSubscription = this.form.statusChanges.subscribe(() => {
       // Invalidate the custom seed confirmation if the data on the form is changed.
       this.customSeedAccepted = false;
-      this.seed.next(this.form.get('seed').value);
+      this.seed.next(this.form.get('seed')!.value);
     });
 
     this.subscribeToSeedValidation();
@@ -410,8 +410,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
     this.apiService.get('wallet/newSeed', { entropy }).subscribe(response => {
       this.lastAssistedSeed = response.seed;
-      this.form.get('seed').setValue(response.seed);
-      this.form.get('seed').markAsTouched();
+      this.form.get('seed')!.setValue(response.seed);
+      this.form.get('seed')!.markAsTouched();
       this.removeConfirmations();
     });
   }
@@ -430,7 +430,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.customSeedAccepted = false;
     this.assistedSeedConfirmed = false;
     if (cleanSecondSeedField) {
-      this.form.get('confirm_seed').setValue('');
+      this.form.get('confirm_seed')!.setValue('');
     }
     this.form.updateValueAndValidity();
   }
@@ -474,7 +474,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   // Checks if the 2 custom seeds entered by the user are equal.
   private seedsAreEqual(): boolean {
     if (this.form && this.form.get('seed') && this.form.get('confirm_seed')) {
-      return this.form.get('seed').value === this.form.get('confirm_seed').value;
+      return this.form.get('seed')!.value === this.form.get('confirm_seed')!.value;
     }
 
     this.customSeedIsNormal = true;
@@ -494,9 +494,9 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('label').value) {
+    if (!this.form.get('label')!.value) {
       valid = false;
-      if (this.form.get('label').touched) {
+      if (this.form.get('label')!.touched) {
         this.labelErrorMsg = 'wallet.new.name-error-info';
       }
     }
@@ -504,21 +504,21 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     // Validate custom seeds.
     if (!this.enterSeedWithAssistance) {
       let enteredSeeds = true;
-      if (!this.form.get('seed').value) {
+      if (!this.form.get('seed')!.value) {
         valid = false;
         enteredSeeds = false;
         this.customSeedIsNormal = true;
-        if (this.form.get('seed').touched) {
+        if (this.form.get('seed')!.touched) {
           this.seed1ErrorMsg = 'wallet.new.seed-error-info';
         }
       }
 
       if (this.create) {
-        if (!this.form.get('confirm_seed').value) {
+        if (!this.form.get('confirm_seed')!.value) {
           valid = false;
           enteredSeeds = false;
           this.customSeedIsNormal = true;
-          if (this.form.get('confirm_seed').touched) {
+          if (this.form.get('confirm_seed')!.touched) {
             this.seed2ErrorMsg = 'wallet.new.seed-error-info';
           }
         }
@@ -537,24 +537,24 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     if (this.encrypt &&  !this.loadTemporarily && !this.onboarding) {
       let enteredPasswords = true;
 
-      if (!this.form.get('password').value) {
+      if (!this.form.get('password')!.value) {
         valid = false;
         enteredPasswords = false;
-        if (this.form.get('password').touched) {
+        if (this.form.get('password')!.touched) {
           this.password1ErrorMsg = 'password.password-error-info';
         }
       }
 
-      if (!this.form.get('confirm_password').value) {
+      if (!this.form.get('confirm_password')!.value) {
         valid = false;
         enteredPasswords = false;
-        if (this.form.get('confirm_password').touched) {
+        if (this.form.get('confirm_password')!.touched) {
           this.password2ErrorMsg = 'password.password-error-info';
         }
       }
 
       if (enteredPasswords) {
-        if (!this.password2ErrorMsg && this.form.get('password').value !== this.form.get('confirm_password').value) {
+        if (!this.password2ErrorMsg && this.form.get('password')!.value !== this.form.get('confirm_password')!.value) {
           valid = false;
           this.password2ErrorMsg = 'password.confirm-error-info';
         }

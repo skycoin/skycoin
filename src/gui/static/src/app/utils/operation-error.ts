@@ -103,7 +103,7 @@ export class OperationError {
   /**
    * Specific error type. Allows to know the cause of the error.
    */
-  type: OperationErrorTypes | HWOperationResults;
+  type!: OperationErrorTypes | HWOperationResults;
   /**
    * Original error object from which this OperationError instance was created.
    */
@@ -111,9 +111,9 @@ export class OperationError {
   /**
    * Original, unprocessed, error msg.
    */
-  originalServerErrorMsg: string;
+  originalServerErrorMsg!: string | null;
   /**
    * Processed error msg, which can be passed to the 'translate' pipe to display it on the UI.
    */
-  translatableErrorMsg: string;
+  translatableErrorMsg!: string;
 }

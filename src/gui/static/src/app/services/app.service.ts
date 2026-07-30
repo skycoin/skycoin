@@ -27,7 +27,7 @@ export class AppService {
   get nodeVersion() {
     return this.nodeVersionInternal;
   }
-  private nodeVersionInternal: string;
+  private nodeVersionInternal!: string;
 
   /**
    * Complete name of the coin.

@@ -36,7 +36,7 @@ export interface OfflineDialogsDropdownElement {
     standalone: false
 })
 export class OfflineDialogsBaseComponent {
-  @ViewChild('okButton') okButton: ButtonComponent;
+  @ViewChild('okButton') okButton!: ButtonComponent;
   // Allows to deactivate the form while the component is busy.
   working = false;
   form: UntypedFormGroup;
@@ -60,7 +60,7 @@ export class OfflineDialogsBaseComponent {
   inputErrorMsg = '';
 
   // If not set, the dropdown control is not shown.
-  dropdownElements: OfflineDialogsDropdownElement[];
+  dropdownElements!: OfflineDialogsDropdownElement[];
 
   constructor(
     _formBuilder: UntypedFormBuilder,
@@ -76,23 +76,23 @@ export class OfflineDialogsBaseComponent {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validate() {
+  validate() {
     this.dropdownErrorMsg = '';
     this.inputErrorMsg = '';
 
     let valid = true;
 
-    if (!this.form.get('dropdown').value) {
+    if (!this.form.get('dropdown')!.value) {
       valid = false;
-      if (this.form.get('dropdown').touched) {
+      if (this.form.get('dropdown')!.touched) {
         this.dropdownErrorMsg = 'offline-transactions.wallet-error-info';
       }
     }
 
-    const inputValue = this.form.get('input').value as string;
+    const inputValue = this.form.get('input')!.value as string;
     if (!inputValue || inputValue.length < 300 || !/^[0-9a-fA-F]+$/.test(inputValue)) {
       valid = false;
-      if (this.form.get('input').touched) {
+      if (this.form.get('input')!.touched) {
         this.inputErrorMsg = 'offline-transactions.tx-error-info';
       }
     }

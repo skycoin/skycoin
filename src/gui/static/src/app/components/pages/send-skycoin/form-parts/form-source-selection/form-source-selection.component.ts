@@ -45,7 +45,7 @@ export interface SelectedSources {
   /**
    * Selected wallet.
    */
-  wallet: WalletWithBalance;
+  wallet: WalletWithBalance | null;
   /**
    * Optional selected addresses. The addresses are from the selected wallet.
    */
@@ -94,13 +94,13 @@ export enum SourceSelectionModes {
 })
 export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   // Allows to deactivate the form while the system is busy.
-  @Input() busy: boolean;
+  @Input() busy!: boolean;
   // Event for informing when the user selection has changed or when there was a change in
   // the available balance.
   @Output() onSelectionChanged = new EventEmitter<void>();
 
   // Sets the mode in which the component works.
-  private selectionModeInternal: SourceSelectionModes;
+  private selectionModeInternal!: SourceSelectionModes;
   @Input() set selectionMode(val: SourceSelectionModes) {
     this.selectionModeInternal = val;
     if (this.form) {
@@ -113,11 +113,11 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   }
 
   sourceSelectionModes = SourceSelectionModes;
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
   // All available wallets.
-  allWallets: WalletWithBalance[];
+  allWallets!: WalletWithBalance[];
   // Wallet selected by the user.
-  wallet: WalletWithBalance;
+  wallet!: WalletWithBalance | null;
   // List with all addresses from the selected wallet.
   addresses: AddressWithBalance[] = [];
   // List of the addresses manually entered by the user, if in manual mode.
@@ -138,7 +138,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   walletErrorMsg = '';
 
   private subscriptionsGroup: SubscriptionLike[] = [];
-  private getOutputsSubscription: SubscriptionLike;
+  private getOutputsSubscription!: SubscriptionLike;
 
   constructor(
     private appService: AppService,
@@ -157,9 +157,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     this.form.setValidators(this.validateForm.bind(this));
 
     // When the user enters the addresses manually.
-    this.subscriptionsGroup.push(this.form.get('manualAddresses').valueChanges.pipe(debounceTime(500)).subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('manualAddresses')!.valueChanges.pipe(debounceTime(500)).subscribe(() => {
       // Separate all addresses.
-      const manuallyEnteredAddresses = (this.form.get('manualAddresses').value as string);
+      const manuallyEnteredAddresses = (this.form.get('manualAddresses')!.value as string);
       let manualAddresses: string[] = [];
       if (manuallyEnteredAddresses && manuallyEnteredAddresses.trim().length > 0) {
         manualAddresses = manuallyEnteredAddresses.split(',');
@@ -187,7 +187,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
         this.allUnspentOutputs = [];
         this.unspentOutputs = [];
 
-        this.form.get('outputs').setValue(null);
+        this.form.get('outputs')!.setValue(null);
 
         this.loadingUnspentOutputs = manualAddresses.length !== 0;
         this.errorLoadingManualOutputs = false;
@@ -197,7 +197,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
       if (manualAddresses.length !== 0 && addressesChanged) {
         // Get the outputs of the entered addresses.
-        this.getOutputsSubscription = this.balanceAndOutputsService.getOutputs((this.form.get('manualAddresses').value as string).replace(/ /g, '')).pipe(
+        this.getOutputsSubscription = this.balanceAndOutputsService.getOutputs((this.form.get('manualAddresses')!.value as string).replace(/ /g, '')).pipe(
           // Retry if there is an error, but not if the server returns 400 as response, which
           // means the user entered at least one invalid address.
           retryWhen((err) => {
@@ -231,15 +231,15 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     }));
 
     // When the user changes the wallet using the dropdown.
-    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(wallet => {
+    this.subscriptionsGroup.push(this.form.get('wallet')!.valueChanges.subscribe(wallet => {
       this.wallet = wallet;
 
       // Reset the form.
       this.closeGetOutputsSubscription();
       this.allUnspentOutputs = [];
       this.unspentOutputs = [];
-      this.form.get('addresses').setValue(null);
-      this.form.get('outputs').setValue(null);
+      this.form.get('addresses')!.setValue(null);
+      this.form.get('outputs')!.setValue(null);
       this.loadingUnspentOutputs = false;
 
       // Load the output list, if the form is showing a dropdown for selecting them.
@@ -258,7 +258,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       }
 
       if (wallet) {
-        this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
+        this.addresses = wallet.addresses.filter((addr: any) => addr.coins > 0);
       } else {
         this.addresses = [];
       }
@@ -266,14 +266,14 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.onSelectionChanged.emit();
     }));
 
-    this.subscriptionsGroup.push(this.form.get('addresses').valueChanges.subscribe(() => {
-      this.form.get('outputs').setValue(null);
+    this.subscriptionsGroup.push(this.form.get('addresses')!.valueChanges.subscribe(() => {
+      this.form.get('outputs')!.setValue(null);
       this.unspentOutputs = this.filterUnspentOutputs();
 
       this.onSelectionChanged.emit();
     }));
 
-    this.subscriptionsGroup.push(this.form.get('outputs').valueChanges.subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('outputs')!.valueChanges.subscribe(() => {
       this.onSelectionChanged.emit();
     }));
 
@@ -282,7 +282,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       if (wallets.length === 1) {
         setTimeout(() => {
           try {
-            this.form.get('wallet').setValue(wallets[0]);
+            this.form.get('wallet')!.setValue(wallets[0]);
           } catch (e) { }
         });
       }
@@ -296,10 +296,10 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   }
 
   resetForm() {
-    this.form.get('manualAddresses').setValue('');
-    this.form.get('wallet').setValue('');
-    this.form.get('addresses').setValue(null);
-    this.form.get('outputs').setValue(null);
+    this.form.get('manualAddresses')!.setValue('');
+    this.form.get('wallet')!.setValue('');
+    this.form.get('addresses')!.setValue(null);
+    this.form.get('outputs')!.setValue(null);
 
     this.wallet = null;
   }
@@ -320,20 +320,20 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
           }
         });
 
-        this.form.get('manualAddresses').setValue(addressesString, { emitEvent: false });
+        this.form.get('manualAddresses')!.setValue(addressesString, { emitEvent: false });
         this.manualAddresses = formData.form.manualAddresses;
       } else {
         this.addresses = formData.form.wallet.addresses;
 
         ['wallet', 'addresses'].forEach(name => {
-          this.form.get(name).setValue(formData.form[name]);
+          this.form.get(name)!.setValue((formData.form as any)[name]);
         });
       }
 
       this.closeGetOutputsSubscription();
       this.allUnspentOutputs = formData.form.allUnspentOutputs;
       this.unspentOutputs = this.filterUnspentOutputs();
-      this.form.get('outputs').setValue(formData.form.outputs);
+      this.form.get('outputs')!.setValue(formData.form.outputs);
     });
   }
 
@@ -380,7 +380,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     // While in manual mode, the balance is obtained from the available or selected
     // unspent outputs.
     if (this.selectionMode === SourceSelectionModes.Manual && this.unspentOutputs && this.unspentOutputs.length > 0) {
-      const selectedOutputs: UnspentOutput[] = this.form.get('outputs').value;
+      const selectedOutputs: UnspentOutput[] = this.form.get('outputs')!.value;
 
       if (selectedOutputs && selectedOutputs.length > 0) {
         selectedOutputs.map(output => {
@@ -400,9 +400,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     }
 
     // Only if not in manual mode (it is not possible to select a wallet in manual mode).
-    if (this.form.get('wallet').value) {
-      const outputs: UnspentOutput[] = this.form.get('outputs').value;
-      const addresses: AddressWithBalance[] = this.form.get('addresses').value;
+    if (this.form.get('wallet')!.value) {
+      const outputs: UnspentOutput[] = this.form.get('outputs')!.value;
+      const addresses: AddressWithBalance[] = this.form.get('addresses')!.value;
 
       // Get the balance from the selected outputs, the selected addresses, or the
       // selected wallet, depending on what the user has selected.
@@ -416,8 +416,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
           response.availableCoins = response.availableCoins.plus(control.coins);
           response.availableHours = response.availableHours.plus(control.hours);
         });
-      } else if (this.form.get('wallet').value) {
-        const wallet: WalletWithBalance = this.form.get('wallet').value;
+      } else if (this.form.get('wallet')!.value) {
+        const wallet: WalletWithBalance = this.form.get('wallet')!.value;
         response.availableCoins = wallet.coins;
         response.availableHours = wallet.hours;
       }
@@ -442,13 +442,13 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       return {
         wallet: null,
         manualAddresses: this.manualAddresses,
-        unspentOutputs: this.form.get('outputs').value,
+        unspentOutputs: this.form.get('outputs')!.value,
       };
     } else {
       return {
-        wallet: this.form.get('wallet').value,
-        addresses: (this.form.get('addresses').value as AddressWithBalance[]),
-        unspentOutputs: this.form.get('outputs').value,
+        wallet: this.form.get('wallet')!.value,
+        addresses: (this.form.get('addresses')!.value as AddressWithBalance[]),
+        unspentOutputs: this.form.get('outputs')!.value,
       };
     }
   }
@@ -456,7 +456,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   /**
    * Returns the last list of unspent outputs obtained from the node.
    */
-  get unspentOutputsList(): UnspentOutput[] {
+  get unspentOutputsList(): UnspentOutput[] | null {
     return this.loadingUnspentOutputs ? null : this.allUnspentOutputs;
   }
 
@@ -473,11 +473,11 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     // Use only the outputs of the selected addresses, if the user has selected one or more.
     if (this.allUnspentOutputs.length === 0) {
       return [];
-    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as AddressWithBalance[]).length === 0) {
+    } else if (!this.form.get('addresses')!.value || (this.form.get('addresses')!.value as AddressWithBalance[]).length === 0) {
       return this.allUnspentOutputs;
     } else {
       const addressMap = new Map<string, boolean>();
-      (this.form.get('addresses').value as AddressWithBalance[]).forEach(address => addressMap.set(address.address, true));
+      (this.form.get('addresses')!.value as AddressWithBalance[]).forEach(address => addressMap.set(address.address, true));
 
       return this.allUnspentOutputs.filter(out => addressMap.has(out.address));
     }
@@ -502,16 +502,16 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
     // The validation depends on the current mode.
     if (this.selectionMode === SourceSelectionModes.Manual) {
-      if (!this.form.get('manualAddresses').value || (this.form.get('manualAddresses').value as string).length < 20) {
+      if (!this.form.get('manualAddresses')!.value || (this.form.get('manualAddresses')!.value as string).length < 20) {
         valid = false;
-        if (this.form.get('manualAddresses').touched) {
+        if (this.form.get('manualAddresses')!.touched) {
           this.manualAddressesErrorMsg = 'send.addresses-error-info';
         }
       }
     } else {
-      if (!this.form.get('wallet').value) {
+      if (!this.form.get('wallet')!.value) {
         valid = false;
-        if (this.form.get('wallet').touched) {
+        if (this.form.get('wallet')!.touched) {
           this.walletErrorMsg = 'send.wallet-error-info';
         }
       }

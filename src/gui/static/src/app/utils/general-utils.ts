@@ -58,10 +58,10 @@ export function copyTextToClipboard(text: string) {
  * Response returned by parseRequestLink. Only the values found in the link will have a value.
  */
 export class RequestLinkParams {
-  address: string;
-  coins: string;
-  hours: string;
-  message: string;
+  address!: string;
+  coins!: string | null;
+  hours!: string | null;
+  message!: string | null;
 }
 
 /**
@@ -69,8 +69,8 @@ export class RequestLinkParams {
  * function does not validate the requested values, just the structure of the link.
  * @param linkText Link to check.
  */
-export function parseRequestLink(linkText: string): RequestLinkParams {
-  let parsed: URL;
+export function parseRequestLink(linkText: string): RequestLinkParams | null {
+  let parsed: URL | null = null;
   try {
     parsed = new URL(linkText);
   } catch (e) {}

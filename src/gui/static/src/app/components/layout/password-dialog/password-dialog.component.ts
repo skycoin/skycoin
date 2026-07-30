@@ -49,7 +49,7 @@ export interface PasswordDialogParams {
   /**
    * Wallet to which the resquested password corresponds.
    */
-  wallet: WalletBase;
+  wallet: WalletBase | null;
 }
 
 /**
@@ -67,8 +67,8 @@ export interface PasswordDialogParams {
     standalone: false
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
-  form: UntypedFormGroup;
+  @ViewChild('button') button!: ButtonComponent;
+  form!: UntypedFormGroup;
   passwordSubmit = new Subject<PasswordSubmitEvent>();
   working = false;
 
@@ -110,9 +110,9 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.form.addControl('confirm_password', new UntypedFormControl(''));
 
     if (this.data.confirm) {
-      this.form.get('confirm_password').enable();
+      this.form.get('confirm_password')!.enable();
     } else {
-      this.form.get('confirm_password').disable();
+      this.form.get('confirm_password')!.disable();
     }
 
     this.form.setValidators(this.validateForm.bind(this));
@@ -142,7 +142,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.working = true;
 
     this.passwordSubmit.next({
-      password: this.form.get('password').value,
+      password: this.form.get('password')!.value,
       close: this.close.bind(this),
       error: this.error.bind(this),
     });
@@ -156,24 +156,24 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('password').value) {
+    if (!this.form.get('password')!.value) {
       valid = false;
-      if (this.form.get('password').touched) {
+      if (this.form.get('password')!.touched) {
         this.password1ErrorMsg = 'password.password-error-info';
       }
     }
 
     if (this.data.confirm) {
-      if (!this.form.get('confirm_password').value) {
+      if (!this.form.get('confirm_password')!.value) {
         valid = false;
-        if (this.form.get('confirm_password').touched) {
+        if (this.form.get('confirm_password')!.touched) {
           this.password2ErrorMsg = 'password.password-error-info';
         }
       }
 
       // If both password fields have a value, check if the 2 passwords entered by the user
       // are equal.
-      if (valid && this.form.get('password').value !== this.form.get('confirm_password').value) {
+      if (valid && this.form.get('password')!.value !== this.form.get('confirm_password')!.value) {
         valid = false;
         this.password2ErrorMsg = 'password.confirm-error-info';
       }

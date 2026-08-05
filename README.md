@@ -3,8 +3,10 @@
 # Skycoin
 
 [![Go](https://github.com/skycoin/skycoin/workflows/Go/badge.svg)](https://github.com/skycoin/skycoin/actions)
-[![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
-[![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
+[![GitHub release](https://img.shields.io/github/release/skycoin/skycoin.svg)](https://github.com/skycoin/skycoin/releases/)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/skycoin/skycoin/badge)](https://api.securityscorecards.dev/projects/github.com/skycoin/skycoin)
+[![go.mod](https://img.shields.io/github/go-mod/go-version/skycoin/skycoin.svg)](https://github.com/skycoin/skycoin)
+[![Telegram](https://img.shields.io/badge/Join-Telegram-blue?logo=telegram)](https://t.me/skycoin)
 
 Skycoin is a next-generation cryptocurrency.
 
@@ -123,7 +125,6 @@ This multi-chain architecture allows:
 		- [Pre-release testing](#pre-release-testing)
 		- [Creating release builds](#creating-release-builds)
 		- [Release signing](#release-signing)
-- [Responsible Disclosure](#responsible-disclosure)
 
 <!-- /MarkdownTOC -->
 
@@ -442,46 +443,6 @@ $ ./caddy
 You will be prompted to enter an email address to receive the notifications from let's Encrypt.
 That's all about the deployment, check the https://apitest.skycoin.com/api/v1/version to see if
 the Skycoin API node is working correctly.
-
-## Responsible Disclosure
-
-Security flaws in skycoin source or infrastructure can be sent to security@skycoin.com.
-Bounties are available for accepted critical bug reports.
-
-PGP Key for signing:
-
-```
------BEGIN PGP PUBLIC KEY BLOCK-----
-
-mDMEXYCYPxYJKwYBBAHaRw8BAQdAeDPi3n9xLv5xGsxbcbwZjfV4h772W+GPZ3Mz
-RS17STm0L2lrZXRoZWFkb3JlIHNreWNvaW4gPGx1eGFpcmxha2VAcHJvdG9ubWFp
-bC5jb20+iJYEExYIAD4WIQSY+TTwT5M0uB36M5iRO71SBrGWIAUCXYCYPwIbAwUJ
-B4TOAAULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCRO71SBrGWID0NAP0VRiNA
-2Kq2uakPMqV29HY39DVhc9QgxJfMIwXWtFxKAwEAn0NqGRV/iKXNf+qxqAtMWa5X
-F2S36hkEfDHO5W44DwC4OARdgJg/EgorBgEEAZdVAQUBAQdAeiEz/tUmCgOA67Rq
-ANmHmX2vrdZp/SfJ9KOI2ANCCm8DAQgHiH4EGBYIACYWIQSY+TTwT5M0uB36M5iR
-O71SBrGWIAUCXYCYPwIbDAUJB4TOAAAKCRCRO71SBrGWIJOJAQDTaqxpcLtAw5kH
-Hp2jWvUnLudIONeqeUTCmkLJhcNv1wD+PFJZWMKD1btIG4pkXRW9YoA7M7t5by5O
-x5I+LywZNww=
-=p6Gq
------END PGP PUBLIC KEY BLOCK-----
-```
-
-
-Key ID: [0x913BBD5206B19620](https://pgp.mit.edu/pks/lookup?search=0x913BBD5206B19620&op=index)
-
-The fingerprint for this key is:
-
-```
-pub   ed25519 2019-09-17 [SC] [expires: 2023-09-16]
-      98F934F04F9334B81DFA3398913BBD5206B19620
-uid           [ultimate] iketheadore skycoin <luxairlake@protonmail.com>
-sub   cv25519 2019-09-17 [E] [expires: 2023-09-16]
-```
-
-Keybase.io account: https://keybase.io/iketheadore
-
-
 
 ## Dependency Graph
 

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:generate go run generator.go -full-path-comments
-
 package sqlite // import "modernc.org/sqlite"
 
 import (
@@ -29,8 +27,9 @@ import (
 )
 
 var (
-	_ driver.Conn   = (*conn)(nil)
-	_ driver.Driver = (*Driver)(nil)
+	_ driver.Conn      = (*conn)(nil)
+	_ driver.Connector = (*connector)(nil)
+	_ driver.Driver    = (*Driver)(nil)
 	//lint:ignore SA1019 TODO implement ExecerContext
 	_ driver.Execer = (*conn)(nil)
 	//lint:ignore SA1019 TODO implement QueryerContext

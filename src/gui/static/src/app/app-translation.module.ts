@@ -1,4 +1,4 @@
-import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { TranslateLoader, TranslateDirective, TranslatePipe, provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
 import { from, Observable } from 'rxjs';
 import { NgModule } from '@angular/core';
 
@@ -10,12 +10,12 @@ export class TranslationModuleLoader implements TranslateLoader {
 }
 
 @NgModule({
-  imports: [TranslateModule.forRoot({
-    loader: {
-      provide: TranslateLoader,
-      useClass: TranslationModuleLoader,
-    },
-  })],
-  exports: [TranslateModule],
+  imports: [TranslatePipe, TranslateDirective],
+  exports: [TranslatePipe, TranslateDirective],
+  providers: [
+    provideTranslateService({
+      loader: provideTranslateLoader(TranslationModuleLoader),
+    }),
+  ],
 })
 export class AppTranslationModule { }

@@ -7,7 +7,7 @@ import { Component, Input, Output, EventEmitter, OnDestroy, ChangeDetectionStrat
     selector: 'app-arrow-link',
     templateUrl: 'arrow-link.component.html',
     styleUrls: ['arrow-link.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ArrowLinkComponent implements OnDestroy {

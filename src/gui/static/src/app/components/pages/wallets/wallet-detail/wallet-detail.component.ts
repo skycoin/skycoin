@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { Observable, SubscriptionLike } from 'rxjs';
@@ -29,7 +29,7 @@ import { WalletsComponent } from '../wallets.component';
     selector: 'app-wallet-detail',
     templateUrl: './wallet-detail.component.html',
     styleUrls: ['./wallet-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
@@ -64,6 +64,7 @@ export class WalletDetailComponent implements OnDestroy {
     private softwareWalletService: SoftwareWalletService,
     private hardwareWalletService: HardwareWalletService,
     private historyService: HistoryService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnDestroy() {
@@ -120,11 +121,13 @@ export class WalletDetailComponent implements OnDestroy {
             if (response.walletNameUpdated) {
               this.msgBarService.showWarning('hardware-wallet.general.name-updated');
             }
+            this.changeDetectorRef.markForCheck();
           },
           err => {
             this.msgBarService.showError(err);
             this.preparingToRename = false;
             WalletsComponent.busy = false;
+            this.changeDetectorRef.markForCheck();
           },
         );
     } else {
@@ -151,6 +154,7 @@ export class WalletDetailComponent implements OnDestroy {
       } else if (result === AddressOptions.scan) {
         this.scanAddresses();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -246,10 +250,16 @@ export class WalletDetailComponent implements OnDestroy {
                 } else {
                   callback(false);
                 }
+                this.changeDetectorRef.markForCheck();
               });
             }
-          }, () => callback(false, true));
+            this.changeDetectorRef.markForCheck();
+          }, () => {
+            callback(false, true);
+            this.changeDetectorRef.markForCheck();
+          });
         }
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       // Hw wallets are limited to add one address at a time, for performance reasons.
@@ -288,16 +298,32 @@ export class WalletDetailComponent implements OnDestroy {
       (xpub) => {
         account.accountXpubKey = xpub;
         account.showXpub = true;
+        this.changeDetectorRef.markForCheck();
       },
-      (err) => this.msgBarService.showError(err)
+      (err) => {
+        this.msgBarService.showError(err);
+        this.changeDetectorRef.markForCheck();
+      }
     );
     this.walletsAndAddressesService.getXPubKey(this.wallet, externalPath).subscribe(
-      (xpub) => account.externalXpubKey = xpub,
-      (err) => this.msgBarService.showError(err)
+      (xpub) => {
+        account.externalXpubKey = xpub;
+        this.changeDetectorRef.markForCheck();
+      },
+      (err) => {
+        this.msgBarService.showError(err);
+        this.changeDetectorRef.markForCheck();
+      }
     );
     this.walletsAndAddressesService.getXPubKey(this.wallet, changePath).subscribe(
-      (xpub) => account.changeXpubKey = xpub,
-      (err) => this.msgBarService.showError(err)
+      (xpub) => {
+        account.changeXpubKey = xpub;
+        this.changeDetectorRef.markForCheck();
+      },
+      (err) => {
+        this.msgBarService.showError(err);
+        this.changeDetectorRef.markForCheck();
+      }
     );
   }
 
@@ -320,10 +346,12 @@ export class WalletDetailComponent implements OnDestroy {
       () => {
         WalletsComponent.busy = false;
         this.msgBarService.showDone('common.changes-made');
+        this.changeDetectorRef.markForCheck();
       },
       (err) => {
         WalletsComponent.busy = false;
         this.msgBarService.showError(err);
+        this.changeDetectorRef.markForCheck();
       }
     );
   }
@@ -348,22 +376,33 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.afterClosed().subscribe(() => {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
+        this.changeDetectorRef.markForCheck();
       });
       dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
         this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, passwordDialog.password, accountIndex, chainIndex).subscribe(() => {
           passwordDialog.close();
-          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
-        }, error => passwordDialog.error(error));
+          setTimeout(() => {
+            this.msgBarService.showDone('common.changes-made');
+            this.changeDetectorRef.markForCheck();
+          });
+          this.changeDetectorRef.markForCheck();
+        }, error => {
+          passwordDialog.error(error);
+          this.changeDetectorRef.markForCheck();
+        });
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, undefined, accountIndex, chainIndex).subscribe(() => {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
         this.msgBarService.showDone('common.changes-made');
+        this.changeDetectorRef.markForCheck();
       }, err => {
         this.msgBarService.showError(err);
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -392,10 +431,15 @@ export class WalletDetailComponent implements OnDestroy {
         // If there are no more wallets left, go to the wizard.
         this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
           if (wallets.length === 0) {
-            setTimeout(() => this.router.navigate(['/wizard']), 500);
+            setTimeout(() => {
+              this.router.navigate(['/wizard']);
+              this.changeDetectorRef.markForCheck();
+            }, 500);
           }
+          this.changeDetectorRef.markForCheck();
         });
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -422,8 +466,16 @@ export class WalletDetailComponent implements OnDestroy {
         // Make the operation.
         this.softwareWalletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
           passwordDialog.close();
-          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
-        }, e => passwordDialog.error(e));
+          setTimeout(() => {
+            this.msgBarService.showDone('common.changes-made');
+            this.changeDetectorRef.markForCheck();
+          });
+          this.changeDetectorRef.markForCheck();
+        }, e => {
+          passwordDialog.error(e);
+          this.changeDetectorRef.markForCheck();
+        });
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -465,10 +517,12 @@ export class WalletDetailComponent implements OnDestroy {
 
       WalletsComponent.busy = false;
       this.confirmingIndex = null;
+      this.changeDetectorRef.markForCheck();
     }, err => {
       this.msgBarService.showError(err);
       WalletsComponent.busy = false;
       this.confirmingIndex = null;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -488,6 +542,7 @@ export class WalletDetailComponent implements OnDestroy {
       if (this.copying.has(address.address)) {
         this.copying.delete(address.address);
       }
+      this.changeDetectorRef.markForCheck();
     }, duration);
   }
 
@@ -515,9 +570,13 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.afterClosed().subscribe(() => {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
+        this.changeDetectorRef.markForCheck();
       });
 
-      dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => this.continueScanningAddresses(passwordDialog));
+      dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
+        this.continueScanningAddresses(passwordDialog);
+        this.changeDetectorRef.markForCheck();
+      });
     } else {
       this.continueScanningAddresses();
     }
@@ -541,10 +600,12 @@ export class WalletDetailComponent implements OnDestroy {
         } else {
           this.msgBarService.showWarning('wallet.scan-addresses.done-without-new-addresses');
         }
+        this.changeDetectorRef.markForCheck();
       });
 
       this.workingWithAddresses = false;
       WalletsComponent.busy = false;
+      this.changeDetectorRef.markForCheck();
     }, err => {
       if (passwordSubmitEvent) {
         passwordSubmitEvent.error(err);
@@ -553,6 +614,7 @@ export class WalletDetailComponent implements OnDestroy {
       }
       this.workingWithAddresses = false;
       WalletsComponent.busy = false;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -567,12 +629,21 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.afterClosed().subscribe(() => {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
+        this.changeDetectorRef.markForCheck();
       });
       dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
         this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, howManyAddresses, passwordDialog.password).subscribe(() => {
           passwordDialog.close();
-          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
-        }, error => passwordDialog.error(error));
+          setTimeout(() => {
+            this.msgBarService.showDone('common.changes-made');
+            this.changeDetectorRef.markForCheck();
+          });
+          this.changeDetectorRef.markForCheck();
+        }, error => {
+          passwordDialog.error(error);
+          this.changeDetectorRef.markForCheck();
+        });
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       let procedure: Observable<any>;
@@ -590,10 +661,12 @@ export class WalletDetailComponent implements OnDestroy {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
         this.msgBarService.showDone('common.changes-made');
+        this.changeDetectorRef.markForCheck();
       }, err => {
         this.msgBarService.showError(err);
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
+        this.changeDetectorRef.markForCheck();
       });
     }
   }

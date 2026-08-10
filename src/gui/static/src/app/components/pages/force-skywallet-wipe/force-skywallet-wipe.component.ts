@@ -14,7 +14,7 @@ import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dial
     selector: 'app-force-skywallet-wipe',
     templateUrl: './force-skywallet-wipe.component.html',
     styleUrls: ['./force-skywallet-wipe.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ForceSkywalletWipeComponent {

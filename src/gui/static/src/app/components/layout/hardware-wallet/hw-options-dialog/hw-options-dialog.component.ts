@@ -1,4 +1,4 @@
-import { Component, OnDestroy, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SubscriptionLike, Observable, of } from 'rxjs';
 import { map, first, tap, mergeMap } from 'rxjs';
@@ -59,7 +59,7 @@ export interface ChildHwDialogParams {
     selector: 'app-hw-options-dialog',
     templateUrl: './hw-options-dialog.component.html',
     styleUrls: ['./hw-options-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDialogComponent> implements OnDestroy {
@@ -124,8 +124,9 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     private msgBarService: MsgBarService,
     private hardwareWalletService: HardwareWalletService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
 
     this.checkWallet(true);
   }
@@ -220,6 +221,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       this.completeRecheckRequested = false;
       this.recheckSecurityOnlyRequested = false;
       this.showErrorRequested = false;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -323,10 +325,16 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
           } else {
             this.continueCheckingWallet(suggestToUpdate);
           }
-        }, () => this.continueCheckingWallet(suggestToUpdate));
+          this.changeDetectorRef.markForCheck();
+        }, () => {
+          this.continueCheckingWallet(suggestToUpdate);
+          this.changeDetectorRef.markForCheck();
+        });
       }
+      this.changeDetectorRef.markForCheck();
     }, (err: OperationError) => {
       this.processHwOperationError(err);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -370,12 +378,18 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
                 this.hwWalletService.showOptionsWhenPossible = true;
                 this.dialogRef.close(true);
               }
-            }, err => this.processHwOperationError(err));
+              this.changeDetectorRef.markForCheck();
+            }, err => {
+              this.processHwOperationError(err);
+              this.changeDetectorRef.markForCheck();
+            });
           } else {
             // Open the appropiate component for adding the device to the wallet list.
             this.openDialog(HwAddedDialogComponent);
           }
+          this.changeDetectorRef.markForCheck();
         });
+        this.changeDetectorRef.markForCheck();
       },
       (err: OperationError) => {
         err = processServiceError(err);
@@ -390,7 +404,11 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
             if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
               this.openUpdateWarning();
             }
-          }, error => this.processHwOperationError(error));
+            this.changeDetectorRef.markForCheck();
+          }, error => {
+            this.processHwOperationError(error);
+            this.changeDetectorRef.markForCheck();
+          });
         } else if (err.type === HWOperationResults.FailedOrRefused) {
           // Show an error due to a problem with the PIN and allow the user to wipe
           // the device if needed.
@@ -404,6 +422,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         } else {
           this.processHwOperationError(err);
         }
+        this.changeDetectorRef.markForCheck();
       },
     );
   }
@@ -422,6 +441,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       if (update) {
         this.openUpdateDialog();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 

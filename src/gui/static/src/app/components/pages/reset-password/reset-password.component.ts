@@ -19,7 +19,7 @@ import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
     selector: 'app-reset-password',
     templateUrl: './reset-password.component.html',
     styleUrls: ['./reset-password.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ResetPasswordComponent implements OnDestroy {
@@ -56,7 +56,10 @@ export class ResetPasswordComponent implements OnDestroy {
       const wallet = wallets.find(w => w.id === params['id']);
       // Abort if the requested wallet does not exists or is temporal.
       if (!wallet || wallet.temporal) {
-        setTimeout(() => this.router.navigate([''], {skipLocationChange: true}));
+        setTimeout(() => {
+          this.router.navigate([''], {skipLocationChange: true});
+          this.changeDetector.markForCheck();
+        });
 
         return;
       }
@@ -108,12 +111,15 @@ export class ResetPasswordComponent implements OnDestroy {
         // Navigate from the page after a small delay.
         setTimeout(() => {
           this.router.navigate(['']);
+          this.changeDetector.markForCheck();
         }, 2000);
+        this.changeDetector.markForCheck();
       }, error => {
         // Reactivate the UI and show the error msg.
         this.busy = false;
         this.resetButton.resetState();
         this.msgBarService.showError(error);
+        this.changeDetector.markForCheck();
       });
 
     // Avoids a problem with the change detection system.

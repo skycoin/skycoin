@@ -17,7 +17,7 @@ export enum DestinationTools {
     selector: 'app-destination-tools',
     templateUrl: './destination-tools.component.html',
     styleUrls: ['./destination-tools.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class DestinationToolsComponent {

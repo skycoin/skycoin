@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
@@ -15,7 +15,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-restore-seed-dialog',
     templateUrl: './hw-restore-seed-dialog.component.html',
     styleUrls: ['./hw-restore-seed-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestoreSeedDialogComponent> {
@@ -29,8 +29,9 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
     public dialogRef: MatDialogRef<HwRestoreSeedDialogComponent>,
     private hwWalletService: HwWalletService,
     formBuilder: UntypedFormBuilder,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
 
     this.form = formBuilder.group({
       words: [24, Validators.required],
@@ -54,8 +55,12 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
             icon: this.msgIcons.Success,
           });
         }
+        this.changeDetectorRef.markForCheck();
       },
-      err => this.processHwOperationError(err),
+      err => {
+        this.processHwOperationError(err);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

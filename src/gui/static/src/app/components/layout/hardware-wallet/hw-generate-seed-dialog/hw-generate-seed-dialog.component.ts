@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
@@ -14,7 +14,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-generate-seed-dialog',
     templateUrl: './hw-generate-seed-dialog.component.html',
     styleUrls: ['./hw-generate-seed-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGenerateSeedDialogComponent> {
@@ -25,8 +25,9 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
     public dialogRef: MatDialogRef<HwGenerateSeedDialogComponent>,
     private hwWalletService: HwWalletService,
     formBuilder: UntypedFormBuilder,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
 
     this.form = formBuilder.group({
       words: [24, Validators.required],
@@ -41,8 +42,12 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
         // Request the data and state of the hw wallet options modal window to be refreshed.
         this.data.requestOptionsComponentRefresh();
         this.closeModal();
+        this.changeDetectorRef.markForCheck();
       },
-      err => this.processHwOperationError(err),
+      err => {
+        this.processHwOperationError(err);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

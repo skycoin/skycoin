@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
 
@@ -13,7 +13,7 @@ import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet
     selector: 'app-outputs',
     templateUrl: './outputs.component.html',
     styleUrls: ['./outputs.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OutputsComponent implements OnDestroy {
@@ -24,11 +24,13 @@ export class OutputsComponent implements OnDestroy {
   constructor(
     route: ActivatedRoute,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     // Reload the data every time the url params change.
     route.queryParams.subscribe(params => {
       this.wallets = null;
       this.loadData(params);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -55,6 +57,7 @@ export class OutputsComponent implements OnDestroy {
 
         return wallet;
       }).filter(wallet => wallet.addresses.length > 0);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

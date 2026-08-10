@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { first } from 'rxjs';
 import { AppConfig } from '../../../app.config';
@@ -20,7 +20,7 @@ class ElementAddress {
     selector: 'app-select-address',
     templateUrl: './select-address.component.html',
     styleUrls: ['./select-address.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SelectAddressComponent {
@@ -38,6 +38,7 @@ export class SelectAddressComponent {
   constructor(
     public dialogRef: MatDialogRef<SelectAddressComponent>,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.balanceAndOutputsService.walletsWithBalance.pipe(first()).subscribe(wallets => {
       wallets.forEach(wallet => {
@@ -56,6 +57,7 @@ export class SelectAddressComponent {
 
         this.listElements.push(element);
       });
+      this.changeDetectorRef.markForCheck();
     });
   }
 

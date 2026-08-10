@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
@@ -19,7 +19,7 @@ import { AppService } from '../../../../services/app.service';
     selector: 'app-onboarding-create-wallet',
     templateUrl: './onboarding-create-wallet.component.html',
     styleUrls: ['./onboarding-create-wallet.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
@@ -48,14 +48,18 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
     private router: Router,
     hwWalletService: HwWalletService,
     blockchainService: BlockchainService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.hwCompatibilityActivated = hwWalletService.hwWalletCompatibilityActivated;
-    this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
+    this.blockchainSubscription = blockchainService.progress.subscribe(response => {
+      this.synchronized = response.synchronized;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnInit() {
     // Fill the form.
-    setTimeout(() => { this.formControl.initForm(null, this.fill); });
+    setTimeout(() => { this.formControl.initForm(null, this.fill);  this.changeDetectorRef.markForCheck(); });
     // Show the correct form.
     if (this.fill) {
       this.currentFormSelection = this.fill.creatingNewWallet ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
@@ -90,6 +94,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
       if (confirmationResult) {
         this.emitCreatedData();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -110,6 +115,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
         if (confirmationResult) {
           this.emitCreatedData();
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -121,6 +127,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
       if (result) {
         this.router.navigate(['/wallets']);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 

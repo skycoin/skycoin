@@ -82,13 +82,6 @@ module.exports = function createAngularEslintConfig({
         // both migrations these NgModule-based apps have not made.
         "@angular-eslint/prefer-inject": "off",
         "@angular-eslint/prefer-standalone": "off",
-        // Angular 22 made OnPush the framework default and renamed the previous
-        // default strategy to Eager. All three projects declare Eager
-        // explicitly to keep their pre-22 behaviour, which this rule reports as
-        // opting out of the default. Adopting OnPush is worth doing, but it is
-        // a behavioural change needing per-component review of
-        // markForCheck/async-pipe usage.
-        "@angular-eslint/prefer-on-push-component-change-detection": "off",
 
         // --- Style and correctness held in common ---------------------------
         "max-len": ["error", { code: 200 }],

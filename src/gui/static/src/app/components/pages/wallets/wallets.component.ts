@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs';
@@ -19,7 +19,7 @@ import { WalletWithBalance } from '../../../services/wallet-operations/wallet-ob
     selector: 'app-wallets',
     templateUrl: './wallets.component.html',
     styleUrls: ['./wallets.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class WalletsComponent implements OnInit, OnDestroy {
@@ -47,6 +47,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     private router: Router,
     private walletsAndAddressesService: WalletsAndAddressesService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
 
@@ -82,6 +83,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
       walletsToRemove.forEach(walletToRemove => {
         this.walletsOpenedState.delete(walletToRemove);
       });
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -91,6 +93,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
       setTimeout(() => {
         this.hwWalletService.showOptionsWhenPossible = false;
         this.adminHwWallet();
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -112,9 +115,14 @@ export class WalletsComponent implements OnInit, OnDestroy {
       // Check if there are still wallets on the wallet list. If not, go to the wizard.
       this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
         if (wallets.length === 0) {
-          setTimeout(() => this.router.navigate(['/wizard']), 500);
+          setTimeout(() => {
+            this.router.navigate(['/wizard']);
+            this.changeDetectorRef.markForCheck();
+          }, 500);
         }
+        this.changeDetectorRef.markForCheck();
       });
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -138,6 +146,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
           this.walletsAndAddressesService.informValuesUpdated(wallet);
           this.walletsOpenedState.set(wallet.id, true);
         }
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       // Open or close the panel.

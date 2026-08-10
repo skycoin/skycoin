@@ -10,7 +10,7 @@ import { AppConfig } from '../../../../../app.config';
     selector: 'app-seed-modal',
     templateUrl: './seed-modal.component.html',
     styleUrls: ['./seed-modal.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SeedModalComponent {

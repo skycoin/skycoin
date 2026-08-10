@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
 import { AppService } from './services/app.service';
@@ -23,7 +23,7 @@ import { redirectToErrorPage } from './utils/errors';
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class AppComponent implements OnInit {
@@ -40,6 +40,7 @@ export class AppComponent implements OnInit {
     hwWalletSeedWordService: HwWalletSeedWordService,
     walletsAndAddressesService: WalletsAndAddressesService,
     bip38WordList: Bip39WordListService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     // Asign modal window classes to some services, to avoid circular references.
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
@@ -53,6 +54,7 @@ export class AppComponent implements OnInit {
         // The error page will show error number 2.
         redirectToErrorPage(2);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -68,11 +70,13 @@ export class AppComponent implements OnInit {
       }
 
       subscription.unsubscribe();
+      this.changeDetectorRef.markForCheck();
     });
 
     // Assign the snackbar UI, but after it is loaded.
     setTimeout(() => {
       this.msgBarService.msgBarComponent = this.msgBar;
+      this.changeDetectorRef.markForCheck();
     });
   }
 }

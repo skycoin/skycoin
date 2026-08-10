@@ -30,6 +30,7 @@ export class NodeUrlComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Check the URL params to detect the URL of the local node.
+    // change-detection: no view state — this component renders an empty template and only navigates.
     this.navParamsSubscription = this.route.params.subscribe(params => {
       let nodeUrl: string | null = params['url'];
 

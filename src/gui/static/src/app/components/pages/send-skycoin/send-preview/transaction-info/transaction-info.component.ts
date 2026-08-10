@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy } from '@angular/core';
 import { PriceService } from '../../../../../services/price.service';
 import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
@@ -15,7 +15,7 @@ import { GeneratedTransaction, OldTransaction } from '../../../../../services/wa
     selector: 'app-transaction-info',
     templateUrl: './transaction-info.component.html',
     styleUrls: ['./transaction-info.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionInfoComponent implements OnDestroy {
@@ -29,8 +29,12 @@ export class TransactionInfoComponent implements OnDestroy {
 
   private subscription: SubscriptionLike;
 
-  constructor(private priceService: PriceService, private dialog: MatDialog) {
-    this.subscription = this.priceService.price.subscribe(price => this.price = price);
+  constructor(private priceService: PriceService, private dialog: MatDialog,
+  private changeDetectorRef: ChangeDetectorRef,) {
+    this.subscription = this.priceService.price.subscribe(price => {
+      this.price = price;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   // Gets the text which says what was done with the moved coins (if were received, sent or moved).
@@ -84,6 +88,7 @@ export class TransactionInfoComponent implements OnDestroy {
       if (newNote || newNote === '') {
         this.transaction.note = newNote;
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 }

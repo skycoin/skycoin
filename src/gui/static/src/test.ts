@@ -24,6 +24,7 @@ getTestBed().initTestEnvironment(
 import './app/utils/general-utils.spec';
 import './app/utils/errors.spec';
 import './app/utils/tx-encoder.spec';
+import './app/components/pages/settings/network/network.component.spec';
 
 // Finally, start Karma to run the tests.
 __karma__.start();

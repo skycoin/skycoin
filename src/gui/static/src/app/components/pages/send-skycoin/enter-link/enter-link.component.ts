@@ -13,7 +13,7 @@ import { parseRequestLink } from '../../../../utils/general-utils';
     selector: 'app-enter-link',
     templateUrl: './enter-link.component.html',
     styleUrls: ['./enter-link.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class EnterLinkComponent implements OnInit {

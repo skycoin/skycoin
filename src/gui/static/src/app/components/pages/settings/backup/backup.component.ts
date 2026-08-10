@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 
@@ -16,7 +16,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-backup',
     templateUrl: './backup.component.html',
     styleUrls: ['./backup.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BackupComponent implements OnInit, OnDestroy {
@@ -33,18 +33,22 @@ export class BackupComponent implements OnInit, OnDestroy {
     private walletsAndAddressesService: WalletsAndAddressesService,
     private softwareWalletService: SoftwareWalletService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.folderSubscription = this.walletsAndAddressesService.folder().subscribe(folder => {
       this.folder = folder;
+      this.changeDetectorRef.markForCheck();
     }, err => {
       this.folder = '?';
       this.msgBarService.showError(err);
+      this.changeDetectorRef.markForCheck();
     });
 
     this.walletSubscription = this.walletsAndAddressesService.allWallets.subscribe(wallets => {
       this.wallets = wallets;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -85,7 +89,12 @@ export class BackupComponent implements OnInit, OnDestroy {
       this.softwareWalletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
         passwordDialog.close();
         SeedModalComponent.openDialog(this.dialog, seed);
-      }, err => passwordDialog.error(err));
+        this.changeDetectorRef.markForCheck();
+      }, err => {
+        passwordDialog.error(err);
+        this.changeDetectorRef.markForCheck();
+      });
+      this.changeDetectorRef.markForCheck();
     });
   }
 }

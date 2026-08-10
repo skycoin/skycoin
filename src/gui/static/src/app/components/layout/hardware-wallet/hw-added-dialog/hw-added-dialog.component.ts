@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnDestroy, ViewChild } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
@@ -21,7 +21,7 @@ import { HardwareWalletService } from '../../../../services/wallet-operations/ha
     selector: 'app-hw-added-dialog',
     templateUrl: './hw-added-dialog.component.html',
     styleUrls: ['./hw-added-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
@@ -45,8 +45,9 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
     private hardwareWalletService: HardwareWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
 
     // Add the device to the wallets list.
     this.operationSubscription = this.walletsAndAddressesService.createHardwareWallet().subscribe(wallet => {
@@ -66,9 +67,20 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         // Request the data and state of the hw wallet options modal window to be refreshed.
         this.data.requestOptionsComponentRefresh();
 
-        setTimeout(() => this.input.nativeElement.focus());
-      }, err => this.processError(err));
-    }, err => this.processError(err));
+        setTimeout(() => {
+          this.input.nativeElement.focus();
+          this.changeDetectorRef.markForCheck();
+        });
+        this.changeDetectorRef.markForCheck();
+      }, err => {
+        this.processError(err);
+        this.changeDetectorRef.markForCheck();
+      });
+      this.changeDetectorRef.markForCheck();
+    }, err => {
+      this.processError(err);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private processError(err: OperationError) {
@@ -101,6 +113,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         } else if (result && result.errorMsg) {
           this.msgBarService.showError(result.errorMsg);
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }

@@ -63,7 +63,7 @@ export interface PasswordDialogParams {
     selector: 'app-password-dialog',
     templateUrl: './password-dialog.component.html',
     styleUrls: ['./password-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {

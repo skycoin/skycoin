@@ -29,7 +29,7 @@ export class CreateWalletParams {
     selector: 'app-create-wallet',
     templateUrl: './create-wallet.component.html',
     styleUrls: ['./create-wallet.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {
@@ -67,7 +67,10 @@ export class CreateWalletComponent implements OnDestroy {
     private changeDetector: ChangeDetectorRef,
     blockchainService: BlockchainService,
   ) {
-    this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
+    this.blockchainSubscription = blockchainService.progress.subscribe(response => {
+      this.synchronized = response.synchronized;
+      this.changeDetector.markForCheck();
+    });
   }
 
   ngOnDestroy() {
@@ -102,6 +105,7 @@ export class CreateWalletComponent implements OnDestroy {
         if (confirmationResult) {
           this.continueCreating();
         }
+        this.changeDetector.markForCheck();
       });
     }
 
@@ -121,14 +125,19 @@ export class CreateWalletComponent implements OnDestroy {
     this.walletsAndAddressesService.createSoftwareWallet(data.loadTemporarily, data.label, data.seed, data.password, data.walletType, data.seedPassphrase)
       .subscribe(() => {
         this.busy = false;
-        setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));
+        setTimeout(() => {
+          this.msgBarService.showDone('wallet.new.wallet-created');
+          this.changeDetector.markForCheck();
+        });
         this.dialogRef.close();
+        this.changeDetector.markForCheck();
       }, e => {
         this.busy = false;
         this.msgBarService.showError(e);
         this.createButton.resetState();
         this.cancelButton.setEnabled();
         this.disableDismiss = false;
+        this.changeDetector.markForCheck();
       });
   }
 }

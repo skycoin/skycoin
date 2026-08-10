@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
@@ -17,7 +17,7 @@ import { OldTransaction } from '../../../../../../services/wallet-operations/tra
     selector: 'app-change-note',
     templateUrl: './change-note.component.html',
     styleUrls: ['./change-note.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ChangeNoteComponent implements OnInit, OnDestroy {
@@ -51,6 +51,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
     private storageService: StorageService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -95,10 +96,12 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
     this.OperationSubscription = this.storageService.store(StorageType.NOTES, this.data.id, newNote).subscribe(() => {
       this.busy = false;
       this.dialogRef.close(newNote);
+      this.changeDetectorRef.markForCheck();
     }, error => {
       this.busy = false;
       this.msgBarService.showError(error);
       this.button.resetState().setEnabled();
+      this.changeDetectorRef.markForCheck();
     });
   }
 }

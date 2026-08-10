@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialog } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -33,7 +33,7 @@ export class AddressConfirmationParams {
     selector: 'app-hw-confirm-address-dialog',
     templateUrl: './hw-confirm-address-dialog.component.html',
     styleUrls: ['./hw-confirm-address-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwConfirmAddressDialogComponent> {
@@ -54,8 +54,9 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
     public dialogRef: MatDialogRef<HwConfirmAddressDialogComponent>,
     private hardwareWalletService: HardwareWalletService,
     hwWalletService: HwWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
 
     // Ask for confirmation and update the address and the wallet if the user confirms.
     this.operationSubscription = this.hardwareWalletService.confirmAddress(data.wallet, data.addressIndex).subscribe(
@@ -64,8 +65,12 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
           text: data.showCompleteConfirmation ? 'hardware-wallet.confirm-address.confirmation' : 'hardware-wallet.confirm-address.short-confirmation',
           icon: this.msgIcons.Success,
         });
+        this.changeDetectorRef.markForCheck();
       },
-      err => this.processHwOperationError(err),
+      err => {
+        this.processHwOperationError(err);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

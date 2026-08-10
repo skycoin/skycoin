@@ -37,6 +37,7 @@ export class PageBaseComponent implements OnInit {
     let lastScrollPos = this.getLocalValue(this.persistentScrollPosKey);
     lastScrollPos = lastScrollPos ? lastScrollPos.value : '0';
     window.scrollTo(0, Number(lastScrollPos));
+    // change-detection: no view state — restores scroll position, touches no binding.
     setTimeout(() => window.scrollTo(0, Number(lastScrollPos)), 1);
 
     return undefined as typeof PageBaseComponent.mustCallNgOnInitSuper & never;

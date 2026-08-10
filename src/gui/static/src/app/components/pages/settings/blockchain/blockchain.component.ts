@@ -1,5 +1,5 @@
 import { mergeMap, delay } from 'rxjs';
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 
 import { BlockchainService, BasicBlockInfo, CoinSupply } from '../../../../services/blockchain.service';
@@ -12,7 +12,7 @@ import { AppService } from '../../../../services/app.service';
     selector: 'app-blockchain',
     templateUrl: './blockchain.component.html',
     styleUrls: ['./blockchain.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
@@ -29,6 +29,7 @@ export class BlockchainComponent implements OnInit, OnDestroy {
   constructor(
     public appService: AppService,
     private blockchainService: BlockchainService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -52,7 +53,11 @@ export class BlockchainComponent implements OnInit, OnDestroy {
 
       // Update again after a delay.
       this.startDataRefreshSubscription(this.updatePeriod);
-    }, () => this.startDataRefreshSubscription(this.errorUpdatePeriod));
+      this.changeDetectorRef.markForCheck();
+    }, () => {
+      this.startDataRefreshSubscription(this.errorUpdatePeriod);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {

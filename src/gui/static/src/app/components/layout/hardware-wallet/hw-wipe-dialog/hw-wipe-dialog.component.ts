@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -14,7 +14,7 @@ import { WalletsAndAddressesService } from '../../../../services/wallet-operatio
     selector: 'app-hw-wipe-dialog',
     templateUrl: './hw-wipe-dialog.component.html',
     styleUrls: ['./hw-wipe-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogComponent> {
@@ -26,8 +26,9 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
     public dialogRef: MatDialogRef<HwWipeDialogComponent>,
     private hwWalletService: HwWalletService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
 
     // If no wallet was send as part of the data, the option for removing the wallet from
     // the wallet list is not shown and no wallet is removed, as there is no way to know which
@@ -61,8 +62,12 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
         if (this.deleteFromList) {
           this.walletsAndAddressesService.deleteHardwareWallet(this.data.wallet!.id);
         }
+        this.changeDetectorRef.markForCheck();
       },
-      err => this.processHwOperationError(err),
+      err => {
+        this.processHwOperationError(err);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -21,7 +21,7 @@ import { GeneratedTransaction } from '../../../../services/wallet-operations/tra
     selector: 'app-send-preview',
     templateUrl: './send-preview.component.html',
     styleUrls: ['./send-preview.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {
@@ -43,6 +43,7 @@ export class SendVerifyComponent implements OnDestroy {
     private translate: TranslateService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private spendingService: SpendingService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnDestroy() {
@@ -90,7 +91,9 @@ export class SendVerifyComponent implements OnDestroy {
           if (confirmationResult) {
             this.onBack.emit(true);
           }
+          this.changeDetectorRef.markForCheck();
         });
+        this.changeDetectorRef.markForCheck();
       });
 
       return;
@@ -101,6 +104,7 @@ export class SendVerifyComponent implements OnDestroy {
       PasswordDialogComponent.openDialog(this.dialog, { wallet: this.transaction.wallet }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.finishSending(passwordDialog);
+          this.changeDetectorRef.markForCheck();
         });
     } else {
       if (!this.transaction.wallet.isHardware) {
@@ -110,8 +114,14 @@ export class SendVerifyComponent implements OnDestroy {
         // If using a hw wallet, check the device first.
         this.showBusy();
         this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet.addresses[0].address).subscribe(
-          () => this.finishSending(),
-          err => this.showError(err),
+          () => {
+            this.finishSending();
+            this.changeDetectorRef.markForCheck();
+          },
+          err => {
+            this.showError(err);
+            this.changeDetectorRef.markForCheck();
+          },
         );
       }
     }
@@ -139,20 +149,28 @@ export class SendVerifyComponent implements OnDestroy {
     })).subscribe(noteSaved => {
       // Show the final result.
       if (note && !noteSaved) {
-        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.saving-note-error')));
+        setTimeout(() => {
+          this.msgBarService.showWarning(this.translate.instant('send.saving-note-error'));
+          this.changeDetectorRef.markForCheck();
+        });
       } else {
-        setTimeout(() => this.msgBarService.showDone('send.sent'));
+        setTimeout(() => {
+          this.msgBarService.showDone('send.sent');
+          this.changeDetectorRef.markForCheck();
+        });
       }
 
       this.balanceAndOutputsService.refreshBalance();
 
       this.onBack.emit(true);
+      this.changeDetectorRef.markForCheck();
     }, error => {
       if (passwordDialog) {
         passwordDialog.error(error);
       }
 
       this.showError(error);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -13,7 +13,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-backup-dialog',
     templateUrl: './hw-backup-dialog.component.html',
     styleUrls: ['./hw-backup-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialogComponent> {
@@ -21,8 +21,9 @@ export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialo
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwBackupDialogComponent>,
     private hwWalletService: HwWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
   }
 
   requestBackup() {
@@ -36,8 +37,12 @@ export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialo
         });
         // Request the hw wallet options modal window to refresh the security warnings.
         this.data.requestOptionsComponentRefresh(undefined, true);
+        this.changeDetectorRef.markForCheck();
       },
-      err => this.processHwOperationError(err),
+      err => {
+        this.processHwOperationError(err);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

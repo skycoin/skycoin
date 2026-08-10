@@ -62,7 +62,7 @@ export class ChangeNameErrorResponse {
     selector: 'app-change-name',
     templateUrl: './change-name.component.html',
     styleUrls: ['./change-name.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
@@ -124,6 +124,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
         if (!connected) {
           this.closePopup();
         }
+        this.changeDetector.markForCheck();
       });
     }
   }
@@ -168,13 +169,18 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
         .subscribe(() => {
           this.working = false;
           this.dialogRef.close(newLabel);
-          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+          setTimeout(() => {
+            this.msgBarService.showDone('common.changes-made');
+            this.changeDetector.markForCheck();
+          });
+          this.changeDetector.markForCheck();
         }, e => {
           this.working = false;
           this.msgBarService.showError(e);
           if (this.button) {
             this.button.resetState();
           }
+          this.changeDetector.markForCheck();
         });
     } else {
       this.currentState = States.WaitingForConfirmation;
@@ -186,8 +192,12 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
 
           // Don't show a confirmation msg if the new label was included in the configuration.
           if (!this.data.newName) {
-            setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+            setTimeout(() => {
+              this.msgBarService.showDone('common.changes-made');
+              this.changeDetector.markForCheck();
+            });
           }
+          this.changeDetector.markForCheck();
         },
         err => {
           this.working = false;
@@ -204,6 +214,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
               this.button.resetState();
             }
           }
+          this.changeDetector.markForCheck();
         },
       );
     }

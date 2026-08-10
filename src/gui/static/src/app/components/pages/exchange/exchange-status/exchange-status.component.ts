@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay, mergeMap } from 'rxjs';
@@ -19,7 +19,7 @@ import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent }
     selector: 'app-exchange-status',
     templateUrl: './exchange-status.component.html',
     styleUrls: ['./exchange-status.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ExchangeStatusComponent implements OnDestroy {
@@ -126,6 +126,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     private dialog: MatDialog,
     public blockchainService: BlockchainService,
     public appService: AppService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnDestroy() {
@@ -153,6 +154,7 @@ export class ExchangeStatusComponent implements OnDestroy {
         if (confirmationResult) {
           this.goBack.emit();
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -193,12 +195,14 @@ export class ExchangeStatusComponent implements OnDestroy {
       }
 
       this.loading = false;
+      this.changeDetectorRef.markForCheck();
     }, () => {
       if (this.loading) {
         this.showError = true;
       } else {
         this.getStatus(this.TEST_MODE ? 3000 : 30000);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 }

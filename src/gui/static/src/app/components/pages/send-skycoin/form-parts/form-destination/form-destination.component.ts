@@ -1,5 +1,5 @@
 import { SubscriptionLike } from 'rxjs';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
@@ -48,7 +48,7 @@ export interface Destination {
     selector: 'app-form-destination',
     templateUrl: './form-destination.component.html',
     styleUrls: ['./form-destination.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class FormDestinationComponent implements OnInit, OnDestroy {
@@ -161,6 +161,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     private msgBarService: MsgBarService,
     private translate: TranslateService,
     private priceService: PriceService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -175,12 +176,14 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     // Inform when there are changes on the address field, shown on the simple form.
     this.addressSubscription = this.form.get('address')!.valueChanges.subscribe(() => {
       this.onChanges.emit();
+      this.changeDetectorRef.markForCheck();
     });
 
     // Keep the price updated.
     this.priceSubscription = this.priceService.price.subscribe(price => {
       this.price = price;
       this.updateValuesAndValidity();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -250,6 +253,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       if (confirmationResult) {
         this.convertAmounts();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -412,6 +416,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
       this.onChanges.emit();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -426,6 +431,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.destinationSubscriptions.push(group.valueChanges.subscribe(() => {
       // Inform when there are changes.
       this.updateValuesAndValidity();
+      this.changeDetectorRef.markForCheck();
     }));
 
     (this.form.get('destinations') as UntypedFormArray).push(group);
@@ -476,6 +482,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       } else if (result === DestinationTools.link) {
         this.openLinkModalWindow();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -486,6 +493,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         // Process the link.
         this.processRequestLink(result);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -545,6 +553,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         if (confirmationResult) {
           this.finishUsingRequestLink(requestLinkParams);
         }
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       // Continue.
@@ -573,6 +582,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         setTimeout(() => {
           this.destControls[0].get('hours')!.setValue(requestLinkParams.hours);
           this.destControls[0].get('hours')!.markAsTouched();
+          this.changeDetectorRef.markForCheck();
         });
       }
     }
@@ -604,6 +614,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         this.simpleFormSpecificHours = null;
         this.hoursAddedToSimpleForm.next(false);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -637,6 +648,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       });
 
       this.updateValuesAndValidity();
+      this.changeDetectorRef.markForCheck();
     });
   }
 

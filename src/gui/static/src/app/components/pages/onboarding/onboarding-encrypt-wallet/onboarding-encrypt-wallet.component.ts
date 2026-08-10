@@ -10,7 +10,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
     selector: 'app-onboarding-encrypt-wallet',
     templateUrl: './onboarding-encrypt-wallet.component.html',
     styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
@@ -31,6 +31,7 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
       if (this.form) {
         this.form.updateValueAndValidity();
       }
+      this.changeDetector.markForCheck();
     });
   }
   get creatingTemporal(): boolean {

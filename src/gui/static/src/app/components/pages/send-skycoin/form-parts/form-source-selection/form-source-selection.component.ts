@@ -1,6 +1,6 @@
 import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
 import { retryWhen, delay, mergeMap, debounceTime } from 'rxjs';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { BigNumber } from 'bignumber.js';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -89,7 +89,7 @@ export enum SourceSelectionModes {
     selector: 'app-form-source-selection',
     templateUrl: './form-source-selection.component.html',
     styleUrls: ['./form-source-selection.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class FormSourceSelectionComponent implements OnInit, OnDestroy {
@@ -144,6 +144,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private appService: AppService,
     private formBuilder: UntypedFormBuilder,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -220,14 +221,17 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
             // Inform about the changes in the available balance and loading status.
             this.onSelectionChanged.emit();
+            this.changeDetectorRef.markForCheck();
           },
           () => {
             this.loadingUnspentOutputs = false;
             // Inform about the changes in the available balance and loading status.
             this.onSelectionChanged.emit();
+            this.changeDetectorRef.markForCheck();
           },
         );
       }
+      this.changeDetectorRef.markForCheck();
     }));
 
     // When the user changes the wallet using the dropdown.
@@ -252,8 +256,12 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
               this.loadingUnspentOutputs = false;
               this.allUnspentOutputs = result;
               this.unspentOutputs = this.filterUnspentOutputs();
+              this.changeDetectorRef.markForCheck();
             },
-            () => this.loadingUnspentOutputs = false,
+            () => {
+              this.loadingUnspentOutputs = false;
+              this.changeDetectorRef.markForCheck();
+            },
           );
       }
 
@@ -264,6 +272,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       }
 
       this.onSelectionChanged.emit();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.form.get('addresses')!.valueChanges.subscribe(() => {
@@ -271,10 +280,12 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.unspentOutputs = this.filterUnspentOutputs();
 
       this.onSelectionChanged.emit();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.form.get('outputs')!.valueChanges.subscribe(() => {
       this.onSelectionChanged.emit();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
@@ -284,8 +295,10 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
           try {
             this.form.get('wallet')!.setValue(wallets[0]);
           } catch (e) { }
+          this.changeDetectorRef.markForCheck();
         });
       }
+      this.changeDetectorRef.markForCheck();
     }));
   }
 
@@ -334,6 +347,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.allUnspentOutputs = formData.form.allUnspentOutputs;
       this.unspentOutputs = this.filterUnspentOutputs();
       this.form.get('outputs')!.setValue(formData.form.outputs);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

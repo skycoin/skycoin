@@ -29,11 +29,24 @@
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
+.PHONY: install-deps-ui lint-ui test-ui build-ui check-ui
 
 COIN ?= skycoin
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
+# The other two Angular front-ends
+EXPLORER_DIR = explorer
+SKYCOIN_WEB_DIR = src/skycoin-web
+
+# All Angular front-ends, installed/linted/tested/built as a set so a change to
+# one cannot silently break the others.
+ANGULAR_UI_DIRS = $(GUI_STATIC_DIR) $(EXPLORER_DIR) $(SKYCOIN_WEB_DIR)
+
+# Production bundles that are committed to the repository. src/gui/static/dist
+# and src/skycoin-web/src/gui/dist are embedded into the Go binary, so a stale
+# bundle ships to users.
+UI_DIST_DIRS = $(GUI_STATIC_DIR)/dist $(EXPLORER_DIR)/dist $(SKYCOIN_WEB_DIR)/src/gui/dist
 # skydex-client trading UI: Vite builds straight into the Go embed dir
 # (cmd/skydex-client/commands/static, per its vite.config.js) — no separate copy step.
 SKYDEX_UI_DIR = cmd/skydex-client
@@ -207,11 +220,17 @@ docs-build: ## Stage doc sources and build the static documentation site into si
 	bash scripts/docs-prepare.sh
 	mkdocs build
 
-install-deps-ui:  ## Install the UI dependencies
-	cd $(GUI_STATIC_DIR) && npm ci
+install-deps-ui:  ## Install the dependencies of every Angular front-end
+	@set -e; for d in $(ANGULAR_UI_DIRS); do \
+		echo "==> npm ci ($$d)"; \
+		(cd $$d && npm ci); \
+	done
 
-lint-ui:  ## Lint the UI code
-	cd $(GUI_STATIC_DIR) && npm run lint
+lint-ui:  ## Lint every Angular front-end
+	@set -e; for d in $(ANGULAR_UI_DIRS); do \
+		echo "==> npm run lint ($$d)"; \
+		(cd $$d && npm run lint); \
+	done
 
 check-lang-es: ## Check the Spanish translation
 	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js es
@@ -222,14 +241,31 @@ check-lang-zh: ## Check the Chinese translation
 check-lang: check-lang-es \
 	check-lang-zh
 
-test-ui:  ## Run UI tests
-	cd $(GUI_STATIC_DIR) && npm run test
+test-ui:  ## Run the unit tests of every Angular front-end
+	@set -e; for d in $(ANGULAR_UI_DIRS); do \
+		echo "==> npm run test ($$d)"; \
+		(cd $$d && npm run test); \
+	done
 
 test-ui-e2e:  ## Run UI e2e tests
 	./ci-scripts/ui-e2e.sh
 
-build-ui:  ## Builds the UI
-	cd $(GUI_STATIC_DIR) && npm run build
+build-ui:  ## Build the production bundle of every Angular front-end
+	@set -e; for d in $(ANGULAR_UI_DIRS); do \
+		echo "==> npm run build ($$d)"; \
+		(cd $$d && npm run build); \
+	done
+
+check-ui: build-ui  ## Fail if any committed Angular bundle is stale vs a fresh build
+	@git diff --quiet -- $(UI_DIST_DIRS) && git diff --quiet --cached -- $(UI_DIST_DIRS) \
+		&& test -z "$$(git ls-files --others --exclude-standard -- $(UI_DIST_DIRS))" || { \
+		echo "ERROR: a committed Angular production bundle is stale."; \
+		echo "Run 'make build-ui' and commit the result."; \
+		git --no-pager diff --stat -- $(UI_DIST_DIRS); \
+		git ls-files --others --exclude-standard -- $(UI_DIST_DIRS); \
+		exit 1; \
+	}
+	@echo "Committed Angular bundles are up to date."
 
 
 # skydex-client trading UI (React/Vite, embedded via //go:embed static)

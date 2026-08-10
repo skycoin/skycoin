@@ -1,4 +1,12 @@
-on: [pull_request]
+on:
+  pull_request:
+  # Also run on the long-lived branches. CI used to be pull_request-only, so a
+  # pull request merged while red (as #2990 was) left develop broken with
+  # nothing to re-check the merged result.
+  push:
+    branches:
+      - develop
+      - master
 name: CI
 
 permissions:
@@ -25,6 +33,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             src/gui/static/package-lock.json
+            explorer/package-lock.json
+            src/skycoin-web/package-lock.json
             cmd/skydex-client/package-lock.json
 
       - name: Install Dependencies
@@ -66,11 +76,14 @@ jobs:
       - name: Install UI Dependencies
         run: make install-deps-ui
 
+      - name: Lint UI
+        run: make lint-ui
+
       - name: Test UI
         run: make test-ui
 
-      - name: Build UI
-        run: make build-ui
+      - name: Verify committed UI bundles are current
+        run: make check-ui
 
       - name: Verify skydex-client UI embed is current
         run: make check-skydex-ui

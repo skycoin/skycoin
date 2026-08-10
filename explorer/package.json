@@ -7,7 +7,7 @@
     "start": "ng serve --proxy-config proxy.config.json",
     "start:against-prod": "ng serve --proxy-config proxy-prod.config.json",
     "build": "ng build --configuration production",
-    "test": "ng test",
+    "test": "ng test --watch=false",
     "lint": "ng lint",
     "e2e": "wdio run ./wdio.conf.ts --autoCompileOpts.tsNodeOpts.project=./test/tsconfig.json",
     "e2e-blockchain-180": "wdio run ./wdio-blockchain-180.conf.ts --autoCompileOpts.tsNodeOpts.project=./test/tsconfig.json"

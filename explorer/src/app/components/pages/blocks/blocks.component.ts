@@ -1,5 +1,5 @@
 import { first, switchMap } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
 
@@ -15,6 +15,7 @@ import { dataValidityTime } from 'app/app.config';
 @Component({
     templateUrl: './blocks.component.html',
     styleUrls: ['./blocks.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BlocksComponent extends PageBaseComponent implements OnInit, OnDestroy {

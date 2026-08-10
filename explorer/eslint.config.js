@@ -36,6 +36,13 @@ module.exports = tseslint.config(
       ],
       "@angular-eslint/prefer-inject": "off",
       "@angular-eslint/prefer-standalone": "off",
+      // Angular 22 made OnPush the framework default and renamed the previous
+      // default strategy to Eager. These components declare Eager explicitly so
+      // they keep the behaviour they had before Angular 22, which this rule
+      // reports as opting out of the default. Adopting OnPush is worth doing,
+      // but it is a behavioural change that has to be reviewed and tested
+      // component by component.
+      "@angular-eslint/prefer-on-push-component-change-detection": "off",
       "no-constant-binary-expression": "off",
       "@typescript-eslint/consistent-type-definitions": "error",
       "@typescript-eslint/dot-notation": "off",

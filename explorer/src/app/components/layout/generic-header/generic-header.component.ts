@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { HeaderConfig } from 'app/app.config';
 
@@ -10,6 +10,7 @@ import { HeaderConfig } from 'app/app.config';
     selector: 'app-generic-header',
     templateUrl: './generic-header.component.html',
     styleUrls: ['./generic-header.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class GenericHeaderComponent {

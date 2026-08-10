@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { Observable, of, Subscription } from 'rxjs';
 
 import { parseGetUnconfirmedTransaction, Transaction } from '../../../app.datatypes';
@@ -13,6 +13,7 @@ import { ApiService } from 'app/services/api/api.service';
     selector: 'app-unconfirmed-transactions',
     templateUrl: './unconfirmed-transactions.component.html',
     styleUrls: ['./unconfirmed-transactions.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class UnconfirmedTransactionsComponent extends PageBaseComponent implements OnInit, OnDestroy {

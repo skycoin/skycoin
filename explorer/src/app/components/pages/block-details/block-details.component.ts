@@ -1,5 +1,5 @@
 import { switchMap, filter, first, retryWhen, delay } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
 import BigNumber from 'bignumber.js';
@@ -17,6 +17,7 @@ import { dataValidityTime } from 'app/app.config';
     selector: 'app-block-details',
     templateUrl: './block-details.component.html',
     styleUrls: ['./block-details.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BlockDetailsComponent extends PageBaseComponent implements OnInit, OnDestroy {

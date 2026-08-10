@@ -22,7 +22,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { BrowserModule } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
-import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { TranslateDirective, TranslatePipe, provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
 
 import { AppComponent } from './app.component';
 import { ButtonComponent } from './components/layout/button/button.component';
@@ -170,12 +170,11 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         ReactiveFormsModule,
         FormsModule,
         RouterModule.forRoot(AppRoutes, { useHash: true }),
-        TranslateModule.forRoot({
-            loader: {
-                provide: TranslateLoader,
-                useClass: AppTranslateLoader,
-            },
-        })], providers: [
+        TranslatePipe,
+        TranslateDirective], providers: [
+        provideTranslateService({
+            loader: provideTranslateLoader(AppTranslateLoader),
+        }),
         ApiService,
         BlockchainService,
         PurchaseService,

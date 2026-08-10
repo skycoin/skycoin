@@ -40,7 +40,7 @@ export class LanguageService {
     });
 
     this.translate.addLangs(langs);
-    this.translate.setDefaultLang(config.defaultLanguage);
+    this.translate.setFallbackLang(config.defaultLanguage);
 
     this.translate.onLangChange
       .subscribe((event: LangChangeEvent) => this.onLanguageChanged(event));

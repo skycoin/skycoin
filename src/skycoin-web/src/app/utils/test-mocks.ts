@@ -200,7 +200,7 @@ export class MockTranslateService {
   addLangs(langs: Array<string>): void {
   }
 
-  setDefaultLang(lang: string): void {
+  setFallbackLang(lang: string): void {
   }
 
   use(lang: string): Observable<any> {

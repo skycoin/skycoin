@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { FooterConfig } from 'app/app.config';
 
@@ -10,6 +10,7 @@ import { FooterConfig } from 'app/app.config';
     selector: 'app-generic-footer',
     templateUrl: './generic-footer.component.html',
     styleUrls: ['./generic-footer.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class GenericFooterComponent {

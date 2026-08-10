@@ -80,7 +80,7 @@ export class LanguageService {
 
     // Initialize ngx-translate.
     this.translate.addLangs(langs);
-    this.translate.setDefaultLang(AppConfig.defaultLanguage);
+    this.translate.setFallbackLang(AppConfig.defaultLanguage);
     this.translate.onLangChange.subscribe((event: LangChangeEvent) => this.onLanguageChanged(event));
 
     this.loadCurrentLanguage();

@@ -13,7 +13,30 @@ import (
 
 // Driver implements database/sql/driver.Driver.
 //
-// Registration functions and methods must be called before the first call to Open.
+// Registration functions and methods must be called before the first call to
+// Open.
+//
+// Most code has no use for this type. sql.Open("sqlite", dsn) and
+// [NewConnector] both go through the driver this package registers as
+// "sqlite", which carries everything registered with [RegisterFunction],
+// [RegisterScalarFunction], [RegisterDeterministicScalarFunction],
+// [RegisterCollationUtf8], [RegisterConnectionHook] and
+// [vtab.RegisterModule].
+//
+// A Driver a caller constructs is not equivalent to that one. Its fields are
+// unexported, so it starts out with no functions, collations or connection
+// hooks, and the only way to give it any is [Driver.RegisterConnectionHook];
+// the package-level registration functions always apply to the registered
+// driver, never to a constructed one. Connections it opens therefore run
+// without the package-level functions and collations -- and where such a
+// registration overrides a SQLite built-in of the same name, they run with
+// SQLite's built-in in force instead. Virtual table modules are the one
+// exception: they are held process-globally and reach every Driver.
+//
+// Constructing one is supported for the private-hook pattern: a driver
+// registered under a name of its own with sql.Register, so that its connection
+// hooks apply to its own connections rather than to every connection in the
+// process. Prefer sql.Open or NewConnector for anything else.
 type Driver struct {
 	// user defined functions that are added to every new connection on Open
 	udfs map[string]*userDefinedFunction
@@ -155,6 +178,14 @@ func newDriver() *Driver { return d }
 // driver's *Error is unchanged in either mode. The parameter is parsed
 // before sqlite3_open_v2 so open-time errors are covered. See
 // https://gitlab.com/cznic/sqlite/-/issues/230.
+//
+// vfs: The name of the SQLite VFS to open the database with. Note the absent
+// underscore prefix: this is the same parameter SQLite recognizes in a file:
+// URI, and its value is passed on as the sqlite3_open_v2 zVfs argument. It
+// selects any VFS registered with SQLite, in particular one returned by
+// [modernc.org/sqlite/vfs.New], which exposes a Go fs.FS as a read-only VFS.
+// When absent or empty the default VFS is used. Supplying the parameter more
+// than once with values that differ is an error.
 func (d *Driver) Open(name string) (conn driver.Conn, err error) {
 	if dmesgs {
 		defer func() {
@@ -197,6 +228,11 @@ func (d *Driver) Open(name string) (conn driver.Conn, err error) {
 
 // RegisterConnectionHook registers a function to be called after each connection
 // is opened. This is called after all the connection has been set up.
+//
+// The hook applies only to connections opened by d. To register one on the
+// driver this package registers as "sqlite", and so on the connections
+// sql.Open and [NewConnector] hand out, use the package-level
+// [RegisterConnectionHook].
 func (d *Driver) RegisterConnectionHook(fn ConnectionHookFn) {
 	d.connectionHooks = append(d.connectionHooks, fn)
 }

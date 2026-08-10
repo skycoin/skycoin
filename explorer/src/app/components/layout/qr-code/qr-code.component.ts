@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 
 import { QrConfig } from 'app/app.config';
 
@@ -14,6 +14,7 @@ declare let QRCode: any;
     selector: 'app-qr-code',
     templateUrl: './qr-code.component.html',
     styleUrls: ['./qr-code.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class QrCodeComponent implements OnInit {

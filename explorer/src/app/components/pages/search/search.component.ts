@@ -1,5 +1,5 @@
 import { first } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 
 import { SearchService, SearchError } from '../../../services/search/search.service';
@@ -12,6 +12,7 @@ import { Subscription } from 'rxjs';
  */
 @Component({
     templateUrl: './search.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SearchComponent implements OnInit, OnDestroy {

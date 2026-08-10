@@ -1,5 +1,5 @@
 import { Subscription } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { ApiService } from 'app/services/api/api.service';
@@ -14,6 +14,7 @@ import { ExplorerService } from 'app/services/explorer/explorer.service';
 @Component({
     selector: 'app-node-url',
     template: '',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class NodeUrlComponent implements OnInit, OnDestroy {

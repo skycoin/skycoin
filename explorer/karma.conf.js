@@ -28,6 +28,11 @@ module.exports = function (config) {
     logLevel: config.LOG_INFO,
     autoWatch: true,
     browsers: ['Chrome'],
-    singleRun: false
+    singleRun: false,
+    // This project has no .spec files yet, and karma treats an empty suite as a
+    // failure by default. The run is still worth doing: it type-checks and
+    // bundles src/test.ts, which is how the stale zone.js/dist imports that had
+    // silently broken this suite were found.
+    failOnEmptyTestSuite: false
   });
 };

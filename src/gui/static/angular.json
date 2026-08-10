@@ -20,7 +20,6 @@
             "main": "src/main.ts",
             "tsConfig": "src/tsconfig.app.json",
             "polyfills": "src/polyfills.ts",
-            "deleteOutputPath": false,
             "assets": [
               "src/assets",
               "src/customize",

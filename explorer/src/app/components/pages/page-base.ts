@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit } from '@angular/core';
 
 /**
  * Info about a value saved using the functions from PageBase.
@@ -23,6 +23,7 @@ export class LocalValueData {
     selector: 'app-page-base',
     template: '',
     styles: [],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PageBaseComponent implements OnInit {

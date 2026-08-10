@@ -1,5 +1,5 @@
 import { switchMap } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { BigNumber } from 'bignumber.js';
 import { of, Subscription } from 'rxjs';
@@ -35,6 +35,7 @@ enum ShowMoreStatus {
     selector: 'app-unspent-outputs',
     templateUrl: './unspent-outputs.component.html',
     styleUrls: ['./unspent-outputs.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class UnspentOutputsComponent extends PageBaseComponent implements OnInit, OnDestroy {

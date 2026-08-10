@@ -1,5 +1,5 @@
 import { switchMap } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { of, Subscription } from 'rxjs';
 
@@ -15,6 +15,7 @@ import { dataValidityTime } from 'app/app.config';
     selector: 'app-transaction-detail',
     templateUrl: './transaction-detail.component.html',
     styleUrls: ['./transaction-detail.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TransactionDetailComponent extends PageBaseComponent implements OnInit, OnDestroy {

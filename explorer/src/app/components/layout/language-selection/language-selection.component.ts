@@ -1,4 +1,4 @@
-import { Component, OnDestroy, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy } from '@angular/core';
 
 import { LanguageService, LanguageData } from '../../../services/language/language.service';
 import { Subscription } from 'rxjs';
@@ -11,6 +11,7 @@ import { Subscription } from 'rxjs';
     selector: 'app-language-selection',
     templateUrl: './language-selection.component.html',
     styleUrls: ['./language-selection.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class LanguageSelectionComponent implements OnDestroy {

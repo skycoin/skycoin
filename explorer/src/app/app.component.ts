@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Router, NavigationEnd, Event as RouterEvent } from '@angular/router';
 
 import { HeaderConfig, FooterConfig } from 'app/app.config';
@@ -10,6 +10,7 @@ import { ApiService } from './services/api/api.service';
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AppComponent {

@@ -1,5 +1,5 @@
 import { first } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { Observable, of, Subscription } from 'rxjs';
 
 import { ApiService } from '../../../services/api/api.service';
@@ -14,6 +14,7 @@ import { dataValidityTime } from 'app/app.config';
 @Component({
     templateUrl: './richlist.component.html',
     styleUrls: ['./richlist.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class RichlistComponent extends PageBaseComponent implements OnInit, OnDestroy {

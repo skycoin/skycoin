@@ -1,6 +1,6 @@
 import { of as observableOf, Subscription, Observable, of } from 'rxjs';
 import { switchMap } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { BigNumber } from 'bignumber.js';
 
@@ -46,6 +46,7 @@ export class CachedAddressDetails {
     selector: 'app-address-detail',
     templateUrl: './address-detail.component.html',
     styleUrls: ['./address-detail.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AddressDetailComponent extends PageBaseComponent implements OnInit, OnDestroy {

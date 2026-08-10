@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 /**
  * Takes a date string in an Unix like format and displays it in an easy-to-read format, clearly
@@ -8,6 +8,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-date-formatter',
     templateUrl: './date-formatter.component.html',
     styleUrls: ['./date-formatter.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DateFormatterComponent {

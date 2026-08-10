@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators, ValidatorFn } from '@angular/forms';
 import { Subscription, of } from 'rxjs';
 import { delay, first } from 'rxjs';
@@ -23,7 +23,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-send-form',
     templateUrl: './send-form.component.html',
     styleUrls: ['./send-form.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendFormComponent implements OnInit, OnDestroy {
@@ -58,10 +58,12 @@ export class SendFormComponent implements OnInit, OnDestroy {
     private navbarService: NavBarService,
     private msgBarService: MsgBarService,
     priceService: PriceService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.subscriptionsGroup.push(priceService.price.subscribe(price => {
       this.price = price;
       this.updateValue();
+      this.changeDetectorRef.markForCheck();
     }));
   }
 
@@ -71,13 +73,17 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.initForm();
 
     this.subscriptionsGroup.push(this.walletService.currentWallets
-      .subscribe(wallets => this.wallets = wallets)
+      .subscribe(wallets => {
+        this.wallets = wallets;
+        this.changeDetectorRef.markForCheck();
+      })
     );
 
     this.subscriptionsGroup.push(this.coinService.currentCoin
       .subscribe((coin: BaseCoin) => {
         this.resetForm();
         this.currentCoin = coin;
+        this.changeDetectorRef.markForCheck();
       })
     );
 
@@ -122,7 +128,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.removeProcessSubscription();
 
       this.processSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance
-        .onWalletUnlocked.pipe(first()).subscribe(() => this.checkBeforeSending());
+        .onWalletUnlocked.pipe(first()).subscribe(() => {
+          this.checkBeforeSending();
+          this.changeDetectorRef.markForCheck();
+        });
     } else {
       this.checkBeforeSending();
     }
@@ -177,6 +186,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       } else {
         this.showSynchronizingWarning();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -192,6 +202,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       if (confirmationResult) {
         this.createTransaction(this.form.value.wallet);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -199,7 +210,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.button.setLoading();
 
     this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
-      .subscribe(() => this.showSlowMobileInfo = true);
+      .subscribe(() => {
+        this.showSlowMobileInfo = true;
+        this.changeDetectorRef.markForCheck();
+      });
 
     this.removeProcessSubscription();
     this.processSubscription = this.spendingService.createTransaction(
@@ -216,8 +230,14 @@ export class SendFormComponent implements OnInit, OnDestroy {
       },
       null
     ).subscribe(
-        transaction => this.onTransactionCreated(transaction),
-        error => this.onError(error)
+        transaction => {
+          this.onTransactionCreated(transaction);
+          this.changeDetectorRef.markForCheck();
+        },
+        error => {
+          this.onError(error);
+          this.changeDetectorRef.markForCheck();
+        }
       );
   }
 
@@ -260,10 +280,12 @@ export class SendFormComponent implements OnInit, OnDestroy {
       ]);
 
       this.form.controls.amount.updateValueAndValidity();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.form.get('amount')!.valueChanges.subscribe(value => {
       this.updateValue();
+      this.changeDetectorRef.markForCheck();
     }));
   }
 

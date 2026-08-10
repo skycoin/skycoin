@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
@@ -15,7 +15,7 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
     selector: 'app-change-node-url',
     templateUrl: './change-node-url.component.html',
     styleUrls: ['./change-node-url.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ChangeNodeURLComponent implements OnInit, OnDestroy {
@@ -48,6 +48,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private translate: TranslateService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.initialURL = data.url;
   }
@@ -92,6 +93,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
           this.msgBarService.showError(text);
           this.actionButton.resetState();
           this.disableDismiss = false;
+          this.changeDetectorRef.markForCheck();
         }, 32);
 
         return;
@@ -114,7 +116,11 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
           this.actionButton.resetState();
           this.disableDismiss = false;
           this.showingUrlForm = false;
-        }, () => this.cancelChange(false, false));
+          this.changeDetectorRef.markForCheck();
+        }, () => {
+          this.cancelChange(false, false);
+          this.changeDetectorRef.markForCheck();
+        });
 
         return;
       }
@@ -143,7 +149,11 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
         this.disableDismiss = false;
         this.showingUrlForm = false;
 
-      }, () => this.cancelChange(false, false));
+        this.changeDetectorRef.markForCheck();
+      }, () => {
+        this.cancelChange(false, false);
+        this.changeDetectorRef.markForCheck();
+      });
     } else {
       this.completeChange();
     }
@@ -159,7 +169,10 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
     this.closePopup();
 
     if (this.initialURL !== this.newUrl) {
-      setTimeout(() => this.msgBarService.showDone('nodes.change.url-changed'));
+      setTimeout(() => {
+        this.msgBarService.showDone('nodes.change.url-changed');
+        this.changeDetectorRef.markForCheck();
+      });
     }
   }
 

@@ -11,7 +11,7 @@ import { MsgBarService } from '../../../services/msg-bar.service';
     selector: 'app-select-coin-overlay',
     templateUrl: './select-coin-overlay.component.html',
     styleUrls: ['./select-coin-overlay.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SelectCoinOverlayComponent implements OnDestroy {

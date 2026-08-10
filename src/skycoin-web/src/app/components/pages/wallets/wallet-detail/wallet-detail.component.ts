@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { of, Subscription, delay, first, mergeMap } from 'rxjs';
@@ -19,7 +19,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-wallet-detail',
     templateUrl: './wallet-detail.component.html',
     styleUrls: ['./wallet-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
@@ -41,8 +41,12 @@ export class WalletDetailComponent implements OnDestroy {
     private msgBarService: MsgBarService,
     private hwWalletService: HwWalletService,
     coinService: CoinService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
-    this.coinSubscription = coinService.currentCoin.subscribe(coin => this.currentCoin = coin);
+    this.coinSubscription = coinService.currentCoin.subscribe(coin => {
+      this.currentCoin = coin;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {
@@ -93,6 +97,7 @@ export class WalletDetailComponent implements OnDestroy {
           this.onDecryptWallet();
         }
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -115,6 +120,7 @@ export class WalletDetailComponent implements OnDestroy {
         if (result) {
           this.verifyBeforeAddingNewAddress(accountIndex);
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -129,6 +135,7 @@ export class WalletDetailComponent implements OnDestroy {
     // wait for a while and then remove the 'copying' class
     setTimeout(() => {
       address.isCopying = false;
+      this.changeDetectorRef.markForCheck();
     }, interval);
   }
 
@@ -156,16 +163,32 @@ export class WalletDetailComponent implements OnDestroy {
       (xpub) => {
         account.accountXpubKey = xpub;
         account.showXpub = true;
+        this.changeDetectorRef.markForCheck();
       },
-      (error) => this.msgBarService.showError(error.message)
+      (error) => {
+        this.msgBarService.showError(error.message);
+        this.changeDetectorRef.markForCheck();
+      }
     );
     this.walletService.getXPubKey(this.wallet, `${account.index}/0`).subscribe(
-      (xpub) => account.externalXpubKey = xpub,
-      (error) => this.msgBarService.showError(error.message)
+      (xpub) => {
+        account.externalXpubKey = xpub;
+        this.changeDetectorRef.markForCheck();
+      },
+      (error) => {
+        this.msgBarService.showError(error.message);
+        this.changeDetectorRef.markForCheck();
+      }
     );
     this.walletService.getXPubKey(this.wallet, `${account.index}/1`).subscribe(
-      (xpub) => account.changeXpubKey = xpub,
-      (error) => this.msgBarService.showError(error.message)
+      (xpub) => {
+        account.changeXpubKey = xpub;
+        this.changeDetectorRef.markForCheck();
+      },
+      (error) => {
+        this.msgBarService.showError(error.message);
+        this.changeDetectorRef.markForCheck();
+      }
     );
   }
 
@@ -176,8 +199,11 @@ export class WalletDetailComponent implements OnDestroy {
   onAddAccount() {
     const name = `Account ${(this.wallet.accounts || []).length}`;
     this.walletService.addAccount(this.wallet, name).subscribe(
-      () => {},
-      (error) => this.msgBarService.showError(error.message)
+      () => { this.changeDetectorRef.markForCheck(); },
+      (error) => {
+        this.msgBarService.showError(error.message);
+        this.changeDetectorRef.markForCheck();
+      }
     );
   }
 
@@ -198,15 +224,22 @@ export class WalletDetailComponent implements OnDestroy {
         () => {
           this.wallet.encrypted = true;
           this.msgBarService.showDone('Wallet encrypted successfully');
+          this.changeDetectorRef.markForCheck();
         },
-        (error) => this.msgBarService.showError(error.message || error)
+        (error) => {
+          this.msgBarService.showError(error.message || error);
+          this.changeDetectorRef.markForCheck();
+        }
       );
     } else {
       // Browser-only wallet: encrypt seed in localStorage
       if (!this.wallet.seed) {
         this.removeUnlockSubscription();
         this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
-          .subscribe(() => this.encryptBrowserWallet(password));
+          .subscribe(() => {
+            this.encryptBrowserWallet(password);
+            this.changeDetectorRef.markForCheck();
+          });
       } else {
         this.encryptBrowserWallet(password);
       }
@@ -225,8 +258,12 @@ export class WalletDetailComponent implements OnDestroy {
         () => {
           this.wallet.encrypted = false;
           this.msgBarService.showDone('Wallet decrypted successfully');
+          this.changeDetectorRef.markForCheck();
         },
-        (error) => this.msgBarService.showError(error.message || error)
+        (error) => {
+          this.msgBarService.showError(error.message || error);
+          this.changeDetectorRef.markForCheck();
+        }
       );
     } else {
       // Browser-only wallet: remove encrypted seed from localStorage
@@ -237,8 +274,14 @@ export class WalletDetailComponent implements OnDestroy {
 
   private encryptBrowserWallet(password: string) {
     this.walletService.setWalletPassword(this.wallet, password).subscribe(
-      () => this.msgBarService.showDone('Wallet encrypted successfully'),
-      (error) => this.msgBarService.showError(error.message || error)
+      () => {
+        this.msgBarService.showDone('Wallet encrypted successfully');
+        this.changeDetectorRef.markForCheck();
+      },
+      (error) => {
+        this.msgBarService.showError(error.message || error);
+        this.changeDetectorRef.markForCheck();
+      }
     );
   }
 
@@ -256,7 +299,10 @@ export class WalletDetailComponent implements OnDestroy {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
-        .subscribe(() => this.addNewAddress());
+        .subscribe(() => {
+          this.addNewAddress();
+          this.changeDetectorRef.markForCheck();
+        });
     } else {
       this.addNewAddress(accountIndex);
     }
@@ -279,10 +325,12 @@ export class WalletDetailComponent implements OnDestroy {
         this.wallet.addresses.push({ address: address });
         this.walletService.saveWallets();
         this.creatingAddress = false;
+        this.changeDetectorRef.markForCheck();
       },
       (error) => {
         this.creatingAddress = false;
         this.msgBarService.showError(error.translatableErrorMsg || error.message);
+        this.changeDetectorRef.markForCheck();
       }
     );
   }
@@ -297,7 +345,10 @@ export class WalletDetailComponent implements OnDestroy {
     this.creatingAddress = true;
 
     this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
-      .subscribe(() => this.showSlowMobileInfo = true);
+      .subscribe(() => {
+        this.showSlowMobileInfo = true;
+        this.changeDetectorRef.markForCheck();
+      });
 
     setTimeout(() => {
       this.walletService.addAddress(this.wallet, true, accountIndex)
@@ -306,9 +357,14 @@ export class WalletDetailComponent implements OnDestroy {
             this.showSlowMobileInfo = false;
             this.removeSlowInfoSubscription();
             this.creatingAddress = false;
+            this.changeDetectorRef.markForCheck();
           },
-          (error: Error) => this.onAddAddressError(error)
+          (error: Error) => {
+            this.onAddAddressError(error);
+            this.changeDetectorRef.markForCheck();
+          }
         );
+      this.changeDetectorRef.markForCheck();
     }, 0);
   }
 
@@ -325,9 +381,14 @@ export class WalletDetailComponent implements OnDestroy {
         .subscribe(
           () => {
             this.creatingAddress = false;
+            this.changeDetectorRef.markForCheck();
           },
-          (error: Error) => this.onAddAddressError(error)
+          (error: Error) => {
+            this.onAddAddressError(error);
+            this.changeDetectorRef.markForCheck();
+          }
         );
+      this.changeDetectorRef.markForCheck();
     }, 0);
   }
 

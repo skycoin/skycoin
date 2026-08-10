@@ -11,7 +11,7 @@ import { environment } from '../../../../../environments/environment';
     selector: 'app-nodes',
     templateUrl: './nodes.component.html',
     styleUrls: ['./nodes.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class NodesComponent implements OnInit {

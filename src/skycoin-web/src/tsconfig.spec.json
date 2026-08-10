@@ -10,11 +10,22 @@
     ]
   },
   "files": [
-    "test.ts"
+    "test.ts",
+    "polyfills.ts"
+  ],
+  "//": [
+    "Unlike /explorer and /src/gui/static this does not include **/*.spec.ts.",
+    "The ~60 specs in this project still import `async` from @angular/core/testing",
+    "(removed in Angular 12), the @angular/material barrel (removed in v9) and",
+    "@angular/http (removed in v8), along with app/utils/test-mocks.ts which",
+    "supports them. Type checking them fails the whole suite before a single",
+    "assertion runs, which is why this project had no working tests at all.",
+    "Only the specs listed below are compiled. Keep this list and the karma",
+    "builder's \"include\" in angular.json in step, and add each spec back as it",
+    "is rewritten against current testing APIs."
   ],
   "include": [
-    "**/*.spec.ts",
     "**/*.d.ts",
-    "./app/utils/test-mocks.ts"
+    "app/components/layout/msg-bar/msg-bar.component.spec.ts"
   ]
 }

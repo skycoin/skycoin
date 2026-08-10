@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, of } from 'rxjs';
 import { delay } from 'rxjs';
@@ -11,7 +11,7 @@ import { config } from '../../../../app.config';
     selector: 'app-scan-addresses',
     templateUrl: './scan-addresses.component.html',
     styleUrls: ['./scan-addresses.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ScanAddressesComponent implements OnInit, OnDestroy {
@@ -24,7 +24,8 @@ export class ScanAddressesComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: Wallet,
     public dialogRef: MatDialogRef<ScanAddressesComponent>,
-    private walletService: WalletService
+    private walletService: WalletService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -47,12 +48,19 @@ export class ScanAddressesComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.push(onProgressChanged.subscribe((progress: ScanProgressData) => {
       this.createSlowInfoSubscription();
       this.progress = progress;
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.walletService.scanAddresses(this.data, onProgressChanged)
       .subscribe(
-        () => this.closePopup(null),
-        (error: Error) => this.closePopup(error)
+        () => {
+          this.closePopup(null);
+          this.changeDetectorRef.markForCheck();
+        },
+        (error: Error) => {
+          this.closePopup(error);
+          this.changeDetectorRef.markForCheck();
+        }
       )
     );
   }
@@ -61,7 +69,10 @@ export class ScanAddressesComponent implements OnInit, OnDestroy {
     this.removeSlowInfoSubscription();
 
     this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
-      .subscribe(() => this.showSlowMobileInfo = true);
+      .subscribe(() => {
+        this.showSlowMobileInfo = true;
+        this.changeDetectorRef.markForCheck();
+      });
   }
 
   private removeSlowInfoSubscription() {

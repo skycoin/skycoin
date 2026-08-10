@@ -1,4 +1,4 @@
-import { Component, OnInit, Renderer2, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { LanguageService } from './services/language.service';
 import { Router, NavigationEnd, Event } from '@angular/router';
 import { filter } from 'rxjs';
@@ -21,7 +21,7 @@ import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class AppComponent implements OnInit {
@@ -45,6 +45,7 @@ export class AppComponent implements OnInit {
     private coinService: CoinService,
     hwWalletPinService: HwWalletPinService,
     hwWalletService: HwWalletService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     // Set component references to avoid circular dependencies
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
@@ -53,11 +54,16 @@ export class AppComponent implements OnInit {
       filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe(() => {
       window.scrollTo(0, 0);
+      this.changeDetectorRef.markForCheck();
     });
 
     cipherProvider.initialize().subscribe(response => {
       this.checkCipherProviderResponse(response);
-    }, response => this.checkCipherProviderResponse(response));
+      this.changeDetectorRef.markForCheck();
+    }, response => {
+      this.checkCipherProviderResponse(response);
+      this.changeDetectorRef.markForCheck();
+    });
 
     dialog.showingDialog.subscribe(value => {
       if (!value) {
@@ -65,6 +71,7 @@ export class AppComponent implements OnInit {
       } else {
         renderer.removeClass(document.body, 'fix-error-position');
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -91,7 +98,10 @@ export class AppComponent implements OnInit {
 
   private checkCipherProviderResponse(response: any) {
     if ((window as any)['removeSplash']) {
-      setTimeout(() => (window as any)['removeSplash']());
+      setTimeout(() => {
+        (window as any)['removeSplash']();
+        this.changeDetectorRef.markForCheck();
+      });
     }
     if (response !== InitializationResults.Ok) {
       if (response === InitializationResults.ErrorLoadingWasmFile) {

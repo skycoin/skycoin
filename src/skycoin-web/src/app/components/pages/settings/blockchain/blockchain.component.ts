@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { forkJoin, Subscription } from 'rxjs';
 
 import { BlockchainService } from '../../../../services/blockchain.service';
@@ -8,7 +8,7 @@ import { BaseCoin } from '../../../../coins/basecoin';
 @Component({
     templateUrl: './blockchain.component.html',
     styleUrls: ['./blockchain.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
@@ -22,7 +22,8 @@ export class BlockchainComponent implements OnInit, OnDestroy {
 
   constructor(
     private blockchainService: BlockchainService,
-    private coinService: CoinService
+    private coinService: CoinService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -40,8 +41,13 @@ export class BlockchainComponent implements OnInit, OnDestroy {
           .subscribe(([block, coinSupply]) => {
             this.block = block;
             this.coinSupply = coinSupply;
+            this.changeDetectorRef.markForCheck();
           },
-          () => this.showError = true);
+          () => {
+            this.showError = true;
+            this.changeDetectorRef.markForCheck();
+          });
+        this.changeDetectorRef.markForCheck();
       });
   }
 

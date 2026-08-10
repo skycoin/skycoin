@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 
 import { first } from 'rxjs';
@@ -12,7 +12,7 @@ import { CoinService } from '../../../../../services/coin.service';
     selector: 'app-select-address',
     templateUrl: './select-address.html',
     styleUrls: ['./select-address.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SelectAddressComponent {
@@ -24,10 +24,17 @@ export class SelectAddressComponent {
     public dialogRef: MatDialogRef<SelectAddressComponent>,
     public walletService: WalletService,
     private coinService: CoinService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
-    this.walletService.currentWallets.pipe(first()).subscribe(wallets => this.wallets = wallets);
+    this.walletService.currentWallets.pipe(first()).subscribe(wallets => {
+      this.wallets = wallets;
+      this.changeDetectorRef.markForCheck();
+    });
 
-    this.coinService.currentCoin.pipe(first()).subscribe((coin: BaseCoin) => this.currentCoin = coin);
+    this.coinService.currentCoin.pipe(first()).subscribe((coin: BaseCoin) => {
+      this.currentCoin = coin;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   closePopup() {

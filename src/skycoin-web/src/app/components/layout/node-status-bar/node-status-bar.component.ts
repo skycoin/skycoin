@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
@@ -26,7 +26,7 @@ import { BaseCoin } from '../../../coins/basecoin';
   selector: 'app-node-status-bar',
   templateUrl: './node-status-bar.component.html',
   styleUrls: ['./node-status-bar.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: false,
 })
 export class NodeStatusBarComponent implements OnInit, OnDestroy {
@@ -38,6 +38,7 @@ export class NodeStatusBarComponent implements OnInit, OnDestroy {
     private nodeHealthService: NodeHealthService,
     private router: Router,
     private translate: TranslateService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -46,7 +47,10 @@ export class NodeStatusBarComponent implements OnInit, OnDestroy {
         this.health = null; // reset to the "connecting" state on coin switch
         return this.nodeHealthService.watch(coin);
       }),
-    ).subscribe(health => this.health = health);
+    ).subscribe(health => {
+      this.health = health;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   /** Short form of the blockchain pubkey / head hash for the inline strip. */

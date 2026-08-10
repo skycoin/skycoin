@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
@@ -11,7 +11,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-change-name',
     templateUrl: './change-name.component.html',
     styleUrls: ['./change-name.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
@@ -24,6 +24,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -48,7 +49,10 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     this.walletService.saveWallets();
     this.dialogRef.close();
 
-    setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+    setTimeout(() => {
+      this.msgBarService.showDone('common.changes-made');
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private initForm() {

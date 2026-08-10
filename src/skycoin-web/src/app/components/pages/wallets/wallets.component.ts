@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription, first } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -18,7 +18,7 @@ import { environment } from '../../../../environments/environment';
     selector: 'app-wallets',
     templateUrl: './wallets.component.html',
     styleUrls: ['./wallets.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class WalletsComponent implements OnInit, OnDestroy {
@@ -40,6 +40,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     private translateService: TranslateService,
     private hwWalletService: HwWalletService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.showLockIcons = !environment.production;
   }
@@ -47,10 +48,14 @@ export class WalletsComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.subscriptionsGroup.push(this.walletService.currentWallets.subscribe( (wallets) => {
       this.wallets = wallets;
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.coinService.currentCoin
-      .subscribe((coin: BaseCoin) => this.currentCoin = coin)
+      .subscribe((coin: BaseCoin) => {
+        this.currentCoin = coin;
+        this.changeDetectorRef.markForCheck();
+      })
     );
   }
 
@@ -84,10 +89,12 @@ export class WalletsComponent implements OnInit, OnDestroy {
         wallet.needSeedConfirmation = false;
         this.walletService.saveWallets();
         wallet.opened ? wallet.opened = false : wallet.opened = true;
+        this.changeDetectorRef.markForCheck();
       });
 
       this.deleteWalletSubscription = unlockDialog.onDeleteClicked.pipe(first()).subscribe(() => {
         openDeleteWalletModal(this.dialog, wallet, this.translateService, this.walletService);
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       wallet.opened ? wallet.opened = false : wallet.opened = true;
@@ -129,6 +136,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
             this.walletService.add(wallet);
             this.addingHwWallet = false;
             this.msgBarService.showDone('hardware-wallet.added');
+            this.changeDetectorRef.markForCheck();
           },
           () => {
             // If we can't get features, use default label
@@ -142,12 +150,15 @@ export class WalletsComponent implements OnInit, OnDestroy {
             this.walletService.add(wallet);
             this.addingHwWallet = false;
             this.msgBarService.showDone('hardware-wallet.added');
+            this.changeDetectorRef.markForCheck();
           }
         );
+        this.changeDetectorRef.markForCheck();
       },
       (error) => {
         this.addingHwWallet = false;
         this.msgBarService.showError(error.translatableErrorMsg || error.message || 'hardware-wallet.errors.generic-error');
+        this.changeDetectorRef.markForCheck();
       }
     );
   }

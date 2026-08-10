@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 
@@ -8,7 +8,7 @@ import { PriceService } from '../../../../services/price.service';
     selector: 'app-transaction-detail',
     templateUrl: './transaction-detail.component.html',
     styleUrls: ['./transaction-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionDetailComponent implements OnInit, OnDestroy {
@@ -21,10 +21,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     @Inject(MAT_DIALOG_DATA) public transaction: any,
     public dialogRef: MatDialogRef<TransactionDetailComponent>,
     private priceService: PriceService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
-    this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
+    this.priceSubscription = this.priceService.price.subscribe(price => {
+      this.price = price;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {

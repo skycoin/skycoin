@@ -1,4 +1,4 @@
-import { Component, forwardRef, Output, EventEmitter, Input, Renderer2, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, forwardRef, Input, Output, Renderer2 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Overlay } from '@angular/cdk/overlay';
 
@@ -15,7 +15,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
             useExisting: forwardRef(() => SelectCoinComponent),
             multi: true
         }],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SelectCoinComponent implements ControlValueAccessor {
@@ -24,7 +24,8 @@ export class SelectCoinComponent implements ControlValueAccessor {
 
   constructor(private dialog: CustomMatDialogService,
     private overlay: Overlay,
-    private renderer: Renderer2) {}
+    private renderer: Renderer2,
+    private changeDetectorRef: ChangeDetectorRef,) {}
 
   onInputClick() {
     openChangeCoinModal(this.dialog, this.renderer, this.overlay)
@@ -34,6 +35,7 @@ export class SelectCoinComponent implements ControlValueAccessor {
           this.onChangeCallback(this.selectedCoin);
           this.onCoinChanged.emit(this.selectedCoin);
         }
+        this.changeDetectorRef.markForCheck();
       });
   }
 

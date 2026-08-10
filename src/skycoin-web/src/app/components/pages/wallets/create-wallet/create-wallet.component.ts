@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, ViewChild } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
@@ -21,7 +21,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-create-wallet',
     templateUrl: './create-wallet.component.html',
     styleUrls: ['./create-wallet.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {
@@ -45,6 +45,7 @@ export class CreateWalletComponent implements OnDestroy {
     private translate: TranslateService,
     private dialog: CustomMatDialogService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnDestroy() {
@@ -61,15 +62,24 @@ export class CreateWalletComponent implements OnDestroy {
     this.disableDismiss = true;
 
     this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
-      .subscribe(() => this.showSlowMobileInfo = true);
+      .subscribe(() => {
+        this.showSlowMobileInfo = true;
+        this.changeDetectorRef.markForCheck();
+      });
 
     const data = this.formControl.getData();
     this.pendingPassword = this.data.create ? (data.password || '') : '';
 
     this.walletService.create(data.label, data.seed, data.coin.id, this.data.create, data.walletType, data.seedPassphrase, data.segwit)
       .subscribe(
-        wallet => this.onCreateSuccess(wallet, data.coin),
-        (error) => this.onCreateError(error.message)
+        wallet => {
+          this.onCreateSuccess(wallet, data.coin);
+          this.changeDetectorRef.markForCheck();
+        },
+        (error) => {
+          this.onCreateError(error.message);
+          this.changeDetectorRef.markForCheck();
+        }
       );
   }
 
@@ -82,16 +92,28 @@ export class CreateWalletComponent implements OnDestroy {
       this.removeSlowInfoSubscription();
 
       scanAddresses(this.dialog, wallet, this.blockchainService, this.translate).subscribe(
-        response => this.processScanResponse(initialCoin, wallet, false, response),
-        error => this.processScanResponse(initialCoin, wallet, true, error)
+        response => {
+          this.processScanResponse(initialCoin, wallet, false, response);
+          this.changeDetectorRef.markForCheck();
+        },
+        error => {
+          this.processScanResponse(initialCoin, wallet, true, error);
+          this.changeDetectorRef.markForCheck();
+        }
       );
     } else if (this.pendingPassword) {
       // Optional creation-time password: encrypt the freshly-created wallet's
       // seed (setWalletPassword persists it), then finish. On error, surface it
       // but the wallet itself was already created.
       this.walletService.setWalletPassword(wallet, this.pendingPassword).subscribe(
-        () => this.finish(),
-        err => this.onCreateError(err && err.message ? err.message : String(err)),
+        () => {
+          this.finish();
+          this.changeDetectorRef.markForCheck();
+        },
+        err => {
+          this.onCreateError(err && err.message ? err.message : String(err));
+          this.changeDetectorRef.markForCheck();
+        },
       );
     } else {
       this.finish();
@@ -114,7 +136,10 @@ export class CreateWalletComponent implements OnDestroy {
     this.removeSlowInfoSubscription();
     this.createButton.setSuccess();
     this.dialogRef.close();
-    setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));
+    setTimeout(() => {
+      this.msgBarService.showDone('wallet.new.wallet-created');
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private onCreateError(errorMesasge: string) {

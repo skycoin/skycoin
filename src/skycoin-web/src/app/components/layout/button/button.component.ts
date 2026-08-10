@@ -1,15 +1,18 @@
-import { Component, EventEmitter, Input, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
     selector: 'app-button',
     templateUrl: 'button.component.html',
     styleUrls: ['button.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 
 export class ButtonComponent {
+  constructor(private changeDetectorRef: ChangeDetectorRef) {
+  }
+
   @Input() disabled!: boolean;
   @Input() forceEmitEvents = false;
   @Input() spinnerStyle = 'primary';
@@ -37,7 +40,10 @@ export class ButtonComponent {
 
   setSuccess() {
     this.state = 1;
-    setTimeout(() => this.state = null, 3000);
+    setTimeout(() => {
+      this.state = null;
+      this.changeDetectorRef.markForCheck();
+    }, 3000);
   }
 
   setError(error: string) {
@@ -48,6 +54,7 @@ export class ButtonComponent {
       if (this.mouseOver) {
         this.tooltip.show(50);
       }
+      this.changeDetectorRef.markForCheck();
     }, 0);
   }
 

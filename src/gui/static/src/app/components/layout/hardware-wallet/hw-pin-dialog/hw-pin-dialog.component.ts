@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, Inject, OnInit } from '@angular/core';
 import { UntypedFormBuilder, Validators, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
@@ -34,7 +34,7 @@ export interface HwPinDialogParams {
     selector: 'app-hw-pin-dialog',
     templateUrl: './hw-pin-dialog.component.html',
     styleUrls: ['./hw-pin-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogComponent> implements OnInit {
@@ -60,8 +60,9 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
     private formBuilder: UntypedFormBuilder,
     private dialog: MatDialog,
     hwWalletService: HwWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
   }
 
   ngOnInit() {

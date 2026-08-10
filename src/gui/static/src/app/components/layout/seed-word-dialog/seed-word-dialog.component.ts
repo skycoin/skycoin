@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Observable, SubscriptionLike } from 'rxjs';
@@ -43,7 +43,7 @@ export interface SeedWordDialogParams {
     selector: 'app-seed-word-dialog',
     templateUrl: './seed-word-dialog.component.html',
     styleUrls: ['./seed-word-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SeedWordDialogComponent implements OnInit, OnDestroy {
@@ -80,6 +80,7 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
     private msgBarService: MsgBarService,
     private translateService: TranslateService,
     hwWalletService: HwWalletService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     if (data.reason === WordAskedReasons.HWWalletOperation) {
       // Close the window if the device is disconnected.
@@ -87,6 +88,7 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
         if (!connected) {
           this.dialogRef.close();
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -101,6 +103,7 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
     // Search for sugestions when the user changes the content of the word field.
     this.valueChangeSubscription = this.form.controls.word.valueChanges.subscribe(value => {
       this.bip38WordList.setSearchTerm(value.trim().toLowerCase());
+      this.changeDetectorRef.markForCheck();
     });
 
     // Get the sugestions.
@@ -136,6 +139,7 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
           }
         }
         this.sendingWord = false;
+        this.changeDetectorRef.markForCheck();
       }, 32);
     }
   }

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike } from 'rxjs';
 
 import { NetworkService, Connection } from '../../../../services/network.service';
@@ -10,7 +10,7 @@ import { NetworkService, Connection } from '../../../../services/network.service
     selector: 'app-network',
     templateUrl: './network.component.html',
     styleUrls: ['./network.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class NetworkComponent implements OnInit, OnDestroy {
@@ -20,11 +20,15 @@ export class NetworkComponent implements OnInit, OnDestroy {
 
   constructor(
     public networkService: NetworkService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
     // Periodically get the list of connected nodes.
-    this.subscription = this.networkService.connections().subscribe(peers => this.peers = peers);
+    this.subscription = this.networkService.connections().subscribe(peers => {
+      this.peers = peers;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {

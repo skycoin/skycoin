@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialog } from '@angular/material/dialog';
 
 import { HwWalletService, HwWalletTxRecipientData } from '../../../../services/hw-wallet.service';
@@ -11,7 +11,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-confirm-tx-dialog',
     templateUrl: './hw-confirm-tx-dialog.component.html',
     styleUrls: ['./hw-confirm-tx-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwConfirmTxDialogComponent extends HwDialogBaseComponent<HwConfirmTxDialogComponent> {
@@ -31,7 +31,8 @@ export class HwConfirmTxDialogComponent extends HwDialogBaseComponent<HwConfirmT
     @Inject(MAT_DIALOG_DATA) public data: HwWalletTxRecipientData[],
     public dialogRef: MatDialogRef<HwConfirmTxDialogComponent>,
     hwWalletService: HwWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
   }
 }

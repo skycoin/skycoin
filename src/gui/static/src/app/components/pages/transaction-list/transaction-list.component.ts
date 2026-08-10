@@ -1,5 +1,5 @@
 import { delay, mergeMap } from 'rxjs';
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
@@ -53,7 +53,7 @@ class Address {
     selector: 'app-transaction-list',
     templateUrl: './transaction-list.component.html',
     styleUrls: ['./transaction-list.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
@@ -90,6 +90,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     private historyService: HistoryService,
     balanceAndOutputsService: BalanceAndOutputsService,
     route: ActivatedRoute,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
 
     this.form = this.formBuilder.group({
@@ -110,6 +111,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       // Apply the requested filters. If the wallet list has not been loaded, this call
       // will do nothing.
       this.showRequestedFilters();
+      this.changeDetectorRef.markForCheck();
     });
 
     // Maintain an updated list of the registered wallets and update the transactions every time
@@ -169,15 +171,20 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       this.form.get('filter')!.setValue(newFilters, { emitEvent: false });
 
       this.loadTransactions(0);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
   ngOnInit() {
-    this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
+    this.priceSubscription = this.priceService.price.subscribe(price => {
+      this.price = price;
+      this.changeDetectorRef.markForCheck();
+    });
 
     this.filterSubscription = this.form.get('filter')!.valueChanges.subscribe(() => {
       this.viewAll = false;
       this.filterTransactions();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -221,9 +228,13 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         // Filter the transactions.
         this.showRequestedFilters();
         this.filterTransactions();
+        this.changeDetectorRef.markForCheck();
       },
       // If there is an error, retry after a short delay.
-      () => this.loadTransactions(2000),
+      () => {
+        this.loadTransactions(2000);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 

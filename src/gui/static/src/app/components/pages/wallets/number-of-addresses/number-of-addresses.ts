@@ -31,7 +31,7 @@ export interface NumberOfAddressesEventData {
     selector: 'app-number-of-addresses',
     templateUrl: './number-of-addresses.html',
     styleUrls: ['./number-of-addresses.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay, mergeMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,7 +16,7 @@ import { ConfirmationComponent, DefaultConfirmationButtons } from '../../../layo
     selector: 'app-pending-transactions',
     templateUrl: './pending-transactions.component.html',
     styleUrls: ['./pending-transactions.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
@@ -37,11 +37,13 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     private navBarSwitchService: NavBarSwitchService,
     private historyService: HistoryService,
     private dialog: MatDialog,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
       this.selectedNavbarOption = value;
       this.transactions = null;
       this.startDataRefreshSubscription(0);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -65,8 +67,10 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
         this.historyService.deletePendingTransaction(txid).subscribe(() => {
           this.transactions = null;
           this.startDataRefreshSubscription(0);
+          this.changeDetectorRef.markForCheck();
         });
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -83,7 +87,11 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
       // Update again after a delay.
       this.startDataRefreshSubscription(this.updatePeriod);
-    }, () => this.startDataRefreshSubscription(this.errorUpdatePeriod));
+      this.changeDetectorRef.markForCheck();
+    }, () => {
+      this.startDataRefreshSubscription(this.errorUpdatePeriod);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private removeTransactionsSubscription() {

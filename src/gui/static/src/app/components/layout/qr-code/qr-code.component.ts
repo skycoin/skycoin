@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, OnDestroy, ElementRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
@@ -47,7 +47,7 @@ export interface QrDialogConfig {
     selector: 'app-qr-code',
     templateUrl: './qr-code.component.html',
     styleUrls: ['./qr-code.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
@@ -80,12 +80,14 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     public formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
     private appService: AppService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
     setTimeout(() => {
       this.initForm();
       this.updateQrContent();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -116,6 +118,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.push(this.form.get('note')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
     this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
+      this.changeDetectorRef.markForCheck();
     }));
   }
 

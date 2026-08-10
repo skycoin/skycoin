@@ -79,6 +79,11 @@ jobs:
       - name: Lint UI
         run: make lint-ui
 
+      # Structural sweep over every OnPush component: an asynchronous callback
+      # that never marks the view renders stale data silently.
+      - name: Check OnPush change detection marks
+        run: make check-onpush
+
       - name: Test UI
         run: make test-ui
 

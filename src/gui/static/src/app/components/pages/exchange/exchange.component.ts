@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 
@@ -14,7 +14,7 @@ import { environment } from '../../../../environments/environment';
     selector: 'app-exchange',
     templateUrl: './exchange.component.html',
     styleUrls: ['./exchange.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ExchangeComponent implements OnInit, OnDestroy {
@@ -34,6 +34,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
     public appService: AppService,
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -53,13 +54,20 @@ export class ExchangeComponent implements OnInit, OnDestroy {
           this.currentOrderDetails = lastViewedOrder;
         }
 
-        setTimeout(() => this.lastViewedSubscription.unsubscribe());
+        setTimeout(() => {
+          this.lastViewedSubscription.unsubscribe();
+          this.changeDetectorRef.markForCheck();
+        });
         this.loading = false;
       }
+      this.changeDetectorRef.markForCheck();
     });
 
     // Check if there is a previously created orders history.
-    this.historySubscription = this.exchangeService.history().subscribe(() => this.hasHistory = true);
+    this.historySubscription = this.exchangeService.history().subscribe(() => {
+      this.hasHistory = true;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {
@@ -85,6 +93,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
       if (oldOrder) {
         this.currentOrderDetails = oldOrder;
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 

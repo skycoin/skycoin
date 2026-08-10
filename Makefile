@@ -29,7 +29,7 @@
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
-.PHONY: install-deps-ui lint-ui test-ui build-ui check-ui
+.PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
 .PHONY: test-ui-e2e test-explorer-e2e
 
 COIN ?= skycoin
@@ -267,6 +267,9 @@ build-ui:  ## Build the production bundle of every Angular front-end
 		echo "==> npm run build ($$d)"; \
 		(cd $$d && npm run build); \
 	done
+
+check-onpush:  ## Fail if an OnPush component has an unmarked asynchronous callback
+	node ci-scripts/check-onpush-marks.js $(addsuffix /src,$(ANGULAR_UI_DIRS))
 
 check-ui: build-ui  ## Fail if any committed Angular bundle is stale vs a fresh build
 	@git diff --quiet -- $(UI_DIST_DIRS) && git diff --quiet --cached -- $(UI_DIST_DIRS) \

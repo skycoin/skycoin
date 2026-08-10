@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -13,7 +13,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-update-alert-dialog',
     templateUrl: './hw-update-alert-dialog.component.html',
     styleUrls: ['./hw-update-alert-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwUpdateAlertDialogComponent extends HwDialogBaseComponent<HwUpdateAlertDialogComponent> {
@@ -31,8 +31,9 @@ export class HwUpdateAlertDialogComponent extends HwDialogBaseComponent<HwUpdate
   constructor(
     public dialogRef: MatDialogRef<HwUpdateAlertDialogComponent>,
     hwWalletService: HwWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
   }
 
   update() {

@@ -10,7 +10,7 @@ import { LanguageData, LanguageService } from '../../../services/language.servic
     selector: 'app-select-language',
     templateUrl: './select-language.component.html',
     styleUrls: ['./select-language.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SelectLanguageComponent implements OnInit {

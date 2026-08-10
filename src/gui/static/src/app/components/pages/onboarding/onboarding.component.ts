@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -17,7 +17,7 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
     selector: 'app-onboarding',
     templateUrl: './onboarding.component.html',
     styleUrls: ['./onboarding.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
@@ -38,10 +38,14 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
-    this.subscription = this.languageService.currentLanguage.subscribe(lang => this.language = lang);
+    this.subscription = this.languageService.currentLanguage.subscribe(lang => {
+      this.language = lang;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {
@@ -59,10 +63,12 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     // Create the wallet.
     this.walletsAndAddressesService.createSoftwareWallet(this.formData.loadTemporarily, this.formData.label, this.formData.seed, password).subscribe(() => {
       this.router.navigate(['/wallets']);
+      this.changeDetectorRef.markForCheck();
     }, e => {
       this.msgBarService.showError(e);
       // Make the form usable again.
       this.encryptForm.resetButton();
+      this.changeDetectorRef.markForCheck();
     });
   }
 

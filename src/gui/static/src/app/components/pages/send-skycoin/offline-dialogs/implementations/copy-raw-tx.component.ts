@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 
@@ -28,7 +28,7 @@ export interface CopyRawTxData {
     selector: 'app-copy-raw-tx',
     templateUrl: '../offline-dialogs-base.component.html',
     styleUrls: ['../offline-dialogs-base.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements OnInit {
@@ -54,6 +54,7 @@ export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements O
     public dialogRef: MatDialogRef<CopyRawTxComponent>,
     private msgBarService: MsgBarService,
     formBuilder: UntypedFormBuilder,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super(formBuilder);
 
@@ -67,6 +68,7 @@ export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements O
   ngOnInit() {
     setTimeout(() => {
       this.okButton.focus();
+      this.changeDetectorRef.markForCheck();
     });
   }
 

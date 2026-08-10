@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
@@ -16,7 +16,7 @@ import { SpendingService } from '../../../../../services/wallet-operations/spend
     selector: 'app-broadcast-raw-tx',
     templateUrl: '../offline-dialogs-base.component.html',
     styleUrls: ['../offline-dialogs-base.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent implements OnInit, OnDestroy {
@@ -47,6 +47,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
     private balanceAndOutputsService: BalanceAndOutputsService,
     private spendingService: SpendingService,
     formBuilder: UntypedFormBuilder,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super(formBuilder);
 
@@ -82,11 +83,13 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
 
       this.msgBarService.showDone('offline-transactions.broadcast-tx.sent');
       this.cancelPressed();
+      this.changeDetectorRef.markForCheck();
     }, error => {
       this.working = false;
       this.okButton.resetState();
 
       this.msgBarService.showError(error);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

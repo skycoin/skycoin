@@ -1,5 +1,5 @@
 import { switchMap, delay, mergeMap } from 'rxjs';
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -80,7 +80,7 @@ export class WalletFormData {
     selector: 'app-create-wallet-form',
     templateUrl: './create-wallet-form.component.html',
     styleUrls: ['./create-wallet-form.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {
@@ -140,6 +140,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     private apiService: ApiService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -211,6 +212,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
           this.loadTemporarily = true;
           this.form.updateValueAndValidity();
         }
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       this.loadTemporarily = false;
@@ -259,6 +261,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
           this.enterSeedWithAssistance = false;
           this.removeConfirmations();
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }
@@ -327,15 +330,18 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
               () => {
                 this.checkingAssistedSeed = false;
                 this.lastAssistedSeed = enteredSeed;
+                this.changeDetectorRef.markForCheck();
               },
               () => {
                 this.checkingAssistedSeed = false;
                 this.msgBarService.showError('wallet.new.seed.invalid-seed-error');
+                this.changeDetectorRef.markForCheck();
               },
             );
           }
         }
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -395,6 +401,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       // Invalidate the custom seed confirmation if the data on the form is changed.
       this.customSeedAccepted = false;
       this.seed.next(this.form.get('seed')!.value);
+      this.changeDetectorRef.markForCheck();
     });
 
     this.subscribeToSeedValidation();
@@ -413,6 +420,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       this.form.get('seed')!.setValue(response.seed);
       this.form.get('seed')!.markAsTouched();
       this.removeConfirmations();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -455,6 +463,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       // a success response.
       this.customSeedIsNormal = result !== 0;
       this.checkingCustomSeed = false;
+      this.changeDetectorRef.markForCheck();
     }, (error: OperationError) => {
       this.checkingCustomSeed = false;
       // If the node said the seed is not standard, ask the user for confirmation before
@@ -468,6 +477,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         this.msgBarService.showWarning('wallet.new.seed-checking-error');
       }
       this.subscribeToSeedValidation();
+      this.changeDetectorRef.markForCheck();
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 
 enum ButtonStates {
   Normal = 'Normal',
@@ -13,10 +13,13 @@ enum ButtonStates {
     selector: 'app-button',
     templateUrl: 'button.component.html',
     styleUrls: ['button.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ButtonComponent implements OnDestroy {
+  constructor(private changeDetectorRef: ChangeDetectorRef) {
+  }
+
   @Input() disabled!: boolean;
   // If true, the button will send click events even when disabled.
   @Input() forceEmitEvents = false;
@@ -57,7 +60,10 @@ export class ButtonComponent implements OnDestroy {
    */
   setSuccess() {
     this.state = ButtonStates.Success;
-    setTimeout(() => this.state = ButtonStates.Normal, 3000);
+    setTimeout(() => {
+      this.state = ButtonStates.Normal;
+      this.changeDetectorRef.markForCheck();
+    }, 3000);
   }
 
   setDisabled() {

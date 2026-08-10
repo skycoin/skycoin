@@ -92,7 +92,7 @@ export interface FormData {
     selector: 'app-send-coins-form',
     templateUrl: './send-coins-form.component.html',
     styleUrls: ['./send-coins-form.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendCoinsFormComponent implements OnInit, OnDestroy {
@@ -164,7 +164,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.setValidators(this.validateForm.bind(this));
 
     if (this.formData) {
-      setTimeout(() => this.fillForm());
+      setTimeout(() => {
+        this.fillForm();
+        this.changeDetector.markForCheck();
+      });
     }
   }
 
@@ -188,6 +191,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   destinationsChanged() {
     setTimeout(() => {
       this.form.updateValueAndValidity();
+      this.changeDetector.markForCheck();
     });
   }
 
@@ -220,6 +224,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         if (confirmationResult) {
           this.showForManualUnsigned = true;
         }
+        this.changeDetector.markForCheck();
       });
     } else {
       this.showForManualUnsigned = false;
@@ -237,6 +242,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       if (response) {
         this.form.get('changeAddress')!.setValue(response);
       }
+      this.changeDetector.markForCheck();
     });
   }
 
@@ -267,11 +273,15 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         if (response.length > 0) {
           // If the first destination does not have hours, no destination has hours.
           this.autoHours = response[0].hours === undefined;
-          setTimeout(() => this.formMultipleDestinations.setDestinations(response));
+          setTimeout(() => {
+            this.formMultipleDestinations.setDestinations(response);
+            this.changeDetector.markForCheck();
+          });
         } else {
           this.formMultipleDestinations.resetForm();
         }
       }
+      this.changeDetector.markForCheck();
     });
   }
 
@@ -312,6 +322,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
           this.showAutoHourDistributionOptions = !this.showAutoHourDistributionOptions;
         }
+        this.changeDetector.markForCheck();
       });
     } else {
       // Resets the hours distribution options.
@@ -402,8 +413,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           if (confirmationResult) {
             this.checkHoursBeforeCreatingTx(creatingPreviewTx);
           }
+          this.changeDetector.markForCheck();
         });
       }
+      this.changeDetector.markForCheck();
     });
   }
 
@@ -468,6 +481,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         if (confirmationResult) {
           this.prepareTransaction(creatingPreviewTx);
         }
+        this.changeDetector.markForCheck();
       });
     } else {
       // Continue normally.
@@ -488,6 +502,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       PasswordDialogComponent.openDialog(this.dialog, { wallet: this.selectedSources.wallet! }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.createTransaction(creatingPreviewTx, passwordDialog);
+          this.changeDetector.markForCheck();
         });
     } else {
       if (creatingPreviewTx || this.showForManualUnsigned || !this.selectedSources.wallet!.isHardware) {
@@ -496,8 +511,14 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         // If using a hw wallet, check the device first.
         this.showBusy(creatingPreviewTx);
         this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.selectedSources.wallet!.addresses[0].address).subscribe(
-          () => this.createTransaction(creatingPreviewTx),
-          err => this.showError(err),
+          () => {
+            this.createTransaction(creatingPreviewTx);
+            this.changeDetector.markForCheck();
+          },
+          err => {
+            this.showError(err);
+            this.changeDetector.markForCheck();
+          },
         );
       }
     }
@@ -605,7 +626,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
               }
 
               this.showSuccess(showDone);
-            }, error => this.showError(error));
+              this.changeDetector.markForCheck();
+            }, error => {
+              this.showError(error);
+              this.changeDetector.markForCheck();
+            });
         } else {
           const data: CopyRawTxData = {
             rawTx: transaction.encoded,
@@ -627,7 +652,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
                 this.resetForm();
                 this.msgBarService.showDone('offline-transactions.copy-tx.reset-done', 4000);
               }
+              this.changeDetector.markForCheck();
             });
+            this.changeDetector.markForCheck();
           });
         }
       } else {
@@ -656,12 +683,14 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         this.busy = false;
         this.navBarSwitchService.enableSwitch();
       }
+      this.changeDetector.markForCheck();
     }, error => {
       if (passwordDialog) {
         passwordDialog.error(error);
       }
 
       this.showError(error);
+      this.changeDetector.markForCheck();
     });
   }
 
@@ -726,6 +755,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.sendButton.setSuccess();
       setTimeout(() => {
         this.sendButton.resetState();
+        this.changeDetector.markForCheck();
       }, 3000);
     }
   }

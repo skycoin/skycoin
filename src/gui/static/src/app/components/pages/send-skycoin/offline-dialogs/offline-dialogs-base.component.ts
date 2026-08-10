@@ -32,7 +32,7 @@ export interface OfflineDialogsDropdownElement {
  */
 @Component({
     template: '',
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OfflineDialogsBaseComponent {

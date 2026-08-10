@@ -10,7 +10,7 @@ import { QrCodeComponent, QrDialogConfig } from '../qr-code/qr-code.component';
     selector: 'app-qr-code-button',
     templateUrl: './qr-code-button.component.html',
     styleUrls: ['./qr-code-button.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class QrCodeButtonComponent {

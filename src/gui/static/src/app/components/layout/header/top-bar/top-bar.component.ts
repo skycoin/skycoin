@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -13,7 +13,7 @@ import { SelectLanguageComponent } from '../../select-language/select-language.c
     selector: 'app-top-bar',
     templateUrl: './top-bar.component.html',
     styleUrls: ['./top-bar.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TopBarComponent implements OnInit, OnDestroy {
@@ -28,11 +28,15 @@ export class TopBarComponent implements OnInit, OnDestroy {
     public appService: AppService,
     private languageService: LanguageService,
     private dialog: MatDialog,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.subscription = this.languageService.currentLanguage
-      .subscribe(lang => this.language = lang);
+      .subscribe(lang => {
+        this.language = lang;
+        this.changeDetectorRef.markForCheck();
+      });
   }
 
   ngOnDestroy() {

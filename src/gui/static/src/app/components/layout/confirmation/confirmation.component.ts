@@ -66,7 +66,7 @@ export interface ConfirmationParams {
     selector: 'app-confirmation',
     templateUrl: './confirmation.component.html',
     styleUrls: ['./confirmation.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ConfirmationComponent {

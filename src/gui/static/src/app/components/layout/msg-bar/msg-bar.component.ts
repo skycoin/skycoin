@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 
 /**
  * Icons the msg bar can show.
@@ -41,20 +41,23 @@ export class MsgBarConfig {
     selector: 'app-msg-bar',
     templateUrl: './msg-bar.component.html',
     styleUrls: ['./msg-bar.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class MsgBarComponent {
   config = new MsgBarConfig();
   visible = false;
 
-  constructor() { }
+  constructor(private changeDetectorRef: ChangeDetectorRef) { }
 
   show() {
     if (this.visible) {
       this.visible = false;
       // Gives the illusion of the bar reapering if it was already being shown.
-      setTimeout(() => this.visible = true, 32);
+      setTimeout(() => {
+        this.visible = true;
+        this.changeDetectorRef.markForCheck();
+      }, 32);
     } else {
       this.visible = true;
     }

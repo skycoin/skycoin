@@ -1,7 +1,7 @@
 /*
   IMPORTANT: Unused for a long time, it may need changes to work properly.
 */
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { PurchaseService } from '../../../../services/purchase.service';
 import { MatDialogRef } from '@angular/material/dialog';
@@ -13,7 +13,7 @@ import { AddressBase } from '../../../../services/wallet-operations/wallet-objec
     selector: 'app-add-deposit-address',
     templateUrl: './add-deposit-address.component.html',
     styleUrls: ['./add-deposit-address.component.css'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class AddDepositAddressComponent implements OnInit, OnDestroy {
@@ -28,6 +28,7 @@ export class AddDepositAddressComponent implements OnInit, OnDestroy {
     private dialogRef: MatDialogRef<AddDepositAddressComponent>,
     private formBuilder: UntypedFormBuilder,
     private purchaseService: PurchaseService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -35,6 +36,7 @@ export class AddDepositAddressComponent implements OnInit, OnDestroy {
 
     this.getWalletsSubscription = this.walletsAndAddressesService.allWallets.subscribe(wallets => {
       this.addresses = wallets.reduce((array, wallet) => array.concat(wallet.addresses), [] as AddressBase[]);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -43,7 +45,10 @@ export class AddDepositAddressComponent implements OnInit, OnDestroy {
   }
 
   generate() {
-    this.purchaseService.generate(this.form.value.address).subscribe(() => this.dialogRef.close());
+    this.purchaseService.generate(this.form.value.address).subscribe(() => {
+      this.dialogRef.close();
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private initForm() {

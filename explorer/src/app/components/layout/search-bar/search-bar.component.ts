@@ -45,6 +45,7 @@ export class SearchBarComponent implements OnDestroy {
     private changeDetectorRef: ChangeDetectorRef,
   ) {
     // Each time the node URL is changed, check if the node is in sync.
+    // change-detection: no view state — checkSyncState marks once its own request resolves.
     this.nodeUrlSubscription = this.apiService.localNodeUrl.subscribe(() => {
       this.checkSyncState(0);
     });
@@ -86,6 +87,7 @@ export class SearchBarComponent implements OnDestroy {
       if (this.showSyncWarning) {
         this.checkSyncState(10000);
       }
+    // change-detection: no view state — only reschedules the check.
     }, () => {
       if (this.showSyncWarning) {
         this.checkSyncState(10000);

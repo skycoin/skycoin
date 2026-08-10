@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { ExchangeService, StoredExchangeOrder } from '../../../../services/exchange.service';
@@ -13,7 +13,7 @@ import { AppConfig } from '../../../../app.config';
     selector: 'app-exchange-history',
     templateUrl: './exchange-history.component.html',
     styleUrls: ['./exchange-history.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ExchangeHistoryComponent implements OnInit {
@@ -35,13 +35,20 @@ export class ExchangeHistoryComponent implements OnInit {
     public dialogRef: MatDialogRef<ExchangeHistoryComponent>,
     public blockchainService: BlockchainService,
     private exchangeService: ExchangeService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
     // Get the saved transactions.
     this.exchangeService.history().subscribe(
-      (orders: StoredExchangeOrder[]) => this.orders = orders.reverse(),
-      () => this.orders = [],
+      (orders: StoredExchangeOrder[]) => {
+        this.orders = orders.reverse();
+        this.changeDetectorRef.markForCheck();
+      },
+      () => {
+        this.orders = [];
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 

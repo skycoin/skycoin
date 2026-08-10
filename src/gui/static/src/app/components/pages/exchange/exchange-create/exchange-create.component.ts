@@ -1,5 +1,5 @@
 import { throwError as observableThrowError, SubscriptionLike, concat, of } from 'rxjs';
-import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import moment from 'moment';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -20,7 +20,7 @@ import { WalletsAndAddressesService } from '../../../../services/wallet-operatio
     selector: 'app-exchange-create',
     templateUrl: './exchange-create.component.html',
     styleUrls: ['./exchange-create.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class ExchangeCreateComponent implements OnInit, OnDestroy {
@@ -87,6 +87,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     private appService: AppService,
     private translateService: TranslateService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -117,6 +118,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       if (address) {
         this.form.get('toAddress')!.setValue(address);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -159,16 +161,20 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
             timestamp: moment().unix(),
             price: this.activeTradingPair!.price,
           });
+          this.changeDetectorRef.markForCheck();
         }, err => {
           this.busy = false;
           this.exchangeButton.resetState().setEnabled();
           this.msgBarService.showError(err);
+          this.changeDetectorRef.markForCheck();
         });
       } else {
         this.showInvalidAddress();
       }
+      this.changeDetectorRef.markForCheck();
     }, () => {
       this.showInvalidAddress();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -194,6 +200,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     this.subscriptionsGroup.push(this.form.get('fromCoin')!.valueChanges.subscribe(() => {
       this.updateActiveTradingPair();
+      this.changeDetectorRef.markForCheck();
     }));
   }
 
@@ -213,8 +220,10 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
         this.updateActiveTradingPair();
         this.updatePrices();
+        this.changeDetectorRef.markForCheck();
       }, () => {
         this.problemGettingPairs = true;
+        this.changeDetectorRef.markForCheck();
       }),
     );
   }
@@ -236,6 +245,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
           }
         });
         this.updatePrices();
+        this.changeDetectorRef.markForCheck();
       });
   }
 

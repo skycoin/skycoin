@@ -2,7 +2,7 @@
   IMPORTANT: Unused for a long time, it may need changes to work properly.
 */
 import { filter, first } from 'rxjs';
-import { Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { PurchaseOrder } from '../../../app.datatypes';
@@ -16,7 +16,7 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
     selector: 'app-buy',
     templateUrl: './buy.component.html',
     styleUrls: ['./buy.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BuyComponent implements OnInit, OnDestroy {
@@ -35,6 +35,7 @@ export class BuyComponent implements OnInit, OnDestroy {
     private purchaseService: PurchaseService,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -52,9 +53,13 @@ export class BuyComponent implements OnInit, OnDestroy {
       response => {
         this.button.setSuccess();
         this.order!.status = response.status;
+        this.changeDetectorRef.markForCheck();
       },
       // On this part the error was shown on the button. Now it would have to be shown on the msg bar.
-      error => this.button.resetState(),
+      error => {
+        this.button.resetState();
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 
@@ -72,16 +77,26 @@ export class BuyComponent implements OnInit, OnDestroy {
       const wallet = this.wallets.find(wlt => wlt.id === id);
       console.log('changing wallet value', id);
       this.purchaseService.generate(wallet!).subscribe(
-        order => this.saveData(order),
-        error => this.msgBarService.showError(error.toString()),
+        order => {
+          this.saveData(order);
+          this.changeDetectorRef.markForCheck();
+        },
+        error => {
+          this.msgBarService.showError(error.toString());
+          this.changeDetectorRef.markForCheck();
+        },
       );
+      this.changeDetectorRef.markForCheck();
     }));
   }
 
   private loadConfig() {
     this.purchaseService.config().pipe(
       filter(config => !!config && !!config.sky_btc_exchange_rate), first())
-      .subscribe(config => this.config = config);
+      .subscribe(config => {
+        this.config = config;
+        this.changeDetectorRef.markForCheck();
+      });
   }
 
   private loadData() {
@@ -94,6 +109,7 @@ export class BuyComponent implements OnInit, OnDestroy {
       if (this.order) {
         this.form.get('wallet')!.setValue(this.order.filename, { emitEvent: false });
       }
+      this.changeDetectorRef.markForCheck();
     }));
   }
 
@@ -112,8 +128,14 @@ export class BuyComponent implements OnInit, OnDestroy {
 
   private updateOrder() {
     this.purchaseService.scan(this.order!.recipient_address).pipe(first()).subscribe(
-      response => this.order!.status = response.status,
-      error => console.log(error),
+      response => {
+        this.order!.status = response.status;
+        this.changeDetectorRef.markForCheck();
+      },
+      error => {
+        console.log(error);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

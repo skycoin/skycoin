@@ -15,7 +15,7 @@ import { SendCoinsData } from './send-coins-form/send-coins-form.component';
     selector: 'app-send-skycoin',
     templateUrl: './send-skycoin.component.html',
     styleUrls: ['./send-skycoin.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendSkycoinComponent implements OnDestroy {
@@ -41,6 +41,7 @@ export class SendSkycoinComponent implements OnDestroy {
         this.activeForm = value;
         this.formData = null;
       }
+      this.changeDetector.markForCheck();
     });
   }
 

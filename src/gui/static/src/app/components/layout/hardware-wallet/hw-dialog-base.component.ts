@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, ViewChild } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 
@@ -60,7 +60,7 @@ export enum States {
  */
 @Component({
     template: '',
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwDialogBaseComponent<T> implements OnDestroy {
@@ -87,6 +87,7 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
   constructor(
     private _hwWalletService: HwWalletService,
     public _dialogRef: MatDialogRef<T>,
+    protected changeDetectorRef: ChangeDetectorRef,
   ) {
     // Inform connection events and close the window if needed.
     this.hwConnectionSubscription = this._hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
@@ -94,6 +95,7 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
       if (!connected && this.closeIfHwDisconnected) {
         this.closeModal();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -168,6 +170,7 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
         if (this.closeButton && focusButton) {
           this.closeButton.focus();
         }
+        this.changeDetectorRef.markForCheck();
       });
     }
   }

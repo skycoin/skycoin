@@ -16,7 +16,7 @@ export enum DoubleButtonActive {
     templateUrl: './double-button.component.html',
     styleUrls: ['./double-button.component.scss'],
     encapsulation: ViewEncapsulation.Emulated,
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class DoubleButtonComponent implements OnDestroy {

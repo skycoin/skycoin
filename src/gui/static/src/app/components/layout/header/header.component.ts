@@ -1,5 +1,5 @@
 import { filter } from 'rxjs';
-import { Component, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
@@ -18,7 +18,7 @@ import { AddressWithBalance } from '../../../services/wallet-operations/wallet-o
     selector: 'app-header',
     templateUrl: './header.component.html',
     styleUrls: ['./header.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HeaderComponent implements OnInit, OnDestroy {
@@ -52,6 +52,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private blockchainService: BlockchainService,
     private priceService: PriceService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -62,10 +63,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.currentBlock = response.currentBlock;
       this.synchronizationPercentage = this.currentBlock && this.highestBlock ? (this.currentBlock / this.highestBlock) : 0;
       this.synchronized = response.synchronized;
+      this.changeDetectorRef.markForCheck();
     }));
 
     // Get the current price.
-    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
+    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => {
+      this.price = price;
+      this.changeDetectorRef.markForCheck();
+    }));
 
     // Get the current balance.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
@@ -96,16 +101,19 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.coins = coins.toString();
       this.hours = hours.toString();
 
+      this.changeDetectorRef.markForCheck();
     }));
 
     // Know if there are pending transactions.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.hasPendingTransactions.subscribe(hasPendingTxs => {
       this.hasPendingTxs = hasPendingTxs;
+      this.changeDetectorRef.markForCheck();
     }));
 
     // Know when the app gets the balance from the node.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.firstFullUpdateMade.subscribe(firstFullUpdateMade => {
       this.balanceObtained = firstFullUpdateMade;
+      this.changeDetectorRef.markForCheck();
     }));
   }
 

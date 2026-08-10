@@ -20,7 +20,7 @@ export enum AddressOptions {
     selector: 'app-address-options',
     templateUrl: './address-options.component.html',
     styleUrls: ['./address-options.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class AddressOptionsComponent {

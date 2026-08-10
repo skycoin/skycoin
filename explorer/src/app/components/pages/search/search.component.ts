@@ -61,6 +61,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       // If there is no error, wait for the navigation commands needed for redirecting the user
       // to the page with the requested data.
       this.pageSubscriptions.push(navCommands.resultNavCommands.subscribe(
+        // change-detection: no view state — redirects away from this page.
         result => {
           // Navigate and erase the current page from the browser history.
           this.router.navigate(result, { replaceUrl: true });

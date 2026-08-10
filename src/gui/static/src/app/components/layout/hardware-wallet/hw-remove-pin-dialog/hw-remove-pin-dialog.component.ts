@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -13,7 +13,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-remove-pin-dialog',
     templateUrl: './hw-remove-pin-dialog.component.html',
     styleUrls: ['./hw-remove-pin-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePinDialogComponent> {
@@ -24,8 +24,9 @@ export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePi
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwRemovePinDialogComponent>,
     private hwWalletService: HwWalletService,
+    changeDetectorRef: ChangeDetectorRef,
   ) {
-    super(hwWalletService, dialogRef);
+    super(hwWalletService, dialogRef, changeDetectorRef);
   }
 
   setConfirmed(event: any) {
@@ -44,8 +45,12 @@ export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePi
         });
         // Request the hw wallet options modal window to refresh the security warnings.
         this.data.requestOptionsComponentRefresh(undefined, true);
+        this.changeDetectorRef.markForCheck();
       },
-      err => this.processHwOperationError(err),
+      err => {
+        this.processHwOperationError(err);
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 }

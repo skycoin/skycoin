@@ -10,7 +10,7 @@ import { OldTransaction } from '../../../../services/wallet-operations/transacti
     selector: 'app-transaction-detail',
     templateUrl: './transaction-detail.component.html',
     styleUrls: ['./transaction-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionDetailComponent {

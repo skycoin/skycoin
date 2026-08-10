@@ -20,7 +20,7 @@ import { Destination } from '../../pages/send-skycoin/form-parts/form-destinatio
     selector: 'app-multiple-destinations-dialog',
     templateUrl: './multiple-destinations-dialog.component.html',
     styleUrls: ['./multiple-destinations-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {

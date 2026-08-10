@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
@@ -22,7 +22,7 @@ import { WalletBase } from '../../../../../services/wallet-operations/wallet-obj
     selector: 'app-sign-raw-tx',
     templateUrl: '../offline-dialogs-base.component.html',
     styleUrls: ['../offline-dialogs-base.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SignRawTxComponent extends OfflineDialogsBaseComponent implements OnInit, OnDestroy {
@@ -57,6 +57,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     private spendingService: SpendingService,
     private walletsAndAddressesService: WalletsAndAddressesService,
     formBuilder: UntypedFormBuilder,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super(formBuilder);
 
@@ -88,11 +89,16 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
               this.form.get('dropdown')!.setValue(wallets[0]);
             }
           } catch (e) { }
+          this.changeDetectorRef.markForCheck();
         });
       } else {
         this.currentState = OfflineDialogsStates.ErrorLoading;
       }
-    }, () => this.currentState = OfflineDialogsStates.ErrorLoading);
+      this.changeDetectorRef.markForCheck();
+    }, () => {
+      this.currentState = OfflineDialogsStates.ErrorLoading;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {
@@ -118,6 +124,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
         .subscribe(passwordDialog => {
           passwordDialog.close();
           this.signTransaction(passwordDialog.password);
+          this.changeDetectorRef.markForCheck();
         });
     } else {
       this.signTransaction(null);
@@ -136,7 +143,10 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
       null,
       this.form.get('input')!.value).subscribe(encodedSignedTx => {
         this.cancelPressed();
-        setTimeout(() => this.msgBarService.showDone('offline-transactions.sign-tx.signed'));
+        setTimeout(() => {
+          this.msgBarService.showDone('offline-transactions.sign-tx.signed');
+          this.changeDetectorRef.markForCheck();
+        });
 
         // After a short delay, open the copy modal window, to see the signed transaction.
         setTimeout(() => {
@@ -146,12 +156,15 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
           };
 
           CopyRawTxComponent.openDialog(this.dialog, data);
+          this.changeDetectorRef.markForCheck();
         }, 500);
+      this.changeDetectorRef.markForCheck();
     }, error => {
       this.working = false;
       this.okButton.resetState();
 
       this.msgBarService.showError(error);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

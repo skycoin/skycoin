@@ -14,7 +14,7 @@ export interface HwPinDialogParams {
     selector: 'app-hw-pin-dialog',
     templateUrl: './hw-pin-dialog.component.html',
     styleUrls: ['./hw-pin-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwPinDialogComponent implements OnInit {

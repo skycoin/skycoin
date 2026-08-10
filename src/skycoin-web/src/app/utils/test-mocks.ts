@@ -11,7 +11,7 @@ import { BalanceEvent, BalanceStates } from '../services/wallet/balance.service'
     template: `
     <span clipboard="test data"></span>
     <input type="text" appNumberField>`,
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TestComponent {

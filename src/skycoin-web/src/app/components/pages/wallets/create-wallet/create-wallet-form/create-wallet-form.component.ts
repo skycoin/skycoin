@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { generateMnemonic } from 'bip39';
 import { Subscription } from 'rxjs';
@@ -25,7 +25,7 @@ export class FormData {
     selector: 'app-create-wallet-form',
     templateUrl: './create-wallet-form.component.html',
     styleUrls: ['./create-wallet-form.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {
@@ -55,7 +55,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private coinService: CoinService,
     private nodeHealthService: NodeHealthService,
-    private bip39WordListService: Bip39WordListService
+    private bip39WordListService: Bip39WordListService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -69,6 +70,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       this.hasManyCoins = this.coinService.coins.length > 1;
       const coin = this.coinService.currentCoin.getValue() || this.coinService.coins[0] || null;
       this.initForm(coin);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -99,6 +101,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.healthSubscription = this.nodeHealthService.check(coin).subscribe(health => {
       this.selectedCoinHealth = health;
       this.checkingCoinHealth = false;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -193,11 +196,13 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
           this.form.get('segwit')!.setValue(true);
         }
       }
+      this.changeDetectorRef.markForCheck();
     });
 
     this.statusSubscription = this.form.statusChanges.subscribe(() => {
       this.customSeedAccepted = false;
       this.normalSeed = this.validateSeed(this.form.get('seed')!.value);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

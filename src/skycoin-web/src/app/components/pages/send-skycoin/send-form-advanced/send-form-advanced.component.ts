@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription, throwError, concat } from 'rxjs';
@@ -25,7 +25,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-send-form-advanced',
     templateUrl: './send-form-advanced.component.html',
     styleUrls: ['./send-form-advanced.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
@@ -67,6 +67,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private coinService: CoinService,
     private priceService: PriceService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -98,8 +99,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             this.loadingUnspentOutputs = false;
             this.allUnspentOutputs = result;
             this.unspentOutputs = this.filterUnspentOutputs();
+            this.changeDetectorRef.markForCheck();
           },
-          () => this.loadingUnspentOutputs = false,
+          () => {
+            this.loadingUnspentOutputs = false;
+            this.changeDetectorRef.markForCheck();
+          },
         );
 
       this.addresses = wallet.addresses.filter(addr => addr.balance!.isGreaterThan(0));
@@ -108,6 +113,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
       this.updateAvailableBalance();
       this.form.get('destinations')!.updateValueAndValidity();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.form.get('addresses')!.valueChanges.subscribe(() => {
@@ -116,23 +122,27 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
       this.updateAvailableBalance();
       this.form.get('destinations')!.updateValueAndValidity();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.form.get('outputs')!.valueChanges.subscribe(() => {
       this.updateAvailableBalance();
       this.form.get('destinations')!.updateValueAndValidity();
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.subscriptionsGroup.push(this.coinService.currentCoin
       .subscribe((coin: BaseCoin) => {
         this.resetForm();
         this.currentCoin = coin;
+        this.changeDetectorRef.markForCheck();
       })
     );
 
     this.subscriptionsGroup.push(this.priceService.price.subscribe(price => {
       this.price = price;
       this.updateValues();
+      this.changeDetectorRef.markForCheck();
     }));
 
     if (this.formData) {
@@ -219,7 +229,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance
-        .onWalletUnlocked.pipe(first()).subscribe(() => this.checkBeforeSending());
+        .onWalletUnlocked.pipe(first()).subscribe(() => {
+          this.checkBeforeSending();
+          this.changeDetectorRef.markForCheck();
+        });
     } else {
       this.checkBeforeSending();
     }
@@ -232,6 +245,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       } else {
         this.showSynchronizingWarning();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -247,6 +261,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       if (confirmationResult) {
         this.createTransaction();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -277,6 +292,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       if (response) {
         this.form.get('changeAddress')!.setValue(response);
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -428,6 +444,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.destinationSubscriptions.push(group.get('coins')!.valueChanges.subscribe(value => {
       this.updateValues();
+      this.changeDetectorRef.markForCheck();
     }));
 
     return group;
@@ -479,6 +496,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           to: this.destinations.map(d => d.address),
           transaction,
         });
+        this.changeDetectorRef.markForCheck();
       })
       .then(() => {
         this.button.setSuccess();
@@ -486,7 +504,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
         setTimeout(() => {
           this.button.resetState();
+          this.changeDetectorRef.markForCheck();
         }, 3000);
+        this.changeDetectorRef.markForCheck();
       })
       .catch(error => {
         this.msgBarService.showError(error.message);

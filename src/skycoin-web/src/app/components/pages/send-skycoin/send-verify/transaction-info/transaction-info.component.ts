@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { Transaction } from '../../../../../app.datatypes';
@@ -10,7 +10,7 @@ import { BaseCoin } from '../../../../../coins/basecoin';
     selector: 'app-transaction-info',
     templateUrl: './transaction-info.component.html',
     styleUrls: ['./transaction-info.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionInfoComponent implements OnInit, OnDestroy {
@@ -24,7 +24,8 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
 
   constructor(
     private priceService: PriceService,
-    private coinService: CoinService
+    private coinService: CoinService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   get hoursText(): string {
@@ -45,7 +46,10 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.subscription = this.priceService.price
-      .subscribe(price => this.price = price);
+      .subscribe(price => {
+        this.price = price;
+        this.changeDetectorRef.markForCheck();
+      });
 
     this.currentCoin = this.coinService.currentCoin.value;
   }

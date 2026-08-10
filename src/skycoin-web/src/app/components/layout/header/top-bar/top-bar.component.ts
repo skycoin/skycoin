@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, Renderer2, ViewChild, NgZone, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, NgZone, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { Subscription, interval } from 'rxjs';
 
 import { BalanceService, BalanceStates } from '../../../../services/wallet/balance.service';
@@ -12,7 +12,7 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
     selector: 'app-top-bar',
     templateUrl: './top-bar.component.html',
     styleUrls: ['./top-bar.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TopBarComponent implements OnInit, OnDestroy {
@@ -34,12 +34,16 @@ export class TopBarComponent implements OnInit, OnDestroy {
               private dialog: CustomMatDialogService,
               private renderer: Renderer2,
               private languageService: LanguageService,
-              private _ngZone: NgZone) {
+              private _ngZone: NgZone,
+              private changeDetectorRef: ChangeDetectorRef,) {
   }
 
   ngOnInit() {
     this.subscriptionsGroup.push(this.languageService.currentLanguage
-      .subscribe(lang => this.language = lang));
+      .subscribe(lang => {
+        this.language = lang;
+        this.changeDetectorRef.markForCheck();
+      }));
 
     this.hasManyCoins = this.coinService.coins.length > 1;
     this.availableCoins = this.coinService.coins;
@@ -48,6 +52,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
       this.coinService.currentCoin.subscribe((coin: BaseCoin) => {
         this.currentCoin = coin;
         this.balanceObtained = false;
+        this.changeDetectorRef.markForCheck();
       })
     );
 
@@ -61,12 +66,16 @@ export class TopBarComponent implements OnInit, OnDestroy {
           this.problemUpdatingBalance = balance.state === BalanceStates.Error;
           this.updatingBalance = balance.state === BalanceStates.Updating;
         }
+        this.changeDetectorRef.markForCheck();
       })
     );
 
     this._ngZone.runOutsideAngular(() => {
       this.subscriptionsGroup.push(
-        interval(5000).subscribe(() => this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService)))
+        interval(5000).subscribe(() => {
+          this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService));
+          this.changeDetectorRef.markForCheck();
+        })
       );
     });
   }
@@ -91,6 +100,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
         if (response) {
           this.languageService.changeLanguage(response);
         }
+        this.changeDetectorRef.markForCheck();
       });
   }
 }

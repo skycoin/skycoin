@@ -20,29 +20,17 @@ getTestBed().initTestEnvironment(
     teardown: { destroyAfterEach: false }
 }
 );
-// Then we find all the tests. require.context is a webpack extension, so it is
-// not part of the NodeJS Require typings; reach it through a local alias rather
-// than pulling in @types/webpack-env just for this file.
-interface WebpackRequireContext {
-  (id: string): unknown;
-  keys(): string[];
-}
-const webpackRequire = require as unknown as {
-  context(path: string, deep?: boolean, filter?: RegExp): WebpackRequireContext;
-};
+// Which specs run is controlled by the "include" list of the karma builder in
+// angular.json, not by a glob over the whole project.
+//
+// The ~60 other specs here still import `async` from @angular/core/testing
+// (removed in Angular 12), the @angular/material barrel (removed in v9) and
+// @angular/http (removed in v8), together with app/utils/test-mocks.ts which
+// supports them. Compiling them fails the suite before a single assertion runs,
+// which is why this project had no working tests at all. They stay in the tree
+// for whoever revives them; add each one back to that "include" list, and to
+// src/tsconfig.spec.json, as it is rewritten against current testing APIs.
 
-let context: WebpackRequireContext;
+import './app/components/layout/msg-bar/msg-bar.component.spec';
 
-if (__karma__.config.cipher) {
-  context = webpackRequire.context('./', true, /cipher\.provider\.lib\.spec\.ts$/);
-} else {
-  context = webpackRequire.context('./', true, /(?!.*?cipher\.provider\.lib\.spec\.ts$)(^.*\.spec\.ts$)/);
-}
-
-// Set cipher mode to have ability to read this value in .spec file
-process.argv = [ __karma__.config.cipher ];
-
-// And load the modules.
-context.keys().map(context);
-// Finally, start Karma to run the tests.
 __karma__.start();

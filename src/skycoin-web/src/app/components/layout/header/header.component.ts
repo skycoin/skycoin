@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit, NgZone, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Subscription, interval, filter } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
@@ -14,7 +14,7 @@ import { getTimeSinceLastBalanceUpdate } from '../../../utils';
     selector: 'app-header',
     templateUrl: './header.component.html',
     styleUrls: ['./header.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HeaderComponent implements OnInit, OnDestroy {
@@ -49,7 +49,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private balanceService: BalanceService,
     private blockchainService: BlockchainService,
     private coinService: CoinService,
-    private _ngZone: NgZone
+    private _ngZone: NgZone,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -62,6 +63,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
           this.synchronizedSubscription.unsubscribe();
           this.synchronizedSubscription = null;
         }
+        this.changeDetectorRef.markForCheck();
       }));
 
     this.subscriptionsGroup.push(
@@ -73,8 +75,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
           // Adding the code here prevents the warning from flashing if the wallet is synchronized. Also, adding the
           // subscription to this.subscription causes problems.
           if (response.currentBlock && !this.synchronizedSubscription) {
-            this.synchronizedSubscription = this.blockchainService.synchronized.subscribe(value => this.synchronized = value);
+            this.synchronizedSubscription = this.blockchainService.synchronized.subscribe(value => {
+              this.synchronized = value;
+              this.changeDetectorRef.markForCheck();
+            });
           }
+          this.changeDetectorRef.markForCheck();
         })
     );
 
@@ -83,6 +89,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         .subscribe(price => {
           this.price = price;
           this.calculateBalance();
+          this.changeDetectorRef.markForCheck();
         })
     );
 
@@ -99,18 +106,25 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
           this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService);
           this.problemUpdatingBalance = balance.state === BalanceStates.Error;
+          this.changeDetectorRef.markForCheck();
         })
     );
 
     this._ngZone.runOutsideAngular(() => {
       this.subscriptionsGroup.push(
-        interval(5000).subscribe(() => this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService)))
+        interval(5000).subscribe(() => {
+          this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService));
+          this.changeDetectorRef.markForCheck();
+        })
       );
     });
 
     this.subscriptionsGroup.push(
       this.balanceService.hasPendingTransactions
-        .subscribe(hasPendingTxs => this.hasPendingTxs = hasPendingTxs)
+        .subscribe(hasPendingTxs => {
+          this.hasPendingTxs = hasPendingTxs;
+          this.changeDetectorRef.markForCheck();
+        })
     );
   }
 

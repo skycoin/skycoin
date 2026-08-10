@@ -19,7 +19,7 @@ export enum WalletOptionsResponses {
     selector: 'app-wallet-options',
     templateUrl: './wallet-options.component.html',
     styleUrls: ['./wallet-options.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class WalletOptionsComponent {

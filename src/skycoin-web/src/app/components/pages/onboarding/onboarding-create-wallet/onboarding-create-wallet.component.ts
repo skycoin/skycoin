@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, OnDestroy, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription, of, delay, first } from 'rxjs';
@@ -21,7 +21,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
     selector: 'app-onboarding-create-wallet',
     templateUrl: './onboarding-create-wallet.component.html',
     styleUrls: ['./onboarding-create-wallet.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -47,13 +47,17 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
     private blockchainService: BlockchainService,
     private translate: TranslateService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
     this.checkUserWallets();
 
     this.subscription = this.languageService.currentLanguage
-      .subscribe(lang => this.language = lang);
+      .subscribe(lang => {
+        this.language = lang;
+        this.changeDetectorRef.markForCheck();
+      });
   }
 
   ngAfterViewInit() {
@@ -86,6 +90,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
       if (result) {
         this.createWallet();
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -105,7 +110,9 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
             this.languageService.changeLanguage(response);
           }
           this.showDisclaimer();
+          this.changeDetectorRef.markForCheck();
         });
+      this.changeDetectorRef.markForCheck();
     }, 0);
   }
 
@@ -115,6 +122,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
         if (response) {
           this.languageService.changeLanguage(response);
         }
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -145,6 +153,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
       } else {
         this.userHasWallets = true;
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -164,14 +173,23 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
     this.creatingWallet = true;
 
     this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
-      .subscribe(() => this.showSlowMobileInfo = true);
+      .subscribe(() => {
+        this.showSlowMobileInfo = true;
+        this.changeDetectorRef.markForCheck();
+      });
 
     const data = this.formControl.getData();
 
     this.walletService.create(data.label, data.seed, data.coin.id, this.showNewForm, data.walletType, data.seedPassphrase, data.segwit)
       .subscribe(
-        wallet => this.onCreateSuccess(wallet, data.coin),
-        (error) => this.onCreateError(error.message)
+        wallet => {
+          this.onCreateSuccess(wallet, data.coin);
+          this.changeDetectorRef.markForCheck();
+        },
+        (error) => {
+          this.onCreateError(error.message);
+          this.changeDetectorRef.markForCheck();
+        }
       );
   }
 
@@ -184,8 +202,14 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
       this.removeSlowInfoSubscription();
 
       scanAddresses(this.dialog, wallet, this.blockchainService, this.translate).subscribe(
-        response => this.processScanResponse(initialCoin, wallet, false, response),
-        error => this.processScanResponse(initialCoin, wallet, true, error)
+        response => {
+          this.processScanResponse(initialCoin, wallet, false, response);
+          this.changeDetectorRef.markForCheck();
+        },
+        error => {
+          this.processScanResponse(initialCoin, wallet, true, error);
+          this.changeDetectorRef.markForCheck();
+        }
       );
     } else {
       this.finish();

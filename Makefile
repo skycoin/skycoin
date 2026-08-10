@@ -44,13 +44,12 @@ SKYCOIN_WEB_DIR = src/skycoin-web
 # one cannot silently break the others.
 ANGULAR_UI_DIRS = $(GUI_STATIC_DIR) $(EXPLORER_DIR) $(SKYCOIN_WEB_DIR)
 
-# Front-ends whose unit tests run in CI. src/skycoin-web is excluded: its specs
-# still import APIs Angular removed years ago (`async` from @angular/core/testing,
-# dropped in v12; the @angular/material barrel, dropped in v9; @angular/http,
-# dropped in v8), so `npm run test` there fails with ~156 compile errors before a
-# single spec executes. Reviving that suite means rewriting ~60 spec files and is
-# tracked separately; gating CI on it today would only mean skipping the gate.
-ANGULAR_UI_TEST_DIRS = $(GUI_STATIC_DIR) $(EXPLORER_DIR)
+# Every front-end now has a unit suite that runs. src/skycoin-web's ~60 original
+# specs still import APIs Angular removed years ago and remain excluded from its
+# build (see src/skycoin-web/src/tsconfig.spec.json), but the project is no
+# longer without tests: the specs listed there run, so a change-detection
+# regression fails CI.
+ANGULAR_UI_TEST_DIRS = $(ANGULAR_UI_DIRS)
 
 # Production bundles that are committed to the repository. src/gui/static/dist
 # and src/skycoin-web/src/gui/dist are embedded into the Go binary, so a stale

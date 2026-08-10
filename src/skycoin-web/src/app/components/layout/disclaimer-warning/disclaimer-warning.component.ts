@@ -4,7 +4,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
     selector: 'app-disclaimer-warning',
     templateUrl: './disclaimer-warning.component.html',
     styleUrls: ['./disclaimer-warning.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class DisclaimerWarningComponent {

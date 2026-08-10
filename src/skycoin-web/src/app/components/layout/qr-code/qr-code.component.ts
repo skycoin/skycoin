@@ -1,4 +1,4 @@
-import { Component, ElementRef, Inject, OnInit, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
@@ -30,7 +30,7 @@ export interface QrDialogConfig {
     selector: 'app-qr-code',
     templateUrl: './qr-code.component.html',
     styleUrls: ['./qr-code.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
@@ -62,6 +62,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     private msgBarService: MsgBarService,
     private clipboardService: ClipboardService,
     private router: Router,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -79,7 +80,10 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   }
 
   copyText(text: string) {
-    this.clipboardService.copy(text).then(() => this.msgBarService.showDone('qr.copied', 4000));
+    this.clipboardService.copy(text).then(() => {
+      this.msgBarService.showDone('qr.copied', 4000);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   closePopup() {
@@ -103,6 +107,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
     this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
+      this.changeDetectorRef.markForCheck();
     }));
   }
 

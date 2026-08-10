@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 
 import { PreviewTransaction } from '../../../../app.datatypes';
 import { BalanceService } from '../../../../services/wallet/balance.service';
@@ -11,7 +11,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-send-verify',
     templateUrl: './send-verify.component.html',
     styleUrls: ['./send-verify.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {
@@ -24,6 +24,7 @@ export class SendVerifyComponent implements OnDestroy {
     private balanceService: BalanceService,
     private spendingService: SpendingService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnDestroy() {
@@ -38,8 +39,14 @@ export class SendVerifyComponent implements OnDestroy {
 
     this.spendingService.injectTransaction(this.transaction.encoded)
       .subscribe(
-        () => this.onSuccess(),
-        (error) => this.onError(error)
+        () => {
+          this.onSuccess();
+          this.changeDetectorRef.markForCheck();
+        },
+        (error) => {
+          this.onError(error);
+          this.changeDetectorRef.markForCheck();
+        }
       );
   }
 
@@ -48,7 +55,10 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   private onSuccess() {
-    setTimeout(() => this.msgBarService.showDone('send.sent'));
+    setTimeout(() => {
+      this.msgBarService.showDone('send.sent');
+      this.changeDetectorRef.markForCheck();
+    });
     this.balanceService.startGettingBalances();
     this.onBack.emit(true);
   }

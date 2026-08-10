@@ -125,6 +125,9 @@
             "main": "src/test.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.spec.json",
+            "include": [
+              "**/msg-bar.component.spec.ts"
+            ],
             "karmaConfig": "./karma.conf.js",
             "styles": [
               "src/styles.scss"

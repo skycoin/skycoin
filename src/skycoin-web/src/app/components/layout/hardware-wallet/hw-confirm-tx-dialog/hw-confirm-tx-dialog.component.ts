@@ -8,7 +8,7 @@ import { MessageIcons } from '../hw-message/hw-message.component';
     selector: 'app-hw-confirm-tx-dialog',
     templateUrl: './hw-confirm-tx-dialog.component.html',
     styleUrls: ['./hw-confirm-tx-dialog.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwConfirmTxDialogComponent {

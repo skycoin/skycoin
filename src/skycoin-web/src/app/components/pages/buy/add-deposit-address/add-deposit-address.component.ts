@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 
@@ -9,7 +9,7 @@ import { WalletService } from '../../../../services/wallet/wallet.service';
     selector: 'app-add-deposit-address',
     templateUrl: './add-deposit-address.component.html',
     styleUrls: ['./add-deposit-address.component.css'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class AddDepositAddressComponent implements OnInit {
@@ -22,17 +22,22 @@ export class AddDepositAddressComponent implements OnInit {
     private dialogRef: MatDialogRef<AddDepositAddressComponent>,
     private formBuilder: UntypedFormBuilder,
     private purchaseService: PurchaseService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.initForm();
     this.walletService.addresses.subscribe( (addresses) => {
       this.addresses = addresses;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
   generate() {
-    this.purchaseService.generate(this.form.value.address).subscribe(() => this.dialogRef.close());
+    this.purchaseService.generate(this.form.value.address).subscribe(() => {
+      this.dialogRef.close();
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private initForm() {

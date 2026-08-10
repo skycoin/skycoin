@@ -17,7 +17,7 @@ export enum MessageIcons {
     selector: 'app-hw-message',
     templateUrl: './hw-message.component.html',
     styleUrls: ['./hw-message.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HwMessageComponent implements OnDestroy {

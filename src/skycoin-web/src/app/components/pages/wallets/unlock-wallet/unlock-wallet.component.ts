@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Inject, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators, FormControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, of } from 'rxjs';
@@ -18,7 +18,7 @@ export class ConfirmSeedParams {
     selector: 'app-unlock-wallet',
     templateUrl: './unlock-wallet.component.html',
     styleUrls: ['./unlock-wallet.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class UnlockWalletComponent implements OnInit, OnDestroy {
@@ -43,6 +43,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     if (data.wallet) {
       this.showConfirmSeedWarning = true;
@@ -81,20 +82,33 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
       this.progressSubscription = onProgressChanged.subscribe((progress) => {
         this.createSlowInfoSubscription();
         this.loadingProgress = progress;
+        this.changeDetectorRef.markForCheck();
       });
     }
 
     if (this.hasEncryptedSeed) {
       this.unlockSubscription = this.walletService.unlockWalletWithPassword(this.wallet, this.form.value.password, onProgressChanged)
         .subscribe(
-          () => this.onUnlockSuccess(),
-          (error: Error) => this.onUnlockError(error)
+          () => {
+            this.onUnlockSuccess();
+            this.changeDetectorRef.markForCheck();
+          },
+          (error: Error) => {
+            this.onUnlockError(error);
+            this.changeDetectorRef.markForCheck();
+          }
         );
     } else {
       this.unlockSubscription = this.walletService.unlockWallet(this.wallet, this.form.value.seed, onProgressChanged)
         .subscribe(
-          () => this.onUnlockSuccess(),
-          (error: Error) => this.onUnlockError(error)
+          () => {
+            this.onUnlockSuccess();
+            this.changeDetectorRef.markForCheck();
+          },
+          (error: Error) => {
+            this.onUnlockError(error);
+            this.changeDetectorRef.markForCheck();
+          }
         );
     }
   }
@@ -159,7 +173,10 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
     this.removeSlowInfoSubscription();
 
     this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
-      .subscribe(() => this.showSlowMobileInfo = true);
+      .subscribe(() => {
+        this.showSlowMobileInfo = true;
+        this.changeDetectorRef.markForCheck();
+      });
   }
 
   private removeSlowInfoSubscription() {

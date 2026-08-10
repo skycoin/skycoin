@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { CoinService } from '../../../services/coin.service';
@@ -9,7 +9,7 @@ import { NavBarService } from '../../../services/nav-bar.service';
     selector: 'app-send-skycoin',
     templateUrl: './send-skycoin.component.html',
     styleUrls: ['./send-skycoin.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SendSkycoinComponent implements OnInit, OnDestroy {
@@ -24,11 +24,13 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
 
   constructor(
     private coinService: CoinService,
-    navbarService: NavBarService
+    navbarService: NavBarService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.subscription = navbarService.activeComponent.subscribe(value => {
       this.activeForm = value;
       this.formData = null;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -36,6 +38,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
     this.coinSubscription = this.coinService.currentCoin
       .subscribe(() => {
         this.onBack(true);
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -57,7 +60,10 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
     }
 
     this.restarting = true;
-    setTimeout(() => this.restarting = false, 0);
+    setTimeout(() => {
+      this.restarting = false;
+      this.changeDetectorRef.markForCheck();
+    }, 0);
 
     this.showForm = true;
 

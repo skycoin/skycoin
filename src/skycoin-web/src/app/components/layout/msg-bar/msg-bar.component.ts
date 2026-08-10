@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
 
 export enum MsgBarIcons {
@@ -24,7 +24,7 @@ export class MsgBarConfig {
     selector: 'app-msg-bar',
     templateUrl: './msg-bar.component.html',
     styleUrls: ['./msg-bar.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class MsgBarComponent implements OnInit {
@@ -32,18 +32,23 @@ export class MsgBarComponent implements OnInit {
   visible = false;
   UiIsShowingModalWindow = false;
 
-  constructor(private dialog: CustomMatDialogService) { }
+  constructor(private dialog: CustomMatDialogService,
+  private changeDetectorRef: ChangeDetectorRef,) { }
 
   ngOnInit() {
     this.dialog.showingDialog.subscribe(value => {
       this.UiIsShowingModalWindow = value;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
   show() {
     if (this.visible) {
       this.visible = false;
-      setTimeout(() => this.visible = true, 32);
+      setTimeout(() => {
+        this.visible = true;
+        this.changeDetectorRef.markForCheck();
+      }, 32);
     } else {
       this.visible = true;
     }

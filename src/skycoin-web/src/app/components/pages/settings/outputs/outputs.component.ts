@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Subscription, mergeMap } from 'rxjs';
 
@@ -13,7 +13,7 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
     selector: 'app-outputs',
     templateUrl: './outputs.component.html',
     styleUrls: ['./outputs.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class OutputsComponent implements OnInit, OnDestroy {
@@ -29,7 +29,8 @@ export class OutputsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private spendingService: SpendingService,
     private dialog: CustomMatDialogService,
-    private coinService: CoinService
+    private coinService: CoinService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -40,6 +41,7 @@ export class OutputsComponent implements OnInit, OnDestroy {
       this.wallets = null;
       this.currentCoin = coin;
       this.getWalletsOutputs();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -67,8 +69,12 @@ export class OutputsComponent implements OnInit, OnDestroy {
       this.wallets = address
         ? this.getOutputsForSpecificAddress(wallets, address)
         : this.getOutputs(wallets);
+      this.changeDetectorRef.markForCheck();
     },
-    () => this.showError = true);
+    () => {
+      this.showError = true;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private getOutputsForSpecificAddress(wallets: any, address: string) {

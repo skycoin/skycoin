@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription, delay, first } from 'rxjs';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
@@ -33,7 +33,7 @@ export class Address {
     selector: 'app-history',
     templateUrl: './history.component.html',
     styleUrls: ['./history.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class HistoryComponent implements OnInit, OnDestroy {
@@ -63,6 +63,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     route: ActivatedRoute,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.form = this.formBuilder.group({
       filter: [[]],
@@ -71,6 +72,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
     this.routeSubscription = route.queryParams.subscribe(params => {
       this.requestedAddress = params['addr'];
       this.showRequestedAddress();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -93,9 +95,14 @@ export class HistoryComponent implements OnInit, OnDestroy {
 
           this.transactionsLoaded = true;
           this.showRequestedAddress();
+          this.changeDetectorRef.markForCheck();
         },
-        () => this.showError = true
+        () => {
+          this.showError = true;
+          this.changeDetectorRef.markForCheck();
+        }
       );
+      this.changeDetectorRef.markForCheck();
     }));
 
     this.filterSubscription = this.form.get('filter')!.valueChanges.subscribe(() => {
@@ -125,9 +132,13 @@ export class HistoryComponent implements OnInit, OnDestroy {
           tx.inputs.some(input => selectedAddresses.has(input.owner)) || tx.outputs.some(output => selectedAddresses.has(output.dst)),
         );
       }
+      this.changeDetectorRef.markForCheck();
     });
 
-    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
+    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => {
+      this.price = price;
+      this.changeDetectorRef.markForCheck();
+    }));
   }
 
   ngOnDestroy() {
@@ -207,6 +218,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
         }
       }
 
+      this.changeDetectorRef.markForCheck();
     });
   }
 

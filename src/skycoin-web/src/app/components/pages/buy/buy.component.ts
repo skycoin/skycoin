@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 
 import { config } from '../../../app.config';
@@ -10,7 +10,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
     selector: 'app-buy',
     templateUrl: './buy.component.html',
     styleUrls: ['./buy.component.css'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BuyComponent implements OnInit {
@@ -22,6 +22,7 @@ export class BuyComponent implements OnInit {
   constructor(
     public purchaseService: PurchaseService,
     private dialog: CustomMatDialogService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.otcEnabled = config.otcEnabled;
   }
@@ -29,6 +30,7 @@ export class BuyComponent implements OnInit {
   ngOnInit() {
     this.purchaseService.all().subscribe((orders) => {
       this.orders = orders;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -42,12 +44,17 @@ export class BuyComponent implements OnInit {
     this.scanning = true;
     this.purchaseService.scan(address).subscribe(() => {
       this.disableScanning();
+      this.changeDetectorRef.markForCheck();
     }, error => {
       this.disableScanning();
+      this.changeDetectorRef.markForCheck();
     });
   }
 
   private disableScanning() {
-    setTimeout(() => this.scanning = false, 1000);
+    setTimeout(() => {
+      this.scanning = false;
+      this.changeDetectorRef.markForCheck();
+    }, 1000);
   }
 }

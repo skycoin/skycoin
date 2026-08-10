@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import moment from 'moment';
 import { Subscription, of } from 'rxjs';
 import { delay, mergeMap, first } from 'rxjs';
@@ -21,7 +21,7 @@ import { ConfirmationComponent } from '../../../layout/confirmation/confirmation
     selector: 'app-pending-transactions',
     templateUrl: './pending-transactions.component.html',
     styleUrls: ['./pending-transactions.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
@@ -44,7 +44,8 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     private navbarService: NavBarService,
     private coinService: CoinService,
     private globalsService: GlobalsService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -52,6 +53,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
       .subscribe((coin: BaseCoin) => {
         this.currentCoin = coin;
         this.navbarService.setActiveComponent();
+        this.changeDetectorRef.markForCheck();
       });
 
     this.navbarService.showSwitch('pending-txs.my', 'pending-txs.all', DoubleButtonActive.LeftButton);
@@ -60,6 +62,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
       this.selectedNavbarOption = value;
       this.transactions = [];
       this.startDataRefreshSubscription(0);
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -90,8 +93,10 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
         this.historyService.deletePendingTransaction(txid).subscribe(() => {
           this.transactions = [];
           this.startDataRefreshSubscription(0);
+          this.changeDetectorRef.markForCheck();
         });
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -105,9 +110,11 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
       this.transactions = transactions;
       this.isLoading = false;
       this.startDataRefreshSubscription(this.updatePeriod);
+      this.changeDetectorRef.markForCheck();
     }, () => {
       this.showError = true;
       this.startDataRefreshSubscription(this.errorUpdatePeriod);
+      this.changeDetectorRef.markForCheck();
     });
   }
 

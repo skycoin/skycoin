@@ -20,5 +20,8 @@ getTestBed().initTestEnvironment(
     teardown: { destroyAfterEach: false }
 }
 );
+// Import test specs explicitly, matching how src/gui/static does it.
+import './app/components/pages/richlist/richlist.component.spec';
+
 // Finally, start Karma to run the tests.
 __karma__.start();

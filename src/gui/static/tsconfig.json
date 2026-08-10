@@ -1,7 +1,9 @@
 {
   "compileOnSave": false,
   "angularCompilerOptions": {
-    "preserveWhitespaces": true
+    "preserveWhitespaces": true,
+    "strictTemplates": true,
+    "strictInjectionParameters": true
   },
   "compilerOptions": {
     "ignoreDeprecations": "6.0",

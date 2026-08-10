@@ -10,7 +10,7 @@ import { FooterConfig } from 'app/app.config';
     selector: 'app-generic-footer',
     templateUrl: './generic-footer.component.html',
     styleUrls: ['./generic-footer.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class GenericFooterComponent {

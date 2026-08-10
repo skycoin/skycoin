@@ -30,6 +30,7 @@
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui
+.PHONY: test-ui-e2e test-explorer-e2e
 
 COIN ?= skycoin
 
@@ -255,8 +256,11 @@ test-ui:  ## Run the unit tests of the Angular front-ends that have a working su
 		(cd $$d && npm run test); \
 	done
 
-test-ui-e2e:  ## Run UI e2e tests
+test-ui-e2e:  ## Run the desktop GUI e2e tests
 	./ci-scripts/ui-e2e.sh
+
+test-explorer-e2e:  ## Run the explorer e2e tests against the pinned blockchain database
+	./ci-scripts/explorer-e2e.sh
 
 build-ui:  ## Build the production bundle of every Angular front-end
 	@set -e; for d in $(ANGULAR_UI_DIRS); do \

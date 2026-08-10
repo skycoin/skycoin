@@ -23,7 +23,7 @@ export class LocalValueData {
     selector: 'app-page-base',
     template: '',
     styles: [],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class PageBaseComponent implements OnInit {

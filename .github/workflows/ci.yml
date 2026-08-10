@@ -85,6 +85,20 @@ jobs:
       - name: Verify committed UI bundles are current
         run: make check-ui
 
+      # Renders every explorer page in a real browser against a node using the
+      # pinned blockchain-180 database. 100 assertions over real markup, which
+      # is the only coverage any front-end has beyond unit tests.
+      #
+      # It is not a guard against change-detection regressions specifically: the
+      # pinned dataset answers fast enough that a response can arrive inside the
+      # first change detection pass, so a component that never calls
+      # markForCheck can still render. The same broken build fails these specs
+      # against a mainnet node, where the richlist query takes ~1.8s. Catching
+      # that class of bug reliably needs a test that controls when the value
+      # arrives, not one that races the network.
+      - name: Explorer e2e
+        run: make test-explorer-e2e
+
       - name: Verify skydex-client UI embed is current
         run: make check-skydex-ui
 

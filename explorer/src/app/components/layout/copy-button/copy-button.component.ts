@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 
 /**
@@ -30,7 +30,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
             ]),
         ])
     ],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class CopyButtonComponent {
@@ -60,6 +60,8 @@ export class CopyButtonComponent {
    * Text to be copied when clicking this button.
    */
   @Input() text!: string;
+
+  constructor(private changeDetectorRef: ChangeDetectorRef) { }
 
   /**
    * Function for copying the text.
@@ -93,6 +95,9 @@ export class CopyButtonComponent {
     setTimeout(() => {
       this.animState = CopyButtonComponent.showAnimState;
       this.showLabel = true;
+      // The timer fires outside the change detection pass started by the click,
+      // so under OnPush the view must be marked dirty explicitly.
+      this.changeDetectorRef.markForCheck();
     }, 16);
   }
 

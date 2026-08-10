@@ -1,5 +1,5 @@
 import { switchMap } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { BigNumber } from 'bignumber.js';
 import { of, Subscription } from 'rxjs';
@@ -35,7 +35,7 @@ enum ShowMoreStatus {
     selector: 'app-unspent-outputs',
     templateUrl: './unspent-outputs.component.html',
     styleUrls: ['./unspent-outputs.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class UnspentOutputsComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -103,7 +103,8 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
   constructor(
     private api: ApiService,
     private route: ActivatedRoute,
-    public explorer: ExplorerService
+    public explorer: ExplorerService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
   }
@@ -157,6 +158,7 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
       } else {
         this.outputsToShow = this.outputs.head_outputs;
       }
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -173,6 +175,7 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
           this.loadingMsg = 'general.shortLoadingErrorMsg';
           this.longErrorMsg = 'general.longLoadingErrorMsg';
         }
+        this.changeDetectorRef.markForCheck();
       }
     }));
 
@@ -203,12 +206,14 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
       setTimeout(() => {
         // Updates the list with the elements.
         this.outputsToShow = this.outputs.head_outputs;
+        this.changeDetectorRef.markForCheck();
         // Updates the UI after 2 frames.
         setTimeout(() => {
           // Idicate that all elements are being shown.
           this.showMoreOutputs = ShowMoreStatus.dontShowMore;
           // Accept mouse click.
           this.disableClicks = false;
+          this.changeDetectorRef.markForCheck();
         });
       }, 32);
     }

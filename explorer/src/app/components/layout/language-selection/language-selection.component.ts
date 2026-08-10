@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy } from '@angular/core';
 
 import { LanguageService, LanguageData } from '../../../services/language/language.service';
 import { Subscription } from 'rxjs';
@@ -11,7 +11,7 @@ import { Subscription } from 'rxjs';
     selector: 'app-language-selection',
     templateUrl: './language-selection.component.html',
     styleUrls: ['./language-selection.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class LanguageSelectionComponent implements OnDestroy {
@@ -36,11 +36,15 @@ export class LanguageSelectionComponent implements OnDestroy {
 
   constructor(
     private languageService: LanguageService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.langs = languageService.languages;
 
     // Update the current language if the user changes it.
-    this.languageChangeSubscription = this.languageService.currentLanguage.subscribe(lang => this.currentLanguage = lang);
+    this.languageChangeSubscription = this.languageService.currentLanguage.subscribe(lang => {
+      this.currentLanguage = lang;
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   ngOnDestroy() {

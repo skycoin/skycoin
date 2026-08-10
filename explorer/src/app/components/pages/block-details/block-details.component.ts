@@ -1,5 +1,5 @@
 import { switchMap, filter, first, retryWhen, delay } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
 import BigNumber from 'bignumber.js';
@@ -17,7 +17,7 @@ import { dataValidityTime } from 'app/app.config';
     selector: 'app-block-details',
     templateUrl: './block-details.component.html',
     styleUrls: ['./block-details.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BlockDetailsComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -60,6 +60,7 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
     private explorer: ExplorerService,
     private route: ActivatedRoute,
     private api: ApiService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
   }
@@ -93,6 +94,7 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
       }
 
       this.blockCount = blockchain.blocks;
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -139,6 +141,7 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
           this.loadingMsg = 'general.noData';
           this.longErrorMsg = 'blockDetails.doesNotExist';
         }
+        this.changeDetectorRef.markForCheck();
 
         // If old saved data was used, repeat the operation, ignoring the saved data.
         if (oldSavedDataUsed) {
@@ -155,6 +158,7 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
             this.loadingMsg = 'general.shortLoadingErrorMsg';
             this.longErrorMsg = 'general.longLoadingErrorMsg';
           }
+          this.changeDetectorRef.markForCheck();
         }
       })
     );

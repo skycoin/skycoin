@@ -50,6 +50,8 @@
 //	linux	ppc64le 3.53.3
 //	linux	riscv64 3.53.3
 //	linux	s390x   3.53.3
+//	openbsd	amd64   3.53.3
+//	openbsd	arm64   3.53.3
 //	windows	386     3.53.3
 //	windows	amd64   3.53.3
 //	windows	arm64   3.53.3
@@ -81,20 +83,26 @@
 //
 //	...
 //
+// [NewConnector] is an alternative entry point returning a
+// [driver.Connector] for use with [sql.OpenDB]. It opens the same
+// connections sql.Open does, from the same driver, and exists for callers that
+// need to interpose on them -- tracing, metrics, or connection-scoped setup --
+// which sql.Open gives no access to. See its docstring for an example.
+//
 // # Debug and development versions
 //
-// A comma separated list of options can be passed to `go generate` via the
-// environment variable GO_GENERATE. Some useful options include for example:
+// The transpiled SQLite sources under lib/, and the sqlite-vec sources under
+// vec/, are not generated in this repository. They are produced by
+// modernc.org/libsqlite3 and modernc.org/libsqlite_vec respectively, which own
+// the transpilation and the SQLite compile-time options it uses, and are
+// copied here by
 //
-//	-DSQLITE_DEBUG
-//	-DSQLITE_MEM_DEBUG
-//	-ccgo-verify-structs
+//	$ make vendor
 //
-// To create a debug/development version, issue for example:
-//
-//	$ GO_GENERATE=-DSQLITE_DEBUG,-DSQLITE_MEM_DEBUG go generate
-//
-// Note: To run `go generate` you need to have modernc.org/ccgo/v3 installed.
+// which reads them from checkouts of those two repositories placed next to
+// this one. To build a debug or otherwise modified version, adjust the
+// compile-time options in modernc.org/libsqlite3, regenerate there with 'make
+// generate', and vendor the result here.
 //
 // # Hacking
 //
@@ -174,7 +182,9 @@
 //	 }
 //	0:jnml@e5-1650:~/src/modernc.org/libc$
 //
-// We need to tell the Go build system to use our local, patched/debug libc:
+// We need to tell the Go build system to use our local, patched/debug libc.
+// 'make work' sets up a go.work covering this and the sibling repositories;
+// by hand it is:
 //
 //	0:jnml@e5-1650:~/src/modernc.org/sqlite$ go work use $(go env GOPATH)/src/modernc.org/libc
 //	0:jnml@e5-1650:~/src/modernc.org/sqlite$ go work use .

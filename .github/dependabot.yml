@@ -48,6 +48,10 @@ updates:
       explorer-npm:
         patterns:
           - "*"
+    ignore:
+      # See the note on TypeScript majors at the bottom of this file.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # Skycoin web wallet
   - package-ecosystem: npm
@@ -59,6 +63,10 @@ updates:
       skycoin-web-npm:
         patterns:
           - "*"
+    ignore:
+      # See the note on TypeScript majors at the bottom of this file.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # Desktop GUI (Angular)
   - package-ecosystem: npm
@@ -70,6 +78,10 @@ updates:
       gui-npm:
         patterns:
           - "*"
+    ignore:
+      # See the note on TypeScript majors at the bottom of this file.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # SkyDEX trading UI (React/Vite)
   - package-ecosystem: npm
@@ -81,3 +93,18 @@ updates:
       skydex-client-npm:
         patterns:
           - "*"
+
+# TypeScript majors are ignored for the three Angular front-ends
+# (/explorer, /src/gui/static, /src/skycoin-web).
+#
+# Angular pins a single TypeScript minor per major release: @angular/compiler-cli
+# 22.1.1 declares "typescript": ">=6.0 <6.1", so TypeScript 7 cannot be installed
+# alongside Angular 22. Dependabot would otherwise re-raise an unmergeable
+# typescript 6.0.x -> 7.x PR every week.
+#
+# Angular declined to widen the range for 22.x (angular/angular#69704 and #69719,
+# both closed as not planned). TypeScript 7 is the Go rewrite and does not yet
+# expose the stable programmatic API that Angular's template type-checker needs.
+#
+# Remove these ignore entries when upgrading to an Angular major that supports
+# TypeScript 7; check https://angular.dev/reference/versions for the mapping.

@@ -1,6 +1,6 @@
 import { of as observableOf, Subscription, Observable, of } from 'rxjs';
 import { switchMap } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { BigNumber } from 'bignumber.js';
 
@@ -46,7 +46,7 @@ export class CachedAddressDetails {
     selector: 'app-address-detail',
     templateUrl: './address-detail.component.html',
     styleUrls: ['./address-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class AddressDetailComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -144,7 +144,8 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
   constructor(
     private api: ApiService,
     private route: ActivatedRoute,
-    public explorer: ExplorerService
+    public explorer: ExplorerService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
   }
@@ -154,6 +155,9 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
     this.navParamsSubscription = this.route.params.subscribe(params => {
       // Update the data.
       this.getData(params, true);
+      // getData() sets the address and page synchronously before its own request
+      // resolves, so mark the view here too rather than only in the response.
+      this.changeDetectorRef.markForCheck();
     });
 
     return super.ngOnInit();
@@ -356,6 +360,7 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
       }
 
       this.dataLoaded = true;
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -374,6 +379,7 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
           this.loadingMsg = 'general.shortLoadingErrorMsg';
           this.longErrorMsg = 'general.longLoadingErrorMsg';
         }
+        this.changeDetectorRef.markForCheck();
       }
     });
   }

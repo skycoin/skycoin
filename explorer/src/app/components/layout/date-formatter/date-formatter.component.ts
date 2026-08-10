@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
     selector: 'app-date-formatter',
     templateUrl: './date-formatter.component.html',
     styleUrls: ['./date-formatter.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class DateFormatterComponent {

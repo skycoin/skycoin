@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
 
 import { ExplorerService } from '../../../services/explorer/explorer.service';
 
@@ -27,7 +27,7 @@ enum ShowMoreStatus {
     selector: 'app-transaction-info',
     templateUrl: './transaction-info.component.html',
     styleUrls: ['./transaction-info.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionInfoComponent {
@@ -97,7 +97,7 @@ export class TransactionInfoComponent {
     return this.transactionInternal;
   }
 
-  constructor(public explorer: ExplorerService) { }
+  constructor(public explorer: ExplorerService, private changeDetectorRef: ChangeDetectorRef) { }
 
   /**
    * Creates the list of inputs to be shown, but limiting it to the number of elements set
@@ -151,7 +151,10 @@ export class TransactionInfoComponent {
     this.showMoreInputs = ShowMoreStatus.loading;
     // Load all the elements after 2 frames, to give the application time for updating the
     // UI, in case it gets blocked.
-    setTimeout(() => this.showAllInputs(), 32);
+    setTimeout(() => {
+      this.showAllInputs();
+      this.changeDetectorRef.markForCheck();
+    }, 32);
   }
 
   /**
@@ -162,7 +165,10 @@ export class TransactionInfoComponent {
     // Works similar to startShowingAllInputs().
     this.disableClicks = true;
     this.showMoreOutputs = ShowMoreStatus.loading;
-    setTimeout(() => this.showAllOutputs(), 32);
+    setTimeout(() => {
+      this.showAllOutputs();
+      this.changeDetectorRef.markForCheck();
+    }, 32);
   }
 
   /**
@@ -177,6 +183,7 @@ export class TransactionInfoComponent {
       this.showMoreInputs = ShowMoreStatus.dontShowMore;
       // Accept mouse click.
       this.disableClicks = false;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -189,6 +196,7 @@ export class TransactionInfoComponent {
     setTimeout(() => {
       this.showMoreOutputs = ShowMoreStatus.dontShowMore;
       this.disableClicks = false;
+      this.changeDetectorRef.markForCheck();
     });
   }
 }

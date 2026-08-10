@@ -1,5 +1,5 @@
 import { first } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Observable, of, Subscription } from 'rxjs';
 
 import { ApiService } from '../../../services/api/api.service';
@@ -14,7 +14,7 @@ import { dataValidityTime } from 'app/app.config';
 @Component({
     templateUrl: './richlist.component.html',
     styleUrls: ['./richlist.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class RichlistComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -37,7 +37,8 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
 
   constructor(
     private api: ApiService,
-    public explorer: ExplorerService
+    public explorer: ExplorerService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
   }
@@ -65,6 +66,7 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
         this.saveLocalValue(this.persistentServerEntriesResponseKey, entries);
       }
       this.entries = entries;
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -75,6 +77,7 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
         if (!this.entries.length) {
           // Error loading the data.
           this.longErrorMsg = 'general.longLoadingErrorMsg';
+          this.changeDetectorRef.markForCheck();
         }
     }));
   }

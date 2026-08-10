@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription, of } from 'rxjs';
@@ -15,7 +15,7 @@ import { ApiService } from '../../../services/api/api.service';
     selector: 'app-search-bar',
     templateUrl: './search-bar.component.html',
     styleUrls: ['./search-bar.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SearchBarComponent implements OnDestroy {
@@ -42,6 +42,7 @@ export class SearchBarComponent implements OnDestroy {
     private router: Router,
     private translate: TranslateService,
     private apiService: ApiService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     // Each time the node URL is changed, check if the node is in sync.
     this.nodeUrlSubscription = this.apiService.localNodeUrl.subscribe(() => {
@@ -79,6 +80,7 @@ export class SearchBarComponent implements OnDestroy {
       // has been detected but not added, which would happen very fast and should not merit
       // alerting the user.
       this.showSyncWarning = response.highest - response.current > 3;
+      this.changeDetectorRef.markForCheck();
 
       // If the node is not in sync, repeat the operation after some time.
       if (this.showSyncWarning) {
@@ -129,8 +131,12 @@ export class SearchBarComponent implements OnDestroy {
         // Reset the control.
         this.searching = false;
         this.input.nativeElement.value = '';
+        this.changeDetectorRef.markForCheck();
       },
-      () => this.searching = false
+      () => {
+        this.searching = false;
+        this.changeDetectorRef.markForCheck();
+      }
     );
   }
 }

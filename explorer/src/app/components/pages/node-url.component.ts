@@ -14,7 +14,7 @@ import { ExplorerService } from 'app/services/explorer/explorer.service';
 @Component({
     selector: 'app-node-url',
     template: '',
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class NodeUrlComponent implements OnInit, OnDestroy {

@@ -1,5 +1,5 @@
 import { first } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 
 import { SearchService, SearchError } from '../../../services/search/search.service';
@@ -12,7 +12,7 @@ import { Subscription } from 'rxjs';
  */
 @Component({
     templateUrl: './search.component.html',
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class SearchComponent implements OnInit, OnDestroy {
@@ -33,6 +33,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private searchService: SearchService,
     private route: ActivatedRoute,
     private router: Router,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -42,6 +43,7 @@ export class SearchComponent implements OnInit, OnDestroy {
        */
       if (!params['term'] || (params['term'].trim() as string).length < 1) {
         this.errorMsg = 'search.unableToFind';
+        this.changeDetectorRef.markForCheck();
       }
       this.searchTerm = params['term'].trim();
 
@@ -50,6 +52,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       if (navCommands.error) {
         if (navCommands.error === SearchError.invalidSearchTerm) {
           this.errorMsg = 'search.unableToFind';
+          this.changeDetectorRef.markForCheck();
         }
 
         return;
@@ -62,7 +65,10 @@ export class SearchComponent implements OnInit, OnDestroy {
           // Navigate and erase the current page from the browser history.
           this.router.navigate(result, { replaceUrl: true });
         },
-        () => this.errorMsg = 'search.unableToFind'
+        () => {
+          this.errorMsg = 'search.unableToFind';
+          this.changeDetectorRef.markForCheck();
+        }
       ));
     }));
   }

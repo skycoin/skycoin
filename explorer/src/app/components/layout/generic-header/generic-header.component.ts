@@ -10,7 +10,7 @@ import { HeaderConfig } from 'app/app.config';
     selector: 'app-generic-header',
     templateUrl: './generic-header.component.html',
     styleUrls: ['./generic-header.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class GenericHeaderComponent {

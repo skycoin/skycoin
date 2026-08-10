@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Observable, of, Subscription } from 'rxjs';
 
 import { parseGetUnconfirmedTransaction, Transaction } from '../../../app.datatypes';
@@ -13,7 +13,7 @@ import { ApiService } from 'app/services/api/api.service';
     selector: 'app-unconfirmed-transactions',
     templateUrl: './unconfirmed-transactions.component.html',
     styleUrls: ['./unconfirmed-transactions.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class UnconfirmedTransactionsComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -53,6 +53,7 @@ export class UnconfirmedTransactionsComponent extends PageBaseComponent implemen
 
   constructor(
     private api: ApiService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
   }
@@ -90,6 +91,7 @@ export class UnconfirmedTransactionsComponent extends PageBaseComponent implemen
         this.leastRecent = orderedList[orderedList.length - 1].timestamp;
         this.totalSize = orderedList.map((tx: Transaction) => tx.length).reduce((sum: number, current: number) => sum + current);
       }
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -100,6 +102,7 @@ export class UnconfirmedTransactionsComponent extends PageBaseComponent implemen
         // Error loading the data.
         this.loadingMsg = 'general.shortLoadingErrorMsg';
         this.longErrorMsg = 'general.longLoadingErrorMsg';
+        this.changeDetectorRef.markForCheck();
       }
     }));
   }

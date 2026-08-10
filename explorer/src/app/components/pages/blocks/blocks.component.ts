@@ -1,5 +1,5 @@
 import { first, switchMap } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
 
@@ -15,7 +15,7 @@ import { dataValidityTime } from 'app/app.config';
 @Component({
     templateUrl: './blocks.component.html',
     styleUrls: ['./blocks.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class BlocksComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -99,12 +99,14 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
     private api: ApiService,
     private explorer: ExplorerService,
     private route: ActivatedRoute,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
 
     // Each time the node URL is changed, check if a local node is being used.
     this.nodeUrlSubscription = this.api.localNodeUrl.subscribe(response => {
       this.usingLocalNode = !!response;
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -156,6 +158,7 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
         this.saveLocalValue(this.persistentServerBlocksResponseKey, blocks);
       }
       this.blocks = blocks;
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -166,6 +169,7 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
         // Error loading the data.
         this.loadingMetadataMsg = 'general.shortLoadingErrorMsg';
         this.longErrorMsg = 'general.longLoadingErrorMsg';
+        this.changeDetectorRef.markForCheck();
       }
     }));
   }
@@ -191,6 +195,7 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
       this.totalSupply = response.total_supply;
       this.currentCoinhourSupply = response.current_coinhour_supply;
       this.totalCoinhourSupply = response.total_coinhour_supply;
+      this.changeDetectorRef.markForCheck();
 
       // If old saved data was used, repeat the operation, ignoring the saved data.
       if (oldSavedDataUsed) {
@@ -199,6 +204,7 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
     }, () => {
       // Error loading the data.
       this.loadingCoinSupplyMsg = 'general.shortLoadingErrorMsg';
+      this.changeDetectorRef.markForCheck();
     }));
   }
 

@@ -1,5 +1,5 @@
 import { switchMap } from 'rxjs';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { of, Subscription } from 'rxjs';
 
@@ -15,7 +15,7 @@ import { dataValidityTime } from 'app/app.config';
     selector: 'app-transaction-detail',
     templateUrl: './transaction-detail.component.html',
     styleUrls: ['./transaction-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
 export class TransactionDetailComponent extends PageBaseComponent implements OnInit, OnDestroy {
@@ -44,6 +44,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
   constructor(
     private explorer: ExplorerService,
     private route: ActivatedRoute,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {
     super();
   }
@@ -53,7 +54,10 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
     this.pageSubscriptions.push(this.route.params.pipe(
       switchMap((params: Params) => this.explorer.getTransaction(params['txid']))
     ).subscribe(
-      transaction => this.transaction = transaction,
+      transaction => {
+        this.transaction = transaction;
+        this.changeDetectorRef.markForCheck();
+      },
       error => {
         if (error.status >= 400 && error.status < 500) {
           // The transaction was not found.
@@ -64,6 +68,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
           this.loadingMsg = 'general.shortLoadingErrorMsg';
           this.longErrorMsg = 'general.longLoadingErrorMsg';
         }
+        this.changeDetectorRef.markForCheck();
       }
     ));
 
@@ -94,6 +99,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
           this.saveLocalValue(this.persistentServerTransactionResponseKey, transaction);
         }
         this.transaction = transaction;
+        this.changeDetectorRef.markForCheck();
 
         // If old saved data was used, repeat the operation, ignoring the saved data.
         if (oldSavedDataUsed) {
@@ -111,6 +117,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
             this.loadingMsg = 'general.shortLoadingErrorMsg';
             this.longErrorMsg = 'general.longLoadingErrorMsg';
           }
+          this.changeDetectorRef.markForCheck();
         }
       }
     ));

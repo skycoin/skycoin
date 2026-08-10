@@ -1,11 +1,6 @@
 // This file is required by karma.conf.js and loads recursively all the .spec and framework files
 
-import 'zone.js/dist/long-stack-trace-zone';
-import 'zone.js/dist/proxy.js';
-import 'zone.js/dist/sync-test';
-import 'zone.js/dist/jasmine-patch';
-import 'zone.js/dist/async-test';
-import 'zone.js/dist/fake-async-test';
+import 'zone.js/testing';
 import { getTestBed } from '@angular/core/testing';
 import {
   BrowserDynamicTestingModule,
@@ -25,13 +20,23 @@ getTestBed().initTestEnvironment(
     teardown: { destroyAfterEach: false }
 }
 );
-// Then we find all the tests.
-let context = null;
+// Then we find all the tests. require.context is a webpack extension, so it is
+// not part of the NodeJS Require typings; reach it through a local alias rather
+// than pulling in @types/webpack-env just for this file.
+interface WebpackRequireContext {
+  (id: string): unknown;
+  keys(): string[];
+}
+const webpackRequire = require as unknown as {
+  context(path: string, deep?: boolean, filter?: RegExp): WebpackRequireContext;
+};
+
+let context: WebpackRequireContext;
 
 if (__karma__.config.cipher) {
-  context = require.context('./', true, /cipher\.provider\.lib\.spec\.ts$/);
+  context = webpackRequire.context('./', true, /cipher\.provider\.lib\.spec\.ts$/);
 } else {
-  context = require.context('./', true, /(?!.*?cipher\.provider\.lib\.spec\.ts$)(^.*\.spec\.ts$)/);
+  context = webpackRequire.context('./', true, /(?!.*?cipher\.provider\.lib\.spec\.ts$)(^.*\.spec\.ts$)/);
 }
 
 // Set cipher mode to have ability to read this value in .spec file

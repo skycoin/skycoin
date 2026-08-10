@@ -11,9 +11,9 @@
     "build-for-electron": "NODE_OPTIONS=--openssl-legacy-provider ng build --prod --environment local-prod",
     "build-for-local-fs": "NODE_OPTIONS=--openssl-legacy-provider ng build --prod --environment local-prod --base-href ./index.html",
     "lint": "ng lint",
-    "test": "ng test -sm=false --watch=false --browsers ChromeHeadlessNoSandbox",
-    "cipher-test": "ng test -sm=false --watch=false --browsers ChromeHeadlessNoSandbox --browserNoActivityTimeout=180000 --cipher",
-    "test:watch": "ng test -sm=false --browsers Chrome",
+    "test": "ng test --watch=false --browsers ChromeHeadlessNoSandbox",
+    "cipher-test": "ng test --watch=false --browsers ChromeHeadlessNoSandbox --browserNoActivityTimeout=180000 --cipher",
+    "test:watch": "ng test --browsers Chrome",
     "start-docker": "ng serve --proxy-config docker-proxy.config.js --delete-output-path false"
   },
   "private": true,

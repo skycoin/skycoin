@@ -288,9 +288,15 @@ build-wasm:  ## Rebuild the skycoin-lite wasm cipher (needs go and a stamping ti
 	@#
 	@# Each wasm_exec.js is copied from the toolchain that built the wasm beside
 	@# it. They are not interchangeable.
-	GOOS=js GOARCH=wasm go build -o $(SKYCOIN_LITE_DIR)/wasm-go/skycoin-lite.wasm ./$(SKYCOIN_LITE_DIR)/wasm/
-	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-go/wasm_exec.js
-	$(TINYGO) build -o $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/
+	@# Both compile to a scratch directory before anything is written back. Each
+	@# build stamps the state of the work tree it sees, so writing the first
+	@# artifact into place would make the second one report itself dirty.
+	@set -e; out=$$(mktemp -d); trap 'rm -rf "$$out"' EXIT; \
+	GOOS=js GOARCH=wasm go build -o "$$out/go.wasm" ./$(SKYCOIN_LITE_DIR)/wasm/; \
+	$(TINYGO) build -o "$$out/tinygo.wasm" -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/; \
+	cp "$$out/go.wasm" $(SKYCOIN_LITE_DIR)/wasm-go/skycoin-lite.wasm; \
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-go/wasm_exec.js; \
+	cp "$$out/tinygo.wasm" $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm; \
 	cp "$$($(TINYGO) env TINYGOROOT)/targets/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-tinygo/wasm_exec.js
 	@node ci-scripts/check-wasm-version.js
 

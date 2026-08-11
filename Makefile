@@ -60,8 +60,6 @@ UI_DIST_DIRS = $(GUI_STATIC_DIR)/dist $(EXPLORER_DIR)/dist $(SKYCOIN_WEB_DIR)/sr
 SKYDEX_UI_DIR = cmd/skydex-client
 SKYDEX_UI_EMBED_DIR = cmd/skydex-client/commands/static
 
-# Electron files directory
-ELECTRON_DIR = electron
 
 # Platform specific checks
 OSNAME = $(TRAVIS_OS_NAME)
@@ -211,7 +209,6 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 
 install-linters: ## Install linters
 	go install golang.org/x/tools/cmd/goimports@latest
-	go install github.com/FiloSottile/vendorcheck@latest
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
@@ -306,70 +303,15 @@ check-skydex-ui: install-deps-skydex-ui  ## Fail if the committed skydex-client 
 	}
 	@echo "skydex-client UI embed is up to date."
 
-snapshot: ## Build snapshot release with goreleaser (all platforms)
-	go run github.com/goreleaser/goreleaser/v2@latest --snapshot --clean --skip=publish --config .goreleaser-linux.yml
 
-snapshot-linux: ## Build snapshot release for Linux only
-	go run github.com/goreleaser/goreleaser/v2@latest --snapshot --clean --skip=publish --config .goreleaser-linux.yml
 
-snapshot-darwin: ## Build snapshot release for macOS only
-	go run github.com/goreleaser/goreleaser/v2@latest --snapshot --clean --skip=publish --config .goreleaser-darwin.yml
 
-snapshot-windows: ## Build snapshot release for Windows only
-	go run github.com/goreleaser/goreleaser/v2@latest --snapshot --clean --skip=publish --config .goreleaser-windows.yml
 
-github-prepare-release:
-	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags | sed 's/-.*//'))
-	sed '/^## ${GITHUB_TAG}$$/,/^## .*/!d;//d;/^$$/d' ./CHANGELOG.md > releaseChangelog.md
 
-github-release: github-prepare-release ## Create GitHub release for Linux (triggered by GitHub Actions on tag push)
-	go run github.com/goreleaser/goreleaser/v2@latest --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md --skip=publish
-	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
-	gh release create ${GITHUB_TAG} --repo skycoin/skycoin --title ${GITHUB_TAG} --notes-file releaseChangelog.md || true
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-amd64.tar.gz --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-arm64.tar.gz --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-386.tar.gz --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-arm.tar.gz --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-armhf.tar.gz --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-riscv64.tar.gz --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/checksums.txt --clobber
 
-github-release-darwin-amd64: ## Create GitHub release for macOS Intel (triggered by GitHub Actions)
-	go run github.com/goreleaser/goreleaser/v2@latest --clean --config .goreleaser-darwin-amd64.yml --skip=publish
-	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.tar.gz
-	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
-	cat ./dist/checksums.txt >> checksums.txt
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
 
-github-release-darwin-arm64: ## Create GitHub release for macOS ARM (triggered by GitHub Actions)
-	go run github.com/goreleaser/goreleaser/v2@latest --clean --config .goreleaser-darwin-arm64.yml --skip=publish
-	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.tar.gz
-	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
-	cat ./dist/checksums.txt >> checksums.txt
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
 
-github-release-darwin: ## Create GitHub release for macOS (triggered by GitHub Actions)
-	go run github.com/goreleaser/goreleaser/v2@latest --clean --config .goreleaser-darwin.yml --skip=publish
-	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.tar.gz
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.tar.gz
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.pkg || true
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.pkg || true
-	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
-	cat ./dist/checksums.txt >> checksums.txt
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
 
-github-release-windows: ## Create GitHub release for Windows (triggered by GitHub Actions)
-	go run github.com/goreleaser/goreleaser/v2@latest --clean --config .goreleaser-windows.yml --skip=publish
-	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-amd64.zip --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-386.zip --clobber
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-arm64.zip --clobber
-	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
-	cat ./dist/checksums.txt >> checksums.txt
-	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
 
 win-installer: ## Build the windows .msi (installer) custom version
 	@powershell '.\scripts\win_installer\script.ps1 $(CUSTOM_VERSION) amd64'
@@ -447,34 +389,11 @@ dep-github-release:
 	./ci-scripts/build-libusb-musl.sh 386 i686-linux-musl ./musl-data/i686-linux-musl-cross
 	./ci-scripts/build-libusb-musl.sh riscv64 riscv64-linux-musl ./musl-data/riscv64-linux-musl-cross
 
-release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
-	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
-	@echo release files are in the folder of electron/release
 
-release-standalone: ## Build standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release-standalone osarch=darwin/amd64' Supported architectures are the same as 'release' command.
-	cd $(ELECTRON_DIR) && ./build-standalone-release.sh ${osarch}
-	@echo release files are in the folder of electron/release
 
-release-electron: ## Build electron apps. Use osarch=${osarch} to specify the platform. Example: 'make release-electron osarch=darwin/amd64' Supported architectures are the same as 'release' command.
-	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
-	@echo release files are in the folder of electron/release
 
-release-daemon: ## Build daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release-daemon osarch=darwin/amd64' Supported architectures are the same as 'release' command.
-	cd $(ELECTRON_DIR) && ./build-daemon-release.sh ${osarch}
-	@echo release files are in the folder of electron/release
 
-release-cli: ## Build CLI apps. Use osarch=${osarch} to specify the platform. Example: 'make release-cli osarch=darwin/amd64' Supported architectures are the same as 'release' command.
-	cd $(ELECTRON_DIR) && ./build-cli-release.sh ${osarch}
-	@echo release files are in the folder of electron/release
 
-clean-release: ## Remove all electron build artifacts and goreleaser dist
-	rm -rf $(ELECTRON_DIR)/release
-	rm -rf $(ELECTRON_DIR)/.gox_output
-	rm -rf $(ELECTRON_DIR)/.daemon_output
-	rm -rf $(ELECTRON_DIR)/.cli_output
-	rm -rf $(ELECTRON_DIR)/.standalone_output
-	rm -rf $(ELECTRON_DIR)/.electron_output
-	rm -rf ./dist
 
 clean-coverage: ## Remove coverage output files
 	rm -rf ./coverage/

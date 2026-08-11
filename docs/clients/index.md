@@ -7,4 +7,3 @@ the node and the blockchain.
 - [Web client](web.md) — the browser-based wallet.
 - [Lite client](lite.md) — a lightweight client.
 - [Explorer](explorer.md) — the Skycoin block explorer.
-- [Electron build](electron.md) — the Electron packaging/build system for the desktop client.

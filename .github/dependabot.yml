@@ -27,17 +27,6 @@ updates:
         patterns:
           - "*"
 
-  # Desktop app packaging
-  - package-ecosystem: npm
-    directory: "/electron"
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      electron-npm:
-        patterns:
-          - "*"
-
   # Blockchain explorer web app
   - package-ecosystem: npm
     directory: "/explorer"

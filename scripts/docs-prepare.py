@@ -59,7 +59,6 @@ MAPPING = {
     "src/skycoin-web/README.md": "clients/web.md",
     "src/skycoin-lite/README.md": "clients/lite.md",
     "explorer/README.md": "clients/explorer.md",
-    "electron/README.md": "clients/electron.md",
 }
 
 # Matches markdown inline link / image targets: ](url) or ](<url> "title").

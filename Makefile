@@ -254,6 +254,13 @@ test-ui:  ## Run the unit tests of the Angular front-ends that have a working su
 		echo "==> npm run test ($$d)"; \
 		(cd $$d && npm run test); \
 	done
+	@# @angular/build's karma builder writes a scratch bundle to
+	@# <project>/dist/test-out/<uuid>, which it does not always clean up and
+	@# which cannot be configured elsewhere. In /explorer that lands inside the
+	@# committed dist/ that explorer.go embeds with //go:embed dist/*, and an
+	@# empty directory there fails the Go build with "contains no embeddable
+	@# files". Remove it so `make test-ui && go build .` works in any order.
+	@for d in $(ANGULAR_UI_DIRS); do rm -rf "$$d/dist/test-out"; done
 
 test-ui-e2e:  ## Run the desktop GUI e2e tests
 	./ci-scripts/ui-e2e.sh

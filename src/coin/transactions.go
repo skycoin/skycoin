@@ -235,8 +235,8 @@ func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 			return errors.New("Unsigned input in transaction")
 		}
 
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
-		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])                             // use inner hash, not outer hash
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash) //nolint:gosec // verifyInputSignaturesPrelude checks len(txn.In) against len(uxIn) and len(txn.Sigs)
 		if err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}

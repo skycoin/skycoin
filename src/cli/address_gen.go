@@ -183,7 +183,7 @@ func addressGenBatch(mode, label, seed string, coinType wallet.CoinType, hideSec
 		Encrypt:    encrypt,
 		Password:   password,
 		CryptoType: crypto.DefaultCryptoType,
-		GenerateN:  uint64(numAddresses),
+		GenerateN:  uint64(numAddresses), //nolint:gosec // numAddresses is validated as a positive count before this point
 		Type:       wallet.WalletTypeDeterministic,
 	})
 	if err != nil {
@@ -452,7 +452,7 @@ func fiberAddressGenCmd() *cobra.Command {
 					return fmt.Errorf("failed to marshal FIBER_TOML: %w", err)
 				}
 
-				if err := os.WriteFile(fiberTomlPath, updatedData, 0600); err != nil {
+				if err := os.WriteFile(fiberTomlPath, updatedData, 0600); err != nil { //nolint:gosec // the output path is supplied by the operator running the command
 					return fmt.Errorf("failed to write FIBER_TOML %q: %w", fiberTomlPath, err)
 				}
 

@@ -589,7 +589,7 @@ func serve(ctx context.Context) error {
 	fileServer := http.FileServer(http.FS(guiFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" && r.URL.Path != "/favicon.ico" {
-			log.Printf("[STATIC] %s %s", r.Method, r.URL.Path)
+			log.Printf("[STATIC] %s %s", r.Method, r.URL.Path) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
 		}
 		fileServer.ServeHTTP(w, r)
 	})
@@ -783,13 +783,13 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 	if trimmedPath == "/v1/transactions" {
 		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
 		if entry, ok := queryCache.get(cacheKey, 30*time.Second); ok {
-			log.Printf("[PROXY] POST %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second))
+			log.Printf("[PROXY] POST %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second)) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
 			c.Data(entry.statusCode, entry.contentType, entry.body)
 			return true
 		}
 	}
 
-	log.Printf("[PROXY] POST %s -> %s", c.Request.URL.Path, targetURL)
+	log.Printf("[PROXY] POST %s -> %s", c.Request.URL.Path, targetURL) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
 
 	// Build form body from the original request
 	if err := c.Request.ParseForm(); err != nil {
@@ -883,7 +883,7 @@ func proxyToNodeWithBase(c *webCtx, remoteNodeURL string, targetPath string) {
 		targetURL += "?" + c.Request.URL.RawQuery
 	}
 
-	log.Printf("[PROXY] %s %s -> %s", c.Request.Method, c.Request.URL.Path, targetURL)
+	log.Printf("[PROXY] %s %s -> %s", c.Request.Method, c.Request.URL.Path, targetURL) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
 
 	proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body) //nolint:gosec // G704: proxies to operator-configured node URLs, not user input
 	if err != nil {

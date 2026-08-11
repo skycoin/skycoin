@@ -16,7 +16,7 @@ func MessagePrefixFromString(prefix string) MessagePrefix {
 	}
 	p := MessagePrefix{}
 	for i, c := range prefix {
-		p[i] = byte(c)
+		p[i] = byte(c) //nolint:gosec // deliberate truncation: packing a rune into a protocol byte
 	}
 	for i := len(prefix); i < 4; i++ {
 		p[i] = 0x00

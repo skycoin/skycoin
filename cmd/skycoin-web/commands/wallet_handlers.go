@@ -733,7 +733,7 @@ func handleWalletBalance(c *webCtx, s *wallet.Service, nodeURL string) {
 
 	// Query remote node for balance
 	balanceURL := fmt.Sprintf("%s/api/v1/balance?addrs=%s", nodeURL, addrParam)
-	log.Printf("[WALLET] Querying balance for %d addresses from %s", len(addrs), nodeURL)
+	log.Printf("[WALLET] Querying balance for %d addresses from %s", len(addrs), nodeURL) //nolint:gosec // logs the configured node URL, not caller-supplied input
 
 	resp, err := http.Get(balanceURL) //nolint:gosec
 	if err != nil {

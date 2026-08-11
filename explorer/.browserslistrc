@@ -1,12 +1,17 @@
-# This file is used by the build system to adjust CSS and JS output to support the specified browsers below.
-# For additional information regarding the format and rule options, please see:
-# https://github.com/browserslist/browserslist#queries
-
-# You can see what browsers were selected by your queries by running:
-#   npx browserslist
-
-> 0.5%
-last 2 versions
+# Browsers the build targets.
+#
+# This deliberately matches the browsers Angular itself supports rather than a
+# broad "> 0.5%, last 2 versions" query. The previous query resolved to 33
+# targets including op_mini, kaios and and_qq, none of which Angular 22 supports.
+# The old webpack builder ignored them with a warning; the esbuild builder
+# honours them and downlevels output to ES5, which breaks bootstrapping with
+# "Class constructor cannot be invoked without 'new'" when downlevelled classes
+# extend native ones.
+#
+# See https://angular.dev/reference/versions#browser-support
+last 2 Chrome versions
+last 2 Edge major versions
+last 2 Firefox versions
 Firefox ESR
-not dead
-not IE 9-11 # For IE 9-11 support, remove 'not'.
+last 2 Safari major versions
+last 2 iOS major versions

@@ -1,32 +1,59 @@
 //go:build wasm
 
+// Package main provides the wasm build of the browser cipher: the entry points
+// src/skycoin-web calls to derive addresses and sign transactions, plus the
+// verification helpers its cipher spec checks them with.
 package main
 
 import (
+	"fmt"
 	"syscall/js"
 
 	"github.com/skycoin/skycoin/src/skycoin-lite/liteclient"
 )
 
-func main() {
-	// Create SkycoinCipher object with methods
-	skycoinCipher := js.Global().Get("Object").New()
+// errorResult is what every entry point returns when it could not do its job.
+// Callers check for the "error" key, so the shape has to be a map even when the
+// success value is a plain string.
+func errorResult(err interface{}) map[string]interface{} {
+	return map[string]interface{}{"error": fmt.Sprint(err)}
+}
 
-	// generateAddress function
-	skycoinCipher.Set("generateAddress", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		if len(args) < 1 {
-			return map[string]interface{}{"error": "seed parameter required"}
+// guard runs fn and turns a panic into an {"error": ...} result.
+//
+// Everything under liteclient reports failure by panicking — the cipher
+// Must* constructors do, and the verification helpers do so explicitly. Each
+// entry point here used to recover without setting a return value, so a bad
+// seed or a malformed hash came back to JavaScript as null instead of as the
+// documented error object, and the caller crashed reading .error off it.
+func guard(fn func() interface{}) (result interface{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = errorResult(r)
+		}
+	}()
+
+	return fn()
+}
+
+// arity wraps a function of n string arguments, rejecting short calls before
+// they reach the cipher.
+func arity(n int, name string, fn func(args []js.Value) interface{}) js.Func {
+	return js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		if len(args) < n {
+			return errorResult(fmt.Sprintf("%s requires %d argument(s)", name, n))
 		}
 
-		seed := args[0].String()
+		return guard(func() interface{} { return fn(args) })
+	})
+}
 
-		defer func() {
-			if r := recover(); r != nil {
-				// Convert panic to error return
-			}
-		}()
+func main() {
+	// The wallet's own entry points.
+	skycoinCipher := js.Global().Get("Object").New()
 
-		address := liteclient.GenerateAddress(seed)
+	skycoinCipher.Set("generateAddress", arity(1, "generateAddress", func(args []js.Value) interface{} {
+		address := liteclient.GenerateAddress(args[0].String())
 
 		return map[string]interface{}{
 			"nextSeed": address.NextSeed,
@@ -36,49 +63,78 @@ func main() {
 		}
 	}))
 
-	// prepareTransaction function
-	skycoinCipher.Set("prepareTransaction", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		if len(args) < 2 {
-			return map[string]interface{}{"error": "inputs and outputs parameters required"}
-		}
-
-		inputsJSON := args[0].String()
-		outputsJSON := args[1].String()
-
-		defer func() {
-			if r := recover(); r != nil {
-				// Convert panic to error return
-			}
-		}()
-
-		txHex := liteclient.PrepareTransaction(inputsJSON, outputsJSON)
-
-		return txHex
+	skycoinCipher.Set("prepareTransaction", arity(2, "prepareTransaction", func(args []js.Value) interface{} {
+		return liteclient.PrepareTransaction(args[0].String(), args[1].String())
 	}))
 
-	// prepareTransactionWithSignatures function (for hardware wallet signing)
-	skycoinCipher.Set("prepareTransactionWithSignatures", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		if len(args) < 3 {
-			return map[string]interface{}{"error": "inputs, outputs, and signatures parameters required"}
-		}
-
-		inputsJSON := args[0].String()
-		outputsJSON := args[1].String()
-		signaturesJSON := args[2].String()
-
-		defer func() {
-			if r := recover(); r != nil {
-				// Convert panic to error return
-			}
-		}()
-
-		txHex := liteclient.PrepareTransactionWithSignatures(inputsJSON, outputsJSON, signaturesJSON)
-
-		return txHex
+	// prepareTransactionWithSignatures is used for hardware wallet signing.
+	skycoinCipher.Set("prepareTransactionWithSignatures", arity(3, "prepareTransactionWithSignatures", func(args []js.Value) interface{} {
+		return liteclient.PrepareTransactionWithSignatures(args[0].String(), args[1].String(), args[2].String())
 	}))
 
-	// Set SkycoinCipher on global window object
 	js.Global().Set("SkycoinCipher", skycoinCipher)
+
+	// The verification helpers. These exist so the browser cipher can be checked
+	// against src/cipher/testsuite/testdata — the same golden vectors the Go
+	// implementation is checked against — by
+	// src/skycoin-web/src/app/services/cipher.provider.lib.spec.ts. The GopherJS
+	// build publishes the same set as CipherExtras.
+	//
+	// Each verify* returns null when the check passes and an error string when it
+	// does not, rather than the int the underlying secp256k1 helpers use.
+	skycoinCipherExtras := js.Global().Get("Object").New()
+
+	skycoinCipherExtras.Set("verifyPubKeySignedHash", arity(3, "verifyPubKeySignedHash", func(args []js.Value) interface{} {
+		liteclient.VerifyPubKeySignedHash(args[0].String(), args[1].String(), args[2].String())
+
+		return nil
+	}))
+
+	skycoinCipherExtras.Set("verifyAddressSignedHash", arity(3, "verifyAddressSignedHash", func(args []js.Value) interface{} {
+		liteclient.VerifyAddressSignedHash(args[0].String(), args[1].String(), args[2].String())
+
+		return nil
+	}))
+
+	skycoinCipherExtras.Set("verifySignatureRecoverPubKey", arity(2, "verifySignatureRecoverPubKey", func(args []js.Value) interface{} {
+		liteclient.VerifySignatureRecoverPubKey(args[0].String(), args[1].String())
+
+		return nil
+	}))
+
+	skycoinCipherExtras.Set("verifySeckey", arity(1, "verifySeckey", func(args []js.Value) interface{} {
+		if liteclient.VerifySeckey(args[0].String()) != 1 {
+			return "invalid secret key"
+		}
+
+		return nil
+	}))
+
+	skycoinCipherExtras.Set("verifyPubkey", arity(1, "verifyPubkey", func(args []js.Value) interface{} {
+		if liteclient.VerifyPubkey(args[0].String()) != 1 {
+			return "invalid public key"
+		}
+
+		return nil
+	}))
+
+	skycoinCipherExtras.Set("addressFromPubKey", arity(1, "addressFromPubKey", func(args []js.Value) interface{} {
+		return liteclient.AddressFromPubKey(args[0].String())
+	}))
+
+	skycoinCipherExtras.Set("addressFromSecKey", arity(1, "addressFromSecKey", func(args []js.Value) interface{} {
+		return liteclient.AddressFromSecKey(args[0].String())
+	}))
+
+	skycoinCipherExtras.Set("pubKeyFromSig", arity(2, "pubKeyFromSig", func(args []js.Value) interface{} {
+		return liteclient.PubKeyFromSig(args[0].String(), args[1].String())
+	}))
+
+	skycoinCipherExtras.Set("signHash", arity(2, "signHash", func(args []js.Value) interface{} {
+		return liteclient.SignHash(args[0].String(), args[1].String())
+	}))
+
+	js.Global().Set("SkycoinCipherExtras", skycoinCipherExtras)
 
 	// Keep the Go program running
 	<-make(chan struct{})

@@ -101,6 +101,19 @@ describe('CipherProvider Lib', () => {
       expect(window.SkycoinCipherExtras).toBeTruthy();
       expect(window.SkycoinCipherExtras.signHash).toEqual(jasmine.any(Function));
     });
+
+    // The wasm is a committed artifact built at an earlier commit than the one
+    // carrying it, so this is the only way a running wallet can say which
+    // cipher it holds. ci-scripts/check-wasm-version.js reads the same stamp
+    // out of the file and rejects one built from a dirty tree.
+    it('should report what it was built from', () => {
+      const build = (window.SkycoinCipher as any).version;
+
+      expect(build).toBeTruthy();
+      expect(build.commit).toMatch(/^[0-9a-f]{40}$/);
+      expect(build.version).toBeTruthy();
+      expect(typeof build.modified).toBe('boolean');
+    });
   });
 
   // Everything under liteclient reports failure by panicking. main_wasm.go has

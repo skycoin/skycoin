@@ -30,7 +30,7 @@
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
-.PHONY: test-ui-e2e test-explorer-e2e build-wasm
+.PHONY: test-ui-e2e test-explorer-e2e build-wasm check-wasm
 
 COIN ?= skycoin
 
@@ -281,6 +281,9 @@ build-wasm:  ## Rebuild the skycoin-lite wasm cipher (needs go and tinygo)
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-go/wasm_exec.js
 	tinygo build -o $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/
 	cp "$$(tinygo env TINYGOROOT)/targets/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-tinygo/wasm_exec.js
+
+check-wasm:  ## Fail if a committed wasm was built from a dirty working tree
+	node ci-scripts/check-wasm-version.js
 
 check-onpush:  ## Fail if an OnPush component has an unmarked asynchronous callback
 	node ci-scripts/check-onpush-marks.js $(addsuffix /src,$(ANGULAR_UI_DIRS))

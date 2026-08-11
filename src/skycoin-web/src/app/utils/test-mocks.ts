@@ -6,6 +6,7 @@ import { BaseCoin } from '../coins/basecoin';
 import { Wallet } from '../app.datatypes';
 import { BalanceEvent, BalanceStates } from '../services/wallet/balance.service';
 import { CoinHealth } from '../services/node-health.service';
+import { CipherBuildInfo } from '../services/cipher.provider';
 import { MsgBarComponent } from '../components/layout/msg-bar/msg-bar.component';
 
 // -- Components
@@ -187,6 +188,13 @@ export class MockBlockchainService {
   }
 
   loadBlockchainBlocks() {
+  }
+}
+
+export class MockCipherProvider {
+  /** The top bar reads this to label which wasm cipher is loaded. */
+  get buildInfo(): CipherBuildInfo | undefined {
+    return undefined;
   }
 }
 

@@ -12,6 +12,14 @@ export interface GenerateAddressResponse {
   nextSeed: string;
 }
 
+/** What the wasm cipher reports about its own build. */
+export interface CipherBuildInfo {
+  version: string;
+  commit: string;
+  date: string;
+  modified: boolean;
+}
+
 export enum InitializationResults {
   Ok = 1,
   BrowserIncompatibleWithWasm = 2,
@@ -24,6 +32,23 @@ export class CipherProvider {
   private initialized = false;
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * What the loaded wasm cipher was built from, once it has initialized.
+   *
+   * The wasm is a committed artifact, so this is the only way to tell which
+   * cipher a running wallet is actually holding — it is built at one commit and
+   * carried by a later one. Undefined before initialize() completes, and on the
+   * TinyGo build, which records nothing.
+   */
+  get buildInfo(): CipherBuildInfo | undefined {
+    const cipher = (window as any)['SkycoinCipher'];
+    if (!cipher || !cipher.version || !cipher.version.commit) {
+      return undefined;
+    }
+
+    return cipher.version as CipherBuildInfo;
+  }
 
   initialize(): Observable<InitializationResults> {
     if (!this.initialized) {

@@ -90,6 +90,13 @@ jobs:
       - name: Verify committed UI bundles are current
         run: make check-ui
 
+      # The wasm cipher is a committed artifact, so it cannot be checked by
+      # rebuilding: it is built at one commit and carried by a later one, and Go
+      # is not byte-reproducible across toolchains. What it must never be is
+      # built from a dirty tree, which no commit describes.
+      - name: Verify the committed wasm cipher was built from a commit
+        run: make check-wasm
+
       # Renders every explorer page in a real browser against a node using the
       # pinned blockchain-180 database. 100 assertions over real markup, which
       # is the only coverage any front-end has beyond unit tests.

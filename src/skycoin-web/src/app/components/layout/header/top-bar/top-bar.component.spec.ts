@@ -8,9 +8,10 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TopBarComponent } from './top-bar.component';
 import { BalanceService } from '../../../../services/wallet/balance.service';
 import { CoinService } from '../../../../services/coin.service';
-import { MockTranslatePipe, MockBalanceService, MockCoinService, MockLanguageService, MockCustomMatDialogService } from '../../../../utils/test-mocks';
+import { MockTranslatePipe, MockBalanceService, MockCoinService, MockLanguageService, MockCustomMatDialogService, MockCipherProvider } from '../../../../utils/test-mocks';
 import { LanguageService } from '../../../../services/language.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
+import { CipherProvider } from '../../../../services/cipher.provider';
 
 describe('TopBarComponent', () => {
   let component: TopBarComponent;
@@ -30,7 +31,8 @@ describe('TopBarComponent', () => {
         { provide: BalanceService, useClass: MockBalanceService },
         { provide: CoinService, useClass: MockCoinService },
         { provide: LanguageService, useClass: MockLanguageService },
-        { provide: CustomMatDialogService, useClass: MockCustomMatDialogService }
+        { provide: CustomMatDialogService, useClass: MockCustomMatDialogService },
+        { provide: CipherProvider, useClass: MockCipherProvider }
       ]
     })
     .compileComponents();

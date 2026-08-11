@@ -58,6 +58,11 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      # npm dependencies of the Angular front-ends. The flatted package ships a
+      # Go file, so `./...` walks into it and reports issues in third-party code
+      # that is not ours to fix. These directories only exist after npm install,
+      # which CI now runs for all three front-ends.
+      - (^|/)node_modules/
       - cmd/hardware-wallet
       - src/hardware-wallet/usb/lowlevel/
       - src/cipher/debug_
@@ -137,3 +142,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - (^|/)node_modules/

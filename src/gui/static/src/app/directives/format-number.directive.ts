@@ -1,5 +1,6 @@
 import { Directive, ElementRef, HostListener } from '@angular/core';
 import BigNumber from 'bignumber.js';
+import { toBigNumber } from '../utils/general-utils';
 
 /**
  * Makes an input field format a number, to make it easier to read. It also removed
@@ -52,7 +53,7 @@ export class FormatNumberDirective {
       // Remove all invalid characters and commas from the text.
       value = value.replace(/[^0-9.]/gi, '');
 
-      if (!(new BigNumber(value)).isNaN()) {
+      if (!toBigNumber(value).isNaN()) {
         // Separate de decimal part.
         const numberParts = value.split('.');
         if (numberParts.length > 0 && numberParts.length < 3) {

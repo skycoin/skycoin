@@ -10,6 +10,7 @@ import { StorageService, StorageType } from '../storage.service';
 import { WalletBase, AddressBase } from './wallet-objects';
 import { WalletsAndAddressesService } from './wallets-and-addresses.service';
 import { OldTransaction } from './transaction-objects';
+import { toBigNumber } from '../../utils/general-utils';
 
 export interface PendingTransactionsResponse {
   /**
@@ -161,16 +162,16 @@ export class HistoryService {
           return {
             hash: input.uxid,
             address: input.owner,
-            coins: new BigNumber(input.coins),
-            hours: new BigNumber(input.calculated_hours),
+            coins: toBigNumber(input.coins),
+            hours: toBigNumber(input.calculated_hours),
           };
         }),
         outputs: (transaction.txn.outputs as any[]).map(output => {
           return {
             hash: output.uxid,
             address: output.dst,
-            coins: new BigNumber(output.coins),
-            hours: new BigNumber(output.hours),
+            coins: toBigNumber(output.coins),
+            hours: toBigNumber(output.hours),
           };
         }),
       }));
@@ -256,9 +257,9 @@ export class HistoryService {
 
           // Calculate how many hours were burned.
           let inputsHours = new BigNumber('0');
-          transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.hours)));
+          transaction.inputs.map(input => inputsHours = inputsHours.plus(toBigNumber(input.hours)));
           let outputsHours = new BigNumber('0');
-          transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+          transaction.outputs.map(output => outputsHours = outputsHours.plus(toBigNumber(output.hours)));
           transaction.hoursBurned = inputsHours.minus(outputsHours);
 
           const txNote = notesMap.get(transaction.id);

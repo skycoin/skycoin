@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js';
 /**
  * This file contains general helper functions.
  */
@@ -100,4 +101,26 @@ export function removeCommas(formattedNumber: string): string {
   }
 
   return formattedNumber;
+}
+
+/**
+ * Creates a BigNumber, returning NaN for input that cannot be parsed instead of
+ * throwing.
+ *
+ * bignumber.js 10 returned NaN for unparseable input, so the codebase is written
+ * as `const v = new BigNumber(x); if (!v.isNaN()) { ... }`. Version 11 throws
+ * from the constructor instead, which makes every one of those isNaN() guards
+ * unreachable and turns an empty form field — the initial state of the send form
+ * — into "[BigNumber Error] Not a number:" on each validation pass.
+ *
+ * Use this wherever the value comes from a form control, a URL or anywhere else
+ * it might not be a number. Keep using `new BigNumber` directly for literals and
+ * values already known to be numeric.
+ */
+export function toBigNumber(value: any): BigNumber {
+  try {
+    return new BigNumber(value);
+  } catch {
+    return new BigNumber(NaN);
+  }
 }

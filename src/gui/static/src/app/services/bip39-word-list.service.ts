@@ -36,7 +36,12 @@ export class Bip39WordListService {
   initialize() {
     // Load the word list.
     const name = 'bip39-word-list';
-    from(import(`../../assets/${name}.json`)).subscribe(result => {
+    // Unwrap the module's default export: esbuild turns a JSON import into a
+    // module with one named export per top-level key plus `default`, and keys
+    // that are not valid JS identifiers cannot become named exports. This one
+    // reads `list`, which happens to be a valid identifier, so it works by luck
+    // rather than by construction.
+    from(import(`../../assets/${name}.json`).then(m => (m as any).default ?? m)).subscribe(result => {
       this.wordList = result.list;
       this.wordList.forEach(word => {
         this.wordMap.set(word, true);

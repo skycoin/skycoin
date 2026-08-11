@@ -30,7 +30,7 @@
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
-.PHONY: test-ui-e2e test-explorer-e2e
+.PHONY: test-ui-e2e test-explorer-e2e build-wasm
 
 COIN ?= skycoin
 
@@ -39,6 +39,8 @@ GUI_STATIC_DIR = src/gui/static
 # The other two Angular front-ends
 EXPLORER_DIR = explorer
 SKYCOIN_WEB_DIR = src/skycoin-web
+# Holds the wasm cipher the web wallet serves, one copy per toolchain
+SKYCOIN_LITE_DIR = src/skycoin-lite
 
 # All Angular front-ends, installed/linted/tested/built as a set so a change to
 # one cannot silently break the others.
@@ -270,6 +272,15 @@ build-ui:  ## Build the production bundle of every Angular front-end
 		echo "==> npm run build ($$d)"; \
 		(cd $$d && npm run build); \
 	done
+
+build-wasm:  ## Rebuild the skycoin-lite wasm cipher (needs go and tinygo)
+	@# The repository keeps one copy of each build, in the Go package that embeds
+	@# it. cmd/skycoin-web selects between them by build tag and serves the bytes
+	@# from memory, so nothing needs copying into a bundle afterwards.
+	GOOS=js GOARCH=wasm go build -o $(SKYCOIN_LITE_DIR)/wasm-go/skycoin-lite.wasm ./$(SKYCOIN_LITE_DIR)/wasm/
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-go/wasm_exec.js
+	tinygo build -o $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/
+	cp "$$(tinygo env TINYGOROOT)/targets/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-tinygo/wasm_exec.js
 
 check-onpush:  ## Fail if an OnPush component has an unmarked asynchronous callback
 	node ci-scripts/check-onpush-marks.js $(addsuffix /src,$(ANGULAR_UI_DIRS))

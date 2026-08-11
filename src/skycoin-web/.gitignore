@@ -5,3 +5,7 @@ e2e/test-fixtures/
 
 # Scratch output of the @angular/build:karma builder
 dist/test-out/
+
+# Staged from src/skycoin-lite/wasm-go by scripts/stage-wasm.js
+src/assets/scripts/skycoin-lite.wasm
+src/assets/scripts/wasm_exec.js

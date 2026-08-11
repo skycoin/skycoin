@@ -53,7 +53,19 @@
               "outputHashing": "all",
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true
+              "extractLicenses": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "src/assets",
+                  "output": "/assets",
+                  "ignore": [
+                    "scripts/skycoin-lite.wasm",
+                    "scripts/wasm_exec.js"
+                  ]
+                },
+                "src/favicon.ico"
+              ]
             },
             "local": {
               "fileReplacements": [
@@ -74,7 +86,19 @@
               "outputHashing": "all",
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true
+              "extractLicenses": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "src/assets",
+                  "output": "/assets",
+                  "ignore": [
+                    "scripts/skycoin-lite.wasm",
+                    "scripts/wasm_exec.js"
+                  ]
+                },
+                "src/favicon.ico"
+              ]
             },
             "e2e": {
               "fileReplacements": [
@@ -95,7 +119,19 @@
               "outputHashing": "all",
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true
+              "extractLicenses": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "src/assets",
+                  "output": "/assets",
+                  "ignore": [
+                    "scripts/skycoin-lite.wasm",
+                    "scripts/wasm_exec.js"
+                  ]
+                },
+                "src/favicon.ico"
+              ]
             }
           }
         },

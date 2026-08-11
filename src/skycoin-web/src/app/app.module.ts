@@ -22,7 +22,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { BrowserModule } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
-import { TranslateDirective, TranslatePipe, provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
+import { TranslateDirective, TranslateLoader, TranslatePipe, provideTranslateService } from '@ngx-translate/core';
 
 import { AppComponent } from './app.component';
 import { ButtonComponent } from './components/layout/button/button.component';
@@ -173,7 +173,11 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         TranslatePipe,
         TranslateDirective], providers: [
         provideTranslateService({
-            loader: provideTranslateLoader(AppTranslateLoader),
+            // Explicit class provider rather than provideTranslateLoader(): that
+            // helper picks useClass vs useFactory with a /^class\s/ test on
+            // Function.prototype.toString(), and esbuild minifies
+            // `class AppTranslateLoader {` to `class{`, which fails the test.
+            loader: { provide: TranslateLoader, useClass: AppTranslateLoader },
         }),
         ApiService,
         BlockchainService,

@@ -29,3 +29,11 @@ import 'zone.js';
 
 // Global shims for Node.js modules used by crypto libraries
 (window as any).global = window;
+
+// Buffer polyfill for libraries that expect the Node global.
+//
+// bip39 calls Buffer.from() inside mnemonicToSeed(), so generating a new wallet
+// seed throws "Buffer is not defined" without this. The webpack build supplied
+// it through ProvidePlugin; esbuild has no equivalent, so it is declared here.
+import { Buffer } from 'buffer';
+(window as any).Buffer = Buffer;

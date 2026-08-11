@@ -453,3 +453,40 @@ go run github.com/loov/goda@latest graph github.com/skycoin/skycoin/... | dot -T
 ```
 
 ![Dependency Graph](docs/skycoin-goda-graph.svg "github.com/skycoin/skycoin Dependency Graph")
+
+## Lines of Code
+
+Made with [gocloc](https://github.com/hhatto/gocloc) (excludes `vendor/`, `node_modules/`, `.git/`):
+
+```
+gocloc --not-match-d='(vendor|node_modules|\.git)' .
+```
+
+```
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Go                             589          23896          14663         165855
+JSON                          2033            296              0          53644
+TypeScript                     359           4958           6411          27592
+Markdown                        64           3999             24          15851
+HTML                           144            214            357           7374
+Sass                           122           1486            188           7310
+Assembly                         3            360            383           2523
+BASH                            48            668            340           2432
+JavaScript                      46            790          11431           2090
+Plain Text                       6            433              0           1617
+JSX                             11            130            100           1345
+YAML                             8             79            121            718
+Makefile                         5            154             33            609
+CSS                             11             34             50            347
+TOML                             3              5             54            156
+Python                           1             25             28             83
+PowerShell                       1             14              0             77
+WiX                              1             10              1             49
+XML                              2              0              6             18
+Bourne Shell                     1              4              0             12
+-------------------------------------------------------------------------------
+TOTAL                         3458          37555          34190         289702
+-------------------------------------------------------------------------------
+```

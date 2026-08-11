@@ -21,7 +21,7 @@ import { UnspentOutputsComponent } from 'app/components/pages/unspent-outputs/un
 import { CopyButtonComponent } from 'app/components/layout/copy-button/copy-button.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppReuseStrategy } from 'app/app.reuse-strategy';
-import { provideTranslateService, provideTranslateLoader, TranslatePipe, TranslateDirective } from '@ngx-translate/core';
+import { provideTranslateService, TranslateLoader, TranslatePipe, TranslateDirective } from '@ngx-translate/core';
 import { AppTranslateLoader } from 'app/app.translate-loader';
 import { GenericHeaderComponent } from 'app/components/layout/generic-header/generic-header.component';
 import { GenericFooterComponent } from 'app/components/layout/generic-footer/generic-footer.component';
@@ -137,7 +137,15 @@ const ROUTES: Routes = [
         DecimalPipe,
         provideHttpClient(withInterceptorsFromDi()),
         provideTranslateService({
-            loader: provideTranslateLoader(AppTranslateLoader),
+            // Declared as an explicit class provider rather than through
+            // provideTranslateLoader(). That helper decides between useClass and
+            // useFactory with isClass(), which tests
+            // Function.prototype.toString() against /^class\s/. esbuild minifies
+            // `class AppTranslateLoader {` down to `class{`, leaving no space for
+            // that regex, so the loader would be registered as a factory and
+            // Angular would call the constructor without `new`:
+            // "Class constructor cannot be invoked without 'new'".
+            loader: { provide: TranslateLoader, useClass: AppTranslateLoader },
         }),
     ] })
 export class AppModule { }

@@ -1,6 +1,7 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { UntypedFormBuilder } from '@angular/forms';
-import { MatSelectModule, MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
+import { MatSelectModule } from '@angular/material/select';
 import { NO_ERRORS_SCHEMA, Pipe, PipeTransform } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -13,7 +14,7 @@ describe('AddDepositAddressComponent', () => {
   let component: AddDepositAddressComponent;
   let fixture: ComponentFixture<AddDepositAddressComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ AddDepositAddressComponent, MockTranslatePipe ],
       imports: [ MatSelectModule ],

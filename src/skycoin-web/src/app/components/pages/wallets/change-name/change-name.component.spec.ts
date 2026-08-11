@@ -1,6 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 
 import { ChangeNameComponent } from './change-name.component';
@@ -12,7 +12,7 @@ describe('ChangeNameComponent', () => {
   let component: ChangeNameComponent;
   let fixture: ComponentFixture<ChangeNameComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ ChangeNameComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

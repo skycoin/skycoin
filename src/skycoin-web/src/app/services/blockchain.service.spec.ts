@@ -24,7 +24,7 @@ describe('BlockchainService', () => {
     });
   });
 
-  beforeEach(inject([BlockchainService, ApiService, BalanceService], (serv, mockApiService, mockBalanceService) => {
+  beforeEach(inject([BlockchainService, ApiService, BalanceService], (serv: BlockchainService, mockApiService: any, mockBalanceService: any) => {
     service = serv;
     apiService = mockApiService;
     balanceService = mockBalanceService;

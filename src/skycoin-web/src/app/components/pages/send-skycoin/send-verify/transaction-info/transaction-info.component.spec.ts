@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { TransactionInfoComponent } from './transaction-info.component';
@@ -10,7 +10,7 @@ describe('TransactionInfoComponent', () => {
   let component: TransactionInfoComponent;
   let fixture: ComponentFixture<TransactionInfoComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ TransactionInfoComponent, MockTranslatePipe, MockDateTimePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

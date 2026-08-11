@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { BlockchainComponent } from './blockchain.component';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
@@ -10,7 +10,7 @@ describe('BlockchainComponent', () => {
   let component: BlockchainComponent;
   let fixture: ComponentFixture<BlockchainComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [
         BlockchainComponent,

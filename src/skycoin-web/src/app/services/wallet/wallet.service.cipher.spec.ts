@@ -10,14 +10,16 @@ import { ApiService } from '../api.service';
 import { CipherProvider, InitializationResults } from '../cipher.provider';
 import { Wallet, Address, TransactionOutput, TransactionInput, Output, Balance } from '../../app.datatypes';
 import { CoinService } from '../coin.service';
-import { MockCoinService, MockGlobalsService } from '../../utils/test-mocks';
+import { EncryptionService } from '../encryption.service';
+import { HwWalletService } from '../hw-wallet.service';
+import { MockCoinService, MockGlobalsService, MockHwWalletService } from '../../utils/test-mocks';
 import { createWallet } from './wallet.service.spec';
 import { GlobalsService } from '../globals.service';
 import { BlockchainService } from '../blockchain.service';
 import { BalanceService } from './balance.service';
 
 describe('WalletService with cipher:', () => {
-  let store = {};
+  let store: Record<string, string> = {};
   let walletService: WalletService;
   let spendingService: SpendingService;
   let cipherProvider: CipherProvider;
@@ -49,6 +51,8 @@ describe('WalletService with cipher:', () => {
         },
         { provide: CoinService, useClass: MockCoinService },
         { provide: GlobalsService, useClass: MockGlobalsService },
+        { provide: HwWalletService, useClass: MockHwWalletService },
+        EncryptionService,
         provideHttpClient(withXhr(), withInterceptorsFromDi())
     ]
 });
@@ -56,7 +60,7 @@ describe('WalletService with cipher:', () => {
     walletService = TestBed.inject(WalletService);
     spendingService = TestBed.inject(SpendingService);
     cipherProvider = TestBed.inject(CipherProvider);
-    spyApiService = TestBed.inject(ApiService);
+    spyApiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
   });
 
   afterEach(() => {

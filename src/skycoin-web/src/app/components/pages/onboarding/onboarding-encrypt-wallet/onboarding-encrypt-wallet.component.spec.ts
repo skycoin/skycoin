@@ -1,5 +1,8 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatCheckboxModule, MatProgressSpinnerModule, MatIconModule, MatTooltipModule } from '@angular/material';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { UntypedFormBuilder } from '@angular/forms';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
@@ -11,7 +14,7 @@ describe('OnboardingEncryptWalletComponent', () => {
   let component: OnboardingEncryptWalletComponent;
   let fixture: ComponentFixture<OnboardingEncryptWalletComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [
         OnboardingEncryptWalletComponent,

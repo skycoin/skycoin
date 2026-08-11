@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { LoadingContentComponent } from './loading-content.component';
@@ -8,7 +8,7 @@ describe('LoadingContentComponent', () => {
   let component: LoadingContentComponent;
   let fixture: ComponentFixture<LoadingContentComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [
         LoadingContentComponent,

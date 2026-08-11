@@ -8,7 +8,7 @@ import { WalletService } from './wallet.service';
 import { ApiService } from '../api.service';
 import { CipherProvider } from '../cipher.provider';
 import { CoinService } from '../coin.service';
-import { MockCoinService, MockWalletService, MockGlobalsService, MockBlockchainService } from '../../utils/test-mocks';
+import { MockCoinService, MockWalletService, MockGlobalsService, MockBlockchainService, MockHwWalletService } from '../../utils/test-mocks';
 import { createWallet, createAddress } from './wallet.service.spec';
 import { GlobalsService } from '../globals.service';
 import {
@@ -18,9 +18,10 @@ import {
   Output,
   GetOutputsRequestOutput } from '../../app.datatypes';
 import { BlockchainService } from '../blockchain.service';
+import { HwWalletService } from '../hw-wallet.service';
 
 describe('SpendingService', () => {
-  let store = {};
+  let store: Record<string, string> = {};
   let spendingService: SpendingService;
   let walletService:  WalletService;
   let spyApiService:  jasmine.SpyObj<ApiService>;
@@ -51,15 +52,16 @@ describe('SpendingService', () => {
         },
         { provide: CoinService, useClass: MockCoinService },
         { provide: GlobalsService, useClass: MockGlobalsService },
-        { provide: BlockchainService, useClass: MockBlockchainService }
+        { provide: BlockchainService, useClass: MockBlockchainService },
+        { provide: HwWalletService, useClass: MockHwWalletService }
       ]
     });
 
     spendingService = TestBed.inject(SpendingService);
     walletService = TestBed.inject(WalletService);
-    spyApiService = TestBed.inject(ApiService);
-    spyCipherProvider = TestBed.inject(CipherProvider);
-    spyTranslateService = TestBed.inject(TranslateService);
+    spyApiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
+    spyCipherProvider = TestBed.inject(CipherProvider) as jasmine.SpyObj<CipherProvider>;
+    spyTranslateService = TestBed.inject(TranslateService) as jasmine.SpyObj<TranslateService>;
   });
 
   afterEach(() => {

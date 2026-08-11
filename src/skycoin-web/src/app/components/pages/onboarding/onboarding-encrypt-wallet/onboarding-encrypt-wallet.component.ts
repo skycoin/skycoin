@@ -21,8 +21,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     private formBuilder: UntypedFormBuilder,
   ) { }
 
-  get isWorking() {
-    return this.button.isLoading();
+  get isWorking(): boolean {
+    // The template binds this through [ngClass], so it is read during the first
+    // change detection pass — before a non-static @ViewChild is resolved.
+    return !!this.button && this.button.isLoading();
   }
 
   ngOnInit() {

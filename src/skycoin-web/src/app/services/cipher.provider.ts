@@ -79,24 +79,38 @@ export class CipherProvider {
     return null as any;
   }
 
+
+  /**
+   * Turns whatever the wasm cipher returned into a value or an error.
+   *
+   * Each entry point in src/skycoin-lite/wasm/main_wasm.go recovers from panics
+   * without setting a return value, so a bad seed or a malformed input comes
+   * back as null rather than as the {error: string} the happy path documents.
+   * Reading .error off that is a TypeError, which surfaced as a crash instead of
+   * the failed observable every caller is written against.
+   */
+  private resultOrError<T>(result: any, operation: string): Observable<T> {
+    if (result === null || result === undefined) {
+      return throwError(() => new Error(`the cipher could not ${operation}`));
+    }
+    if (result.error) {
+      return throwError(() => new Error(result.error));
+    }
+
+    return of(result);
+  }
+
   generateAddress(seed: any): Observable<GenerateAddressResponse> {
     const address = (window as any)['SkycoinCipher'].generateAddress(seed);
 
-    if (!address.error) {
-      return of(this.convertToAddress(address));
-    } else {
-      return throwError(() => new Error(address.error));
-    }
+    return this.resultOrError<any>(address, 'generate an address')
+      .pipe(map(result => this.convertToAddress(result)));
   }
 
   prepareTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Observable<string> {
     const tx = (window as any)['SkycoinCipher'].prepareTransaction(JSON.stringify(inputs), JSON.stringify(outputs));
 
-    if (!tx.error) {
-      return of(tx);
-    } else {
-      return throwError(() => new Error(tx.error));
-    }
+    return this.resultOrError<string>(tx, 'prepare the transaction');
   }
 
   prepareTransactionWithSignatures(inputs: TransactionInput[], outputs: TransactionOutput[], signatures: string[]): Observable<string> {
@@ -106,11 +120,7 @@ export class CipherProvider {
       JSON.stringify(signatures)
     );
 
-    if (!tx.error) {
-      return of(tx);
-    } else {
-      return throwError(() => new Error(tx.error));
-    }
+    return this.resultOrError<string>(tx, 'prepare the signed transaction');
   }
 
   private convertToAddress(address: any): GenerateAddressResponse {

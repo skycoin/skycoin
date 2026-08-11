@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
@@ -13,7 +13,7 @@ describe('OutputsComponent', () => {
   let component: OutputsComponent;
   let fixture: ComponentFixture<OutputsComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ OutputsComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

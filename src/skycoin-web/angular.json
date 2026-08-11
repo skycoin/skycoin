@@ -35,7 +35,10 @@
               "src/assets/scripts/qrcode.min.js"
             ],
             "stylePreprocessorOptions": {
-              "includePaths": ["src", "."]
+              "includePaths": [
+                "src",
+                "."
+              ]
             }
           },
           "configurations": {
@@ -49,7 +52,7 @@
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
-                            "namedChunks": false,
+              "namedChunks": false,
               "extractLicenses": true
             },
             "local": {
@@ -70,7 +73,7 @@
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
-                            "namedChunks": false,
+              "namedChunks": false,
               "extractLicenses": true
             },
             "e2e": {
@@ -91,7 +94,7 @@
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
-                            "namedChunks": false,
+              "namedChunks": false,
               "extractLicenses": true
             }
           }
@@ -115,22 +118,29 @@
         "test": {
           "builder": "@angular/build:karma",
           "options": {
-            "main": "src/test.ts",
             "polyfills": [
-              "src/polyfills.ts"
+              "src/polyfills.ts",
+              "zone.js/testing"
             ],
             "tsConfig": "src/tsconfig.spec.json",
             "include": [
-              "**/msg-bar.component.spec.ts"
+              "**/*.spec.ts"
             ],
             "karmaConfig": "./karma.conf.js",
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
+            "scripts": [
+              "src/assets/scripts/wasm_exec.js"
+            ],
             "assets": [
               "src/assets",
-              "src/favicon.ico"
+              "src/favicon.ico",
+              {
+                "glob": "**/*.golden",
+                "input": "e2e/test-fixtures",
+                "output": "/cipher-fixtures"
+              }
             ]
           }
         },

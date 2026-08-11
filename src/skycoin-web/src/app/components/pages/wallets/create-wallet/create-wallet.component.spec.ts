@@ -1,6 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 
 import { CreateWalletComponent } from './create-wallet.component';
@@ -15,7 +15,7 @@ describe('CreateWalletComponent', () => {
   let component: CreateWalletComponent;
   let fixture: ComponentFixture<CreateWalletComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ CreateWalletComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

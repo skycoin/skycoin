@@ -124,7 +124,7 @@ describe('BalanceService', () => {
       const mockBalance: Balance = {
         confirmed: { coins: 1000000, hours: 100 },
         predicted: { coins: 1000000, hours: 100 },
-        addresses: { 'addr1': { confirmed: { coins: 1000000, hours: 100 } } },
+        addresses: { 'addr1': { confirmed: { coins: 1000000, hours: 100 }, predicted: { coins: 1000000, hours: 100 } } },
       };
       spyApiService.get.and.returnValue(of(mockBalance));
 
@@ -140,12 +140,12 @@ describe('BalanceService', () => {
       const balance1: Balance = {
         confirmed: { coins: 1000000, hours: 50 },
         predicted: { coins: 1000000, hours: 50 },
-        addresses: { 'addr1': { confirmed: { coins: 1000000, hours: 50 } } },
+        addresses: { 'addr1': { confirmed: { coins: 1000000, hours: 50 }, predicted: { coins: 1000000, hours: 50 } } },
       };
       const balance2: Balance = {
         confirmed: { coins: 2000000, hours: 100 },
         predicted: { coins: 2000000, hours: 100 },
-        addresses: { 'addr2': { confirmed: { coins: 2000000, hours: 100 } } },
+        addresses: { 'addr2': { confirmed: { coins: 2000000, hours: 100 }, predicted: { coins: 2000000, hours: 100 } } },
       };
 
       spyApiService.get.and.returnValues(of(balance1), of(balance2));
@@ -176,8 +176,6 @@ function makeAddresses(addrs: string[]): Address[] {
     address: addr,
     secret_key: '',
     public_key: '',
-    balance: null,
-    hours: null,
     outputs: [],
-  } as Address));
+  }));
 }

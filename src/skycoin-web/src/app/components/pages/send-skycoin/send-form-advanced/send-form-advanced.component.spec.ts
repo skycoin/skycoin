@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { UntypedFormBuilder } from '@angular/forms';
 
@@ -25,7 +25,7 @@ describe('SendFormAdvancedComponent', () => {
   let component: SendFormAdvancedComponent;
   let fixture: ComponentFixture<SendFormAdvancedComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ SendFormAdvancedComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

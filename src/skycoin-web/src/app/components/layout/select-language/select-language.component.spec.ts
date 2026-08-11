@@ -1,6 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 
 import { SelectLanguageComponent } from './select-language.component';
 import { MockTranslatePipe, MockLanguageService, MockMatDialogRef } from '../../../utils/test-mocks';
@@ -10,7 +10,7 @@ describe('SelectLanguageComponent', () => {
   let component: SelectLanguageComponent;
   let fixture: ComponentFixture<SelectLanguageComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ SelectLanguageComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

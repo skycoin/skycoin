@@ -1,6 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 
 import { SelectAddressComponent } from './select-address';
 import { MockTranslatePipe, MockWalletService, MockCoinService } from '../../../../../utils/test-mocks';
@@ -11,7 +11,7 @@ describe('SelectAddressComponent', () => {
   let component: SelectAddressComponent;
   let fixture: ComponentFixture<SelectAddressComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ SelectAddressComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

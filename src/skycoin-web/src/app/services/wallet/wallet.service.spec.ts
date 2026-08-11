@@ -6,6 +6,7 @@ import { BigNumber } from 'bignumber.js';
 import { WalletService } from './wallet.service';
 import { CipherProvider } from '../cipher.provider';
 import { CoinService } from '../coin.service';
+import { EncryptionService } from '../encryption.service';
 import { EventEmitter } from '@angular/core';
 import { MockCoinService, MockGlobalsService } from '../../utils/test-mocks';
 import { ApiService } from '../api.service';
@@ -15,7 +16,7 @@ import {
   Address } from '../../app.datatypes';
 
 describe('WalletService', () => {
-  let store = {};
+  let store: Record<string, string> = {};
   let walletService: WalletService;
   let spyTranslateService: jasmine.SpyObj<TranslateService>;
   let spyCipherProvider: jasmine.SpyObj<CipherProvider>;
@@ -42,13 +43,14 @@ describe('WalletService', () => {
           })
         },
         { provide: CoinService, useClass: MockCoinService },
-        { provide: GlobalsService, useClass: MockGlobalsService }
+        { provide: GlobalsService, useClass: MockGlobalsService },
+        EncryptionService
       ]
     });
 
     walletService = TestBed.inject(WalletService);
-    spyCipherProvider = TestBed.inject(CipherProvider);
-    spyTranslateService = TestBed.inject(TranslateService);
+    spyCipherProvider = TestBed.inject(CipherProvider) as jasmine.SpyObj<CipherProvider>;
+    spyTranslateService = TestBed.inject(TranslateService) as jasmine.SpyObj<TranslateService>;
   });
 
   afterEach(() => {
@@ -62,8 +64,8 @@ describe('WalletService', () => {
   describe('addAddress', () => {
     it('should fail adding an address if the wallet seed is null', () => {
       const wallet = createWallet();
-      wallet.seed = null;
-      wallet.nextSeed = null;
+      wallet.seed = undefined;
+      wallet.nextSeed = undefined;
       spyTranslateService.instant.and.returnValue('trying to generate address without seed!');
 
       expect(() => walletService.addAddress(wallet))
@@ -99,7 +101,8 @@ describe('WalletService', () => {
         hours: new BigNumber(0),
         addresses: [walletAddress],
         coinId: walletCoinId,
-        nextSeed: 'next seed'
+        nextSeed: 'next seed',
+        walletType: 'deterministic'
       };
 
       spyCipherProvider.generateAddress.and.returnValue(of({ address: walletAddress, nextSeed: 'next seed' }));

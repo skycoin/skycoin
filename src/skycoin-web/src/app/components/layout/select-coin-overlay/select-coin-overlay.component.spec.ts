@@ -1,5 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatIconModule, MatDialogRef } from '@angular/material';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -14,7 +15,7 @@ describe('SelectCoinOverlayComponent', () => {
   let component: SelectCoinOverlayComponent;
   let fixture: ComponentFixture<SelectCoinOverlayComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ SelectCoinOverlayComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

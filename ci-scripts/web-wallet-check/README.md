@@ -31,9 +31,9 @@ The vector is the first entry of
 
 ## Running it
 
-Needs a skycoin node to talk to and a Chrome binary in `CHROME_BIN`.
+Needs a Chrome binary in `CHROME_BIN`.
 
-    node ci-scripts/web-wallet-check/serve.js src/skycoin-web/src/gui/dist 8660 http://127.0.0.1:6420 &
+    go run . web --port 8660 &
 
     node ci-scripts/web-wallet-check/check-address-derivation.js 8660 \
       "work pride warrior taxi kick athlete good maze brief address shift creek" \
@@ -41,12 +41,13 @@ Needs a skycoin node to talk to and a Chrome binary in `CHROME_BIN`.
 
 Exit status is 0 when both checks pass.
 
-`serve.js` is used rather than `skycoin web --gui-dir` on purpose: that command
-serves `/assets` from the binary's embedded copy, so the wasm cipher and the
-i18n JSON would come from the old bundle no matter what was built, and the check
-would pass against a broken build. Everything `serve.js` returns comes from the
-directory under test. It also rewrites Host, Origin and Referer on proxied
-requests, which the node's checks would otherwise reject with HTTP 403.
+`go run . web` is the wallet itself, so this exercises exactly what a release
+serves: the bundle from `//go:embed all:dist`, the wasm cipher from the Go
+package that embeds it, and the node proxy on `/api`. It used to run behind a
+static server of its own, to catch a freshly built bundle before it was
+committed — `make check-ui` covers that now by failing when the committed bundle
+differs from a fresh build, and testing the real binary is worth more than
+testing a stand-in for it.
 
 ## Verified to fail
 

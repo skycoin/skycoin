@@ -225,7 +225,7 @@ func ResolveResourceDirectory(path string) string {
 	}
 
 	for _, dir := range dirs {
-		if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		if _, err := os.Stat(dir); !os.IsNotExist(err) { //nolint:gosec // the data directory is chosen by the operator, not by request input
 			fmt.Printf("ResolveResourceDirectory: static resource dir= %s \n", dir)
 			return dir
 		}

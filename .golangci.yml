@@ -68,6 +68,33 @@ linters:
       - src/cipher/debug_
       - src/cipher/secp256k1-go/debug_
     rules:
+      # gosec, scoped rather than silenced globally.
+      #
+      # These three are systematic: every hit is the same intentional pattern in
+      # the same kind of file, so a per-site //nolint on each of ~55 lines would
+      # be noise nobody maintains. Everything outside these paths still reports,
+      # and genuine one-offs carry //nolint with a reason at the site.
+      - linters:
+          - gosec
+        text: "G101:"          # test vectors, not credentials
+        path: _test\.go
+      - linters:
+          - gosec
+        text: "G117:"          # fixtures that intentionally carry a password field
+        path: _test\.go
+      - linters:
+          - gosec
+        text: "G115:"          # deliberate truncation while packing bytes
+        path: "src/(cipher|btc)/"
+      - linters:
+          - gosec
+        # G120 is taint-based: it flags r.FormValue in the node's HTTP handlers
+        # and explores as far as its analysis budget allows, so a different
+        # subset of handlers is reported on each run and per-site //nolint cannot
+        # keep up. The API server sets its own body limits; these calls read a
+        # single query parameter.
+        text: "G120:"
+        path: "src/api/"
       - linters:
           - revive
         text: "var-naming: avoid meaningless package names"
@@ -101,27 +128,6 @@ linters:
       - linters:
           - staticcheck
         text: "QF1006:" # could lift into loop condition (staticcheck)
-      - linters:
-          - gosec
-        text: "G115:" # integer overflow conversion (gosec)
-      - linters:
-          - gosec
-        text: "G117:" # marshaled struct field matches secret pattern (gosec)
-      - linters:
-          - gosec
-        text: "G120:" # parsing form data without limiting request body size (gosec)
-      - linters:
-          - gosec
-        text: "G703:" # path traversal via taint analysis (gosec)
-      - linters:
-          - gosec
-        text: "G706:" # log injection via taint analysis (gosec)
-      - linters:
-          - gosec
-        text: "G602:" # slice index out of range (gosec)
-      - linters:
-          - gosec
-        text: "G101:" # potential hardcoded credentials (gosec)
       - linters:
           - staticcheck
         text: "QF1012:" # use fmt.Fprintf instead of WriteString(fmt.Sprintf) (staticcheck)

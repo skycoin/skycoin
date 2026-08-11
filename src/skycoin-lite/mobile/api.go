@@ -20,7 +20,7 @@ func GetAddresses(seed string, num int) (addr string, err error) {
 	hexSeed := hex.EncodeToString([]byte(seed))
 	addresses := liteclient.GenerateAddresses(hexSeed, num)
 
-	byteaddr, err := json.Marshal(addresses)
+	byteaddr, err := json.Marshal(addresses) //nolint:gosec // this API deliberately returns key material to its caller
 	if err != nil {
 		return "", err
 	}

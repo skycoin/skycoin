@@ -27,7 +27,7 @@ func outputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		addrStr := r.FormValue("addrs")
+		addrStr := r.FormValue("addrs") //nolint:gosec // read of a single query parameter; the node's API server sets its own body limits
 		hashStr := r.FormValue("hashes")
 
 		if addrStr != "" && hashStr != "" {

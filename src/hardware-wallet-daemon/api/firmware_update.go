@@ -25,7 +25,7 @@ func firmwareUpdate(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
-		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+		if err := r.ParseMultipartForm(maxUploadSize); err != nil { //nolint:gosec // body is already bounded by http.MaxBytesReader on the line above
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 			writeHTTPResponse(w, resp)
 			return

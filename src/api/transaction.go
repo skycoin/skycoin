@@ -123,7 +123,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txid := r.FormValue("txid")
+		txid := r.FormValue("txid") //nolint:gosec // read of a single query parameter; the node's API server sets its own body limits
 		if txid == "" {
 			wh.Error400(w, "txid is empty")
 			return

@@ -316,7 +316,7 @@ func (s APIEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	skycoinURL := buildSkycoinURL(s.SkycoinPath, query)
 
-	log.Printf("Proxying request %s to skycoin node %s with timeout %v", r.URL.String(), skycoinURL, skycoinRequestTimeout)
+	log.Printf("Proxying request %s to skycoin node %s with timeout %v", r.URL.String(), skycoinURL, skycoinRequestTimeout) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
 
 	c := &http.Client{
 		Timeout: skycoinRequestTimeout,

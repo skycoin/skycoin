@@ -1,0 +1,1924 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Skycoin — a next-generation cryptocurrency and distributed network platform">
+      
+      
+      
+        <link rel="canonical" href="https://skycoin.github.io/skycoin/guides/changelog/">
+      
+      
+        <link rel="prev" href="../release/">
+      
+      
+        <link rel="next" href="../../api/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50">
+    
+    
+      
+        <title>Changelog - Skycoin</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.a40c8224.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Skycoin" class="md-header__button md-logo" aria-label="Skycoin" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Skycoin
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/skycoin/skycoin" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    skycoin/skycoin
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+    
+  
+  REST API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../cli/" class="md-tabs__link">
+        
+  
+    
+  
+  CLI
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../packages/" class="md-tabs__link">
+          
+  
+    
+  
+  Packages
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../clients/" class="md-tabs__link">
+          
+  
+    
+  
+  Clients
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../dependency-graph/" class="md-tabs__link">
+        
+  
+    
+  
+  Dependency Graph
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Skycoin" class="md-nav__button md-logo" aria-label="Skycoin" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Skycoin
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/skycoin/skycoin" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    skycoin/skycoin
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Guides
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Guides
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange Integration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fibercoin-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Custom Fibercoins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release Process
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0285" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.28.5
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.28.5">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0281" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.28.1
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.28.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0270-2019-11-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.27.0] - 2019-11-26
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.27.0] - 2019-11-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CLI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../packages/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Packages
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Packages
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/cipher-bip32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cipher/bip32
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/cipher-bip39/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cipher/bip39
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/cipher-base58/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cipher/base58
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/cipher-encoder/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cipher/encoder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/cipher-secp256k1/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cipher/secp256k1-go
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/daemon-pex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    daemon/pex
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/daemon-gnet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    daemon/gnet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../clients/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Clients
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Clients
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clients/desktop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Desktop (GUI)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clients/web/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web client
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clients/lite/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lite client
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clients/explorer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Explorer
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dependency-graph/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dependency Graph
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0285" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.28.5
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.28.5">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0281" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.28.1
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.28.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0270-2019-11-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.27.0] - 2019-11-26
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.27.0] - 2019-11-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/skycoin/skycoin/edit/develop/docs/guides/changelog.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permalink">&para;</a></h1>
+<p>All notable changes to this project will be documented in this file.</p>
+<p>The format is based on <a href="http://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>
+and this project adheres to <a href="http://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<h2 id="0285">0.28.5<a class="headerlink" href="#0285" title="Permalink">&para;</a></h2>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permalink">&para;</a></h3>
+<ul>
+<li><strong>BIP44 Chain Selection</strong></li>
+<li><code>/api/v1/wallet/newAddress</code> now accepts <code>chain</code> parameter (<code>external</code>/<code>change</code>) and <code>account</code> parameter for BIP44 wallets</li>
+<li>CLI <code>walletAddAddresses</code> has <code>--chain</code> flag for generating on external or change chain</li>
+<li>
+<p>GUI wallet shows "New Address" button for both external and change address sections</p>
+</li>
+<li>
+<p><strong>Node Shutdown API</strong></p>
+</li>
+<li><code>POST /api/v1/shutdown</code> endpoint for graceful node shutdown (NET_CTRL API set)</li>
+<li>
+<p>CLI <code>halt</code> command to shut down a running node via RPC</p>
+</li>
+<li>
+<p><strong>FIBER_TOML Help Menus</strong></p>
+</li>
+<li>All help menus (top-level, daemon, cli, web, explorer) dynamically update ASCII art and descriptions based on <code>FIBER_TOML</code> env var</li>
+<li>
+<p>Default RPC port in CLI help reflects the fibercoin's configured <code>web_interface_port</code></p>
+</li>
+<li>
+<p><strong>Newcoin Templates</strong></p>
+</li>
+<li><code>newcoin templates</code> subcommand to export embedded templates for customization</li>
+<li>
+<p><code>--template-dir</code> flag in <code>createcoin</code> now functional (was dead code)</p>
+</li>
+<li>
+<p><strong>Fibercoin Integration Test</strong></p>
+</li>
+<li>CI test exercising full fibercoin lifecycle: genesis wallet, fiber.toml, distribution, block publishing</li>
+<li>Tests BIP44 chain selection via API</li>
+<li>
+<p>Tests <code>distributeGenesis</code> end-to-end</p>
+</li>
+<li>
+<p><strong>Custom GUI Override</strong></p>
+</li>
+<li><code>skycoin web</code> now has <code>--gui-dir</code> flag to serve custom GUI instead of embedded</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permalink">&para;</a></h3>
+<ul>
+<li><strong>Release Workflow</strong></li>
+<li>Replaced goreleaser with direct <code>go install</code> builds for proper version embedding</li>
+<li>All platforms build in parallel with matrix strategy</li>
+<li>No repository checkout needed for builds (only specific files fetched when needed)</li>
+<li>macOS <code>.pkg</code> installers built inline via <code>pkgbuild</code></li>
+<li>
+<p>Updated to Go 1.26</p>
+</li>
+<li>
+<p><strong>API Client</strong></p>
+</li>
+<li>
+<p>Removed <code>DisallowUnknownFields()</code> from JSON decoders for forward compatibility (older clients can talk to newer nodes)</p>
+</li>
+<li>
+<p><strong>Peer Connection Logging</strong></p>
+</li>
+<li>"Already connected to this peer" no longer logged as a warning (silently skipped)</li>
+</ul>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permalink">&para;</a></h3>
+<ul>
+<li><strong>fiber.toml Empty String Overrides</strong></li>
+<li>
+<p>Setting <code>peer_list_url = ""</code>, <code>explorer_url = ""</code>, <code>default_connections = []</code>, etc. in fiber.toml now correctly overrides hardcoded defaults (previously ignored empty values)</p>
+</li>
+<li>
+<p><strong>Windows Release Build</strong></p>
+</li>
+<li>Added msys2 mingw64 to PATH for <code>pkg-config</code> to find <code>libusb-1.0.pc</code></li>
+<li>
+<p>Fixed MSI installer expecting separate <code>skyhw.exe</code> (now included in combined binary)</p>
+</li>
+<li>
+<p><strong>cmd/release CGO Split</strong></p>
+</li>
+<li>
+<p>Hardware wallet import behind <code>cgo</code> build tag so <code>cmd/release</code> builds with <code>CGO_ENABLED=0</code></p>
+</li>
+<li>
+<p><strong>Flaky Windows Test</strong></p>
+</li>
+<li>Increased <code>wait()</code> timeout in <code>TestStopListen</code> for slow CI runners</li>
+</ul>
+<h3 id="security">Security<a class="headerlink" href="#security" title="Permalink">&para;</a></h3>
+<ul>
+<li>Bumped <code>fast-xml-parser</code> to 5.5.7 in <code>/explorer</code></li>
+<li>Bumped <code>flatted</code> to 3.4.2 in <code>/src/gui/static</code> and <code>/src/skycoin-web</code></li>
+<li>Removed deprecated <code>protractor</code> from <code>/explorer</code> (eliminated 10 vulnerabilities)</li>
+<li>Ran <code>npm audit fix</code> across all npm directories</li>
+<li>Updated golangci-lint to v2.11.3 for Go 1.26 compatibility</li>
+<li>Updated GitHub Actions to Node.js 24 compatible versions</li>
+</ul>
+<h2 id="0281">0.28.1<a class="headerlink" href="#0281" title="Permalink">&para;</a></h2>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permalink">&para;</a></h3>
+<ul>
+<li><strong>Explorer &amp; Web Wallet</strong></li>
+<li><code>skycoin explorer</code> subcommand - blockchain explorer with embedded compiled UI</li>
+<li><code>skycoin web</code> subcommand - thin client web wallet using WebAssembly (skycoin-lite)</li>
+<li>Embedded GUI sources for both wallet and explorer (Go embed directives)</li>
+<li>Explorer runs standalone on port 8001, connects to skycoin node on port 6420</li>
+<li>
+<p>Web wallet provides lightweight browser-based access without full node</p>
+</li>
+<li>
+<p><strong>Hardware Wallet Integration</strong></p>
+</li>
+<li>Hardware wallet daemon and CLI integration in <code>cmd/hardware-wallet/</code> (binary: <code>skyhw</code>)</li>
+<li>Hardware wallet binary (<code>skyhw</code>) included in Linux amd64 releases</li>
+<li>Comprehensive hardware wallet setup documentation for Linux, macOS, and Windows</li>
+<li>CI testing for hardware wallet utilities with libusb dependency</li>
+<li>
+<p>Restrict hardware-wallet to linux/amd64 only (build tag)</p>
+</li>
+<li>
+<p><strong>Release Infrastructure</strong></p>
+</li>
+<li>GitHub Actions workflow for automated releases on tag push</li>
+<li>GoReleaser configurations for multi-platform builds<ul>
+<li>Linux: amd64, 386, arm64, arm, armhf, riscv64</li>
+<li>macOS: amd64, arm64</li>
+<li>Windows: amd64, 386, arm64</li>
+</ul>
+</li>
+<li>Changelog generator script (<code>ci_scripts/changelog.sh</code>) using GitHub CLI</li>
+<li>
+<p>Token permissions to CI workflow for enhanced security</p>
+</li>
+<li>
+<p><strong>CLI/Command Improvements</strong></p>
+</li>
+<li>Version display and build info flags (<code>--bv</code>, <code>--info</code>) to main command</li>
+<li>Cobra-based CLI with standard help format</li>
+<li>
+<p>Embed template files in newcoin binary</p>
+</li>
+<li>
+<p><strong>Newcoin/Fibercoin Enhancements</strong></p>
+</li>
+<li><code>FIBER_TOML</code> environment variable for runtime fibercoin configuration</li>
+<li>Skycoin daemon can now run a fibercoin node by specifying <code>FIBER_TOML=/path/to/fibercoin/fiber.toml</code></li>
+<li>Optimized newcoin and fibercoin creation process</li>
+<li>Dynamic ASCII art generation using calvin.AsciiFont</li>
+<li>Dynamic help menu ASCII art and coin name based on FIBER_TOML</li>
+<li>Complete automated fibercoin blockchain initialization</li>
+<li>
+<p>Allow external module lookups in newcoin make target</p>
+</li>
+<li>
+<p><strong>Documentation</strong></p>
+</li>
+<li>Add DEVELOPMENT.md and DOCKER.md documentation</li>
+<li>Add dependency graph visualization to docs</li>
+<li>Update CLI documentation with actual command outputs and coinhour conversions</li>
+<li>
+<p>Update documentation to reflect modern skycoin CLI structure and Go 1.23+ requirement</p>
+</li>
+<li>
+<p><strong>API Endpoints</strong></p>
+</li>
+<li><code>/api/v1/wallet/xpub</code> API endpoint to get xpub key of a bip44 wallet</li>
+<li><code>/api/v1/transactions/num</code> to get total transactions number</li>
+<li><code>POST /api/v1/wallet/createTemp</code> API to create a temporary wallet</li>
+<li><code>POST /api/v1/wallet/scan</code> API to scan wallet addresses ahead (default 20)</li>
+<li><code>GET /api/v2/transactions</code> API to get transactions with pagination</li>
+<li><code>qr_uri_prefix</code> field to <code>/api/v1/health</code> endpoint</li>
+<li><code>src_txid</code> to verbose transaction inputs (affects multiple APIs)</li>
+<li>
+<p><code>calculated_hours</code> to <code>/api/v1/uxout</code> and <code>/api/v1/address_uxouts</code></p>
+</li>
+<li>
+<p><strong>CLI Commands</strong></p>
+</li>
+<li><code>walletCreateTemp</code> command to create a temporary wallet</li>
+<li><code>walletScanAddresses</code> command to scan wallet addresses ahead</li>
+<li>
+<p><code>private-keys</code> param to <code>walletCreate</code>, <code>walletCreateTemp</code>, and <code>walletNewAddresses</code> commands</p>
+</li>
+<li>
+<p><strong>Frontend/GUI</strong></p>
+</li>
+<li>Format number input fields with commas (e.g., 1,111,111 instead of 1111111)</li>
+<li>Update Chinese translations to adjust for new GUI changes</li>
+<li>Update GUI dist files (multiple frontend rebuilds)</li>
+<li>Embed bip44 account manager instead of using it as member variable</li>
+<li>Remove all unused unit test files from GUI folder</li>
+<li>General improvements for the GUI (see #2589)</li>
+<li>Bump Electron from 15.2.0 to 22.3.25</li>
+<li>Bump axios from 0.21.1 to 1.6.0</li>
+<li>
+<p>Multiple security dependency updates:</p>
+<ul>
+<li>json5 from 1.0.1 to 1.0.2</li>
+<li>express from 4.17.1 to 4.18.2</li>
+<li>qs from 6.5.2 to 6.5.3</li>
+<li>decode-uri-component from 0.2.0 to 0.2.2</li>
+<li>loader-utils from 1.4.0 to 1.4.2</li>
+<li>socket.io-parser from 4.0.4 to 4.0.5</li>
+<li>moment from 2.29.1 to 2.29.4</li>
+<li>eventsource from 1.1.0 to 1.1.1</li>
+<li>nanoid from 3.1.25 to 3.3.4</li>
+<li>follow-redirects from 1.14.2 to 1.15.0</li>
+<li>async from 2.6.3 to 2.6.4</li>
+<li>minimist from 1.2.5 to 1.2.6</li>
+<li>karma from 6.3.4 to 6.3.16</li>
+<li>url-parse from 1.5.3 to 1.5.10</li>
+<li>engine.io from 4.1.1 to 4.1.2</li>
+<li>log4js from 6.3.0 to 6.4.0</li>
+<li>nth-check from 2.0.0 to 2.0.1</li>
+<li>handlebars from 4.0.11 to 4.5.3</li>
+</ul>
+</li>
+<li>
+<p><strong>Flags</strong></p>
+</li>
+<li><code>-max-last-blocks-count</code> flag to limit <code>/api/v1/last_blocks</code> results (default 256, fixes OOM panic)</li>
+<li>
+<p><code>-max-incoming-connection</code> flag to control maximum allowed incoming connections</p>
+</li>
+<li>
+<p><strong>Testing</strong></p>
+</li>
+<li>Go 1.14+ version support</li>
+<li>Optimize GitHub Actions CI caching</li>
+</ul>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permalink">&para;</a></h3>
+<ul>
+<li><strong>CLI/Command Structure</strong></li>
+<li>Complete migration to Cobra-based CLI framework</li>
+<li>Use Cobra standard help format for all commands</li>
+<li>Remove hardcoded skycoin references from flag descriptions</li>
+<li>Use lowercase for ASCII art and wallet name in help menu</li>
+<li>
+<p>Fix CLI help flag redefinition panic</p>
+</li>
+<li>
+<p><strong>Versioning &amp; Build</strong></p>
+</li>
+<li>Implement buildinfo-based versioning for <code>cmd/skycoin-wallet/</code> and <code>cmd/hardware-wallet/</code></li>
+<li>Update GoReleaser configurations to match skywire release structure and naming conventions</li>
+<li>Update GoReleaser ldflags to use buildinfo package for version injection</li>
+<li>
+<p>Remove documentation files from release archives</p>
+</li>
+<li>
+<p><strong>Binary Names</strong></p>
+</li>
+<li>
+<p>Hardware wallet binary renamed from <code>skyhw-daemon</code> to <code>skyhw</code></p>
+</li>
+<li>
+<p><strong>Configuration</strong></p>
+</li>
+<li>
+<p>Fix newcoin config-file flag default to <code>config/fiber.toml</code></p>
+</li>
+<li>
+<p><strong>Frontend/GUI</strong></p>
+</li>
+<li>Embed GUI sources into binary using Go embed directives</li>
+<li>Rebuild skycoin wallet GUI with fixes</li>
+<li>Fix embedded GUI implementation</li>
+<li>Revise embedded GUI structure</li>
+<li>Make GUI work with Node.js 12 and latest hardware wallet daemon</li>
+<li>Fix web GUI operation in Docker container</li>
+<li>GUI get the uri prefix from the API</li>
+<li>GUI update electron and electron builder</li>
+<li>GUI General improvements for the front-end, see <a href="https://github.com/skycoin/skycoin/pull/2589">#2589</a></li>
+<li>GUI exchange page has been disabled (Swaplab integration not working)</li>
+<li>Fix Node.js 20 / OpenSSL 3.0 compatibility for UI tests</li>
+<li>Regenerate package-lock.json after dependency updates</li>
+<li>Fix npm dependency conflict: upgrade jasmine-core to 3.10.0</li>
+<li>Update Spanish and Chinese translations</li>
+<li>
+<p>Make GUI work with latest version of hardware wallet daemon</p>
+</li>
+<li>
+<p><strong>API Changes</strong></p>
+</li>
+<li><code>POST /api/v1/wallet/encrypt</code> encrypts wallets without 'cryptoType' field using default crypto type</li>
+<li>Include change addresses for bip44 wallets in <code>/api/v1/wallet</code> endpoint</li>
+<li>
+<p><code>private-keys</code> param added to <code>/api/v1/wallet/create</code>, <code>/api/v1/wallet/createTemp</code>, and <code>/api/v1/wallet/newAddress</code></p>
+</li>
+<li>
+<p><strong>CLI Command Changes</strong></p>
+</li>
+<li><code>listWallets</code> removed the <code>[directory]</code> argument</li>
+<li><code>encryptWallet</code>/<code>decryptWallet</code> show wallet details after operation</li>
+<li><code>encryptWallet</code>/<code>decryptWallet</code> only return non-sensitive data (no seeds, secrets, private keys)</li>
+<li><code>walletBalance</code>, <code>createRawTransactionV2</code>, <code>showSeed</code> use wallet filename instead of full path</li>
+<li><code>createRawTransactionV2</code> accepts wallet filename instead of full path</li>
+<li><code>walletKeyExport</code> -p flag replaced with --path, -p now shorthand for --password</li>
+<li>
+<p><code>walletCreate</code> changes:</p>
+<ul>
+<li>Removed <code>-wallet-file</code> flag (filename auto-generated)</li>
+<li>Result consistent with <code>/api/v1/wallet/create</code> API response</li>
+<li>Encrypt wallet by default with password prompt</li>
+<li>Removed <code>coin/c</code> and <code>crypto-type/x</code> flags</li>
+<li>Added <code>scan</code> flag to scan ahead addresses with transaction history</li>
+</ul>
+</li>
+<li>
+<p><strong>Code Structure</strong></p>
+</li>
+<li>Move package <code>src/wallet/crypto</code> to <code>src/cipher/crypto</code></li>
+<li>Run <code>make format</code> - fix import ordering and formatting</li>
+<li>
+<p>Apply formatting from newcoin template generation</p>
+</li>
+<li>
+<p><strong>CI/Build</strong>  </p>
+</li>
+<li>Consolidate CI workflows into single 3-job workflow (Linux, macOS, Windows)</li>
+<li>Remove all Travis CI references</li>
+<li>Use golangci-lint-action for linting</li>
+<li>Start Xvfb before UI tests</li>
+<li>Disable golangci-lint on Windows CI</li>
+<li>Skip UI e2e tests in CI (Protractor deprecated)</li>
+<li>Skip test-386 on macOS (Darwin)</li>
+</ul>
+<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permalink">&para;</a></h3>
+<ul>
+<li><strong>Explorer &amp; GUI Fixes</strong></li>
+<li>Fix wallet balance not showing in GUI - variable shadowing bug</li>
+<li>Fix explorer opening issue in Electron</li>
+<li>Fix explorer --node-addr flag being ignored</li>
+<li>Fix missing unconfirmed transactions from <code>/explorer/address</code></li>
+<li>Fix CalculatedHours for <code>/explorer/address</code></li>
+<li>
+<p>Fix TestDisableGUIAPI 404 message expectation</p>
+</li>
+<li>
+<p><strong>Emergency Wipe</strong>: #2579 Add emergency wipe option for the Skywallet</p>
+</li>
+<li><strong>Temporary Wallet Load</strong>: #1109 Temporary wallet load feature</li>
+<li>Fix CLI error message format by removing SilenceErrors</li>
+<li>Fix Windows test failure in TestChooseSpendsMaximizeUxOuts</li>
+<li>Fix TestPoolBroadcastMessage flaky test on 386 architecture</li>
+<li>Fix test failures in droplet and gnet packages</li>
+<li>Fix unit test failures in api and gnet packages</li>
+<li>Fix CORS test failures</li>
+<li>Fix flaky TestPexAddPeers test</li>
+<li>Fix skycoin_test.go for cobra-based flag parsing</li>
+<li>Fix integration test flag parsing</li>
+<li>Fix transaction create test: genesis UTXOs must have null source txn</li>
+<li>Update integration test scripts to use GNU-style flags (--flag)</li>
+<li>Fix 32-bit test failure: ensure slice has minimum length</li>
+<li>Fix integration tests: set ldflags to correct package</li>
+<li>Fix CLI integration test binary compilation</li>
+<li>Fix CLI test: remove flag parsing that conflicts with Cobra</li>
+<li>Filter test flags from CLI test binary before Cobra parses args</li>
+<li>Strip GOCOVERDIR warning from CLI integration test output</li>
+<li>Fix GOCOVERDIR warning regex to preserve error message newlines</li>
+<li>Fix API integration test 404 message expectation</li>
+<li>Fix TestDisableGUIAPI 404 message expectation</li>
+<li>Fix newcoin test file generation</li>
+<li>Apply formatting to root.go after newcoin generation</li>
+<li>Fix coin.template formatting to match goimports output</li>
+<li>Fix Windows CI test failures</li>
+<li>Fix golangci-lint errors in pool_test.go</li>
+<li>Fix formatting and go vet warnings</li>
+<li>Fix all remaining linter issues</li>
+<li>Fix linter issues: add exported var comments and improve file permissions</li>
+<li>Add nolint comments for remaining gosec warnings</li>
+</ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permalink">&para;</a></h3>
+<ul>
+<li>Remove endpoint <code>/api/v2/metrics</code> (prometheus dependency removed, no longer supported)</li>
+<li>Remove duplicate skycoin_test.go from commands directory</li>
+<li>Remove unused imports in command.template</li>
+</ul>
+<h2 id="0270-2019-11-26">[0.27.0] - 2019-11-26<a class="headerlink" href="#0270-2019-11-26" title="Permalink">&para;</a></h2>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permalink">&para;</a></h3>
+<ul>
+<li>Add <code>createRawTransactionV2</code> CLI command, which calls the API of <code>/wallet/transaction</code> to create the transaction and can create then unsigned transaction. Once the API's performance issue has been fixed, we will replace the <code>createRawTransaction</code> with it.</li>
+<li>Add <code>signTransaction</code> CLI command to sign transaction.</li>
+<li>Do windows electron builds by travis and abandon the appveyor</li>
+<li>Migrate <code>skycoin.net</code> to <code>skycoin.com</code></li>
+<li>Migrate project path to <code>SkycoinProject/skycoin</code></li>
+<li>Use transaction history when scanning wallet addresses, instead of the current address balance</li>
+<li>Document the daemon's CLI options</li>
+<li>Add the ability to save transaction notes</li>
+<li>Add CLI <code>encodeJsonTransaction</code> command to retrieve raw transaction given its JSON representation</li>
+<li>Add <code>package bip44</code>, implementing the bip44 spec https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki</li>
+<li>Codesign daemon and standalone binaries</li>
+<li>Add a guided method for entering the seeds in the GUI</li>
+<li>Add new wallet type <code>collection</code> for wallets that are an arbitrary collection of private keys, rather than generated from a seed</li>
+<li>Add new wallet type <code>bip44</code> for hierarchical deterministic (HD) wallets obeying the bip44 protocol.
+  The Skycoin bip44 <code>coin</code> number is <code>8000</code>.
+  <code>bip44</code> wallets avoid address reuse, generating a new change address for each transaction.
+  Affects APIs are <code>POST /api/v1/wallet</code>, <code>GET /api/v1/wallets</code>, <code>GET /api/v1/wallet</code>, <code>POST /api/v1/wallet/seed</code> and <code>POST /api/v1/wallet/recover</code>.
+  Refer to the <a href="../../api/">API documentation</a> for API changes.
+  <code>bip44</code> wallets support bip39 "seed passphrases".
+  More details are explained in https://github.com/skycoin/skycoin/wiki/Wallet-File-Formats-and-Types</li>
+<li><code>cli walletCreate</code> support for <code>bip44</code> wallets added</li>
+<li>Add <code>bip44_coin</code> field to <code>GET /api/v1/health</code> <code>fiber</code> params</li>
+<li>Add the "bulk send" option to the GUI advanced form</li>
+<li>Add <code>cli walletKeyExport</code> command to export <code>xpub</code>, <code>xprv</code>, <code>pub</code> and <code>prv</code> key from a <code>bip44</code> wallet</li>
+<li>Add <code>xpub</code> type wallet, which can generate addresses without exposing private keys</li>
+<li>Add <code>block_publisher</code> flag to <code>/api/v1/health</code></li>
+<li>Add <code>no_broadcast</code> option to <code>POST /api/v1/injectTransaction</code> to disable broadcast of the transaction. The transaction will only be added to the local pool.</li>
+<li>Add <code>cli distributeGenesis</code> command to split the genesis block into distribution addresses when setting up a new fiber coin</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Skycoin
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/skycoin/skycoin" target="_blank" rel="noopener" title="skycoin/skycoin on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://t.me/skycoin" target="_blank" rel="noopener" title="Skycoin on Telegram" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M248 8C111.033 8 0 119.033 0 256s111.033 248 248 248 248-111.033 248-248S384.967 8 248 8m114.952 168.66c-3.732 39.215-19.881 134.378-28.1 178.3-3.476 18.584-10.322 24.816-16.948 25.425-14.4 1.326-25.338-9.517-39.287-18.661-21.827-14.308-34.158-23.215-55.346-37.177-24.485-16.135-8.612-25 5.342-39.5 3.652-3.793 67.107-61.51 68.335-66.746.153-.655.3-3.1-1.154-4.384s-3.59-.849-5.135-.5q-3.283.746-104.608 69.142-14.845 10.194-26.894 9.934c-8.855-.191-25.888-5.006-38.551-9.123-15.531-5.048-27.875-7.717-26.8-16.291q.84-6.7 18.45-13.7 108.446-47.248 144.628-62.3c68.872-28.647 83.183-33.623 92.511-33.789 2.052-.034 6.639.474 9.61 2.885a10.45 10.45 0 0 1 3.53 6.716 43.8 43.8 0 0 1 .417 9.769"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "navigation.tracking", "navigation.indexes", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+      
+    
+  </body>
+</html>

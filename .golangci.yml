@@ -87,6 +87,15 @@ linters:
         text: "G115:"          # deliberate truncation while packing bytes
         path: "src/(cipher|btc)/"
       - linters:
+          - gosec
+        # G120 is taint-based: it flags r.FormValue in the node's HTTP handlers
+        # and explores as far as its analysis budget allows, so a different
+        # subset of handlers is reported on each run and per-site //nolint cannot
+        # keep up. The API server sets its own body limits; these calls read a
+        # single query parameter.
+        text: "G120:"
+        path: "src/api/"
+      - linters:
           - revive
         text: "var-naming: avoid meaningless package names"
       - linters:

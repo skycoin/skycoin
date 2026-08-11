@@ -221,7 +221,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		sStart := r.FormValue("start") //nolint:gosec:G120 // read of a single query parameter; the node's API server sets its own body limits
+		sStart := r.FormValue("start") //nolint:gosec // read of a single query parameter; the node's API server sets its own body limits
 		sEnd := r.FormValue("end")
 		sSeqs := r.FormValue("seqs")
 

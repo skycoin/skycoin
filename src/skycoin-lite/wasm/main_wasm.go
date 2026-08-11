@@ -7,10 +7,52 @@ package main
 
 import (
 	"fmt"
+	"runtime/debug"
 	"syscall/js"
 
 	"github.com/skycoin/skycoin/src/skycoin-lite/liteclient"
 )
+
+// buildVersion reports what this wasm was built from.
+//
+// The toolchain already records it: a `go build` inside a git work tree stamps
+// the module version and the vcs.* settings into the binary, so nothing needs
+// injecting through -ldflags. Reading it back is the only way to tell, from a
+// running wallet, which cipher it is actually holding — the wasm is a committed
+// artifact, so the commit it was built at is necessarily an earlier one than the
+// commit that carries it.
+//
+// modified is the interesting field. It means the working tree had uncommitted
+// changes when this was compiled, so no commit describes what is in it.
+//
+// TinyGo does not record any of this, and reports empty strings.
+func buildVersion() map[string]interface{} {
+	version := map[string]interface{}{
+		"version":  "",
+		"commit":   "",
+		"date":     "",
+		"modified": false,
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return version
+	}
+
+	version["version"] = info.Main.Version
+	for _, setting := range info.Settings {
+		switch setting.Key {
+		case "vcs.revision":
+			version["commit"] = setting.Value
+		case "vcs.time":
+			version["date"] = setting.Value
+		case "vcs.modified":
+			version["modified"] = setting.Value == "true"
+		}
+	}
+
+	return version
+}
 
 // errorResult is what every entry point returns when it could not do its job.
 // Callers check for the "error" key, so the shape has to be a map even when the
@@ -71,6 +113,8 @@ func main() {
 	skycoinCipher.Set("prepareTransactionWithSignatures", arity(3, "prepareTransactionWithSignatures", func(args []js.Value) interface{} {
 		return liteclient.PrepareTransactionWithSignatures(args[0].String(), args[1].String(), args[2].String())
 	}))
+
+	skycoinCipher.Set("version", buildVersion())
 
 	js.Global().Set("SkycoinCipher", skycoinCipher)
 

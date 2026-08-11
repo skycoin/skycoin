@@ -75,6 +75,11 @@
       </a>
     }
     <div class="separator"></div>
+    @if (cipherVersion) {
+      <button mat-menu-item [disabled]="true">
+        {{ 'header.top-bar.cipher-version' | translate }}: {{ cipherVersion }}
+      </button>
+    }
     @if (language) {
       <div mat-menu-item (click)="changelanguage()">
         <img [src]="'assets/img/lang/' + language.iconName" class="flag">

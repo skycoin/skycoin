@@ -7,6 +7,7 @@ import { BaseCoin } from '../../../../coins/basecoin';
 import { openChangeLanguageModal, getTimeSinceLastBalanceUpdate } from '../../../../utils';
 import { LanguageService, LanguageData } from '../../../../services/language.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
+import { CipherProvider } from '../../../../services/cipher.provider';
 
 @Component({
     selector: 'app-top-bar',
@@ -27,6 +28,24 @@ export class TopBarComponent implements OnInit, OnDestroy {
   hasManyCoins!: boolean;
   availableCoins: BaseCoin[] = [];
 
+  /**
+   * Identifies the wasm cipher this wallet is running, as a short commit.
+   *
+   * The cipher is a committed build artifact rather than something compiled
+   * alongside the page, so the wallet's own version does not identify it. A
+   * "modified" suffix means it was built from a working tree with uncommitted
+   * changes, so no commit describes it — CI rejects that, and seeing it here
+   * means the wallet is running something nobody can reproduce.
+   */
+  get cipherVersion(): string {
+    const build = this.cipherProvider.buildInfo;
+    if (!build) {
+      return '';
+    }
+
+    return build.commit.slice(0, 7) + (build.modified ? ' (modified)' : '');
+  }
+
   private subscriptionsGroup: Subscription[] = [];
 
   constructor(private balanceService: BalanceService,
@@ -35,7 +54,8 @@ export class TopBarComponent implements OnInit, OnDestroy {
               private renderer: Renderer2,
               private languageService: LanguageService,
               private _ngZone: NgZone,
-              private changeDetectorRef: ChangeDetectorRef,) {
+              private changeDetectorRef: ChangeDetectorRef,
+              private cipherProvider: CipherProvider,) {
   }
 
   ngOnInit() {

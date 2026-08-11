@@ -12,7 +12,7 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AvailableBalanceData } from '../../form-parts/form-source-selection/form-source-selection.component';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
 import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
-import { parseRequestLink, removeCommas, RequestLinkParams } from '../../../../../utils/general-utils';
+import { RequestLinkParams, parseRequestLink, removeCommas, toBigNumber } from '../../../../../utils/general-utils';
 import { EnterLinkComponent } from '../../enter-link/enter-link.component';
 import { DestinationToolsComponent, DestinationTools } from './destination-tools/destination-tools.component';
 
@@ -218,7 +218,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.destControls.forEach(dest => {
       let value: string = removeCommas(dest.get('coins')!.value);
       value = value ? value.trim() : value;
-      const currentValue = new BigNumber(value);
+      const currentValue = toBigNumber(value);
 
       if (!value || currentValue.isNaN()) {
         return;
@@ -272,7 +272,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.destControls.forEach(dest => {
       let value: string = removeCommas(dest.get('coins')!.value);
       value = value ? value.trim() : value;
-      const currentValue = new BigNumber(value);
+      const currentValue = toBigNumber(value);
 
       if (value) {
         if (currentValue.isNaN()) {
@@ -771,14 +771,14 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
       // Clean the values.
       if (cleanNumbers) {
-        destination.coins = new BigNumber(destination.coins).toString();
-        destination.originalAmount = new BigNumber(destination.originalAmount).toString();
+        destination.coins = toBigNumber(destination.coins).toString();
+        destination.originalAmount = toBigNumber(destination.originalAmount).toString();
       }
 
       if (this.showHourFields || this.simpleFormSpecificHours) {
         destination['hours'] = this.simpleFormSpecificHours ? this.simpleFormSpecificHours.toString() : removeCommas(destControl.get('hours')!.value);
         if (cleanNumbers) {
-          destination['hours'] = new BigNumber(destination['hours']).toString();
+          destination['hours'] = toBigNumber(destination['hours']).toString();
         }
       }
 
@@ -871,7 +871,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let destinationsCoins = new BigNumber(0);
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       this.destControls.map(control => {
-        const value = new BigNumber(removeCommas(control.get('coins')!.value));
+        const value = toBigNumber(removeCommas(control.get('coins')!.value));
         if (!value.isNaN()) {
           destinationsCoins = destinationsCoins.plus(value);
         }
@@ -887,7 +887,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let destinationsHours = new BigNumber(0);
     if (this.showHourFields) {
       this.destControls.map(control => {
-        const value = new BigNumber(removeCommas(control.get('hours')!.value));
+        const value = toBigNumber(removeCommas(control.get('hours')!.value));
         if (!value.isNaN()) {
           destinationsHours = destinationsHours.plus(value);
         }
@@ -916,7 +916,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    */
   private getAmount(stringValue: string, checkingCoins: boolean): BigNumber | null {
     stringValue = stringValue ? stringValue.trim() : stringValue;
-    const value = new BigNumber(stringValue);
+    const value = toBigNumber(stringValue);
 
     // Check for basic validity.
     if (!stringValue || value.isNaN()) {

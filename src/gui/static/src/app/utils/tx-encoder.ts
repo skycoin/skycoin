@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js';
 import Base58 from 'base-x';
 
 import { HwInput, HwOutput } from '../services/hw-wallet.service';
+import { toBigNumber } from '../utils/general-utils';
 
 /**
  * Allows to encode transactions, to be able to send them to the network.
@@ -110,9 +111,9 @@ export class TxEncoder {
       }
 
       // Coins
-      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.coins).multipliedBy(1000000).decimalPlaces(0));
+      currentPos = this.setUint64(dataView, currentPos, toBigNumber(output.coins).multipliedBy(1000000).decimalPlaces(0));
       // Hours
-      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.hours));
+      currentPos = this.setUint64(dataView, currentPos, toBigNumber(output.hours));
     });
 
     //

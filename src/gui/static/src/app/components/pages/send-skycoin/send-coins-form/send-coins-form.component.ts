@@ -1,6 +1,6 @@
 import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
 import { first, mergeMap } from 'rxjs';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output as AgularOutput, ViewChild } from '@angular/core';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
@@ -95,7 +95,7 @@ export interface FormData {
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
-export class SendCoinsFormComponent implements OnInit, OnDestroy {
+export class SendCoinsFormComponent implements OnInit, AfterViewInit, OnDestroy {
   // Default factor used for automatically distributing the coins.
   private readonly defaultAutoShareValue = '0.5';
 
@@ -179,8 +179,24 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
   }
 
+  ngAfterViewInit() {
+    // Capture whatever the source selection settled on while this component's
+    // view was still being created.
+    this.sourceSelectionChanged();
+  }
+
   // Called when there are changes in the source selection form.
   sourceSelectionChanged() {
+    // The child emits this during its own initialisation, which happens before
+    // Angular has resolved the @ViewChild on this component, so the reference is
+    // briefly undefined and reading it threw
+    // "Cannot read properties of undefined (reading 'selectedSources')".
+    // ngAfterViewInit below picks the state up once the reference exists, so
+    // nothing is lost by returning early here.
+    if (!this.formSourceSelection) {
+      return;
+    }
+
     this.selectedSources = this.formSourceSelection.selectedSources;
     this.availableBalance = this.formSourceSelection.availableBalance;
     this.formMultipleDestinations.updateValuesAndValidity();

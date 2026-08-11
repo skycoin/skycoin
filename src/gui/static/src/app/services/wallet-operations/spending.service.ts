@@ -11,6 +11,7 @@ import { TxEncoder } from '../../utils/tx-encoder';
 import { WalletBase } from './wallet-objects';
 import { BalanceAndOutputsService } from './balance-and-outputs.service';
 import { GeneratedTransaction } from './transaction-objects';
+import { toBigNumber } from '../../utils/general-utils';
 
 /**
  * Defines a destination to were coins will be sent.
@@ -174,7 +175,7 @@ export class SpendingService {
       let hoursToSend = new BigNumber(0);
       data.transaction.outputs
         .filter((o: any) => destinations.map(dest => dest.address).find(addr => addr === o.address))
-        .map((o: any) => hoursToSend = hoursToSend.plus(new BigNumber(o.hours)));
+        .map((o: any) => hoursToSend = hoursToSend.plus(toBigNumber(o.hours)));
 
       // Process the node response and create a known object.
       const tx: GeneratedTransaction = {
@@ -182,21 +183,21 @@ export class SpendingService {
           return {
             hash: input.uxid,
             address: input.address,
-            coins: new BigNumber(input.coins),
-            hours: new BigNumber(input.calculated_hours),
+            coins: toBigNumber(input.coins),
+            hours: toBigNumber(input.calculated_hours),
           };
         }),
         outputs: (data.transaction.outputs as any[]).map(output => {
           return {
             hash: output.uxid,
             address: output.address,
-            coins: new BigNumber(output.coins),
-            hours: new BigNumber(output.hours),
+            coins: toBigNumber(output.coins),
+            hours: toBigNumber(output.hours),
           };
         }),
         coinsToSend: amountToSend,
         hoursToSend: hoursToSend,
-        hoursBurned: new BigNumber(data.transaction.fee),
+        hoursBurned: toBigNumber(data.transaction.fee),
         from: senderString,
         to: destinations.map(destination => destination.address).join(', '),
         wallet: wallet,
@@ -272,8 +273,8 @@ export class SpendingService {
       transaction!.outputs.forEach(output => {
         hwOutputs.push({
           address: output.address,
-          coins: new BigNumber(output.coins).toString(),
-          hours: new BigNumber(output.hours).toFixed(0),
+          coins: toBigNumber(output.coins).toString(),
+          hours: toBigNumber(output.hours).toFixed(0),
         });
       });
       transaction!.inputs.forEach(input => {

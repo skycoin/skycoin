@@ -7,6 +7,7 @@ import { ApiService } from '../api.service';
 import { WalletsAndAddressesService } from './wallets-and-addresses.service';
 import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, walletWithOutputsFromBase, WalletWithOutputs } from './wallet-objects';
 import { Output } from './transaction-objects';
+import { toBigNumber } from '../../utils/general-utils';
 
 /**
  * Allows to get the balance of the wallets and is in chage of maintaining those balances updated.
@@ -128,9 +129,9 @@ export class BalanceAndOutputsService {
         response.head_outputs.forEach((output: any) => {
           const processedOutput: Output = {
             address: output.address,
-            coins: new BigNumber(output.coins),
+            coins: toBigNumber(output.coins),
             hash: output.hash,
-            hours: new BigNumber(output.calculated_hours),
+            hours: toBigNumber(output.calculated_hours),
           };
 
           outputs.push(processedOutput);
@@ -308,8 +309,8 @@ export class BalanceAndOutputsService {
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
       if (balance.confirmed) {
-        wallet.coins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
-        wallet.hours = new BigNumber(balance.confirmed.hours);
+        wallet.coins = toBigNumber(balance.confirmed.coins).dividedBy(1000000);
+        wallet.hours = toBigNumber(balance.confirmed.hours);
       } else {
         wallet.coins = new BigNumber(0);
         wallet.hours = new BigNumber(0);
@@ -317,8 +318,8 @@ export class BalanceAndOutputsService {
 
       wallet.addresses.forEach(address => {
         if (balance.addresses && balance.addresses[address.address]) {
-          address.coins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
-          address.hours = new BigNumber(balance.addresses[address.address].confirmed.hours);
+          address.coins = toBigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
+          address.hours = toBigNumber(balance.addresses[address.address].confirmed.hours);
         } else {
           address.coins = new BigNumber(0);
           address.hours = new BigNumber(0);
@@ -326,8 +327,8 @@ export class BalanceAndOutputsService {
       });
 
       if (!useSavedBalanceData) {
-        return !(new BigNumber(balance.predicted.coins).dividedBy(1000000)).isEqualTo(wallet.coins) ||
-          !(new BigNumber(balance.predicted.hours)).isEqualTo(wallet.hours);
+        return !(toBigNumber(balance.predicted.coins).dividedBy(1000000)).isEqualTo(wallet.coins) ||
+          !(toBigNumber(balance.predicted.hours)).isEqualTo(wallet.hours);
       } else {
         return this.hasPendingTransactionsSubject.value;
       }

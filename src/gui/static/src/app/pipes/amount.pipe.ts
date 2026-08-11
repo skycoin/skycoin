@@ -2,6 +2,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 
 import { AppService } from '../services/app.service';
+import { toBigNumber } from '../utils/general-utils';
 
 /**
  * Converts a number into a coin or hour amount. The resulting string is formatted with the
@@ -25,7 +26,10 @@ export class AmountPipe implements PipeTransform {
   ) { }
 
   transform(value: any, showingCoins = true, partToReturn = '') {
-    const convertedVal = new BigNumber(value).decimalPlaces(showingCoins ? this.appService.currentMaxDecimals : 0);
+    // toBigNumber rather than `new BigNumber`: bignumber.js 11 throws on input
+    // it cannot parse, where version 10 returned NaN, and this runs against
+    // bindings that are empty while a view waits for its data.
+    const convertedVal = toBigNumber(value).decimalPlaces(showingCoins ? this.appService.currentMaxDecimals : 0);
 
     let response = '';
 

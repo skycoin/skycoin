@@ -4,7 +4,7 @@ import { BigNumber } from 'bignumber.js';
 import { HttpClient } from '@angular/common/http';
 
 import { ApiService } from './api.service';
-import { shouldUpgradeVersion } from '../utils/general-utils';
+import { shouldUpgradeVersion, toBigNumber } from '../utils/general-utils';
 import { AppConfig } from '../app.config';
 import { redirectToErrorPage } from '../utils/errors';
 
@@ -124,7 +124,7 @@ export class AppService {
   UpdateData() {
     this.apiService.get('health').subscribe(response => {
       this.nodeVersionInternal = response.version.version;
-      this.burnRateInternal = new BigNumber(response.user_verify_transaction.burn_factor);
+      this.burnRateInternal = toBigNumber(response.user_verify_transaction.burn_factor);
       this.currentMaxDecimalsInternal = response.user_verify_transaction.max_decimals;
 
       this.fullCoinNameInternal = response.fiber.display_name;

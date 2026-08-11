@@ -11,6 +11,7 @@ import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { ApiService } from './api.service';
 import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
+import { toBigNumber } from '../utils/general-utils';
 
 /**
  * Data about a transaction recipient.
@@ -449,8 +450,8 @@ export class HwWalletService {
       if (output.address_index === undefined || output.address_index === null) {
         const currentOutput = new HwWalletTxRecipientData();
         currentOutput.address = output.address;
-        currentOutput.coins = new BigNumber(output.coins).decimalPlaces(6);
-        currentOutput.hours = new BigNumber(output.hours);
+        currentOutput.coins = toBigNumber(output.coins).decimalPlaces(6);
+        currentOutput.hours = toBigNumber(output.hours);
 
         previewData.push(currentOutput);
       }

@@ -18,8 +18,10 @@
 // an ancestor of HEAD. The revision itself is not checked against HEAD, because
 // committing the artifact necessarily moves HEAD past it.
 //
-// TinyGo records none of this, so its artifact is reported as unstamped rather
-// than failed.
+// Both artifacts must carry a stamp. Upstream TinyGo writes none, so an
+// unstamped file means the wasm was built with a toolchain that cannot say what
+// it is — indistinguishable from any other build, and unreproducible for the
+// same reason a dirty one is. github.com/0magnet/tinygo records them.
 const fs = require('fs');
 const path = require('path');
 
@@ -52,7 +54,13 @@ for (const rel of ARTIFACTS) {
   const revision = read('vcs\\.revision');
 
   if (modified === null && revision === null) {
-    console.log(`${rel}: no build stamp (TinyGo does not record one) — skipped`);
+    console.error(
+      `${rel}: no build stamp.\n` +
+      `  Nothing records which commit this was built from, so it cannot be told\n` +
+      `  apart from any other build. Upstream TinyGo writes no build information;\n` +
+      `  rebuild with one that does:\n` +
+      `    make build-wasm TINYGO=/path/to/0magnet/tinygo/build/tinygo`);
+    failed = true;
     continue;
   }
 

@@ -273,14 +273,26 @@ build-ui:  ## Build the production bundle of every Angular front-end
 		(cd $$d && npm run build); \
 	done
 
-build-wasm:  ## Rebuild the skycoin-lite wasm cipher (needs go and tinygo)
+# TinyGo used to build the wasm cipher. It must be one that records build
+# information: upstream TinyGo writes no vcs.* settings and no module version,
+# so its output cannot be told apart from any other build and check-wasm rejects
+# it. github.com/0magnet/tinygo does record them.
+#
+#   make build-wasm TINYGO=/path/to/0magnet/tinygo/build/tinygo
+TINYGO ?= tinygo
+
+build-wasm:  ## Rebuild the skycoin-lite wasm cipher (needs go and a stamping tinygo)
 	@# The repository keeps one copy of each build, in the Go package that embeds
 	@# it. cmd/skycoin-web selects between them by build tag and serves the bytes
 	@# from memory, so nothing needs copying into a bundle afterwards.
+	@#
+	@# Each wasm_exec.js is copied from the toolchain that built the wasm beside
+	@# it. They are not interchangeable.
 	GOOS=js GOARCH=wasm go build -o $(SKYCOIN_LITE_DIR)/wasm-go/skycoin-lite.wasm ./$(SKYCOIN_LITE_DIR)/wasm/
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-go/wasm_exec.js
-	tinygo build -o $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/
-	cp "$$(tinygo env TINYGOROOT)/targets/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-tinygo/wasm_exec.js
+	$(TINYGO) build -o $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/
+	cp "$$($(TINYGO) env TINYGOROOT)/targets/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-tinygo/wasm_exec.js
+	@node ci-scripts/check-wasm-version.js
 
 check-wasm:  ## Fail if a committed wasm was built from a dirty working tree
 	node ci-scripts/check-wasm-version.js

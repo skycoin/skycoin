@@ -14,14 +14,16 @@ module.exports = function (config) {
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
       require('karma-jasmine-html-reporter'),
-      require('karma-coverage-istanbul-reporter'),
-      require('karma-read-json')
+      require('karma-coverage-istanbul-reporter')
     ],
-    files: [
-      { pattern: 'e2e/test-fixtures/*.json', included: false },
-      { pattern: 'src/assets/scripts/wasm_exec.js', included: true }
-    ],
+    // The @angular/build:karma builder ignores "files" and "proxies"; anything
+    // the specs need to fetch is declared as a script or an asset on the test
+    // target in angular.json.
     client: {
+      // cipher.provider.lib.spec.ts walks a seed chain: each address is derived
+      // from the seed the previous one returned, so the specs have to run in
+      // declaration order. Jasmine randomises by default.
+      jasmine: { random: false },
       // this works only with `karma start`, not `karma run`.
       cipher: testCipher,
       args: ['--browserNoActivityTimeout', config.browserNoActivityTimeout],
@@ -33,6 +35,9 @@ module.exports = function (config) {
     },
     reporters: ['progress', 'kjhtml'],
     port: 9876,
+    // cipher.provider.lib.spec.ts loads a ~5 MB wasm module and then runs the
+    // full Go cipher testsuite vectors; the 30s default disconnects mid-run.
+    browserNoActivityTimeout: 180000,
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: true,

@@ -1,5 +1,8 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatCardModule, MatDividerModule, MatIconModule, MatListModule } from '@angular/material';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
 
 import { BuyComponent } from './buy.component';
 import { PurchaseService } from '../../../services/purchase.service';
@@ -10,7 +13,7 @@ describe('BuyComponent', () => {
   let component: BuyComponent;
   let fixture: ComponentFixture<BuyComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [
         BuyComponent,

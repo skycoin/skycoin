@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { NodesComponent } from './nodes.component';
@@ -10,7 +10,7 @@ describe('NodesComponent', () => {
   let component: NodesComponent;
   let fixture: ComponentFixture<NodesComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ NodesComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

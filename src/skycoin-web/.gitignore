@@ -1,1 +1,7 @@
 .angular/
+
+# Staged from src/cipher/testsuite/testdata by scripts/stage-cipher-fixtures.js
+e2e/test-fixtures/
+
+# Scratch output of the @angular/build:karma builder
+dist/test-out/

@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { SendVerifyComponent } from './send-verify.component';
@@ -11,7 +11,7 @@ describe('SendVerifyComponent', () => {
   let component: SendVerifyComponent;
   let fixture: ComponentFixture<SendVerifyComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ SendVerifyComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],

@@ -2,13 +2,13 @@ import { TellerStatusPipe } from './teller-status.pipe';
 import { TestBed, inject } from '@angular/core/testing';
 
 describe('TellerStatusPipe', () => {
-  let pipe;
+  let pipe: TellerStatusPipe;
 
   beforeEach(() => TestBed.configureTestingModule({
     providers: [TellerStatusPipe]
   }));
 
-  beforeEach(inject([TellerStatusPipe], p => {
+  beforeEach(inject([TellerStatusPipe], (p: TellerStatusPipe) => {
     pipe = p;
   }));
 

@@ -11,7 +11,9 @@
     "build-for-electron": "NODE_OPTIONS=--openssl-legacy-provider ng build --prod --environment local-prod",
     "build-for-local-fs": "NODE_OPTIONS=--openssl-legacy-provider ng build --prod --environment local-prod --base-href ./index.html",
     "lint": "ng lint",
+    "pretest": "node scripts/stage-cipher-fixtures.js",
     "test": "ng test --watch=false --browsers ChromeHeadlessNoSandbox",
+    "precipher-test": "node scripts/stage-cipher-fixtures.js",
     "cipher-test": "ng test --watch=false --browsers ChromeHeadlessNoSandbox --browserNoActivityTimeout=180000 --cipher",
     "test:watch": "ng test --browsers Chrome",
     "start-docker": "ng serve --proxy-config docker-proxy.config.js --delete-output-path false"
@@ -71,7 +73,6 @@
     "karma-coverage-istanbul-reporter": "^3.0.3",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "^2.2.0",
-    "karma-read-json": "^1.1.0",
     "process": "^0.11.10",
     "sass": "^1.102.0",
     "sass-loader": "^17.0.0",

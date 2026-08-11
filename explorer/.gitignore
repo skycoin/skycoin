@@ -45,3 +45,6 @@ Thumbs.db
 /explorer.*
 !/explorer.go
 
+
+# Scratch output of the @angular/build:karma builder
+dist/test-out/

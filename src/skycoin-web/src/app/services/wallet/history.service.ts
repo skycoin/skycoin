@@ -3,6 +3,8 @@ import { Observable, forkJoin, of } from 'rxjs';
 import { mergeMap, map, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
+import { toBigNumber } from '../../utils/converters';
+
 import { ApiService } from '../api.service';
 import { CoinService } from '../coin.service';
 import { Address, NormalTransaction, Wallet } from '../../app.datatypes';
@@ -79,7 +81,7 @@ export class HistoryService {
                   if (addressesMap.has(output.dst)) {
                     relevantAddresses.set(output.dst, true);
                     transaction.balance = transaction.balance.plus(output.coins);
-                    transaction.hoursSent = transaction.hoursSent.plus(output.hours);
+                    transaction.hoursSent = transaction.hoursSent.plus(toBigNumber(output.hours));
                   }
                 });
               } else {
@@ -98,7 +100,7 @@ export class HistoryService {
                 transaction.outputs.map((output: any) => {
                   if (!possibleReturnAddressesMap.has(output.dst)) {
                     transaction.balance = transaction.balance.minus(output.coins);
-                    transaction.hoursSent = transaction.hoursSent.plus(output.hours);
+                    transaction.hoursSent = transaction.hoursSent.plus(toBigNumber(output.hours));
                   }
                 });
 
@@ -114,7 +116,7 @@ export class HistoryService {
                     if (!inputAddressesMap.has(output.dst)) {
                       relevantAddresses.set(output.dst, true);
                       transaction.balance = transaction.balance.plus(output.coins);
-                      transaction.hoursSent = transaction.hoursSent.plus(output.hours);
+                      transaction.hoursSent = transaction.hoursSent.plus(toBigNumber(output.hours));
                     }
                   });
                 }
@@ -125,9 +127,9 @@ export class HistoryService {
               });
 
               let inputsHours = new BigNumber('0');
-              transaction.inputs.map((input: any) => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
+              transaction.inputs.map((input: any) => inputsHours = inputsHours.plus(toBigNumber(input.calculated_hours)));
               let outputsHours = new BigNumber('0');
-              transaction.outputs.map((output: any) => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+              transaction.outputs.map((output: any) => outputsHours = outputsHours.plus(toBigNumber(output.hours)));
               transaction.hoursBurned = inputsHours.minus(outputsHours);
 
               return transaction;

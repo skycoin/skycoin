@@ -1,10 +1,12 @@
-import { Pipe, PipeTransform, Component, ChangeDetectionStrategy } from '@angular/core';
+import { Pipe, PipeTransform, Component, ChangeDetectionStrategy, EventEmitter } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, ReplaySubject, of } from 'rxjs';
 import { filter, first } from 'rxjs';
 
 import { BaseCoin } from '../coins/basecoin';
 import { Wallet } from '../app.datatypes';
 import { BalanceEvent, BalanceStates } from '../services/wallet/balance.service';
+import { CoinHealth } from '../services/node-health.service';
+import { MsgBarComponent } from '../components/layout/msg-bar/msg-bar.component';
 
 // -- Components
 @Component({
@@ -82,7 +84,10 @@ export class MockCoinService {
   coins = [];
   customNodeUrls = {};
 
-  currentCoin = new BehaviorSubject<BaseCoin>({
+  /** Services wait on this before their first request; emit straight away. */
+  coinsLoaded = new ReplaySubject<boolean>(1);
+
+  currentCoin = new BehaviorSubject<BaseCoin>(new BaseCoin({
     id: 1,
     priceTickerId: 'btc-bitcoin',
     nodeUrl: 'nodeUrl',
@@ -94,7 +99,11 @@ export class MockCoinService {
     gradientName: 'imageName.png',
     iconName: 'icon.png',
     bigIconName: 'big-icon.png',
-  });
+  }));
+
+  constructor() {
+    this.coinsLoaded.next(true);
+  }
 
   removeTemporarilyAllowedCoin() {}
 }
@@ -112,7 +121,7 @@ export class MockWalletService {
     return of([]);
   }
 
-  scanAddresses(wallet, onProgressChanged): Observable<void> {
+  scanAddresses(wallet: Wallet, onProgressChanged: EventEmitter<any>): Observable<void> {
     return of();
   }
 }
@@ -153,7 +162,7 @@ export class MockBalanceService {
 }
 
 export class MockPriceService {
-  price: Subject<number> = new BehaviorSubject<number>(null);
+  price: Subject<number> = new BehaviorSubject<number>(null as any);
 }
 
 export class MockBlockchainService {
@@ -181,8 +190,41 @@ export class MockBlockchainService {
   }
 }
 
+export class MockNodeHealthService {
+  /** Reports the node as reachable so forms leave their disabled state. */
+  check(coin: BaseCoin): Observable<CoinHealth> {
+    return of(this.health(coin));
+  }
+
+  watch(coin: BaseCoin, intervalMs = 20000): Observable<CoinHealth> {
+    return of(this.health(coin));
+  }
+
+  private health(coin: BaseCoin): CoinHealth {
+    return {
+      coinId: coin.id,
+      coinName: coin.coinName,
+      coinSymbol: coin.coinSymbol,
+      isBitcoin: false,
+      available: true,
+      height: 1,
+    };
+  }
+}
+
+export class MockHwWalletService {
+  /** SpendingService only reaches for these two when spending from a device. */
+  checkIfCorrectHwConnected(address: string): Observable<boolean> {
+    return of(true);
+  }
+
+  signTransaction(inputs: any[], outputs: any[]): Observable<any> {
+    return of(null);
+  }
+}
+
 export class MockMsgBarService {
-  set msgBarComponent(value) { }
+  set msgBarComponent(value: MsgBarComponent) { }
   show() { }
   hide() { }
   showError(body: string, duration = 20000) { }

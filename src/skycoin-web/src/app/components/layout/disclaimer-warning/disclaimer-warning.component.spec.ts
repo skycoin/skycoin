@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { DisclaimerWarningComponent } from './disclaimer-warning.component';
@@ -8,7 +8,7 @@ describe('DisclaimerWarningComponent', () => {
   let component: DisclaimerWarningComponent;
   let fixture: ComponentFixture<DisclaimerWarningComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [
         DisclaimerWarningComponent,

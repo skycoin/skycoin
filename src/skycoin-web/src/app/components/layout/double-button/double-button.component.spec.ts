@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { DoubleButtonComponent } from './double-button.component';
@@ -8,7 +8,7 @@ describe('DoubleButtonComponent', () => {
   let component: DoubleButtonComponent;
   let fixture: ComponentFixture<DoubleButtonComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ DoubleButtonComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ]

@@ -4,9 +4,16 @@ import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/com
 import { CipherProvider, InitializationResults } from './cipher.provider';
 import { Address, TransactionInput, TransactionOutput } from '../app.datatypes';
 import { convertAsciiToHexa } from '../utils/converters';
+import { loadCipherWasm } from '../utils/wasm-test-utils';
 
 describe('CipherProvider', () => {
   let cipherProvider: CipherProvider;
+
+  // Every spec below calls straight into the wasm cipher, which is only
+  // available once the module has published its entry points.
+  beforeAll(async () => {
+    await loadCipherWasm();
+  }, 60000);
 
   beforeEach(() => {
     TestBed.configureTestingModule({

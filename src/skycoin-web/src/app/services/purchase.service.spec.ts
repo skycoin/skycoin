@@ -1,27 +1,23 @@
-import { TestBed, inject } from '@angular/core/testing';
-import { MockBackend } from '@angular/http/testing';
-import { HttpModule, XHRBackend } from '@angular/http';
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { PurchaseService } from './purchase.service';
 
 describe('PurchaseService', () => {
   let service: PurchaseService;
-  let mockbackend: MockBackend;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [ HttpModule ],
       providers: [
         PurchaseService,
-        { provide: XHRBackend, useClass: MockBackend }
-      ]
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+      ],
     });
-  });
 
-  beforeEach(inject([PurchaseService, XHRBackend], (serv, mock) => {
-    service = serv;
-    mockbackend = mock;
-  }));
+    service = TestBed.inject(PurchaseService);
+  });
 
   it('should be created', () => {
     expect(service).toBeTruthy();

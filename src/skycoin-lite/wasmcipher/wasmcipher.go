@@ -35,19 +35,26 @@ import (
 // modified is the interesting field. It means the working tree had uncommitted
 // changes when this was compiled, so no commit describes what is in it.
 //
-// It describes the wasm program that called Register, not this package: a visor
-// carrying the cipher reports the visor's build. That is the useful answer —
-// what identifies the module the browser actually loaded — but it does mean the
-// version is not necessarily a skycoin commit.
+// version describes the wasm program that called Register, which is what
+// identifies the module the browser actually loaded. When that program is not
+// skycoin — a visor carrying the cipher — cipherVersion additionally reports the
+// skycoin version it was built against, read from the dependency list the way
+// `skywire -d | grep skycoin` shows it. Both matter: one says which binary is
+// running, the other which cipher is inside it.
 //
 // The upstream TinyGo does not record any of this and reports empty strings;
 // github.com/0magnet/tinygo does.
+// skycoinModulePath is this module, used to find the cipher's own version when
+// the wasm was built from a different one.
+const skycoinModulePath = "github.com/skycoin/skycoin"
+
 func buildVersion() map[string]interface{} {
 	version := map[string]interface{}{
-		"version":  "",
-		"commit":   "",
-		"date":     "",
-		"modified": false,
+		"version":       "",
+		"commit":        "",
+		"date":          "",
+		"modified":      false,
+		"cipherVersion": "",
 	}
 
 	info, ok := debug.ReadBuildInfo()
@@ -56,6 +63,20 @@ func buildVersion() map[string]interface{} {
 	}
 
 	version["version"] = info.Main.Version
+
+	// The cipher's own version, when the host is something else.
+	if info.Main.Path == skycoinModulePath || info.Main.Path == "" {
+		version["cipherVersion"] = info.Main.Version
+	} else {
+		for _, dep := range info.Deps {
+			if dep.Path == skycoinModulePath {
+				version["cipherVersion"] = dep.Version
+
+				break
+			}
+		}
+	}
+
 	for _, setting := range info.Settings {
 		switch setting.Key {
 		case "vcs.revision":

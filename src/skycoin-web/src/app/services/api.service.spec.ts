@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { ApiService } from './api.service';
+import { ApiTransportService } from './api-transport.service';
 import { MockTranslateService, MockCoinService } from '../utils/test-mocks';
 import { CoinService } from './coin.service';
 
@@ -14,6 +15,7 @@ describe('ApiService', () => {
     TestBed.configureTestingModule({
       providers: [
         ApiService,
+        ApiTransportService,
         { provide: TranslateService, useClass: MockTranslateService },
         { provide: CoinService, useClass: MockCoinService },
         provideHttpClient(withInterceptorsFromDi()),

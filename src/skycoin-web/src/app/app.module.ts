@@ -52,6 +52,7 @@ import { ClipboardDirective } from './directives/clipboard.directive';
 import { DateTimePipe } from './pipes/date-time.pipe';
 import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { ApiService } from './services/api.service';
+import { ApiTransportService } from './services/api-transport.service';
 import { BlockchainService } from './services/blockchain.service';
 import { ClipboardService } from './services/clipboard.service';
 import { PriceService } from './services/price.service';
@@ -180,6 +181,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
             loader: { provide: TranslateLoader, useClass: AppTranslateLoader },
         }),
         ApiService,
+    ApiTransportService,
         BlockchainService,
         PurchaseService,
         PriceService,

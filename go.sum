@@ -109,8 +109,6 @@ github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f h1:
 github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f/go.mod h1:Dq4cqJueacNCZe0qzvcsgEkrka+Zi9MZLRoQDUPeG4k=
 github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2 h1:U8mPhSSk/NE508daZwF+EWgoPqnMyqbuE+1Et8orjhY=
 github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2/go.mod h1:XxSbk28CuQk5in9+tr7ns6AP282s5JP5pgr6axuJhgo=
-github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603 h1:REyOWYvI8XpSwDHy3sNBh8fdFv801wRaLUPTxtUaGKw=
-github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603/go.mod h1:dVA0bHAHPpSH5/FGJYyJ0GdqYCParc0zWtSC510zwRk=
 github.com/spf13/afero v1.15.0 h1:b/YBCLWAJdFWJTN9cLhiXXcD7mzKn9Dm86dNnfyQw1I=
 github.com/spf13/afero v1.15.0/go.mod h1:NC2ByUVxtQs4b3sIUphxK0NioZnmxgyCrfzeuq8lxMg=
 github.com/spf13/cast v1.10.0 h1:h2x0u2shc1QuLHfxi+cTJvs30+ZAHOGRic8uyGTDWxY=

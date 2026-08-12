@@ -68,6 +68,13 @@ func errorResult(err interface{}) map[string]interface{} {
 // entry point here used to recover without setting a return value, so a bad
 // seed or a malformed hash came back to JavaScript as null instead of as the
 // documented error object, and the caller crashed reading .error off it.
+//
+// This only holds on the standard Go build. Under TinyGo the recover does not
+// fire and the panic traps the whole module — the cipher is then dead for the
+// rest of the page, not merely wrong about one call. The address and signature
+// vectors all pass there, so the cipher itself is right; it is the error path
+// that is not. Making it hold on both would mean validating arguments here
+// rather than relying on recover.
 func guard(fn func() interface{}) (result interface{}) {
 	defer func() {
 		if r := recover(); r != nil {

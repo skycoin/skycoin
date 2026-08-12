@@ -43,8 +43,11 @@ func init() {
 
 	// Set the Long description with the correct ASCII font
 	longDesc := calvin.AsciiFont(coinNameLower)
-	if buildinfo.DBIVersion() != "" {
-		longDesc += fmt.Sprintf("\n%v", buildinfo.DBIVersion())
+	// SelfVersion, not DBIVersion: these commands are mounted by other projects
+	// — `skywire skycoin` runs them inside skywire's binary — where the main
+	// module's version names skywire under a skycoin banner.
+	if v := buildinfo.SelfVersion(); v != "unknown" {
+		longDesc += fmt.Sprintf("\n%v", v)
 	} else {
 		longDesc += fmt.Sprintf("\n%s version %v", coinNameLower, buildinfo.Version())
 	}

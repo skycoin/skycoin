@@ -13,6 +13,16 @@ import (
 
 const unknown = "unknown"
 
+// ModulePath is this module, used to find our own version when we are not the
+// program being built.
+//
+// The skycoin commands are imported by other projects — skywire's root command
+// mounts them, so `skywire skycoin` runs this code inside skywire's binary. The
+// main module is then skywire, and reporting runtime/debug.BuildInfo.Main.Version
+// under a skycoin banner names the wrong project. Our version is in Deps in that
+// case, which is the same thing `skywire -d | grep skycoin` shows.
+const ModulePath = "github.com/skycoin/skycoin"
+
 // Variables set via -ldflags during build
 // $ go build -mod=vendor -ldflags="-X 'github.com/skycoin/skycoin/src/util/buildinfo.version=$(git describe)' -X 'github.com/skycoin/skycoin/src/util/buildinfo.date=$(date -u "+%Y-%m-%dT%H:%M:%SZ")' -X 'github.com/skycoin/skycoin/src/util/buildinfo.commit=$(git rev-list -1 HEAD)'" .
 var (
@@ -63,8 +73,8 @@ func init() {
 	// If version is still unknown, try reading from runtime build info
 	if version == unknown || version == "" {
 		if ok {
-			if bi.Main.Version != "" {
-				parseVersionInfo(bi.Main.Version)
+			if self := selfVersion(); self != "" {
+				parseVersionInfo(self)
 			}
 			if bi.GoVersion != "" {
 				goversion = bi.GoVersion
@@ -109,6 +119,37 @@ func Version() string {
 		return unknown
 	}
 	return version
+}
+
+// selfVersion returns this module's version: the main module's when we are what
+// was built, and our entry in Deps when we are embedded in something else.
+func selfVersion() string {
+	if bi == nil {
+		return ""
+	}
+
+	if bi.Main.Path == ModulePath || bi.Main.Path == "" {
+		return bi.Main.Version
+	}
+
+	if dep := DepVersion(ModulePath); dep != "" {
+		return dep
+	}
+
+	// Built as part of a program that vendored us without a module record.
+	return bi.Main.Version
+}
+
+// SelfVersion returns the version of this module, whether it is the program
+// being run or a dependency of one. Use it anywhere a skycoin version is being
+// shown to a user; DBIVersion is the raw main-module value and will name the
+// host project when the commands are mounted in one.
+func SelfVersion() string {
+	if v := selfVersion(); v != "" && v != "(devel)" {
+		return v
+	}
+
+	return unknown
 }
 
 // DBIVersion returns bi.Main.Version.

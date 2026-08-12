@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -7,13 +6,14 @@ import { TranslateService } from '@ngx-translate/core';
 import { CoinService } from './coin.service';
 import { BaseCoin } from '../coins/basecoin';
 import { parseResponseMessage } from '../utils/errors';
+import { ApiRequestOptions, ApiTransportService } from './api-transport.service';
 
 @Injectable()
 export class ApiService {
 
   private url!: string;
 
-  constructor(private http: HttpClient,
+  constructor(private transport: ApiTransportService,
               private translate: TranslateService,
               private coinService: CoinService) {
     this.coinService.currentCoin
@@ -31,12 +31,12 @@ export class ApiService {
   }
 
   get(url: any, params: any = null, options = {}): Observable<any> {
-    return this.http.get(this.getUrl(url), this.getRequestOptions(options, params)).pipe(
+    return this.transport.request('GET', this.getUrl(url), null, this.getRequestOptions(options, params)).pipe(
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
   delete(url: any, params = null, options = {}): Observable<any> {
-    return this.http.delete(this.getUrl(url), this.getRequestOptions(options, params)).pipe(
+    return this.transport.request('DELETE', this.getUrl(url), null, this.getRequestOptions(options, params)).pipe(
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
@@ -45,7 +45,8 @@ export class ApiService {
       options.json = true;
     }
 
-    return this.http.post(
+    return this.transport.request(
+      'POST',
       this.getUrl(url, useV2),
       options.json ? JSON.stringify(body) : this.getQueryString(body),
       this.getRequestOptions(options)
@@ -64,28 +65,26 @@ export class ApiService {
     }, [] as string[]).join('&');
   }
 
-  private getRequestOptions(additionalOptions: any, parameters: any = null): any {
-    const options: any = {};
-    options.params = this.getQueryStringParams(parameters);
-    options.headers = new HttpHeaders();
-
-    options.headers = options.headers.append('Content-Type', additionalOptions.json ? 'application/json' : 'application/x-www-form-urlencoded');
+  /**
+   * Builds the parts of a request that do not depend on how it is sent. The
+   * transport turns these into HttpParams and HttpHeaders, or into the
+   * arguments the visor's fetch takes.
+   */
+  private getRequestOptions(additionalOptions: any, parameters: any = null): ApiRequestOptions {
+    const headers: { [key: string]: string } = {
+      'Content-Type': additionalOptions.json ? 'application/json' : 'application/x-www-form-urlencoded',
+    };
 
     if (additionalOptions.csrf) {
-      options.headers = options.headers.append('X-CSRF-Token', additionalOptions.csrf);
+      headers['X-CSRF-Token'] = additionalOptions.csrf;
     }
 
-    return options;
-  }
-
-  private getQueryStringParams(parameters: any): HttpParams {
-    let params = new HttpParams();
-
+    const params: { [key: string]: string } = {};
     if (parameters) {
-      Object.keys(parameters).forEach((key: string) => params = params.set(key, parameters[key]));
+      Object.keys(parameters).forEach((key: string) => params[key] = parameters[key]);
     }
 
-    return params;
+    return { params: params, headers: headers };
   }
 
   private getUrl(url: string, useV2 = false): string {

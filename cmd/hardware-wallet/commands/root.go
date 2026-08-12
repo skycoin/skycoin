@@ -108,9 +108,14 @@ var RootCmd = &cobra.Command{
     └─┘┴ ┴ ┴ └─┘└─┘┴┘└┘
     skycoin hardware wallet utilities`
 		// SelfVersion, not DBIVersion: mounted by other projects, the main
-		// module's version names the host rather than skycoin.
-		if v := buildinfo.SelfVersion(); v != "unknown" {
-			ret += fmt.Sprintf("\n%v", v)
+		// module's version names the host rather than skycoin. DBIVersion still
+		// covers the build with no version of its own, which says "(devel)".
+		shown := buildinfo.SelfVersion()
+		if shown == "unknown" {
+			shown = buildinfo.DBIVersion()
+		}
+		if shown != "" {
+			ret += fmt.Sprintf("\n%v", shown)
 		} else {
 			ret += fmt.Sprintf("\nversion %v", buildinfo.Version())
 		}

@@ -49,9 +49,15 @@ func init() {
 	longDesc := calvin.AsciiFont(coinNameLower)
 	// SelfVersion, not DBIVersion: these commands are mounted by other projects
 	// — `skywire skycoin` runs them inside skywire's binary — where the main
-	// module's version names skywire under a skycoin banner.
-	if v := buildinfo.SelfVersion(); v != "unknown" {
-		longDesc += fmt.Sprintf("\n%v", v)
+	// module's version names skywire under a skycoin banner. DBIVersion still
+	// covers the build that has no version of its own to report, which says
+	// "(devel)".
+	shown := buildinfo.SelfVersion()
+	if shown == "unknown" {
+		shown = buildinfo.DBIVersion()
+	}
+	if shown != "" {
+		longDesc += fmt.Sprintf("\n%v", shown)
 	} else {
 		longDesc += fmt.Sprintf("\n%s version %v", coinNameLower, buildinfo.Version())
 	}

@@ -24,7 +24,6 @@ require (
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
 	github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
-	github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0

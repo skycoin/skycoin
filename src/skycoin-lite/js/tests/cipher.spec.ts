@@ -96,7 +96,7 @@ describe('CipherProvider Lib', () => {
         it(`should verify signature correctly`, done => {
           testData.forEach(data => {
             const result = CipherExtras.VerifyPubKeySignedHash(data.public_key, data.signature, data.hash);
-            expect(result).toBeUndefined();
+            expect(result).toBeNull();
             done();
           });
         });
@@ -104,7 +104,7 @@ describe('CipherProvider Lib', () => {
         it(`should check signature correctly`, done => {
           testData.forEach(data => {
             const result = CipherExtras.VerifyAddressSignedHash(data.address, data.signature, data.hash);
-            expect(result).toBeUndefined();
+            expect(result).toBeNull();
             done();
           });
         });
@@ -112,7 +112,7 @@ describe('CipherProvider Lib', () => {
         it(`should verify signed hash correctly`, done => {
           testData.forEach(data => {
             const result = CipherExtras.VerifySignatureRecoverPubKey(data.signature, data.hash);
-            expect(result).toBeUndefined();
+            expect(result).toBeNull();
             done();
           });
         });
@@ -165,8 +165,11 @@ function generateAddresses(seed: string, keys: any[]): Address[] {
   });
 }
 
+// Cipher and CipherExtras report failure as {error: string} rather than
+// throwing, matching src/skycoin-lite/wasm/main_wasm.go. Anything unexpected
+// here is that object rather than the value the test wanted.
 function generateAddress(seed: string): Address {
-  const address = Cipher.GenerateAddresses(seed);
+  const address = Cipher.GenerateAddresses(seed, 1)[0];
   return {
     address: address.Address,
     public_key: address.Public,
@@ -181,8 +184,8 @@ function verifyAddress(address) {
 
   expect(addressFromPubKey && addressFromSecKey && addressFromPubKey === addressFromSecKey).toBe(true);
 
-  expect(CipherExtras.VerifySeckey(address.secret_key)).toBe(1);
-  expect(CipherExtras.VerifyPubkey(address.public_key)).toBe(1);
+  expect(CipherExtras.VerifySeckey(address.secret_key)).toBeNull();
+  expect(CipherExtras.VerifyPubkey(address.public_key)).toBeNull();
 }
 
 function verifyAddresses(addresses) {

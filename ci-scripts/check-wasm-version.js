@@ -24,10 +24,11 @@
 // same reason a dirty one is. github.com/0magnet/tinygo records them.
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const ARTIFACTS = [
-  'src/skycoin-lite/wasm-go/skycoin-lite.wasm',
-  'src/skycoin-lite/wasm-tinygo/skycoin-lite.wasm',
+  'src/skycoin-lite/wasm-go/skycoin-lite.wasm.gz',
+  'src/skycoin-lite/wasm-tinygo/skycoin-lite.wasm.gz',
 ];
 
 const repoRoot = path.resolve(__dirname, '..');
@@ -43,8 +44,9 @@ for (const rel of ARTIFACTS) {
 
   // The build stamp is a run of "key\tvalue" records in the binary's string
   // data; read it directly rather than depending on `go version -m`, which does
-  // not recognise the wasm container.
-  const contents = fs.readFileSync(file).toString('latin1');
+  // not recognise the wasm container. The artifact is committed gzipped, so
+  // expand it in memory first.
+  const contents = zlib.gunzipSync(fs.readFileSync(file)).toString('latin1');
   const read = key => {
     const found = contents.match(new RegExp(`build\\s${key}=([^\\s\\0]*)`));
     return found ? found[1] : null;

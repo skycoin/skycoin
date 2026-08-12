@@ -28,6 +28,12 @@ client
 *.7z
 *.dmg
 *.gz
+# The wasm cipher is a committed build artifact. It is kept compressed despite
+# the note above: not for the repository's sake — git packs the raw wasm to the
+# same size — but because //go:embed takes the file verbatim, so shipping it
+# uncompressed would add 3.1 MB to every binary.
+!src/skycoin-lite/wasm-go/skycoin-lite.wasm.gz
+!src/skycoin-lite/wasm-tinygo/skycoin-lite.wasm.gz
 *.iso
 *.jar
 *.rar

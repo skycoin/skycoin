@@ -288,15 +288,20 @@ build-wasm:  ## Rebuild the skycoin-lite wasm cipher (needs go and a stamping ti
 	@#
 	@# Each wasm_exec.js is copied from the toolchain that built the wasm beside
 	@# it. They are not interchangeable.
+	@#
+	@# The wasm is stored gzipped because //go:embed takes the file verbatim:
+	@# uncompressed it would add 3.1 MB to every binary. The server hands the
+	@# compressed bytes straight to the browser. -n keeps the name and timestamp
+	@# out, so the same input gives the same output.
 	@# Both compile to a scratch directory before anything is written back. Each
 	@# build stamps the state of the work tree it sees, so writing the first
 	@# artifact into place would make the second one report itself dirty.
 	@set -e; out=$$(mktemp -d); trap 'rm -rf "$$out"' EXIT; \
 	GOOS=js GOARCH=wasm go build -o "$$out/go.wasm" ./$(SKYCOIN_LITE_DIR)/wasm/; \
 	$(TINYGO) build -o "$$out/tinygo.wasm" -target wasm ./$(SKYCOIN_LITE_DIR)/wasm/; \
-	cp "$$out/go.wasm" $(SKYCOIN_LITE_DIR)/wasm-go/skycoin-lite.wasm; \
+	gzip -9 -n -c "$$out/go.wasm" > $(SKYCOIN_LITE_DIR)/wasm-go/skycoin-lite.wasm.gz; \
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-go/wasm_exec.js; \
-	cp "$$out/tinygo.wasm" $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm; \
+	gzip -9 -n -c "$$out/tinygo.wasm" > $(SKYCOIN_LITE_DIR)/wasm-tinygo/skycoin-lite.wasm.gz; \
 	cp "$$($(TINYGO) env TINYGOROOT)/targets/wasm_exec.js" $(SKYCOIN_LITE_DIR)/wasm-tinygo/wasm_exec.js
 	@node ci-scripts/check-wasm-version.js
 

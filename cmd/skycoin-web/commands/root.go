@@ -25,6 +25,8 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skycoin/src/wallet"
+
+	"github.com/skycoin/skycoin/src/skycoin-lite/wasmgz"
 )
 
 var (
@@ -136,6 +138,18 @@ var RootCmd = &cobra.Command{
 			log.Fatalf("Server failed: %v", err)
 		}
 	},
+}
+
+// acceptsGzip reports whether the client will decompress a gzipped response.
+// Everything current does; the fallback is for anything that says otherwise.
+func acceptsGzip(r *http.Request) bool {
+	for _, encoding := range strings.Split(r.Header.Get("Accept-Encoding"), ",") {
+		if strings.EqualFold(strings.TrimSpace(strings.SplitN(encoding, ";", 2)[0]), "gzip") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func init() {
@@ -455,7 +469,26 @@ func serve(ctx context.Context) error {
 	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", func(w http.ResponseWriter, r *http.Request) {
 		c := newCtx(w, r)
 		c.Header("Content-Type", "application/wasm")
-		c.Data(http.StatusOK, "application/wasm", wasmFile)
+
+		// The blob is committed gzipped. Handing it over as-is lets the browser
+		// decompress it — which every browser does, and which
+		// WebAssembly.instantiateStreaming is happy with — instead of spending
+		// the server's memory and CPU inflating ~5 MB per request.
+		if acceptsGzip(r) {
+			c.Header("Content-Encoding", "gzip")
+			c.Data(http.StatusOK, "application/wasm", wasmFileGz)
+
+			return
+		}
+
+		wasm, err := wasmgz.Decompress(wasmFileGz)
+		if err != nil {
+			c.Data(http.StatusInternalServerError, "text/plain", []byte("could not decompress the wasm cipher: "+err.Error()))
+
+			return
+		}
+
+		c.Data(http.StatusOK, "application/wasm", wasm)
 	})
 
 	mux.HandleFunc("/assets/scripts/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {

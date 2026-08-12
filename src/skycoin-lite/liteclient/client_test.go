@@ -81,18 +81,18 @@ func buildInputs(t *testing.T, address Address) string {
 		Secret: address.Secret,
 	}})
 	if err != nil {
-		t.Fatalf("marshalling inputs: %v", err)
+		t.Fatalf("marshaling inputs: %v", err)
 	}
 
 	return string(body)
 }
 
-func buildOutputs(t *testing.T, address string, coins, hours uint64) string {
+func buildOutputs(t *testing.T, address string) string {
 	t.Helper()
 
-	body, err := json.Marshal([]TransactionOutput{{Address: address, Coins: coins, Hours: hours}})
+	body, err := json.Marshal([]TransactionOutput{{Address: address, Coins: 1000000, Hours: 100}})
 	if err != nil {
-		t.Fatalf("marshalling outputs: %v", err)
+		t.Fatalf("marshaling outputs: %v", err)
 	}
 
 	return string(body)
@@ -101,7 +101,7 @@ func buildOutputs(t *testing.T, address string, coins, hours uint64) string {
 func TestPrepareTransaction(t *testing.T) {
 	address := mustGenerate(t, testSeed())
 
-	txn, err := PrepareTransaction(buildInputs(t, address), buildOutputs(t, address.Address, 1000000, 100))
+	txn, err := PrepareTransaction(buildInputs(t, address), buildOutputs(t, address.Address))
 	if err != nil {
 		t.Fatalf("PrepareTransaction: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestPrepareTransaction(t *testing.T) {
 func TestPrepareTransactionRejectsBadDestinationAddress(t *testing.T) {
 	address := mustGenerate(t, testSeed())
 
-	_, err := PrepareTransaction(buildInputs(t, address), buildOutputs(t, "not an address", 1000000, 100))
+	_, err := PrepareTransaction(buildInputs(t, address), buildOutputs(t, "not an address"))
 	if err == nil {
 		t.Fatal("expected an error for an invalid destination address")
 	}
@@ -135,7 +135,7 @@ func TestPrepareTransactionRejectsNullDestinationAddress(t *testing.T) {
 	// error matters: any invalid string fails the base58 decode first, which
 	// would pass this test without ever reaching the check it is named for.
 	_, err := PrepareTransaction(
-		buildInputs(t, address), buildOutputs(t, cipher.Address{}.String(), 1000000, 100))
+		buildInputs(t, address), buildOutputs(t, cipher.Address{}.String()))
 	if err != ErrNullOutputAddress {
 		t.Fatalf("err = %v, want %v", err, ErrNullOutputAddress)
 	}
@@ -165,7 +165,7 @@ func TestPrepareTransactionRejectsMalformedJSON(t *testing.T) {
 func TestPrepareTransactionRejectsNoInputs(t *testing.T) {
 	address := mustGenerate(t, testSeed())
 
-	_, err := PrepareTransaction("[]", buildOutputs(t, address.Address, 1000000, 100))
+	_, err := PrepareTransaction("[]", buildOutputs(t, address.Address))
 	if err != ErrNoInputs {
 		t.Fatalf("err = %v, want %v", err, ErrNoInputs)
 	}
@@ -181,10 +181,10 @@ func TestPrepareTransactionRejectsUnusableSecretKey(t *testing.T) {
 		Secret: strings.Repeat("0", 64),
 	}})
 	if err != nil {
-		t.Fatalf("marshalling inputs: %v", err)
+		t.Fatalf("marshaling inputs: %v", err)
 	}
 
-	if _, err := PrepareTransaction(string(inputs), buildOutputs(t, address.Address, 1000000, 100)); err == nil {
+	if _, err := PrepareTransaction(string(inputs), buildOutputs(t, address.Address)); err == nil {
 		t.Fatal("expected an error for an unusable secret key")
 	}
 }
@@ -193,13 +193,13 @@ func TestPrepareTransactionWithSignaturesRejectsMalformedSignatures(t *testing.T
 	address := mustGenerate(t, testSeed())
 
 	_, err := PrepareTransactionWithSignatures(
-		buildInputs(t, address), buildOutputs(t, address.Address, 1000000, 100), `["not a signature"]`)
+		buildInputs(t, address), buildOutputs(t, address.Address), `["not a signature"]`)
 	if err == nil {
 		t.Fatal("expected an error for a malformed signature")
 	}
 
 	_, err = PrepareTransactionWithSignatures(
-		buildInputs(t, address), buildOutputs(t, address.Address, 1000000, 100), "not json")
+		buildInputs(t, address), buildOutputs(t, address.Address), "not json")
 	if err == nil {
 		t.Fatal("expected an error for a malformed signature list")
 	}

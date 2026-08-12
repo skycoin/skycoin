@@ -16,17 +16,27 @@
 // two toolchains and has to match the wasm beside it.
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const src = path.resolve(__dirname, '../../skycoin-lite/wasm-go');
 const dest = path.resolve(__dirname, '../src/assets/scripts');
-const files = ['skycoin-lite.wasm', 'wasm_exec.js'];
+// The wasm is committed gzipped, because it is a large artifact that changes on
+// every rebuild. The Go server hands that straight to the browser with
+// Content-Encoding: gzip, but the Angular dev server and karma serve static
+// files as-is, so the staged copy is expanded here.
+const files = [
+  { from: 'skycoin-lite.wasm.gz', to: 'skycoin-lite.wasm', gzipped: true },
+  { from: 'wasm_exec.js', to: 'wasm_exec.js', gzipped: false },
+];
 
 for (const f of files) {
-  const from = path.join(src, f);
+  const from = path.join(src, f.from);
   if (!fs.existsSync(from)) {
-    console.error(`${f} not found in ${src} — run "make build-wasm" first.`);
+    console.error(`${f.from} not found in ${src} — run "make build-wasm" first.`);
     process.exit(1);
   }
-  fs.copyFileSync(from, path.join(dest, f));
+
+  const body = fs.readFileSync(from);
+  fs.writeFileSync(path.join(dest, f.to), f.gzipped ? zlib.gunzipSync(body) : body);
 }
-console.log(`staged ${files.join(' and ')} from ${path.relative(process.cwd(), src)}`);
+console.log(`staged ${files.map(f => f.to).join(' and ')} from ${path.relative(process.cwd(), src)}`);

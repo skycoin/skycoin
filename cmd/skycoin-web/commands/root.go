@@ -463,11 +463,24 @@ func serve(ctx context.Context) error {
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
 	guiFS := initGUIFS()
 
-	// Serve embedded WASM files from skycoin-lite. These are exact-match
+	// Serve the registered skycoin-lite WASM files. These are exact-match
 	// patterns, which take precedence over the "/" static handler in both the
 	// standard-library and TinyGo ServeMux implementations.
+	//
+	// Both routes are registered unconditionally and report 404 when no cipher
+	// wasm was registered (see wasm.go). Leaving the routes off entirely would
+	// hand the request to the "/" static handler, which answers an SPA fallback
+	// — so a missing wasm would arrive at the browser as index.html with a 200,
+	// and fail as a confusing content-type error rather than a plain 404.
 	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", func(w http.ResponseWriter, r *http.Request) {
 		c := newCtx(w, r)
+
+		if !cipherWasmRegistered() {
+			c.Data(http.StatusNotFound, "text/plain", []byte("no cipher wasm is registered in this build"))
+
+			return
+		}
+
 		c.Header("Content-Type", "application/wasm")
 
 		// The blob is committed gzipped. Handing it over as-is lets the browser
@@ -493,6 +506,13 @@ func serve(ctx context.Context) error {
 
 	mux.HandleFunc("/assets/scripts/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
 		c := newCtx(w, r)
+
+		if !cipherWasmRegistered() {
+			c.Data(http.StatusNotFound, "text/plain", []byte("no cipher wasm is registered in this build"))
+
+			return
+		}
+
 		c.Header("Content-Type", "application/javascript")
 		c.Data(http.StatusOK, "application/javascript", wasmExecJS)
 	})

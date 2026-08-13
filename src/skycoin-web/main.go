@@ -8,6 +8,9 @@ import (
 	"github.com/skycoin/skycoin/src/util/flags"
 
 	"github.com/skycoin/skycoin/cmd/skycoin-web/commands"
+	// Serves the skycoin-lite cipher wasm at /assets/scripts/. The command
+	// itself no longer embeds it, so a binary that wants it says so.
+	_ "github.com/skycoin/skycoin/cmd/skycoin-web/wasmassets"
 )
 
 func init() {

@@ -34,6 +34,15 @@ interface SkywireVisor {
     body?: string | null,
     headers?: { [key: string]: string },
   ): Promise<{ status: number; headers?: { [key: string]: string }; body?: string }>;
+
+  /**
+   * Reports what the visor has running. `dmsg` is the field that matters here:
+   * it is true once the dmsg client exists, which is the exact condition
+   * fetchDmsg tests before doing anything — it answers "not booted; call boot()
+   * first" otherwise. `dmsg_connected` is a stronger statement, that the client
+   * also has a session.
+   */
+  status?(): { booted?: boolean; dmsg?: boolean; dmsg_connected?: boolean };
 }
 
 @Injectable()
@@ -41,16 +50,46 @@ export class ApiTransportService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Reports whether a visor is on the page and able to carry requests.
+   * Reports whether a visor is on the page.
    *
    * Detected through the global rather than by importing anything from skywire:
    * this project does not depend on it, and the visor is a drop-in precisely
    * because the contract is the object it publishes.
+   *
+   * Being present is not the same as being able to carry a request — see
+   * visorReady. A visor exists on the page from the moment its wasm loads, well
+   * before anyone has called boot().
    */
   get visorAvailable(): boolean {
     const visor = (window as any).skywireVisor as SkywireVisor | undefined;
 
     return !!visor && typeof visor.fetchDmsg === 'function';
+  }
+
+  /**
+   * Reports whether the visor has booted far enough to carry a request.
+   *
+   * fetchDmsg refuses with "not booted; call boot() first" until its dmsg
+   * client exists, so this asks status() for the same thing rather than finding
+   * out by failing. A visor that publishes no status() is taken at its word:
+   * older builds had no way to ask, and refusing them would be worse than
+   * letting the request report its own failure.
+   */
+  get visorReady(): boolean {
+    const visor = (window as any).skywireVisor as SkywireVisor | undefined;
+    if (!visor || typeof visor.fetchDmsg !== 'function') {
+      return false;
+    }
+    if (typeof visor.status !== 'function') {
+      return true;
+    }
+
+    try {
+      return !!visor.status().dmsg;
+    } catch {
+      // A visor whose status cannot be read is not one to send a request to.
+      return false;
+    }
   }
 
   /**
@@ -70,6 +109,13 @@ export class ApiTransportService {
       if (!this.visorAvailable) {
         return throwError(() => new Error(
           `${this.hostOf(url)} can only be reached through a skywire visor, and none is running on this page`));
+      }
+      if (!this.visorReady) {
+        // Distinguished from the above because the two need different things
+        // from whoever sees them: one is a missing visor, the other a visor
+        // that nobody has booted yet.
+        return throwError(() => new Error(
+          `the skywire visor on this page has not booted yet, so ${this.hostOf(url)} cannot be reached`));
       }
 
       return this.requestThroughVisor(method, url, body, options);

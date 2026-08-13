@@ -53,6 +53,46 @@ describe('ApiTransportService', () => {
     });
   });
 
+  // A visor exists on the page from the moment its wasm loads, long before
+  // anyone calls boot(). fetchDmsg refuses until its dmsg client exists, so the
+  // seam asks status() for the same thing rather than finding out by failing.
+  describe('readiness', () => {
+    it('is not ready with no visor at all', () => {
+      expect(transport.visorReady).toBe(false);
+    });
+
+    it('is not ready while the visor is unbooted', () => {
+      (window as any).skywireVisor = {
+        fetchDmsg: () => Promise.resolve({ status: 200 }),
+        status: () => ({ booted: false, dmsg: false }),
+      };
+      expect(transport.visorReady).toBe(false);
+    });
+
+    it('is ready once the dmsg client exists', () => {
+      (window as any).skywireVisor = {
+        fetchDmsg: () => Promise.resolve({ status: 200 }),
+        status: () => ({ booted: true, dmsg: true }),
+      };
+      expect(transport.visorReady).toBe(true);
+    });
+
+    // Older builds published no status(). Refusing them would be worse than
+    // letting the request report its own failure.
+    it('takes a visor with no status() at its word', () => {
+      (window as any).skywireVisor = { fetchDmsg: () => Promise.resolve({ status: 200 }) };
+      expect(transport.visorReady).toBe(true);
+    });
+
+    it('is not ready when status() cannot be read', () => {
+      (window as any).skywireVisor = {
+        fetchDmsg: () => Promise.resolve({ status: 200 }),
+        status: () => { throw new Error('wasm trap'); },
+      };
+      expect(transport.visorReady).toBe(false);
+    });
+  });
+
   // Without a visor the wallet must behave exactly as it always has, which is
   // the reason the seam defaults rather than switches.
   describe('over http', () => {
@@ -94,6 +134,8 @@ describe('ApiTransportService', () => {
         },
       };
 
+      (window as any).skywireVisor.status = () => ({ booted: true, dmsg: true });
+
       transport.request('GET', 'http://02a1b2c3.dmsg/api/v1/health', null, { params: { x: '1' } })
         .subscribe(response => {
           expect(calls.length).toBe(1);
@@ -122,6 +164,21 @@ describe('ApiTransportService', () => {
 
     // A dmsg address cannot be fetched by the browser, so failing loudly beats
     // an opaque network error.
+    it('says the visor has not booted, which is not the same as having none', done => {
+      (window as any).skywireVisor = {
+        fetchDmsg: () => Promise.reject(new Error('not booted; call boot() first')),
+        status: () => ({ booted: false, dmsg: false }),
+      };
+
+      transport.request('GET', 'http://02a1b2c3.dmsg/api/v1/health', null, {}).subscribe({
+        next: () => done.fail('the request should not have succeeded'),
+        error: (err: Error) => {
+          expect(err.message).toContain('has not booted');
+          done();
+        },
+      });
+    });
+
     it('says so when a dmsg node is asked for with no visor present', done => {
       transport.request('GET', 'http://02a1b2c3.dmsg/api/v1/health', null, {}).subscribe({
         next: () => done.fail('the request should not have succeeded'),

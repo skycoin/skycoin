@@ -17,6 +17,11 @@ import (
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"
 	cli "github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
 	web "github.com/skycoin/skycoin/cmd/skycoin-web/commands"
+
+	// Serves the skycoin-lite cipher wasm at /assets/scripts/ for `skycoin web`.
+	// The command itself no longer embeds it, so this assembly — the one the
+	// skycoin binary uses — is where the blob is asked for.
+	_ "github.com/skycoin/skycoin/cmd/skycoin-web/wasmassets"
 	skycoin "github.com/skycoin/skycoin/cmd/skycoin/commands"
 	"github.com/skycoin/skycoin/src/fiber"
 )

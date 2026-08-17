@@ -12,7 +12,9 @@ const cipherWasmBlob = "github.com/skycoin/skycoin/src/skycoin-lite/wasm-go"
 func deps(t *testing.T, pkg string) map[string]bool {
 	t.Helper()
 
-	out, err := exec.Command("go", "list", "-deps", pkg).Output()
+	// pkg is never attacker controlled: both call sites pass a literal, either
+	// "." or one of the four in-repo package paths listed below.
+	out, err := exec.Command("go", "list", "-deps", pkg).Output() //nolint:gosec // G204: package pattern is a literal, not input
 	if err != nil {
 		t.Skipf("go list unavailable: %v", err)
 	}

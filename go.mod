@@ -6,7 +6,7 @@ require (
 	github.com/0magnet/coloredcobra v1.0.2
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
-	github.com/bitfield/script v0.24.3
+	github.com/bitfield/script v0.25.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/briandowns/spinner v1.23.2
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -20,14 +20,14 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rs/cors v1.11.1
 	github.com/shopspring/decimal v1.4.0
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
 	github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	github.com/toqueteos/webbrowser v1.2.1
 	go.etcd.io/bbolt v1.5.0
 	golang.org/x/term v0.45.0
@@ -38,7 +38,6 @@ require (
 require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
@@ -51,7 +50,6 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
@@ -61,7 +59,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.75.3 // indirect

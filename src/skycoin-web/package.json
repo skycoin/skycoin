@@ -82,6 +82,6 @@
     "sass-loader": "^17.0.0",
     "ts-node": "~10.9.2",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.66.0"
+    "typescript-eslint": "^8.67.0"
   }
 }

@@ -26,7 +26,7 @@
     "@ngx-translate/http-loader": "^18.0.0",
     "@popperjs/core": "^2.11.8",
     "@wdio/logger": "^9.29.1",
-    "ansi-regex": "^6.2.2",
+    "ansi-regex": "^6.3.0",
     "basic-ftp": "^6.2.0",
     "bignumber.js": "^11.1.5",
     "bootstrap": "^5.3.8",
@@ -52,8 +52,8 @@
     "@types/jasmine": "~6.0.0",
     "@types/jasminewd2": "~2.0.13",
     "@types/node": "^26.2.0",
-    "@typescript-eslint/eslint-plugin": "^8.66.0",
-    "@typescript-eslint/parser": "^8.66.0",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
     "@wdio/cli": "^9.30.1",
     "@wdio/jasmine-framework": "^9.30.1",
     "@wdio/local-runner": "^9.30.1",
@@ -72,6 +72,6 @@
     "serialize-javascript": "^7.1.0",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.66.0"
+    "typescript-eslint": "^8.67.0"
   }
 }

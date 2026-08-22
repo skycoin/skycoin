@@ -40,7 +40,9 @@
 //	------------------------------
 //	darwin	amd64   3.53.3
 //	darwin	arm64   3.53.3
+//	freebsd	386     3.53.3
 //	freebsd	amd64   3.53.3
+//	freebsd	arm     3.53.3
 //	freebsd	arm64   3.53.3
 //	linux	386     3.53.3
 //	linux	amd64   3.53.3
@@ -50,6 +52,7 @@
 //	linux	ppc64le 3.53.3
 //	linux	riscv64 3.53.3
 //	linux	s390x   3.53.3
+//	netbsd	amd64   3.53.3
 //	openbsd	amd64   3.53.3
 //	openbsd	arm64   3.53.3
 //	windows	386     3.53.3

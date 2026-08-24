@@ -77,7 +77,12 @@ vendor:
 	go run $(UNDUP) -expand -dir lib
 	go run $(UNDUP) -expand -dir vec
 	cd vendor_libs && go build -o ../vendor main.go
-	./vendor
+	# ../libsqlite3 and ../libsqlite_vec are read one full per-target file at a
+	# time. They ship expanded today, but either may adopt the deduplicated
+	# layout (modernc.org/builder's NW autogen); the tool detects that and
+	# expands a temporary copy, leaving those checkouts untouched. Hence the pin:
+	# one version of record for this repo, wherever undup is invoked.
+	./vendor -undup=$(UNDUP)
 	rm -f vendor
 	# Fold byte-identical declarations back into build-tagged shared files. undup
 	# only touches files carrying the generated-code marker, never hand-written

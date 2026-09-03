@@ -19,6 +19,16 @@
 // and re-consults Cache.Fetch on every SQLite request, so a bounded
 // and evicting purgeable cache works as the C contract intends.
 //
+// # OFD locking (Linux)
+//
+// On Linux the library can take Open File Description (OFD) locks instead of
+// POSIX record locks on database files, which stops an unrelated os.File
+// close anywhere in the process from silently stripping SQLite's transaction
+// locks. The switch is process-wide, off by default, and must happen before
+// the first connection is opened: set MODERNC_SQLITE_OFD_LOCK=1 in the
+// environment the process starts with, or call [OFDLocking] from Go. See the
+// [OFDLocking] documentation for the full contract.
+//
 // # Fragile modernc.org/libc dependency
 //
 // When you import this package you should use in your go.mod file the exact
@@ -38,26 +48,26 @@
 //
 //	OS      Arch    SQLite version
 //	------------------------------
-//	darwin	amd64   3.53.3
-//	darwin	arm64   3.53.3
-//	freebsd	386     3.53.3
-//	freebsd	amd64   3.53.3
-//	freebsd	arm     3.53.3
-//	freebsd	arm64   3.53.3
-//	linux	386     3.53.3
-//	linux	amd64   3.53.3
-//	linux	arm     3.53.3
-//	linux	arm64   3.53.3
-//	linux	loong64 3.53.3
-//	linux	ppc64le 3.53.3
-//	linux	riscv64 3.53.3
-//	linux	s390x   3.53.3
-//	netbsd	amd64   3.53.3
-//	openbsd	amd64   3.53.3
-//	openbsd	arm64   3.53.3
-//	windows	386     3.53.3
-//	windows	amd64   3.53.3
-//	windows	arm64   3.53.3
+//	darwin	amd64   3.53.4
+//	darwin	arm64   3.53.4
+//	freebsd	386     3.53.4
+//	freebsd	amd64   3.53.4
+//	freebsd	arm     3.53.4
+//	freebsd	arm64   3.53.4
+//	linux	386     3.53.4
+//	linux	amd64   3.53.4
+//	linux	arm     3.53.4
+//	linux	arm64   3.53.4
+//	linux	loong64 3.53.4
+//	linux	ppc64le 3.53.4
+//	linux	riscv64 3.53.4
+//	linux	s390x   3.53.4
+//	netbsd	amd64   3.53.4
+//	openbsd	amd64   3.53.4
+//	openbsd	arm64   3.53.4
+//	windows	386     3.53.4
+//	windows	amd64   3.53.4
+//	windows	arm64   3.53.4
 //
 // # Benchmarks
 //

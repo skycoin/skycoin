@@ -116,7 +116,7 @@ github.com/sergi/go-diff/diffmatchpatch
 # github.com/shopspring/decimal v1.4.0
 ## explicit; go 1.10
 github.com/shopspring/decimal
-# github.com/sirupsen/logrus v1.10.1
+# github.com/sirupsen/logrus v1.10.2
 ## explicit; go 1.23
 github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
@@ -199,7 +199,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.15.0
 ## explicit; go 1.25.0
 golang.org/x/time/rate
-# modernc.org/libc v1.75.5
+# modernc.org/libc v1.75.7
 ## explicit; go 1.25.0
 modernc.org/libc
 modernc.org/libc/errno
@@ -233,13 +233,13 @@ modernc.org/mathutil
 # modernc.org/memory v1.12.1
 ## explicit; go 1.23.0
 modernc.org/memory
-# modernc.org/sqlite v1.57.0
+# modernc.org/sqlite v1.58.0
 ## explicit; go 1.25.0
 modernc.org/sqlite
 modernc.org/sqlite/lib
 modernc.org/sqlite/vtab
-# mvdan.cc/sh/v3 v3.13.1
-## explicit; go 1.25.0
+# mvdan.cc/sh/v3 v3.14.0
+## explicit; go 1.26.0
 mvdan.cc/sh/v3/expand
 mvdan.cc/sh/v3/fileutil
 mvdan.cc/sh/v3/internal

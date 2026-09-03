@@ -20,7 +20,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rs/cors v1.11.1
 	github.com/shopspring/decimal v1.4.0
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
 	github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
@@ -32,7 +32,7 @@ require (
 	go.etcd.io/bbolt v1.5.0
 	golang.org/x/term v0.45.0
 	golang.org/x/time v0.15.0
-	modernc.org/sqlite v1.57.0
+	modernc.org/sqlite v1.58.0
 )
 
 require (
@@ -60,10 +60,10 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
-	modernc.org/libc v1.75.5 // indirect
+	modernc.org/libc v1.75.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	mvdan.cc/sh/v3 v3.13.1 // indirect
+	mvdan.cc/sh/v3 v3.14.0 // indirect
 )
 
 // IT IS FORBIDDEN TO USE REPLACE DIRECTIVES

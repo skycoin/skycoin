@@ -4,7 +4,6 @@ go 1.26.1
 
 require (
 	github.com/0magnet/coloredcobra v1.0.2
-	github.com/NYTimes/gziphandler v1.1.1
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/bitfield/script v0.25.0
 	github.com/blang/semver v3.5.1+incompatible
@@ -16,6 +15,7 @@ require (
 	github.com/google/gousb v1.1.3
 	github.com/google/uuid v1.6.0
 	github.com/gopherjs/gopherjs v1.21.0
+	github.com/klauspost/compress v1.20.0
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rs/cors v1.11.1

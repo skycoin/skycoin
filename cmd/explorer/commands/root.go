@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NYTimes/gziphandler"
+	"github.com/klauspost/compress/gzhttp"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/util/calvin"
@@ -151,7 +151,7 @@ var RootCmd = &cobra.Command{
 		mux := http.NewServeMux()
 
 		gzipHandle := func(path string, handler http.Handler) {
-			mux.Handle(path, gziphandler.GzipHandler(handler))
+			mux.Handle(path, gzhttp.GzipHandler(handler))
 		}
 
 		if !apiOnly {
@@ -181,7 +181,7 @@ var RootCmd = &cobra.Command{
 			gzipHandle("/", fileServer)
 
 			// Angular SPA fallback (/app/* → index.html)
-			mux.Handle("/app/", gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mux.Handle("/app/", gzhttp.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if uiFilesFolder != "" {
 					http.ServeFile(w, r, filepath.Join(uiFilesFolder, "index.html"))
 					return

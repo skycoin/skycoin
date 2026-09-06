@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/NYTimes/gziphandler"
+	"github.com/klauspost/compress/gzhttp"
 	"github.com/rs/cors"
 
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
@@ -197,7 +197,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 			handler = headerCheck(c.host, c.hostWhitelist, handler)
 		}
 
-		handler = gziphandler.GzipHandler(handler)
+		handler = gzhttp.GzipHandler(handler)
 
 		mux.Handle(endpoint, handler)
 	}

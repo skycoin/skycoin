@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -67,21 +68,12 @@ func walletKeyExportHandler(c *cobra.Command, args []string) error {
 		return errors.New("unsupported wallet type for key export command")
 	}
 
-	var password []byte
-	if wlt.Meta.Encrypted {
-		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
-		var err error
-		password, err = pr.Password()
-		if err != nil {
-			return err
-		}
-	}
-	rsp, err := apiClient.WalletSeed(id, string(password))
+	mnemonic, seedPassphrase, err := walletSeed(c, wlt.Meta.Encrypted, id)
 	if err != nil {
 		return err
 	}
 
-	seed, err := bip39.NewSeed(rsp.Seed, rsp.SeedPassphrase)
+	seed, err := bip39.NewSeed(mnemonic, seedPassphrase)
 	if err != nil {
 		return err
 	}
@@ -185,4 +177,42 @@ func parsePath(p string) ([]uint32, error) {
 	}
 
 	return idx, nil
+}
+
+// walletSeed returns the wallet's mnemonic and seed passphrase.
+//
+// An encrypted wallet is asked of the node, which decrypts it with the
+// password the reader supplies. An unencrypted one cannot be: GET
+// /api/v1/wallet/seed answers ErrWalletNotEncrypted by design, so
+// walletKeyExport failed on exactly the wallets that need no password,
+// with "400 Bad Request - wallet is not encrypted". The wallet file
+// already holds that seed in the clear, so it is read from disk the way
+// the other offline commands here read wallets.
+func walletSeed(c *cobra.Command, encrypted bool, id string) (string, string, error) {
+	if encrypted {
+		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
+		password, err := pr.Password()
+		if err != nil {
+			return "", "", err
+		}
+		rsp, err := apiClient.WalletSeed(id, string(password))
+		if err != nil {
+			return "", "", err
+		}
+		return rsp.Seed, rsp.SeedPassphrase, nil
+	}
+
+	path := id
+	if !filepath.IsAbs(path) {
+		folder, err := apiClient.WalletFolderName()
+		if err != nil {
+			return "", "", err
+		}
+		path = filepath.Join(folder.Address, id)
+	}
+	w, err := wallet.Load(path)
+	if err != nil {
+		return "", "", err
+	}
+	return w.Seed(), w.SeedPassphrase(), nil
 }

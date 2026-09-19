@@ -3,13 +3,13 @@ module github.com/skycoin/skycoin
 go 1.26.1
 
 require (
-	github.com/0magnet/coloredcobra v1.0.2
+	github.com/0magnet/coloredcobra v1.0.3
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
-	github.com/bitfield/script v0.25.0
+	github.com/bitfield/script v0.25.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/briandowns/spinner v1.23.2
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/gdamore/tcell/v3 v3.4.2
+	github.com/gdamore/tcell/v3 v3.5.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gousb v1.1.3
@@ -30,9 +30,9 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/toqueteos/webbrowser v1.2.1
 	go.etcd.io/bbolt v1.5.0
-	golang.org/x/term v0.45.0
-	golang.org/x/time v0.15.0
-	modernc.org/sqlite v1.58.0
+	golang.org/x/term v0.46.0
+	golang.org/x/time v0.16.0
+	modernc.org/sqlite v1.59.0
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	modernc.org/libc v1.75.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

@@ -35,6 +35,11 @@ The repository you are currently viewing might be a mirror. Please review the gu
 
 ---
 
+Changelog
+---------
+
+Release notes are kept in [CHANGELOG.md](CHANGELOG.md).
+
 Virtual Tables (vtab)
 ---------------------
 

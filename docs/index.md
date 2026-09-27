@@ -17,8 +17,8 @@ hardware-wallet clients.
 
 -   :material-book-open-variant: __Guides__
 
-    Installation, exchange integration, development workflow, Docker
-    images, custom fibercoins and the release process.
+    Installation, exchange integration, development workflow,
+    custom fibercoins and the release process.
 
     [:octicons-arrow-right-24: Browse guides](guides/index.md)
 

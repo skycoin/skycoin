@@ -29,7 +29,7 @@ After installing, verify your Go version meets the minimum requirement:
 
 ```sh
 $ go version
-go version go1.23.0 linux/amd64  # or higher
+go version go1.26.1 linux/amd64  # or higher
 ```
 
 ## Module Support

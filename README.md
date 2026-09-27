@@ -134,7 +134,7 @@ This multi-chain architecture allows:
 
 ## Installation
 
-Skycoin supports go1.23+.
+Skycoin supports go1.26.1+ (the `go` line in go.mod).
 
 The `skycoin` binary includes multiple utilities as subcommands:
 

@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 0.28.6
+
+### Added
+
+- New wallets default to BIP44 (HD, multicoin-capable). The API exposes the
+  account-level xpub, and both wallet GUIs nest addresses under it with their
+  derivation paths.
+- SkyDEX exchange engine (`skydex-market`, `skydex-client`).
+- `/health` reports `blockchain_pubkey`.
+- The default binary, the web wallet and the explorer build with TinyGo; the
+  release adds a TinyGo archive for linux/amd64.
+- skycoin-lite's wasm cipher can be registered from any wasm program and
+  reports the toolchain and commit it was built from.
+- Web wallet: optional password on create, custom node, `--socks5-proxy`,
+  node and electrum health checks, a known-servers list, sub-path deployment.
+- `--pprofmode` / `--pprofaddr` for the explorer and web wallet.
+- A documentation site (MkDocs) and a security policy.
+
+### Changed
+
+- skycoin no longer depends on skywire: the utility packages it used are
+  inlined. `go run github.com/skycoin/skycoin@latest` failed on 0.28.5 because
+  the skywire version it required no longer verifies.
+- The three Angular front-ends use the esbuild `@angular/build` builder,
+  OnPush change detection and strict TypeScript; all three are built, linted
+  and tested in CI.
+- The web wallet serves with `net/http` instead of gin; the API streams JSON
+  instead of buffering it, and one gzip middleware (klauspost/compress/gzhttp)
+  replaces two.
+- skycoin-lite returns errors instead of panicking.
+- The goreleaser path and the Electron client are removed.
+- Every Go and npm dependency is updated to its latest working version.
+
+### Fixed
+
+- Untrusted input no longer panics or exhausts memory.
+- `walletKeyExport` works on an unencrypted BIP44 wallet; address generation
+  for collection wallets no longer underflows.
+- gnet: `sendLoop` no longer spins on a closed queue, callbacks run outside the
+  strand, and a data race in the tests is gone.
+- The web wallet signs server-managed wallets on the server again instead of
+  asking for a seed.
+- secp256k1 ECDH allocates ~41% less.
+
 ## 0.28.5
 
 ### Added

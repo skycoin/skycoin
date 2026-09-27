@@ -41,6 +41,9 @@ updates:
       # See the note on TypeScript majors at the bottom of this file.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # See the note on jasmine-core at the bottom of this file.
+      - dependency-name: "jasmine-core"
+        update-types: ["version-update:semver-major"]
 
   # Skycoin web wallet
   - package-ecosystem: npm
@@ -55,6 +58,9 @@ updates:
     ignore:
       # See the note on TypeScript majors at the bottom of this file.
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # See the note on jasmine-core at the bottom of this file.
+      - dependency-name: "jasmine-core"
         update-types: ["version-update:semver-major"]
 
   # Desktop GUI (Angular)
@@ -97,3 +103,13 @@ updates:
 #
 # Remove these ignore entries when upgrading to an Angular major that supports
 # TypeScript 7; check https://angular.dev/reference/versions for the mapping.
+
+# jasmine-core majors are ignored for /explorer and /src/skycoin-web.
+#
+# jasmine-core 7 makes the `describe` global read-only, and zone.js/testing
+# (through 0.16.3) assigns to it, so the suites stop at load time. Those two
+# apps need zone.js/testing for their fakeAsync/waitForAsync specs.
+# /src/gui/static has none, loads no zone.js/testing, and runs jasmine 7.
+#
+# Remove these entries once a zone.js release supports jasmine 7, or the
+# specs move off fakeAsync.

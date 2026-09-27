@@ -11,9 +11,9 @@ import (
 // TLS handshake timeouts.
 func newHTTPClient() *http.Client {
 	transport := &http.Transport{
-		Dial: (&net.Dialer{
+		DialContext: (&net.Dialer{
 			Timeout: dialTimeout,
-		}).Dial,
+		}).DialContext,
 		TLSHandshakeTimeout: tlsHandshakeTimeout,
 	}
 	return &http.Client{

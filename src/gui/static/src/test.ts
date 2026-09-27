@@ -1,6 +1,7 @@
 // This file is required by karma.conf.js and loads recursively all the .spec and framework files
 
-import 'zone.js/testing';
+// No zone.js/testing: its jasmine patch assigns to describe, which
+// jasmine-core 7 makes read-only, and no spec needs fakeAsync or waitForAsync.
 import { getTestBed } from '@angular/core/testing';
 import {
   BrowserDynamicTestingModule,

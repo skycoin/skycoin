@@ -1,6 +1,6 @@
 # Installing Go
 
-Skycoin requires **Go 1.23 or later**.
+Skycoin requires **Go 1.26.1 or later**.
 
 ## Official Installation Guide
 
@@ -29,7 +29,7 @@ After installing, verify your Go version meets the minimum requirement:
 
 ```sh
 $ go version
-go version go1.23.0 linux/amd64  # or higher
+go version go1.26.1 linux/amd64  # or higher
 ```
 
 ## Module Support
@@ -44,7 +44,7 @@ Skycoin uses Go modules, so you **do not need to set up GOPATH** or clone the re
 
 If you encounter issues:
 
-1. Ensure Go version is 1.23 or later: `go version`
+1. Ensure Go version is 1.26.1 or later: `go version`
 2. Check Go is in your PATH: `which go` (Unix) or `where go` (Windows)
 3. Clear module cache if needed: `go clean -modcache`
 

@@ -178,3 +178,6 @@ CLAUDE.md
 
 # MkDocs build output (`make docs-build`)
 /site/
+
+# go build output of ./src/skycoin-lite at the repo root
+/skycoin-lite

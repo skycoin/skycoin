@@ -80,6 +80,10 @@ linters:
         path: _test\.go
       - linters:
           - gosec
+        text: "G404:"          # shuffled test inputs, not secrets
+        path: _test\.go
+      - linters:
+          - gosec
         text: "G117:"          # fixtures that intentionally carry a password field
         path: _test\.go
       - linters:

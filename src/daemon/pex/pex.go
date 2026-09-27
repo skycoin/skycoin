@@ -485,7 +485,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	addrs = validAddrs
 
 	// Shuffle the addresses before capping them
-	rand.Shuffle(len(addrs), func(i, j int) {
+	rand.Shuffle(len(addrs), func(i, j int) { //nolint:gosec // G404: peer order only, not a secret
 		addrs[i], addrs[j] = addrs[j], addrs[i]
 	})
 

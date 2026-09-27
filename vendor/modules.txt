@@ -1,10 +1,10 @@
-# github.com/0magnet/coloredcobra v1.0.2
-## explicit; go 1.15
+# github.com/0magnet/coloredcobra v1.0.3
+## explicit; go 1.25.0
 github.com/0magnet/coloredcobra
 # github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 ## explicit
 github.com/andreyvit/diff
-# github.com/bitfield/script v0.25.0
+# github.com/bitfield/script v0.25.1
 ## explicit; go 1.25.0
 github.com/bitfield/script
 # github.com/blang/semver v3.5.1+incompatible
@@ -22,8 +22,8 @@ github.com/clipperhouse/displaywidth
 # github.com/clipperhouse/uax29/v2 v2.7.0
 ## explicit; go 1.18
 github.com/clipperhouse/uax29/v2/graphemes
-# github.com/dustin/go-humanize v1.0.1
-## explicit; go 1.16
+# github.com/dustin/go-humanize v1.1.0
+## explicit; go 1.21
 github.com/dustin/go-humanize
 # github.com/fatih/color v1.19.0
 ## explicit; go 1.25.0
@@ -35,7 +35,7 @@ github.com/fsnotify/fsnotify/internal
 # github.com/gdamore/encoding v1.0.1
 ## explicit; go 1.9
 github.com/gdamore/encoding
-# github.com/gdamore/tcell/v3 v3.4.2
+# github.com/gdamore/tcell/v3 v3.5.0
 ## explicit; go 1.25.0
 github.com/gdamore/tcell/v3
 github.com/gdamore/tcell/v3/color
@@ -75,7 +75,7 @@ github.com/itchyny/gojq
 # github.com/itchyny/timefmt-go v0.1.8
 ## explicit; go 1.24
 github.com/itchyny/timefmt-go
-# github.com/klauspost/compress v1.20.0
+# github.com/klauspost/compress v1.20.1
 ## explicit; go 1.25
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
@@ -192,16 +192,16 @@ go.etcd.io/bbolt/internal/freelist
 # go.yaml.in/yaml/v3 v3.0.5
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/sys v0.47.0
-## explicit; go 1.25.0
+# golang.org/x/sys v0.48.0
+## explicit; go 1.26.0
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.45.0
-## explicit; go 1.25.0
+# golang.org/x/term v0.46.0
+## explicit; go 1.26.0
 golang.org/x/term
-# golang.org/x/text v0.41.0
-## explicit; go 1.25.0
+# golang.org/x/text v0.42.0
+## explicit; go 1.26.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
@@ -210,11 +210,11 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/runes
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.15.0
-## explicit; go 1.25.0
+# golang.org/x/time v0.16.0
+## explicit; go 1.26.0
 golang.org/x/time/rate
-# modernc.org/libc v1.75.7
-## explicit; go 1.25.0
+# modernc.org/libc v1.77.1
+## explicit; go 1.26.0
 modernc.org/libc
 modernc.org/libc/errno
 modernc.org/libc/fcntl
@@ -247,12 +247,12 @@ modernc.org/mathutil
 # modernc.org/memory v1.12.1
 ## explicit; go 1.23.0
 modernc.org/memory
-# modernc.org/sqlite v1.58.0
+# modernc.org/sqlite v1.59.0
 ## explicit; go 1.25.0
 modernc.org/sqlite
 modernc.org/sqlite/lib
 modernc.org/sqlite/vtab
-# mvdan.cc/sh/v3 v3.14.0
+# mvdan.cc/sh/v3 v3.14.1
 ## explicit; go 1.26.0
 mvdan.cc/sh/v3/expand
 mvdan.cc/sh/v3/fileutil

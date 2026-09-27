@@ -278,7 +278,11 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
-			rsp, err := http.Get(url) //nolint:gosec
+			// Every case serves on the same address, and closing the listener leaves
+			// the previous server's keep-alive connection open: a pooled client
+			// would ask the last case's server instead of this one.
+			client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+			rsp, err := client.Get(url) //nolint:gosec
 			require.NoError(t, err)
 
 			defer rsp.Body.Close() //nolint:errcheck

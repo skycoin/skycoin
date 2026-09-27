@@ -258,7 +258,7 @@ func (pl *peerlist) random(count int, flts []Filter) Peers {
 	}
 
 	ps := make(Peers, maximum)
-	perm := rand.Perm(len(keys))
+	perm := rand.Perm(len(keys)) //nolint:gosec // G404: a random sample of peers to share, not a secret
 	for i, j := range perm[:maximum] {
 		ps[i] = *pl.peers[keys[j]]
 	}

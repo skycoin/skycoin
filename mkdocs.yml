@@ -69,7 +69,6 @@ nav:
       - Installation: guides/installation.md
       - Exchange Integration: guides/integration.md
       - Development: guides/development.md
-      - Docker: guides/docker.md
       - Custom Fibercoins: guides/fibercoin-config.md
       - Release Process: guides/release.md
       - Changelog: guides/changelog.md

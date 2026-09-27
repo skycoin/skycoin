@@ -24,7 +24,7 @@ clicking through the wallet surfaced `ReferenceError: Buffer is not defined`.
    This exercises the wasm cipher end to end.
 
 The vector is the first entry of
-`src/skycoin-lite/js/tests/test-fixtures/seed-0001.golden`:
+`src/cipher/testsuite/testdata/seed-0001.golden` (its seed is base64-encoded):
 
     seed     work pride warrior taxi kick athlete good maze brief address shift creek
     address  2XDHP1JPEun347k6C559npPHT23V5GWeMkA

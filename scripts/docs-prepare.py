@@ -39,7 +39,6 @@ MAPPING = {
     "INSTALLATION.md": "guides/installation.md",
     "INTEGRATION.md": "guides/integration.md",
     "DEVELOPMENT.md": "guides/development.md",
-    "DOCKER.md": "guides/docker.md",
     "FIBERCOIN-CONFIG.md": "guides/fibercoin-config.md",
     "RELEASE.md": "guides/release.md",
     "CHANGELOG.md": "guides/changelog.md",

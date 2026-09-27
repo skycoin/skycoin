@@ -236,10 +236,6 @@ Flags:
   -v, --version   version for skycoin
 ```
 
-### Docker
-
-[DOCKER.md](DOCKER.md).
-
 ## API Documentation
 
 ### REST API

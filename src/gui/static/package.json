@@ -1,7 +1,7 @@
 {
   "name": "desktopwallet",
   "version": "0.0.0",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

@@ -108,10 +108,10 @@
               (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
               {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
             </button>
-            <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+            <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath" [queryParams]="{ addr: address.address }">
               {{ 'wallet.address.outputs' | translate }}
             </button>
-            <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+            <button mat-menu-item [routerLink]="'/history' | walletPath" [queryParams]="{ addr: address.address }">
               {{ 'wallet.address.history' | translate }}
             </button>
           </mat-menu>
@@ -169,10 +169,10 @@
                   (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
                   {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
                 </button>
-                <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+                <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath" [queryParams]="{ addr: address.address }">
                   {{ 'wallet.address.outputs' | translate }}
                 </button>
-                <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+                <button mat-menu-item [routerLink]="'/history' | walletPath" [queryParams]="{ addr: address.address }">
                   {{ 'wallet.address.history' | translate }}
                 </button>
               </mat-menu>
@@ -217,10 +217,10 @@
           (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
           {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
         </button>
-        <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+        <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath" [queryParams]="{ addr: address.address }">
           {{ 'wallet.address.outputs' | translate }}
         </button>
-        <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+        <button mat-menu-item [routerLink]="'/history' | walletPath" [queryParams]="{ addr: address.address }">
           {{ 'wallet.address.history' | translate }}
         </button>
       </mat-menu>

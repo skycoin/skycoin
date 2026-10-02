@@ -60,10 +60,10 @@
 
 <div class="buttons-right">
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
-    <button mat-menu-item [routerLink]="['/settings/blockchain']"> {{ 'title.blockchain' | translate}} </button>
-    <button mat-menu-item [routerLink]="['/settings/outputs']"> {{ 'title.outputs' | translate}} </button>
-    <button mat-menu-item [routerLink]="['/settings/pending-transactions']"> {{ 'title.pending-txs' | translate}} </button>
-    <button mat-menu-item [routerLink]="['/settings/node']"> {{ (hasManyCoins ? 'title.nodes' : 'title.node') | translate}} </button>
+    <button mat-menu-item [routerLink]="'/settings/blockchain' | walletPath"> {{ 'title.blockchain' | translate}} </button>
+    <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath"> {{ 'title.outputs' | translate}} </button>
+    <button mat-menu-item [routerLink]="'/settings/pending-transactions' | walletPath"> {{ 'title.pending-txs' | translate}} </button>
+    <button mat-menu-item [routerLink]="'/settings/node' | walletPath"> {{ (hasManyCoins ? 'title.nodes' : 'title.node') | translate}} </button>
     @if (currentCoin.coinExplorer) {
       <a
         mat-menu-item

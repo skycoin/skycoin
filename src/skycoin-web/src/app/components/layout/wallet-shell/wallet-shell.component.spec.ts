@@ -4,24 +4,24 @@ import { TranslateService } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 
-import { AppComponent } from './app.component';
-import { MockLanguageService, MockTranslatePipe, MockTranslateService, MockCustomMatDialogService, MockMsgBarService, MockCoinService, MockHwWalletService } from './utils/test-mocks';
-import { LanguageService } from './services/language.service';
-import { CoinService } from './services/coin.service';
-import { CipherProvider, InitializationResults } from './services/cipher.provider';
-import { CustomMatDialogService } from './services/custom-mat-dialog.service';
-import { Bip39WordListService } from './services/bip39-word-list.service';
-import { MsgBarService } from './services/msg-bar.service';
-import { HwWalletService } from './services/hw-wallet.service';
-import { HwWalletPinService } from './services/hw-wallet-pin.service';
+import { WalletShellComponent } from './wallet-shell.component';
+import { MockLanguageService, MockTranslatePipe, MockTranslateService, MockCustomMatDialogService, MockMsgBarService, MockCoinService, MockHwWalletService } from '../../../utils/test-mocks';
+import { LanguageService } from '../../../services/language.service';
+import { CoinService } from '../../../services/coin.service';
+import { CipherProvider, InitializationResults } from '../../../services/cipher.provider';
+import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
+import { Bip39WordListService } from '../../../services/bip39-word-list.service';
+import { MsgBarService } from '../../../services/msg-bar.service';
+import { HwWalletService } from '../../../services/hw-wallet.service';
+import { HwWalletPinService } from '../../../services/hw-wallet-pin.service';
 
-describe('AppComponent', () => {
-  let component: AppComponent;
-  let fixture: ComponentFixture<AppComponent>;
+describe('WalletShellComponent', () => {
+  let component: WalletShellComponent;
+  let fixture: ComponentFixture<WalletShellComponent>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ AppComponent, MockTranslatePipe ],
+      declarations: [ WalletShellComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
         { provide: HwWalletService, useClass: MockHwWalletService },
@@ -43,7 +43,7 @@ describe('AppComponent', () => {
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(AppComponent);
+    fixture = TestBed.createComponent(WalletShellComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

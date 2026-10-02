@@ -104,8 +104,8 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
  * The whole wallet as one module: its pages, services and routes under
  * WalletShellComponent. The standalone app imports it at the root; another app
  * can load it on a route of its own and provide WALLET_BASE_PATH (wallet-path.ts)
- * so the wallet's links stay under that route. The host supplies the animations
- * module, as an app-wide choice.
+ * so the wallet's links stay under that route. Whether Material animates
+ * (MATERIAL_ANIMATIONS) is the host's app-wide choice.
  */
 @NgModule({ declarations: [
         AddDepositAddressComponent,

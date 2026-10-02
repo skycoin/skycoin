@@ -2,7 +2,6 @@ import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { RouterTestingModule } from '@angular/router/testing';
 import { UntypedFormBuilder } from '@angular/forms';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { TranslateService } from '@ngx-translate/core';
 
 import { OnboardingCreateWalletComponent } from './onboarding-create-wallet.component';
@@ -33,7 +32,6 @@ describe('OnboardingCreateWalletComponent', () => {
       ],
       imports: [
         RouterTestingModule,
-        BrowserAnimationsModule,
       ],
       providers: [
         { provide: NodeHealthService, useClass: MockNodeHealthService },

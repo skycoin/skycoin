@@ -13,7 +13,7 @@ export class CustomMatDialogService extends MatDialog {
 
   private dialogsDisplayed: BehaviorSubject<number> = new BehaviorSubject<number>(0);
 
-  open<T, D>(componentOrTemplateRef: ComponentType<T> | TemplateRef<T>, config?: MatDialogConfig<D>, ignoreAppStyle?: boolean): MatDialogRef<T, any> {
+  override open<T, D>(componentOrTemplateRef: ComponentType<T> | TemplateRef<T>, config?: MatDialogConfig<D>, ignoreAppStyle?: boolean): MatDialogRef<T, any> {
     if (!ignoreAppStyle) {
       if (!config) {
         config = new MatDialogConfig();

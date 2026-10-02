@@ -52,12 +52,22 @@ describe('WalletShellComponent', () => {
     expect(component).toBeTruthy();
   }));
 
-  it('should take its page-wide hooks with it when destroyed', () => {
-    expect(window.onbeforeunload).not.toBeNull();
+  it('should not ask before the page is left', () => {
+    // Wallets are saved to localStorage as they change, so a reload loses
+    // nothing; a prompt would only block the page that hosts the wallet.
+    // The test runner keeps a handler of its own, which must stay as it is.
+    const before = window.onbeforeunload;
+    const another = TestBed.createComponent(WalletShellComponent);
+    another.detectChanges();
 
+    expect(window.onbeforeunload).toBe(before);
+    another.destroy();
+    expect(window.onbeforeunload).toBe(before);
+  });
+
+  it('should take its page-wide hooks with it when destroyed', () => {
     fixture.destroy();
 
-    expect(window.onbeforeunload).toBeNull();
     expect(document.body.classList.contains('fix-error-position')).toBeFalse();
   });
 });

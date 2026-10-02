@@ -5,6 +5,13 @@
 // shell and the overlay panes it opens, with no added specificity. A rule
 // written &.x matches a pane or backdrop that carries both classes.
 @mixin styles {
+  // The standalone page leaves text at the browser's black. A page that hosts
+  // the wallet may set another colour on its body, which the wallet would
+  // otherwise inherit (white, on the hypervisor dashboard).
+  & {
+    color: #000;
+  }
+
   &, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
   mat-panel-description, mat-panel-title, mat-option.mat-option {
     font-family: Skycoin, sans-serif;

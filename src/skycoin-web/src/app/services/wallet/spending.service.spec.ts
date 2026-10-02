@@ -102,6 +102,8 @@ describe('SpendingService', () => {
         if (param === 'service.wallet.not-enough-hours2') {
           return 'to perform transaction!';
         }
+
+        return undefined;
       });
     });
 

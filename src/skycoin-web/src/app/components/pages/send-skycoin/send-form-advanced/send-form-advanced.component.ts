@@ -497,6 +497,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           transaction,
         });
         this.changeDetectorRef.markForCheck();
+
+        return undefined;
       })
       .then(() => {
         this.button.setSuccess();

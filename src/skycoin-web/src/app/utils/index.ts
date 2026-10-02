@@ -16,6 +16,7 @@ import { ScanAddressesComponent } from '../components/pages/wallets/scan-address
 import { WalletService } from '../services/wallet/wallet.service';
 import { BalanceService } from '../services/wallet/balance.service';
 import { CustomMatDialogService } from '../services/custom-mat-dialog.service';
+import { withWalletScope } from '../wallet-scope';
 
 export function openUnlockWalletModal (wallet: Wallet | ConfirmSeedParams, unlockDialog: CustomMatDialogService, autoFocus: boolean = false): MatDialogRef<UnlockWalletComponent, any> {
   const config = new MatDialogConfig();
@@ -35,8 +36,8 @@ export function openChangeCoinModal (dialog: CustomMatDialogService, renderer: R
   config.height = '100%';
   config.scrollStrategy = overlay.scrollStrategies.noop();
   config.disableClose = true;
-  config.panelClass = 'transparent-background-dialog';
-  config.backdropClass = 'clear-dialog-background';
+  config.panelClass = withWalletScope('transparent-background-dialog');
+  config.backdropClass = withWalletScope('clear-dialog-background');
   config.autoFocus = false;
 
   return dialog.open(SelectCoinOverlayComponent, config, true).afterClosed().pipe(

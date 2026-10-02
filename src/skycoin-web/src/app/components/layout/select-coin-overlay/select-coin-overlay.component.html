@@ -1,6 +1,6 @@
 <mat-dialog-content>
   <div class="x-container">
-    <img src="assets/img/close-grey.png" (click)="close(null)">
+    <img src="assets/skycoin-wallet/img/close-grey.png" (click)="close(null)">
   </div>
   <div class="container">
     <div class="row">
@@ -13,7 +13,7 @@
           <div class="buttons-container">
             @for (coin of coins; track coin) {
               <button mat-button color="accent" class="button" (click)="close(coin)">
-                <img [src]="'assets/img/coins/' + coin.bigIconName">
+                <img [src]="'assets/skycoin-wallet/img/coins/' + coin.bigIconName">
                 <div class="label">{{ coin.coinName }} ({{ coin.coinSymbol }})</div>
               </button>
             }

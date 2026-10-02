@@ -2,6 +2,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dial
 import { TemplateRef, Injectable } from '@angular/core';
 import { ComponentType } from '@angular/cdk/overlay';
 import { Observable, BehaviorSubject, map } from 'rxjs';
+import { withWalletScope } from '../wallet-scope';
 
 @Injectable()
 export class CustomMatDialogService extends MatDialog {
@@ -17,7 +18,12 @@ export class CustomMatDialogService extends MatDialog {
       if (!config) {
         config = new MatDialogConfig();
       }
-      config.panelClass = 'default-dialog-style';
+      config.panelClass = withWalletScope('default-dialog-style');
+    }
+    // A MatDialogConfig carries an empty backdropClass, which overrides the
+    // module's default and would leave the backdrop out of the wallet's scope.
+    if (config && !config.backdropClass) {
+      config.backdropClass = withWalletScope('cdk-overlay-dark-backdrop');
     }
 
     this.dialogsDisplayed.next(this.dialogsDisplayed.value + 1);

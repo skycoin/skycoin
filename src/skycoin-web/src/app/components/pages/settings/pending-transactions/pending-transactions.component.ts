@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import moment from 'moment';
 import { Subscription, of } from 'rxjs';
 import { delay, mergeMap, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
@@ -135,7 +134,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
   private mapTransactions(transactions: any) {
     return transactions.map((transaction: any) => {
-      transaction.transaction.timestamp = moment(transaction.received).unix();
+      transaction.transaction.timestamp = Math.floor(new Date(transaction.received).getTime() / 1000);
       return transaction.transaction;
     })
       .map((transaction: any) => {

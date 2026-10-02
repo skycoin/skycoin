@@ -4,21 +4,22 @@ import { CommonModule } from '@angular/common';
 import { WalletShellComponent } from './components/layout/wallet-shell/wallet-shell.component';
 import { WalletPathPipe } from './wallet-path';
 import { WALLET_ROUTES } from './wallet.routes';
+import { WALLET_SCOPE_CLASS, withWalletScope } from './wallet-scope';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialog, MatDialogConfig, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatMenuModule } from '@angular/material/menu';
+import { MAT_MENU_DEFAULT_OPTIONS, MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
+import { MAT_SELECT_CONFIG, MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -211,6 +212,19 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         HwWalletDaemonService,
         HwWalletService,
         EncryptionService,
+        // Dialogs, menus and selects render outside the shell, so their panes
+        // carry the scope class the wallet's styles apply under. The module's
+        // own MatDialog reads these defaults; the host's would read the host's.
+        MatDialog,
+        {
+          provide: MAT_DIALOG_DEFAULT_OPTIONS,
+          useValue: { ...new MatDialogConfig(), panelClass: WALLET_SCOPE_CLASS, backdropClass: withWalletScope('cdk-overlay-dark-backdrop') },
+        },
+        {
+          provide: MAT_MENU_DEFAULT_OPTIONS,
+          useValue: { xPosition: 'after', yPosition: 'below', overlapTrigger: false, backdropClass: 'cdk-overlay-transparent-backdrop', overlayPanelClass: WALLET_SCOPE_CLASS },
+        },
+        { provide: MAT_SELECT_CONFIG, useValue: { overlayPanelClass: WALLET_SCOPE_CLASS } },
         provideHttpClient(withInterceptorsFromDi(), withFetch()),
     ] })
 export class SkycoinWalletModule { }

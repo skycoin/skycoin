@@ -2,7 +2,7 @@
   <div class="options-container header-sel-theme">
     @for (language of languages; track language) {
       <button mat-button color="accent" class="button" (click)="closePopup(language)">
-        <img [src]="'assets/img/lang/' + language.iconName">
+        <img [src]="'assets/skycoin-wallet/img/lang/' + language.iconName">
         <div class="label">{{ language.name }}</div>
       </button>
     }

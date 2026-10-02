@@ -1,8 +1,8 @@
 <div class="-container">
-  <div class="large-header" [ngStyle]="{'background-image': currentCoin.imageName ? 'url(assets/img/coins/' + currentCoin.imageName + ')' : 'none'}">
+  <div class="large-header" [ngStyle]="{'background-image': currentCoin.imageName ? 'url(assets/skycoin-wallet/img/coins/' + currentCoin.imageName + ')' : 'none'}">
     <div class="gradient" [style.background-image]="currentCoin.gradientName ?
-      'url(assets/img/coins/' + currentCoin.gradientName + ')' :
-      (!currentCoin.imageName ? 'url(assets/img/coins/generic.jpg)' : 'none')">
+      'url(assets/skycoin-wallet/img/coins/' + currentCoin.gradientName + ')' :
+      (!currentCoin.imageName ? 'url(assets/skycoin-wallet/img/coins/generic.jpg)' : 'none')">
       <app-top-bar [headline]="headline"></app-top-bar>
       <div class="balance-container">
         <div>

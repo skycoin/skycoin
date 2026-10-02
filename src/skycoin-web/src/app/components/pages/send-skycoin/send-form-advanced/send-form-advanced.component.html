@@ -123,7 +123,7 @@
         <div [formGroupName]="i" class="row -inner-container">
           @if (i !== 0) {
             <div class="-icons -on-small-and-below-only -mobile-icons">
-              <img (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
+              <img (click)="removeDestination(i)" src="assets/skycoin-wallet/img/minus-grey.png" alt="minus">
             </div>
           }
           <div class="col-lg-5 col-md-4">
@@ -166,10 +166,10 @@
           </div>
           <div class="col-md-1 -icons -not-on-small-and-below">
             @if (i === 0) {
-              <img (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
+              <img (click)="addDestination()" src="assets/skycoin-wallet/img/plus-green.png" alt="plus">
             }
             @if (i !== 0) {
-              <img (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
+              <img (click)="removeDestination(i)" src="assets/skycoin-wallet/img/minus-grey.png" alt="minus">
             }
           </div>
         </div>

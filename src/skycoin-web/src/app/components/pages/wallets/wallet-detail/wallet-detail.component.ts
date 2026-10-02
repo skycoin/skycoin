@@ -25,7 +25,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet!: Wallet;
 
-  currentCoin!: BaseCoin;
+  currentCoin?: BaseCoin;
   creatingAddress = false;
   showSlowMobileInfo = false;
   spinnerStyle: any;

@@ -50,7 +50,7 @@
 
       <ng-template #priceContents>
         <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance && transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally }">
-          <img src="assets/img/send-blue.png">
+          <img src="assets/skycoin-wallet/img/send-blue.png">
         </div>
         @if (transaction.balance) {
           <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin.coinSymbol }}</h4>

@@ -4,7 +4,7 @@
       <mat-menu #coinMenu="matMenu" [overlapTrigger]="false">
         @for (coin of availableCoins; track coin.id) {
           <button mat-menu-item (click)="selectCoin(coin)" [class.active-coin]="coin.id === currentCoin.id">
-            <img class="coin-menu-icon" [src]="'assets/img/coins/' + coin.iconName" />
+            <img class="coin-menu-icon" [src]="'assets/skycoin-wallet/img/coins/' + coin.iconName" />
             {{ coin.coinName }} ({{ coin.coinSymbol }})
           </button>
         }
@@ -14,7 +14,7 @@
         color="primary"
         class="round-button"
         [matMenuTriggerFor]="coinMenu">
-        <img class="coin-icon" [src]="'assets/img/coins/' + currentCoin.iconName" />
+        <img class="coin-icon" [src]="'assets/skycoin-wallet/img/coins/' + currentCoin.iconName" />
         <span class="coin-name -not-on-very-small">{{ currentCoin.coinSymbol }}</span>
         <mat-icon>expand_more</mat-icon>
       </button>
@@ -82,7 +82,7 @@
     }
     @if (language) {
       <div mat-menu-item (click)="changelanguage()">
-        <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+        <img [src]="'assets/skycoin-wallet/img/lang/' + language.iconName" class="flag">
         {{ language.name }}
       </div>
     }

@@ -81,7 +81,7 @@
             <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
               <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + ($any(address).child_number != null ? $any(address).child_number : i)">{{ $any(address).child_number != null ? $any(address).child_number : i + 1 }}</div>
               <div class="address-column -not-on-small-and-below">
-                <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+                <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
                 <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
                   [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
                   {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
@@ -120,7 +120,7 @@
 
       <!-- Change chain: xpub + derived addresses -->
       <div class="-chain-label -change-label" (click)="onToggleChangeAddresses(account)">
-        Change Chain (m/44'/coin'/{{ account.index }}'/1) ({{ account.changeAddresses?.length || 0 }})
+        Change Chain (m/44'/coin'/{{ account.index }}'/1) ({{ account.changeAddresses.length || 0 }})
         <span class="-account-add-address" (click)="$event.stopPropagation(); onAddNewChangeAddress(account.index)" [ngClass]="{ 'mouse-disabled': creatingAddress }">
           + {{ 'wallet.new-address' | translate }}
         </span>
@@ -134,7 +134,7 @@
           </p>
         </div>
       }
-      @if (account.changeAddresses?.length > 0) {
+      @if (account.changeAddresses.length > 0) {
         @if (account.showChangeAddresses) {
           <div class="-records">
             @for (address of account.changeAddresses; track address; let i = $index) {
@@ -142,7 +142,7 @@
                 <div class="-record" #chgElement (click)="onShowQrIfPointer(chgElement, address)">
                   <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + ($any(address).child_number != null ? $any(address).child_number : i)">{{ $any(address).child_number != null ? $any(address).child_number : i + 1 }}</div>
                   <div class="address-column -not-on-small-and-below">
-                    <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+                    <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
                     <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
                       [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
                       {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
@@ -190,7 +190,7 @@
         <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
           <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
           <div class="address-column -not-on-small-and-below">
-            <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+            <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
             <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
               [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
               {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>

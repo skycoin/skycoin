@@ -1,0 +1,25 @@
+// Everything the wallet needs to look right, for any app that shows it. Rules
+// apply only inside .skycoin-wallet: the class on WalletShellComponent and on
+// every dialog, menu and select pane the wallet opens (wallet.module.ts). The
+// scope is :where(), so it adds no specificity and each rule competes as it did
+// unscoped. An app that hosts the wallet includes this file in its global styles.
+@use 'sass:meta';
+@use '@angular/material' as mat;
+@use 'app/wallet-theme';
+@use 'theme/tables';
+@use 'theme/modals';
+@use 'wallet-classes';
+@use 'wallet-fonts';
+
+:where(.skycoin-wallet) {
+  @include mat.all-component-colors(wallet-theme.$candy-app-theme);
+
+  .header-sel-theme {
+    @include mat.all-component-colors(wallet-theme.$header-sel-theme);
+  }
+
+  @include tables.styles;
+  @include modals.styles;
+  @include meta.load-css('bootstrap/scss/bootstrap-grid');
+  @include wallet-classes.styles;
+}

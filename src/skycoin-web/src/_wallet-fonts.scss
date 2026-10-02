@@ -1,0 +1,46 @@
+// The wallet's own faces of the Skycoin font.
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 200;
+  src: url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-Light.woff2') format('woff2'),
+  url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-Light.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 200;
+  src: url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-LightItalic.woff2') format('woff2'),
+  url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-LightItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'),
+  url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-Regular.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 400;
+  src: url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-RegularItalic.woff2') format('woff2'),
+  url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-RegularItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'),
+  url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-Bold.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 700;
+  src: url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-BoldItalic.woff2') format('woff2'),
+  url('./assets/skycoin-wallet/fonts/skycoin/Skycoin-BoldItalic.woff') format('woff');
+}

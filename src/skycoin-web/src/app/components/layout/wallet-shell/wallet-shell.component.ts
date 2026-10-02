@@ -16,6 +16,7 @@ import { HwWalletPinService } from '../../../services/hw-wallet-pin.service';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { HwPinDialogComponent } from '../hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwConfirmTxDialogComponent } from '../hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { WALLET_SCOPE_CLASS } from '../../../wallet-scope';
 
 /**
  * The wallet's frame: cipher start-up, the node status bar, the outlet for the
@@ -27,7 +28,8 @@ import { HwConfirmTxDialogComponent } from '../hardware-wallet/hw-confirm-tx-dia
     templateUrl: './wallet-shell.component.html',
     styleUrls: ['./wallet-shell.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: false,
+    host: { class: WALLET_SCOPE_CLASS },
 })
 export class WalletShellComponent implements OnInit {
   @ViewChild('msgBar') msgBar!: MsgBarComponent;

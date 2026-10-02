@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { LanguageService } from '../../../services/language.service';
 import { Router, NavigationEnd, Event } from '@angular/router';
-import { filter } from 'rxjs';
+import { Subscription, filter } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { config } from '../../../app.config';
@@ -31,7 +31,7 @@ import { WALLET_SCOPE_CLASS } from '../../../wallet-scope';
     standalone: false,
     host: { class: WALLET_SCOPE_CLASS },
 })
-export class WalletShellComponent implements OnInit {
+export class WalletShellComponent implements OnInit, OnDestroy {
   @ViewChild('msgBar') msgBar!: MsgBarComponent;
 
   current!: number;
@@ -41,12 +41,16 @@ export class WalletShellComponent implements OnInit {
   browserCompatibleWithWasm = true;
   wasmFileLoaded = true;
 
+  // What the shell subscribes to, released when it goes: an app hosting the
+  // wallet on one of its routes creates a new shell on every visit.
+  private subscriptions = new Subscription();
+
   constructor(
     private languageService: LanguageService,
     cipherProvider: CipherProvider,
     router: Router,
     dialog: CustomMatDialogService,
-    renderer: Renderer2,
+    private renderer: Renderer2,
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
     private coinService: CoinService,
@@ -57,29 +61,29 @@ export class WalletShellComponent implements OnInit {
     // Set component references to avoid circular dependencies
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
-    router.events.pipe(
+    this.subscriptions.add(router.events.pipe(
       filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe(() => {
       window.scrollTo(0, 0);
       this.changeDetectorRef.markForCheck();
-    });
+    }));
 
-    cipherProvider.initialize().subscribe(response => {
+    this.subscriptions.add(cipherProvider.initialize().subscribe(response => {
       this.checkCipherProviderResponse(response);
       this.changeDetectorRef.markForCheck();
     }, response => {
       this.checkCipherProviderResponse(response);
       this.changeDetectorRef.markForCheck();
-    });
+    }));
 
-    dialog.showingDialog.subscribe(value => {
+    this.subscriptions.add(dialog.showingDialog.subscribe(value => {
       if (!value) {
         renderer.addClass(document.body, 'fix-error-position');
       } else {
         renderer.removeClass(document.body, 'fix-error-position');
       }
       this.changeDetectorRef.markForCheck();
-    });
+    }));
   }
 
   ngOnInit() {
@@ -97,6 +101,12 @@ export class WalletShellComponent implements OnInit {
     };
 
     this.msgBarService.msgBarComponent = this.msgBar;
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
+    window.onbeforeunload = null;
+    this.renderer.removeClass(document.body, 'fix-error-position');
   }
 
   loading() {

@@ -39,6 +39,19 @@ describe('CipherProvider', () => {
     });
   });
 
+  it('should give a later initialize() the first one\'s result', done => {
+    const first = cipherProvider.initialize();
+
+    expect(cipherProvider.initialize()).toBe(first);
+    first.subscribe(() => {
+      cipherProvider.initialize().subscribe(response => {
+        expect(response).toBe(InitializationResults.Ok);
+
+        done();
+      });
+    });
+  });
+
   it('should generate address', done => {
     const expectedAddress: Address = createAddress();
 

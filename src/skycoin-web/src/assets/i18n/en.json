@@ -448,7 +448,11 @@
       "title-change-current": "Enter Current PIN",
       "title-change-new": "Enter New PIN",
       "title-change-confirm": "Confirm New PIN",
-      "instructions": "Enter your PIN using the button positions shown on the device screen."
+      "instructions": "Enter your PIN using the button positions shown on the device screen.",
+      "instructions-generic": "The PIN layout is displayed on the Skywallet screen.",
+      "instructions-tx": "Enter the PIN to confirm and sign the transaction. The PIN layout is displayed on the Skywallet screen.",
+      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers. The PIN layout is displayed on the Skywallet screen.",
+      "continue-button": "Continue"
     },
     "confirm-tx": {
       "title": "Confirm Transaction",
@@ -456,6 +460,15 @@
       "recipient": "Recipient",
       "coins": "Coins",
       "hours": "Hours"
+    },
+    "create-tx": {
+      "title": "Create Transaction",
+      "upper-text": "Please confirm the operation in the Skywallet after verifying if the following data matches EXACTLY with the transaction you wish to send and with those shown by the Skywallet:",
+      "lower-text": "If any data does not correspond to what the Skywallet shows or the transaction you wish to send, cancel the operation on your Skywallet.",
+      "coins": "coins",
+      "and": "and",
+      "hours": "coin hours",
+      "to": "to"
     }
   }
 }

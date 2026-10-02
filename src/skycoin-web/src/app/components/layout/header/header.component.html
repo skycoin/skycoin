@@ -86,7 +86,7 @@
       @if (hasPendingTxs && synchronized) {
         <div>
           {{ 'header.pending-txs1' | translate }}
-          <a routerLink="/settings/pending-transactions">{{ 'header.pending-txs2' | translate }}</a>
+          <a [routerLink]="'/settings/pending-transactions' | walletPath">{{ 'header.pending-txs2' | translate }}</a>
           {{ 'header.pending-txs3' | translate }}
         </div>
       }

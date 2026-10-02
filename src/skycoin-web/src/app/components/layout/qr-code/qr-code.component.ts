@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { WALLET_BASE_PATH, walletPath } from '../../../wallet-path';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
@@ -34,6 +35,8 @@ export interface QrDialogConfig {
     standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
+  private walletBase = inject(WALLET_BASE_PATH);
+
   @ViewChild('qr') qr!: ElementRef;
 
   form!: UntypedFormGroup;
@@ -91,7 +94,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   }
 
   goToDetail(path: string) {
-    this.router.navigate([path], { queryParams: { addr: this.data.address }});
+    this.router.navigate([walletPath(this.walletBase, path)], { queryParams: { addr: this.data.address }});
   }
 
   private initForm() {

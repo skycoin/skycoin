@@ -1,4 +1,5 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { WALLET_BASE_PATH, walletPath } from '../../../../wallet-path';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription, of, delay, first } from 'rxjs';
@@ -25,6 +26,8 @@ import { ButtonComponent } from '../../../layout/button/button.component';
     standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, OnDestroy {
+  private walletBase = inject(WALLET_BASE_PATH);
+
   @ViewChild('formControl') formControl!: CreateWalletFormComponent;
   @ViewChild('create') createButton!: ButtonComponent;
 
@@ -99,7 +102,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
   }
 
   skip() {
-    this.router.navigate(['/wallets'], { replaceUrl: true });
+    this.router.navigate([walletPath(this.walletBase, '/wallets')], { replaceUrl: true });
   }
 
   private showLanguageModal() {

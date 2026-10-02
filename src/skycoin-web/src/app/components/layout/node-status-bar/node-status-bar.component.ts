@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { WALLET_BASE_PATH, walletPath } from '../../../wallet-path';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
@@ -30,6 +31,8 @@ import { BaseCoin } from '../../../coins/basecoin';
   standalone: false,
 })
 export class NodeStatusBarComponent implements OnInit, OnDestroy {
+  private walletBase = inject(WALLET_BASE_PATH);
+
   health: CoinHealth | null = null;
   private subscription!: Subscription;
 
@@ -62,7 +65,7 @@ export class NodeStatusBarComponent implements OnInit, OnDestroy {
   }
 
   openNodeSettings() {
-    this.router.navigate(['/settings/node']);
+    this.router.navigate([walletPath(this.walletBase, '/settings/node')]);
   }
 
   /**

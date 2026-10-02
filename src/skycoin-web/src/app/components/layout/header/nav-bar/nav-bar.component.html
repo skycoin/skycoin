@@ -1,18 +1,18 @@
 <div class="container">
   <div class="-buttons">
-    <div class="-button -low-opacity" routerLink="/wallets" routerLinkActive="-full-opacity">
+    <div class="-button -low-opacity" [routerLink]="'/wallets' | walletPath" routerLinkActive="-full-opacity">
       <div>
         <img src="assets/img/wallet-black.png">
         <span>{{ 'title.wallets' | translate }}</span>
       </div>
     </div>
-    <div class="-button -low-opacity" routerLink="/send" routerLinkActive="-full-opacity">
+    <div class="-button -low-opacity" [routerLink]="'/send' | walletPath" routerLinkActive="-full-opacity">
       <div>
         <img src="assets/img/send-black.png">
         <span>{{ 'title.send' | translate }}</span>
       </div>
     </div>
-    <div class="-button -low-opacity" routerLink="/history" routerLinkActive="-full-opacity">
+    <div class="-button -low-opacity" [routerLink]="'/history' | walletPath" routerLinkActive="-full-opacity">
       <div>
         <img src="assets/img/transactions-black.png">
         <span>{{ 'title.history' | translate }}</span>

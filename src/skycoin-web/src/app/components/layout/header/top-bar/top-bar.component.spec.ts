@@ -12,6 +12,7 @@ import { MockTranslatePipe, MockBalanceService, MockCoinService, MockLanguageSer
 import { LanguageService } from '../../../../services/language.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { CipherProvider } from '../../../../services/cipher.provider';
+import { WalletPathPipe } from '../../../../wallet-path';
 
 describe('TopBarComponent', () => {
   let component: TopBarComponent;
@@ -19,7 +20,7 @@ describe('TopBarComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ TopBarComponent, MockTranslatePipe ],
+      declarations: [ TopBarComponent, MockTranslatePipe, WalletPathPipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
       imports: [
         MatMenuModule,

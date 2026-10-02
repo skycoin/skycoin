@@ -51,4 +51,13 @@ describe('WalletShellComponent', () => {
   it('should create the app', waitForAsync(() => {
     expect(component).toBeTruthy();
   }));
+
+  it('should take its page-wide hooks with it when destroyed', () => {
+    expect(window.onbeforeunload).not.toBeNull();
+
+    fixture.destroy();
+
+    expect(window.onbeforeunload).toBeNull();
+    expect(document.body.classList.contains('fix-error-position')).toBeFalse();
+  });
 });

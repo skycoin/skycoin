@@ -60,7 +60,7 @@
     "@angular/compiler-cli": "^22.2.0",
     "@angular/language-service": "^22.2.0",
     "@eslint/js": "^10.0.1",
-    "@types/jasmine": "~6.0.0",
+    "@types/jasmine": "~7.0.0",
     "@types/jasminewd2": "~2.0.13",
     "@types/node": "~26.6.3",
     "angular-eslint": "^22.5.0",

@@ -82,9 +82,9 @@ The operation without any flags was described above in the [history](#history) s
 | `--enable-seed-api` | | `false` | Enable the wallet seed API (requires `--wallet-dir`). |
 | `--gui-dir` | `-g` | _(embedded)_ | Custom GUI directory. Overrides the embedded GUI for re-skinning. |
 | `--btc-node-url` | | _(none)_ | Bitcoin Core RPC URL (e.g. `http://user:pass@127.0.0.1:8332`). |
-| `--btc-electrum-url` | | _(none)_ | Electrum server URL (e.g. `ssl://electrum.blockstream.info:50002`). |
+| `--btc-electrum-url` | | `default` | Electrum server URLs, comma separated and tried in order. `default` is the built-in list and `none` turns Bitcoin off. |
 
-Bitcoin support is activated by providing either `--btc-node-url` or `--btc-electrum-url`. If neither is specified, Bitcoin is not available as a coin.
+Bitcoin is available by default through the built-in electrum servers. `--btc-node-url` uses a Bitcoin Core node instead, and `--btc-electrum-url none` removes Bitcoin. Servers are contacted only when a Bitcoin call is made, through `--socks5-proxy` when one is set.
 
 ### Hardware Wallet
 

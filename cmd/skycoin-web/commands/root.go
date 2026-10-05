@@ -537,6 +537,11 @@ func parseCoinPath(urlPath string) (coinIndex, apiPath string, ok bool) {
 	}
 	coinIndex = rest[:idx]
 	sub := rest[idx:] // begins with "/"
+	// The wallet asks the Bitcoin backend for /v1/btc/... with no /api, as
+	// skywire's BTC gateway serves it.
+	if strings.HasPrefix(sub, "/v1/btc/") {
+		return coinIndex, sub, true
+	}
 	if sub != "/api" && !strings.HasPrefix(sub, "/api/") {
 		return "", "", false
 	}

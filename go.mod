@@ -3,6 +3,7 @@ module github.com/skycoin/skycoin
 go 1.26.1
 
 require (
+	github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a
 	github.com/0magnet/coloredcobra v1.0.3
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/bitfield/script v0.25.1
@@ -29,7 +30,6 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	github.com/toqueteos/webbrowser v1.2.1
-	go.etcd.io/bbolt v1.5.0
 	golang.org/x/term v0.46.0
 	golang.org/x/time v0.16.0
 	modernc.org/sqlite v1.59.0

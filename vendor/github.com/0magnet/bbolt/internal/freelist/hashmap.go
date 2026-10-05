@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"sort"
 
-	"go.etcd.io/bbolt/internal/common"
+	"github.com/0magnet/bbolt/internal/common"
 )
 
 // pidSet holds the set of starting pgids which have the same span size

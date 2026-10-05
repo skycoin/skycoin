@@ -8,10 +8,10 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(go.etcd.io)
+        - prefix(github.com/0magnet/bbolt)
     goimports:
       local-prefixes:
-        - go.etcd.io # Put imports beginning with prefix after 3rd-party packages.
+        - github.com/0magnet/bbolt # Put imports beginning with prefix after 3rd-party packages.
 issues:
   max-same-issues: 0
 linters:

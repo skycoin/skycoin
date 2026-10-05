@@ -1,3 +1,5 @@
+//go:build !windows && !plan9 && !solaris && !aix && !android && !js
+
 package bbolt
 
 import (
@@ -8,7 +10,8 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"go.etcd.io/bbolt/internal/common"
+	"github.com/0magnet/bbolt/errors"
+	"github.com/0magnet/bbolt/internal/common"
 )
 
 // flock acquires an advisory lock on a file descriptor.
@@ -18,25 +21,24 @@ func flock(db *DB, exclusive bool, timeout time.Duration) error {
 		t = time.Now()
 	}
 	fd := db.file.Fd()
-	var lockType int16
+	flag := syscall.LOCK_NB
 	if exclusive {
-		lockType = syscall.F_WRLCK
+		flag |= syscall.LOCK_EX
 	} else {
-		lockType = syscall.F_RDLCK
+		flag |= syscall.LOCK_SH
 	}
 	for {
 		// Attempt to obtain an exclusive lock.
-		lock := syscall.Flock_t{Type: lockType}
-		err := syscall.FcntlFlock(fd, syscall.F_SETLK, &lock)
+		err := syscall.Flock(int(fd), flag)
 		if err == nil {
 			return nil
-		} else if err != syscall.EAGAIN {
+		} else if err != syscall.EWOULDBLOCK {
 			return err
 		}
 
 		// If we timed out then return an error.
 		if timeout != 0 && time.Since(t) > timeout-flockRetryTimeout {
-			return ErrTimeout
+			return errors.ErrTimeout
 		}
 
 		// Wait for a bit and try again.
@@ -46,12 +48,7 @@ func flock(db *DB, exclusive bool, timeout time.Duration) error {
 
 // funlock releases an advisory lock on a file descriptor.
 func funlock(db *DB) error {
-	var lock syscall.Flock_t
-	lock.Start = 0
-	lock.Len = 0
-	lock.Type = syscall.F_UNLCK
-	lock.Whence = 0
-	return syscall.FcntlFlock(uintptr(db.file.Fd()), syscall.F_SETLK, &lock)
+	return syscall.Flock(int(db.file.Fd()), syscall.LOCK_UN)
 }
 
 // mmap memory maps a DB's data file.
@@ -63,7 +60,9 @@ func mmap(db *DB, sz int) error {
 	}
 
 	// Advise the kernel that the mmap is accessed randomly.
-	if err := unix.Madvise(b, syscall.MADV_RANDOM); err != nil {
+	err = unix.Madvise(b, syscall.MADV_RANDOM)
+	if err != nil && err != syscall.ENOSYS {
+		// Ignore not implemented error in kernel because it still works.
 		return fmt.Errorf("madvise: %s", err)
 	}
 

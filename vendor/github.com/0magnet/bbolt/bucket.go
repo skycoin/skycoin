@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	"go.etcd.io/bbolt/errors"
-	"go.etcd.io/bbolt/internal/common"
+	"github.com/0magnet/bbolt/errors"
+	"github.com/0magnet/bbolt/internal/common"
 )
 
 const (

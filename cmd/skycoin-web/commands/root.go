@@ -36,6 +36,7 @@ var (
 	walletDirs    []string
 	enableSeedAPI bool
 	socks5Proxy   string
+	noListen      bool
 
 	guiDir string // custom GUI directory, overrides embedded GUI
 
@@ -62,6 +63,11 @@ type proxyCacheEntry struct {
 }
 
 var queryCache = &proxyCache{entries: make(map[string]proxyCacheEntry)}
+
+// Mount is set by a program embedding this command. It receives the wallet's
+// http.Handler once it is built and nil once it stops. With --no-listen that
+// is the only way the wallet is served.
+var Mount func(http.Handler)
 
 func (pc *proxyCache) get(key string, maxAge time.Duration) (proxyCacheEntry, bool) {
 	pc.mu.RLock()
@@ -119,7 +125,8 @@ var RootCmd = &cobra.Command{
 			"The proxy does remote DNS, so the .dmsg/.skynet hostname resolves through it."
 		return ret
 	}(),
-	Run: func(cmd *cobra.Command, _ []string) {
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		if socks5Proxy != "" {
 			p := socks5Proxy
 			if !strings.Contains(p, "://") {
@@ -134,9 +141,8 @@ var RootCmd = &cobra.Command{
 		}
 		// cmd.Context() is background for the standalone CLI (blocks until
 		// Ctrl+C); an embedder using ExecuteContext(ctx) can cancel to stop.
-		if err := serve(cmd.Context()); err != nil {
-			log.Fatalf("Server failed: %v", err)
-		}
+		// An error is returned, never fatal, so it cannot take down an embedder.
+		return serve(cmd.Context())
 	},
 }
 
@@ -160,6 +166,7 @@ func init() {
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
 	RootCmd.Flags().StringVar(&socks5Proxy, "socks5-proxy", "", "SOCKS5 proxy for node connections (e.g. socks5://127.0.0.1:4443)")
 	RootCmd.Flags().StringVarP(&guiDir, "gui-dir", "g", "", "Custom GUI directory (overrides embedded GUI)")
+	RootCmd.Flags().BoolVar(&noListen, "no-listen", false, "Open no port; serve only through an embedding program's Mount")
 
 	// Profiling flags
 	RootCmd.Flags().StringVarP(&pprofMode, "pprofmode", "q", "", "[ cpu | mem | mutex | block | trace | http ]")
@@ -649,7 +656,11 @@ func serve(ctx context.Context) error {
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	fmt.Printf("Skycoin Web Wallet starting...\n")
-	fmt.Printf("Server listening on http://%s\n", addr)
+	if noListen {
+		fmt.Printf("Served by the embedding program, no port opened\n")
+	} else {
+		fmt.Printf("Server listening on http://%s\n", addr)
+	}
 	if len(coins) > 0 {
 		fmt.Printf("Configured coins:\n")
 		for _, coin := range coins {
@@ -673,9 +684,18 @@ func serve(ctx context.Context) error {
 	// host cancels ctx to stop it. Returns errors instead of os.Exit-ing so
 	// it can't take down an embedding process. Uses the net/http mux (so the
 	// web wallet also builds under TinyGo) wrapped in the recovery middleware.
+	handler := recoverMiddleware(mux)
+	if Mount != nil {
+		Mount(handler)
+		defer Mount(nil)
+	}
+	if noListen {
+		<-ctx.Done()
+		return nil
+	}
 	srv := &http.Server{ //nolint:gosec
 		Addr:              addr,
-		Handler:           recoverMiddleware(mux),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	//nolint:gosec // G118 false positive: the shutdown ctx MUST be a fresh, non-canceled context precisely because the parent ctx is already Done at this point.

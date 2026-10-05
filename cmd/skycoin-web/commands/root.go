@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,6 +70,26 @@ var queryCache = &proxyCache{entries: make(map[string]proxyCacheEntry)}
 // is the only way the wallet is served.
 var Mount func(http.Handler)
 
+// nodeTransport carries every request to a coin node. --socks5-proxy sets a
+// proxy here rather than in the environment, which an embedder shares.
+var nodeTransport = http.DefaultTransport
+
+func proxyTransport(proxy string) (http.RoundTripper, error) {
+	if proxy == "" {
+		return http.DefaultTransport, nil
+	}
+	if !strings.Contains(proxy, "://") {
+		proxy = "socks5://" + proxy
+	}
+	u, err := url.Parse(proxy)
+	if err != nil {
+		return nil, fmt.Errorf("--socks5-proxy: %w", err)
+	}
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.Proxy = http.ProxyURL(u)
+	return t, nil
+}
+
 func (pc *proxyCache) get(key string, maxAge time.Duration) (proxyCacheEntry, bool) {
 	pc.mu.RLock()
 	defer pc.mu.RUnlock()
@@ -127,18 +148,11 @@ var RootCmd = &cobra.Command{
 	}(),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		if socks5Proxy != "" {
-			p := socks5Proxy
-			if !strings.Contains(p, "://") {
-				p = "socks5://" + p
-			}
-			if err := os.Setenv("HTTP_PROXY", p); err != nil {
-				log.Printf("[WARN] Failed to set HTTP_PROXY: %v", err)
-			}
-			if err := os.Setenv("HTTPS_PROXY", p); err != nil {
-				log.Printf("[WARN] Failed to set HTTPS_PROXY: %v", err)
-			}
+		t, err := proxyTransport(socks5Proxy)
+		if err != nil {
+			return err
 		}
+		nodeTransport = t
 		// cmd.Context() is background for the standalone CLI (blocks until
 		// Ctrl+C); an embedder using ExecuteContext(ctx) can cancel to stop.
 		// An error is returned, never fatal, so it cannot take down an embedder.
@@ -190,7 +204,7 @@ func Execute() {
 func discoverCoin(index int, nodeURL string) (*discoveredCoin, error) {
 	nodeURL = strings.TrimRight(nodeURL, "/")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: nodeTransport}
 	resp, err := client.Get(nodeURL + "/api/v1/health")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to node %s: %v", nodeURL, err)
@@ -279,7 +293,7 @@ func discoverCoins() []*discoveredCoin {
 }
 
 // initWalletServices initializes Skycoin wallet services for each configured wallet directory.
-func initWalletServices() []*wallet.Service {
+func initWalletServices() ([]*wallet.Service, error) {
 	var wltServices []*wallet.Service
 	for _, dir := range walletDirs {
 		if dir == "" {
@@ -296,12 +310,12 @@ func initWalletServices() []*wallet.Service {
 
 		svc, err := wallet.NewService(cfg)
 		if err != nil {
-			log.Fatalf("Failed to initialize wallet service for %s: %v", dir, err)
+			return nil, fmt.Errorf("wallet service for %s: %w", dir, err)
 		}
 		wltServices = append(wltServices, svc)
 		log.Printf("[WALLET] Wallet service initialized: %s", dir)
 	}
-	return wltServices
+	return wltServices, nil
 }
 
 // initBitcoinBackend initializes the Bitcoin backend and wallet services if configured.
@@ -465,7 +479,10 @@ func serve(ctx context.Context) error {
 	mux := http.NewServeMux()
 
 	coins := discoverCoins()
-	wltServices := initWalletServices()
+	wltServices, err := initWalletServices()
+	if err != nil {
+		return err
+	}
 	btcBackend, btcWltServices, coins := initBitcoinBackend(coins)
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
 	guiFS := initGUIFS()
@@ -886,7 +903,7 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 		req.Header.Set("X-CSRF-Token", csrfToken)
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Transport: nodeTransport}
 	resp, err := client.Do(req) //nolint:gosec // G704: request targets an operator-configured node URL
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to query node: %v", err))
@@ -921,7 +938,7 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 
 // fetchCSRFToken fetches a CSRF token from the remote node
 func fetchCSRFToken(nodeURL string) (string, error) {
-	resp, err := http.Get(nodeURL + "/api/v1/csrf") //nolint:gosec
+	resp, err := (&http.Client{Transport: nodeTransport}).Get(nodeURL + "/api/v1/csrf") //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch CSRF token: %v", err)
 	}
@@ -984,7 +1001,7 @@ func proxyToNodeWithBase(c *webCtx, remoteNodeURL string, targetPath string) {
 		}
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Transport: nodeTransport}
 	resp, err := client.Do(proxyReq) //nolint:gosec // G704: proxies to an operator-configured node URL
 	if err != nil {
 		log.Printf("[PROXY] Request failed: %v", err)

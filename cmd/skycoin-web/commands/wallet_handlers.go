@@ -735,7 +735,7 @@ func handleWalletBalance(c *webCtx, s *wallet.Service, nodeURL string) {
 	balanceURL := fmt.Sprintf("%s/api/v1/balance?addrs=%s", nodeURL, addrParam)
 	log.Printf("[WALLET] Querying balance for %d addresses from %s", len(addrs), nodeURL) //nolint:gosec // logs the configured node URL, not caller-supplied input
 
-	resp, err := http.Get(balanceURL) //nolint:gosec
+	resp, err := (&http.Client{Transport: nodeTransport}).Get(balanceURL) //nolint:gosec
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to query node balance: %v", err))
 		return

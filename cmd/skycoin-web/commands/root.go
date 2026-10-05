@@ -205,7 +205,7 @@ func init() {
 
 	// Bitcoin flags (mutually exclusive)
 	RootCmd.Flags().StringVar(&btcNodeURL, "btc-node-url", "", "Bitcoin Core RPC URL (e.g. http://user:pass@127.0.0.1:8332)")
-	RootCmd.Flags().StringVar(&btcElectrumURL, "btc-electrum-url", "", "Electrum server URLs, comma separated and tried in order, or default for the built-in list")
+	RootCmd.Flags().StringVar(&btcElectrumURL, "btc-electrum-url", "default", "Electrum server URLs, comma separated and tried in order, default for the built-in list, or none for no BTC")
 	RootCmd.MarkFlagsMutuallyExclusive("btc-node-url", "btc-electrum-url")
 }
 
@@ -386,14 +386,16 @@ func initWalletServices() ([]*wallet.Service, error) {
 func initBitcoinBackend(coins []*discoveredCoin) (btc.Backend, []*wallet.Service, []*discoveredCoin, error) {
 	var btcBackend btc.Backend
 	var btcWltServices []*wallet.Service
-	if btcNodeURL == "" && btcElectrumURL == "" {
-		return nil, nil, coins, nil
+	var electrumServers []string
+	if btcNodeURL == "" {
+		electrumServers = electrumServerList(btcElectrumURL)
+		if len(electrumServers) == 0 {
+			return nil, nil, coins, nil
+		}
 	}
 
 	// Initialize Bitcoin backend
-	var electrumServers []string
-	if btcElectrumURL != "" {
-		electrumServers = electrumServerList(btcElectrumURL)
+	if len(electrumServers) > 0 {
 		var dial electrum.DialFunc
 		if socks5Proxy != "" {
 			dial = electrum.SOCKS5Dialer(proxyHostPort(socks5Proxy), 90*time.Second, NodeDial)
@@ -1140,9 +1142,12 @@ func initPProf(profMode string, profAddr string) (stop func()) {
 }
 
 // electrumServerList reads --btc-electrum-url: "default" for
-// electrum.DefaultServers, otherwise one URL or a comma separated list.
+// electrum.DefaultServers, "none" for no servers, otherwise a comma separated list.
 func electrumServerList(flag string) []string {
-	if strings.TrimSpace(flag) == "default" {
+	switch strings.TrimSpace(flag) {
+	case "none":
+		return nil
+	case "default":
 		return append([]string(nil), electrum.DefaultServers...)
 	}
 	var out []string

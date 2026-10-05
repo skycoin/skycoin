@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"go.etcd.io/bbolt/internal/common"
+	"github.com/0magnet/bbolt/internal/common"
 )
 
 // node represents an in-memory, deserialized page.
@@ -315,10 +315,7 @@ func (n *node) spill() error {
 	var nodes = n.split(uintptr(tx.db.pageSize))
 	for _, node := range nodes {
 		// Add node's page to the freelist if it's not new.
-		if node.pgid > 0 {
-			tx.db.freelist.Free(tx.meta.Txid(), tx.page(node.pgid))
-			node.pgid = 0
-		}
+		node.free()
 
 		// Allocate contiguous space for the node.
 		p, err := tx.allocate((node.size() + tx.db.pageSize - 1) / tx.db.pageSize)
@@ -353,7 +350,6 @@ func (n *node) spill() error {
 	// If the root node split and created a new root then we need to spill that
 	// as well. We'll clear out the children to make sure it doesn't try to respill.
 	if n.parent != nil && n.parent.pgid == 0 {
-		n.children = nil
 		return n.parent.spill()
 	}
 

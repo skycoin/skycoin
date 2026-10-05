@@ -1,6 +1,6 @@
 package bbolt
 
-import "go.etcd.io/bbolt/errors"
+import "github.com/0magnet/bbolt/errors"
 
 // These errors can be returned when opening or calling methods on a DB.
 var (

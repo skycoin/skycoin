@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"go.etcd.io/bbolt"
+	bbolt "github.com/0magnet/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util/logging"

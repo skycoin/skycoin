@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.etcd.io/bbolt"
+	bbolt "github.com/0magnet/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"

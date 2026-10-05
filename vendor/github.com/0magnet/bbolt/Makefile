@@ -1,6 +1,6 @@
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 COMMIT=`git rev-parse --short HEAD`
-GOLDFLAGS="-X main.branch $(BRANCH) -X main.commit $(COMMIT)"
+GOLDFLAGS="-X github.com/0magnet/bbolt/version.Branch=$(BRANCH) -X github.com/0magnet/bbolt/version.Commit=$(COMMIT)"
 GOFILES = $(shell find . -name \*.go)
 REPOSITORY_ROOT := $(shell git rev-parse --show-toplevel)
 GOTOOLCHAIN ?= go$(shell cat $(REPOSITORY_ROOT)/.go-version)
@@ -40,6 +40,7 @@ fmt:
 .PHONY: lint
 lint:
 	golangci-lint run ./...
+	GOOS=js GOARCH=wasm golangci-lint run ./...
 
 .PHONY: test
 test:
@@ -66,7 +67,7 @@ coverage:
 BOLT_CMD=bbolt
 
 build:
-	go build -o bin/${BOLT_CMD} ./cmd/${BOLT_CMD}
+	go build -ldflags ${GOLDFLAGS} -o bin/${BOLT_CMD} ./cmd/${BOLT_CMD}
 
 .PHONY: clean
 clean: # Clean binaries
@@ -100,3 +101,14 @@ test-robustness: gofail-enable build
 test-benchmark-compare:
 	@git fetch
 	./scripts/compare_benchmarks.sh $(REF)
+
+test-wasm: ## Build and test the js/wasm port under Node
+	@# Self-contained: this Makefile does not carry the shared template's
+	@# PKGS/JSPKGS variables. A host build cannot see //go:build js && wasm
+	@# files at all, so without this a wasm-only break stays invisible.
+	@# -short skips the multi-GB tests; tests/ is linux-only or
+	@# needs gofail enabled.
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build ./...
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -short -timeout 20m \
+		-exec="$$(go env GOROOT)/lib/wasm/go_js_wasm_exec" \
+		$$(go list ./... | grep -v /bbolt/tests/)

@@ -1,3 +1,9 @@
+# github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a
+## explicit; go 1.26.0
+github.com/0magnet/bbolt
+github.com/0magnet/bbolt/errors
+github.com/0magnet/bbolt/internal/common
+github.com/0magnet/bbolt/internal/freelist
 # github.com/0magnet/coloredcobra v1.0.3
 ## explicit; go 1.25.0
 github.com/0magnet/coloredcobra
@@ -183,12 +189,6 @@ github.com/subosito/gotenv
 # github.com/toqueteos/webbrowser v1.2.1
 ## explicit; go 1.12
 github.com/toqueteos/webbrowser
-# go.etcd.io/bbolt v1.5.0
-## explicit; go 1.25.0
-go.etcd.io/bbolt
-go.etcd.io/bbolt/errors
-go.etcd.io/bbolt/internal/common
-go.etcd.io/bbolt/internal/freelist
 # go.yaml.in/yaml/v3 v3.0.5
 ## explicit; go 1.16
 go.yaml.in/yaml/v3

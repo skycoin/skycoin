@@ -218,15 +218,12 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
     const defaultOption = { label: this.translate.instant('nodes.change.preset-default'), value: '' };
 
     const coin = this.coinService.coins.find(c => c.id === this.data.coinId);
-    if (coin && coin.isBitcoin()) {
-      this.nodeOptions = [
-        defaultOption,
-        { label: 'ssl://electrum.blockstream.info:50002', value: 'ssl://electrum.blockstream.info:50002' },
-        { label: 'ssl://fortress.qtornado.com:443', value: 'ssl://fortress.qtornado.com:443' },
-        { label: 'ssl://electrum.emzy.de:50002', value: 'ssl://electrum.emzy.de:50002' },
-      ];
-    } else {
-      this.nodeOptions = [defaultOption];
+    // The server's list wins. The built-in one, a copy of the Go
+    // electrum.DefaultServers, is for a server that sends none.
+    let servers = coin?.nodeOptions?.length ? coin.nodeOptions : [];
+    if (!servers.length && coin && coin.isBitcoin()) {
+      servers = ['ssl://electrum.blockstream.info:50002', 'ssl://fortress.qtornado.com:443', 'ssl://electrum.emzy.de:50002'];
     }
+    this.nodeOptions = [defaultOption, ...servers.map(s => ({ label: s, value: s }))];
   }
 }

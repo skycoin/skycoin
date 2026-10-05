@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/btc"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
+	"github.com/skycoin/skycoin/src/electrum"
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
@@ -130,6 +131,8 @@ type discoveredCoin struct {
 	CoinExplorer      string `json:"coinExplorer"`
 	CoinType          string `json:"coinType"`
 	ServerWallets     bool   `json:"serverWallets"`
+	// NodeOptions are the servers the wallet's node settings offer.
+	NodeOptions []string `json:"nodeOptions,omitempty"`
 	// placeholder marks a node whose health check failed; it is retried.
 	placeholder bool
 	// internal: the actual remote node URL (not exposed to frontend)
@@ -202,7 +205,7 @@ func init() {
 
 	// Bitcoin flags (mutually exclusive)
 	RootCmd.Flags().StringVar(&btcNodeURL, "btc-node-url", "", "Bitcoin Core RPC URL (e.g. http://user:pass@127.0.0.1:8332)")
-	RootCmd.Flags().StringVar(&btcElectrumURL, "btc-electrum-url", "", "Electrum server URL (e.g. ssl://electrum.blockstream.info:50002)")
+	RootCmd.Flags().StringVar(&btcElectrumURL, "btc-electrum-url", "", "Electrum server URLs, comma separated and tried in order, or default for the built-in list")
 	RootCmd.MarkFlagsMutuallyExclusive("btc-node-url", "btc-electrum-url")
 }
 
@@ -380,27 +383,35 @@ func initWalletServices() ([]*wallet.Service, error) {
 
 // initBitcoinBackend initializes the Bitcoin backend and wallet services if configured.
 // It also appends a Bitcoin coin entry to the provided coins slice.
-func initBitcoinBackend(coins []*discoveredCoin) (btc.Backend, []*wallet.Service, []*discoveredCoin) {
+func initBitcoinBackend(coins []*discoveredCoin) (btc.Backend, []*wallet.Service, []*discoveredCoin, error) {
 	var btcBackend btc.Backend
 	var btcWltServices []*wallet.Service
 	if btcNodeURL == "" && btcElectrumURL == "" {
-		return nil, nil, coins
+		return nil, nil, coins, nil
 	}
 
 	// Initialize Bitcoin backend
-	var berr error
+	var electrumServers []string
 	if btcElectrumURL != "" {
-		btcBackend, berr = btc.NewElectrumBackend(btcElectrumURL)
-		if berr != nil {
-			log.Printf("[WARN] Failed to connect to Electrum server %s: %v", btcElectrumURL, berr)
-		} else {
-			log.Printf("[BTC] Connected to Electrum server: %s", btcElectrumURL)
+		electrumServers = electrumServerList(btcElectrumURL)
+		var dial electrum.DialFunc
+		if socks5Proxy != "" {
+			dial = electrum.SOCKS5Dialer(proxyHostPort(socks5Proxy), 90*time.Second, NodeDial)
 		}
+		// Connects on first use and moves to the next server when one fails, so
+		// a server or proxy that is not up yet at startup costs nothing.
+		f, err := btc.NewFailoverElectrum(electrumServers, dial)
+		if err != nil {
+			return nil, nil, coins, err
+		}
+		btcBackend = f
+		log.Printf("[BTC] Electrum servers, in order: %s", strings.Join(electrumServers, ", "))
 	} else {
-		btcBackend, berr = btc.NewCoreBackend(btcNodeURL)
+		core, berr := btc.NewCoreBackend(btcNodeURL)
 		if berr != nil {
 			log.Printf("[WARN] Failed to connect to Bitcoin Core %s: %v", btcNodeURL, berr)
 		} else {
+			btcBackend = core
 			log.Printf("[BTC] Connected to Bitcoin Core: %s", btcNodeURL)
 		}
 	}
@@ -423,7 +434,7 @@ func initBitcoinBackend(coins []*discoveredCoin) (btc.Backend, []*wallet.Service
 			}
 			btcSvc, btcErr := wallet.NewService(btcCfg)
 			if btcErr != nil {
-				log.Fatalf("Failed to initialize Bitcoin wallet service for %s: %v", dir, btcErr)
+				return nil, nil, coins, fmt.Errorf("bitcoin wallet service for %s: %w", dir, btcErr)
 			}
 			btcWltServices = append(btcWltServices, btcSvc)
 			log.Printf("[BTC] Bitcoin wallet service initialized: %s", dir)
@@ -444,12 +455,13 @@ func initBitcoinBackend(coins []*discoveredCoin) (btc.Backend, []*wallet.Service
 			PriceTickerSource: "coinpaprika",
 			CoinExplorer:      "https://blockchair.com/bitcoin",
 			CoinType:          "bitcoin",
+			NodeOptions:       electrumServers,
 		}
 		coins = append(coins, btcCoin)
 		log.Printf("[COIN] Added Bitcoin at index %d", btcCoinIndex)
 	}
 
-	return btcBackend, btcWltServices, coins
+	return btcBackend, btcWltServices, coins, nil
 }
 
 // mapWalletsToCoin maps wallet services to coin indices and sets up Bitcoin handlers.
@@ -543,7 +555,10 @@ func serve(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	btcBackend, btcWltServices, coins := initBitcoinBackend(coins)
+	btcBackend, btcWltServices, coins, err := initBitcoinBackend(coins)
+	if err != nil {
+		return err
+	}
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
 	guiFS := initGUIFS()
 
@@ -1117,4 +1132,28 @@ func initPProf(profMode string, profAddr string) (stop func()) {
 		}()
 	}
 	return stop
+}
+
+// electrumServerList reads --btc-electrum-url: "default" for
+// electrum.DefaultServers, otherwise one URL or a comma separated list.
+func electrumServerList(flag string) []string {
+	if strings.TrimSpace(flag) == "default" {
+		return append([]string(nil), electrum.DefaultServers...)
+	}
+	var out []string
+	for _, s := range strings.Split(flag, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// proxyHostPort is the host:port of a --socks5-proxy value, with or without
+// its scheme.
+func proxyHostPort(proxy string) string {
+	if u, err := url.Parse(proxy); err == nil && u.Host != "" {
+		return u.Host
+	}
+	return proxy
 }

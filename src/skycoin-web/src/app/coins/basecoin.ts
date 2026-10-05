@@ -9,6 +9,8 @@ export class BaseCoin {
   coinExplorer!: string;
   coinType!: string;
   serverWallets!: boolean;
+  // Servers the node settings offer for this coin, as the server lists them.
+  nodeOptions: string[] = [];
   imageName!: string;
   gradientName!: string;
   iconName!: string;
@@ -49,6 +51,7 @@ export class BaseCoin {
     coin.coinExplorer = data.coinExplorer || '';
     coin.coinType = data.coinType || 'skycoin';
     coin.serverWallets = !!data.serverWallets;
+    coin.nodeOptions = Array.isArray(data.nodeOptions) ? data.nodeOptions.filter((s: any) => typeof s === 'string') : [];
     // Use generic/skycoin assets as fallback for dynamically discovered coins
     coin.imageName = '';
     coin.gradientName = '';

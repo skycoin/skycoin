@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	bbolt "github.com/0magnet/bbolt"
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"

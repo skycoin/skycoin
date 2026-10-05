@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -74,6 +75,11 @@ var Mount func(http.Handler)
 // proxy here rather than in the environment, which an embedder shares.
 var nodeTransport = http.DefaultTransport
 
+// NodeDial is set by an embedder to open the connection to the --socks5-proxy.
+// A program whose loopback is not the host's, such as one in a browser tab,
+// sets it to reach its own proxy.
+var NodeDial func(ctx context.Context, network, addr string) (net.Conn, error)
+
 func proxyTransport(proxy string) (http.RoundTripper, error) {
 	if proxy == "" {
 		return http.DefaultTransport, nil
@@ -87,6 +93,12 @@ func proxyTransport(proxy string) (http.RoundTripper, error) {
 	}
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.Proxy = http.ProxyURL(u)
+	// Always an explicit dialer: under js a transport without one uses fetch(),
+	// which ignores Proxy. Natively it is the dialer the default transport uses.
+	t.DialContext = (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext
+	if NodeDial != nil {
+		t.DialContext = NodeDial
+	}
 	return t, nil
 }
 
@@ -118,6 +130,8 @@ type discoveredCoin struct {
 	CoinExplorer      string `json:"coinExplorer"`
 	CoinType          string `json:"coinType"`
 	ServerWallets     bool   `json:"serverWallets"`
+	// placeholder marks a node whose health check failed; it is retried.
+	placeholder bool
 	// internal: the actual remote node URL (not exposed to frontend)
 	remoteNodeURL string
 }
@@ -283,6 +297,7 @@ func discoverCoins() []*discoveredCoin {
 				CoinSymbol:    fmt.Sprintf("N%d", i),
 				HoursName:     "Coin Hours",
 				CoinType:      "skycoin",
+				placeholder:   true,
 				remoteNodeURL: nodeURL,
 			}
 		}
@@ -290,6 +305,51 @@ func discoverCoins() []*discoveredCoin {
 		log.Printf("[COIN] Discovered %s (%s) at %s → proxy /coin/%d", coin.CoinName, coin.CoinSymbol, coin.remoteNodeURL, i)
 	}
 	return coins
+}
+
+// coinsMu guards the display fields rediscoverCoins fills in.
+var coinsMu sync.RWMutex
+
+// rediscoverRetry is how often a node that was unreachable at startup is asked
+// for its health again.
+const rediscoverRetry = 15 * time.Second
+
+// rediscoverCoins retries the health check of every placeholder node until it
+// answers. A node reached through a proxy that is still starting, as in a visor
+// that starts the wallet with it, would otherwise keep its placeholder name.
+func rediscoverCoins(ctx context.Context, coins []*discoveredCoin) {
+	t := time.NewTicker(rediscoverRetry)
+	defer t.Stop()
+	for {
+		pending := false
+		for _, c := range coins {
+			coinsMu.RLock()
+			placeholder := c.placeholder
+			coinsMu.RUnlock()
+			if !placeholder {
+				continue
+			}
+			found, err := discoverCoin(c.ID, c.remoteNodeURL)
+			if err != nil {
+				pending = true
+				continue
+			}
+			coinsMu.Lock()
+			c.CoinName, c.CoinSymbol, c.HoursName = found.CoinName, found.CoinSymbol, found.HoursName
+			c.PriceTickerID, c.PriceTickerSource, c.CoinExplorer = found.PriceTickerID, found.PriceTickerSource, found.CoinExplorer
+			c.placeholder = false
+			coinsMu.Unlock()
+			log.Printf("[COIN] Discovered %s (%s) at %s after startup", found.CoinName, found.CoinSymbol, c.remoteNodeURL)
+		}
+		if !pending {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
 }
 
 // initWalletServices initializes Skycoin wallet services for each configured wallet directory.
@@ -627,7 +687,9 @@ func serve(ctx context.Context) error {
 
 		// Coins discovery endpoint
 		if apiPath == "/v1/coins" && c.Request.Method == http.MethodGet {
+			coinsMu.RLock()
 			c.JSON(http.StatusOK, coins)
+			coinsMu.RUnlock()
 			return
 		}
 
@@ -701,6 +763,7 @@ func serve(ctx context.Context) error {
 	// host cancels ctx to stop it. Returns errors instead of os.Exit-ing so
 	// it can't take down an embedding process. Uses the net/http mux (so the
 	// web wallet also builds under TinyGo) wrapped in the recovery middleware.
+	go rediscoverCoins(ctx, coins)
 	handler := recoverMiddleware(mux)
 	if Mount != nil {
 		Mount(handler)

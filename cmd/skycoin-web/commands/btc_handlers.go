@@ -36,6 +36,9 @@ func (h *btcHandler) handleBtcAPI(c *webCtx, apiPath string) bool {
 	case path == "/v1/btc/send" && method == http.MethodPost:
 		h.sendTransaction(c)
 		return true
+	case path == "/v1/btc/health" && method == http.MethodGet:
+		h.health(c)
+		return true
 	case path == "/v1/btc/fee" && method == http.MethodGet:
 		h.estimateFee(c)
 		return true
@@ -223,4 +226,15 @@ func (h *btcHandler) estimateFee(c *webCtx) {
 		"sat_per_byte": satPerByte,
 		"blocks":       blocks,
 	})
+}
+
+// health reports the backend's chain tip, in the shape skywire's BTC gateway
+// uses, which the wallet's node status reads.
+func (h *btcHandler) health(c *webCtx) {
+	height, err := h.backend.Health()
+	if err != nil {
+		c.JSON(http.StatusBadGateway, H{"error": "electrum unreachable: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, H{"tip_height": height})
 }

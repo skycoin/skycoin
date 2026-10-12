@@ -70,7 +70,11 @@ func NewConfig() Config {
 // Verify verifies the configuration
 func (c Config) Verify() error {
 	if c.IsBlockPublisher {
-		if c.BlockchainPubkey != cipher.MustPubKeyFromSecKey(c.BlockchainSeckey) {
+		if c.BlockchainSeckey.Null() {
+			return errors.New("Cannot run as block publisher: the blockchain secret key is not set, use -blockchain-secret-key or blockchain_seckey_str in a fiber.toml loaded with FIBER_TOML")
+		}
+		pk, err := cipher.PubKeyFromSecKey(c.BlockchainSeckey)
+		if err != nil || c.BlockchainPubkey != pk {
 			return errors.New("Cannot run as block publisher: invalid seckey for pubkey")
 		}
 	}

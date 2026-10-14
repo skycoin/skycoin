@@ -1,6 +1,6 @@
 module github.com/skycoin/skycoin
 
-go 1.26.1
+go 1.27.0
 
 require (
 	github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a

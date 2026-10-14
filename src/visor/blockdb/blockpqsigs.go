@@ -1,7 +1,10 @@
 package blockdb
 
 import (
+	"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -23,4 +26,48 @@ func (bs *blockPQSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) ([]byte, error) {
 // Add stores the post-quantum signature of a block.
 func (bs *blockPQSigs) Add(tx *dbutil.Tx, hash cipher.SHA256, sig []byte) error {
 	return dbutil.PutBucketValue(tx, BlockPQSigsBkt, hash[:], sig)
+}
+
+var (
+	// TxnPQWitnessesBkt holds the PQ witnesses of transactions in blocks, keyed by
+	// transaction hash, because the block encoding leaves them out.
+	TxnPQWitnessesBkt = []byte("txn_pq_witnesses")
+)
+
+// txnPQWitnesses stores the post-quantum witnesses of transactions in blocks.
+type txnPQWitnesses struct{}
+
+func (tw *txnPQWitnesses) add(tx *dbutil.Tx, b *coin.Block) error {
+	for _, txn := range b.Body.Transactions {
+		if txn.Type != coin.TxnTypePQ {
+			continue
+		}
+		h := txn.Hash()
+		if err := dbutil.PutBucketValue(tx, TxnPQWitnessesBkt, h[:], coin.EncodePQWitness(txn.PQ)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// load puts the stored witnesses back onto the transactions of b.
+func (tw *txnPQWitnesses) load(tx *dbutil.Tx, b *coin.Block) error {
+	for i := range b.Body.Transactions {
+		txn := &b.Body.Transactions[i]
+		if txn.Type != coin.TxnTypePQ {
+			continue
+		}
+		h := txn.Hash()
+		v, err := dbutil.GetBucketValue(tx, TxnPQWitnessesBkt, h[:])
+		if err != nil {
+			return err
+		}
+		if v == nil {
+			return fmt.Errorf("post-quantum witness of transaction %s not found", h.Hex())
+		}
+		if txn.PQ, _, err = coin.DecodePQWitness(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -135,3 +135,21 @@ func TestConfigVerifyPQ(t *testing.T) {
 	cfg.PQBlocks.Pubkey = pqPubkey[:100]
 	require.ErrorContains(t, cfg.Verify(), "invalid post-quantum blockchain pubkey")
 }
+
+func TestVerifyPQAddresses(t *testing.T) {
+	pqAddr := cipher.AddressFromPQPubKey(make([]byte, pqsig.PubKeySize))
+	payPQ := coin.Transaction{Out: []coin.TransactionOutput{{Address: pqAddr, Coins: 1e6}}}
+	spendPQ := coin.Transaction{Type: coin.TxnTypePQ}
+	plain := coin.Transaction{Out: []coin.TransactionOutput{{Address: genAddress, Coins: 1e6}}}
+
+	never := Blockchain{cfg: BlockchainConfig{}}
+	require.NoError(t, never.verifyPQAddresses(plain, 100))
+	require.Error(t, never.verifyPQAddresses(payPQ, 100))
+	require.Error(t, never.verifyPQAddresses(spendPQ, 100))
+
+	fork := Blockchain{cfg: BlockchainConfig{PQAddressForkSeq: 10}}
+	require.Error(t, fork.verifyPQAddresses(payPQ, 9))
+	require.Error(t, fork.verifyPQAddresses(spendPQ, 9))
+	require.NoError(t, fork.verifyPQAddresses(payPQ, 10))
+	require.NoError(t, fork.verifyPQAddresses(spendPQ, 10))
+}

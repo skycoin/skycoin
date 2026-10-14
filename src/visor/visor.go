@@ -72,9 +72,10 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 	}
 
 	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey:      c.BlockchainPubkey,
-		PQBlocks:    c.PQBlocks,
-		Arbitrating: c.Arbitrating,
+		Pubkey:           c.BlockchainPubkey,
+		PQBlocks:         c.PQBlocks,
+		PQAddressForkSeq: c.PQAddressForkSeq,
+		Arbitrating:      c.Arbitrating,
 	})
 	if err != nil {
 		return nil, err

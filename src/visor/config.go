@@ -26,6 +26,9 @@ type Config struct {
 	PQBlocks coin.PQBlockRule
 	// BlockchainPQSeckey signs those blocks (required if block publisher and PQBlocks is set)
 	BlockchainPQSeckey pqsig.SecKey
+	// PQAddressForkSeq is the first block that may hold post-quantum spends and
+	// payments to post-quantum (version 1) addresses. Zero means never.
+	PQAddressForkSeq uint64
 
 	// Transaction verification parameters used for unconfirmed transactions
 	UnconfirmedVerifyTxn params.VerifyTxn

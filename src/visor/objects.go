@@ -150,6 +150,8 @@ type UnconfirmedTransaction struct {
 	Announced int64
 	// If this txn is valid
 	IsValid int8
+	// PQWitness stores Transaction.PQ, which the transaction encoding leaves out
+	PQWitness []byte `enc:",omitempty"`
 }
 
 // NewUnconfirmedTransaction creates an UnconfirmedTransaction
@@ -210,4 +212,18 @@ type UnspentOutputsSummary struct {
 	Confirmed []UnspentOutput
 	Outgoing  []UnspentOutput
 	Incoming  []UnspentOutput
+}
+
+// loadPQ moves a stored post-quantum witness back onto the transaction.
+func (utx *UnconfirmedTransaction) loadPQ() error {
+	if len(utx.PQWitness) == 0 {
+		return nil
+	}
+	pq, _, err := coin.DecodePQWitness(utx.PQWitness)
+	if err != nil {
+		return err
+	}
+	utx.Transaction.PQ = pq
+	utx.PQWitness = nil
+	return nil
 }

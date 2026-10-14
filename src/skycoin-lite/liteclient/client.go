@@ -16,6 +16,7 @@ import (
 	"math"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
 )
 
@@ -28,10 +29,19 @@ type Address struct {
 	Address  string
 }
 
-// TransactionInput represents a transaction input
+// TransactionInput represents a transaction input. Address is the owner of the
+// spent output. For a post-quantum (version 1) address, Secret is the ML-DSA-44
+// seed and the input gets an ML-DSA signature. It may be left out otherwise.
 type TransactionInput struct {
-	Hash   string
-	Secret string
+	Hash    string
+	Secret  string
+	Address string
+}
+
+// PQAddress is a post-quantum address and its ML-DSA-44 seed, in hex
+type PQAddress struct {
+	Secret  string
+	Address string
 }
 
 // TransactionOutput represents a transaction output
@@ -52,6 +62,13 @@ var (
 	// ErrTooManyInputs is returned when a transaction has more inputs than the
 	// encoding can represent.
 	ErrTooManyInputs = errors.New("transaction has too many inputs")
+
+	// ErrPQIndex is returned for a post-quantum address index outside 0 to 2^32-1.
+	ErrPQIndex = errors.New("post-quantum address index out of range")
+
+	// ErrPQSecretKey is returned when a post-quantum input's secret is not a
+	// 32-byte hex ML-DSA-44 seed.
+	ErrPQSecretKey = errors.New("invalid post-quantum secret key")
 )
 
 // GenerateAddress generates an address from a seed. The seed should be hex-encoded bytes.
@@ -97,6 +114,32 @@ func GenerateAddresses(seed string, num int) ([]Address, error) {
 	return addresses, nil
 }
 
+// GeneratePQAddresses derives num post-quantum addresses from index start, as the
+// node's pq wallets do. The seed should be hex-encoded bytes.
+func GeneratePQAddresses(seed string, start, num int) ([]PQAddress, error) {
+	decodedSeed, err := hex.DecodeString(seed)
+	if err != nil {
+		return nil, err
+	}
+	if start < 0 || num < 0 || uint64(start)+uint64(num) > math.MaxUint32 {
+		return nil, ErrPQIndex
+	}
+
+	addresses := make([]PQAddress, num)
+	for i := range addresses {
+		sk := pqsig.DeriveSecKey(decodedSeed, uint32(start+i)) //nolint:gosec // bounded above
+		pk, err := sk.PubKey()
+		if err != nil {
+			return nil, err
+		}
+		addresses[i] = PQAddress{
+			Secret:  sk.Hex(),
+			Address: cipher.AddressFromPQPubKey(pk).String(),
+		}
+	}
+	return addresses, nil
+}
+
 // PrepareTransaction receives inputs and outputs and returns a signed transaction
 // inputsBody and outputsBody are JSONified arrays of TransactionInput and TransactionOutput, respectively.
 func PrepareTransaction(inputsBody string, outputsBody string) (string, error) {
@@ -121,7 +164,7 @@ func prepareTransaction(inputsBody string, outputsBody string, signatureList []s
 		return "", err
 	}
 
-	d, err := newTransaction.Serialize()
+	d, err := newTransaction.SerializeWithPQ()
 	if err != nil {
 		return "", err
 	}
@@ -147,9 +190,16 @@ func buildTransaction(inputsBody string, outputsBody string, signatureList []str
 	}
 
 	keys := make([]cipher.SecKey, len(inputs))
+	pqKeys := make([]pqsig.SecKey, len(inputs))
 
 	for i, in := range inputs {
-		if len(signatureList) == 0 {
+		if len(signatureList) == 0 && isPQAddress(in.Address) {
+			k, err := hex.DecodeString(in.Secret)
+			if err != nil || len(k) != pqsig.SeedSize {
+				return newTransaction, ErrPQSecretKey
+			}
+			pqKeys[i] = k
+		} else if len(signatureList) == 0 {
 			k, err := cipher.SecKeyFromHex(in.Secret)
 			if err != nil {
 				return newTransaction, err
@@ -199,6 +249,12 @@ func buildTransaction(inputsBody string, outputsBody string, signatureList []str
 		newTransaction.InnerHash = newTransaction.HashInner()
 		newTransaction.Sigs = make([]cipher.Sig, len(keys))
 		for i, key := range keys {
+			if pqKeys[i] != nil {
+				if err := newTransaction.SignPQInput(pqKeys[i], i); err != nil {
+					return newTransaction, err
+				}
+				continue
+			}
 			sig, err := cipher.SignHash(cipher.AddSHA256(newTransaction.InnerHash, newTransaction.In[i]), key)
 			if err != nil {
 				return newTransaction, err
@@ -227,4 +283,13 @@ func buildTransaction(inputsBody string, outputsBody string, signatureList []str
 	}
 
 	return newTransaction, nil
+}
+
+// isPQAddress reports whether s is a post-quantum (version 1) address
+func isPQAddress(s string) bool {
+	if s == "" {
+		return false
+	}
+	a, err := cipher.DecodeBase58Address(s)
+	return err == nil && a.Version == cipher.AddressVersionPQ
 }

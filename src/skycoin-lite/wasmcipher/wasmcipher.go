@@ -16,6 +16,7 @@
 package wasmcipher
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"syscall/js"
@@ -151,6 +152,22 @@ func Register() {
 			"secret":   address.Secret,
 			"public":   address.Public,
 			"address":  address.Address,
+		}, nil
+	}))
+
+	// generatePQAddress derives the post-quantum address at an index of a seed.
+	skycoinCipher.Set("generatePQAddress", arity(2, "generatePQAddress", func(args []js.Value) (interface{}, error) {
+		if args[1].Type() != js.TypeNumber {
+			return nil, errors.New("generatePQAddress: the index must be a number")
+		}
+		addresses, err := liteclient.GeneratePQAddresses(args[0].String(), args[1].Int(), 1)
+		if err != nil {
+			return nil, err
+		}
+
+		return map[string]interface{}{
+			"secret":  addresses[0].Secret,
+			"address": addresses[0].Address,
 		}, nil
 	}))
 

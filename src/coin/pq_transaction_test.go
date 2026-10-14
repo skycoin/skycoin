@@ -133,3 +133,10 @@ func TestPQWitnessDecodeLimits(t *testing.T) {
 	_, _, err = DecodePQWitness([]byte{1, 0})
 	require.Equal(t, ErrPQWitnessMalformed, err)
 }
+
+func TestPQWitnessSize(t *testing.T) {
+	txn, _, secpSk, pqSk := pqTestTxn(t)
+	require.Equal(t, 0, PQWitnessSize(len(txn.In), 0))
+	signPQTestTxn(t, &txn, secpSk, pqSk)
+	require.Equal(t, len(EncodePQWitness(txn.PQ)), PQWitnessSize(len(txn.In), 1))
+}

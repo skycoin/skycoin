@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A `pq` wallet type. It derives ML-DSA-44 keys from its seed and holds version
   1 addresses, and it can be encrypted, recovered and used to send coins like a
   deterministic wallet. `skycoin cli walletCreate -t pq` creates one.
+  A send that needs more post-quantum inputs than fit the transaction size
+  limit fails at once and says so.
 
 ### Changed
 

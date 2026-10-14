@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -224,4 +225,34 @@ func TestSignTransaction(t *testing.T) {
 	require.Equal(t, coin.TxnTypePQ, full.Type)
 	require.NoError(t, full.Verify())
 	require.NoError(t, full.VerifyInputSignatures(uxs))
+}
+
+func TestCreateTransactionTooLarge(t *testing.T) {
+	w := newTestWallet(t, 1)
+	e, err := w.GetEntryAt(0)
+	require.NoError(t, err)
+	addr := e.SkycoinAddress()
+
+	var uxs coin.UxArray
+	for i := 0; i < 12; i++ {
+		uxs = append(uxs, pqUxOut(t, addr, 1e6))
+	}
+	spend := func(coins uint64) transaction.Params {
+		return transaction.Params{
+			HoursSelection: transaction.HoursSelection{Type: transaction.HoursSelectionTypeManual},
+			To:             []coin.TransactionOutput{{Address: testutil.MakeAddress(), Coins: coins, Hours: 1}},
+			ChangeAddress:  &addr,
+		}
+	}
+
+	// Twelve 3.7 KB witnesses do not fit the default 32 KiB limit
+	_, _, err = wallet.CreateTransactionSigned(w, spend(11e6), coin.NewAddressUxOuts(uxs), 200)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "post-quantum inputs")
+
+	txn, _, err := wallet.CreateTransactionSigned(w, spend(3e6), coin.NewAddressUxOuts(uxs), 200)
+	require.NoError(t, err)
+	size, err := txn.SizeWithPQ()
+	require.NoError(t, err)
+	require.LessOrEqual(t, size, params.UserVerifyTxn.MaxTransactionSize)
 }

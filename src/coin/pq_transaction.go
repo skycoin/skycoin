@@ -115,6 +115,15 @@ func (txn *Transaction) SignPQInput(sk pqsig.SecKey, index int) error {
 	return nil
 }
 
+// PQWitnessSize is the encoded size of the witness of a transaction with inputs
+// inputs, pqInputs of them signed with ML-DSA-44. It is 0 when pqInputs is 0.
+func PQWitnessSize(inputs, pqInputs int) int {
+	if pqInputs == 0 {
+		return 0
+	}
+	return 4 + 8*inputs + pqInputs*(pqsig.PubKeySize+pqsig.SigSize)
+}
+
 // EncodePQWitness encodes a PQ witness: a count, then each input's public key and
 // signature, each length prefixed.
 func EncodePQWitness(pq []PQInputSig) []byte {

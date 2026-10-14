@@ -1001,6 +1001,11 @@ func NewTransaction(utxos []transaction.UxBalance, entries []wallet.Entry, outs 
 		}
 	}
 
+	txn.Sigs = make([]cipher.Sig, len(txn.In))
+	if err := wallet.CheckSignedSize(&txn, utxos, params.UserVerifyTxn.MaxTransactionSize); err != nil {
+		return nil, err
+	}
+
 	txn.InnerHash = txn.HashInner()
 	for i, e := range entries {
 		if err := wallet.SignInput(&txn, e, i); err != nil {

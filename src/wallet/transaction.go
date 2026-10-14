@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/transaction"
 )
 
@@ -226,7 +227,37 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 		return nil, nil, err
 	}
 
-	return transaction.Create(p, auxs, headTime)
+	txn, uxb, err := transaction.Create(p, auxs, headTime)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := CheckSignedSize(txn, uxb, params.UserVerifyTxn.MaxTransactionSize); err != nil {
+		return nil, nil, err
+	}
+	return txn, uxb, nil
+}
+
+// CheckSignedSize fails early when the signed transaction would be over the size
+// limit. Each post-quantum input adds about 3.7 KB of witness once signed.
+func CheckSignedSize(txn *coin.Transaction, uxb []transaction.UxBalance, limit uint32) error {
+	var nPQ int
+	for _, u := range uxb {
+		if u.Address.Version == cipher.AddressVersionPQ {
+			nPQ++
+		}
+	}
+	if nPQ == 0 {
+		return nil
+	}
+	size, err := txn.Size()
+	if err != nil {
+		return err
+	}
+	total := uint64(size) + uint64(coin.PQWitnessSize(len(txn.In), nPQ)) //nolint:gosec // sizes are non-negative
+	if total > uint64(limit) {
+		return NewError(fmt.Errorf("the transaction needs %d post-quantum inputs and would be %d bytes signed, over the %d byte limit. Send a smaller amount, or first send coins between your own addresses to merge outputs", nPQ, total, limit))
+	}
+	return nil
 }
 
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.

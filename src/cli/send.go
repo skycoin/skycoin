@@ -56,7 +56,7 @@ func sendCmd() *cobra.Command {
 
 	sendCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
 	sendCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
-Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+Defaults to a new address added to the wallet (an input address for collection wallets).`)
 	sendCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
 	sendCmd.Flags().StringP("password", "p", "", "Wallet password")

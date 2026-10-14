@@ -106,6 +106,25 @@ func MustDecodeBase58Address(addr string) Address {
 	return a
 }
 
+// Address versions. A version 0 address hashes a secp256k1 public key, a version 1
+// address an ML-DSA-44 public key.
+const (
+	AddressVersionSecp256k1 byte = 0
+	AddressVersionPQ        byte = 1
+)
+
+// pqAddressTag keeps a post-quantum address hash apart from any other SHA-256 use.
+const pqAddressTag = "skycoin pq address"
+
+// AddressFromPQPubKey returns the post-quantum address of an ML-DSA-44 public key,
+// the first 20 bytes of SHA-256 over pqAddressTag and the key.
+func AddressFromPQPubKey(pk []byte) Address {
+	h := SumSHA256(append([]byte(pqAddressTag), pk...))
+	a := Address{Version: AddressVersionPQ}
+	copy(a.Key[:], h[:len(a.Key)])
+	return a
+}
+
 // AddressFromBytes converts []byte to an Address
 func AddressFromBytes(b []byte) (Address, error) {
 	if len(b) != 20+1+4 {
@@ -123,7 +142,7 @@ func AddressFromBytes(b []byte) (Address, error) {
 		return Address{}, ErrAddressInvalidChecksum
 	}
 
-	if a.Version != 0 {
+	if a.Version != AddressVersionSecp256k1 && a.Version != AddressVersionPQ {
 		return Address{}, ErrAddressInvalidVersion
 	}
 

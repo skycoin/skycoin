@@ -184,7 +184,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if encoded {
-			txnHex, err := txn.Transaction.SerializeHex()
+			txnHex, err := txn.Transaction.SerializeHexWithPQ()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -559,7 +559,7 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := coin.DeserializeTransactionHex(v.RawTxn)
+		txn, err := coin.DeserializeTransactionHexWithPQ(v.RawTxn)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -683,7 +683,7 @@ func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txnHex, err := txn.Transaction.SerializeHex()
+		txnHex, err := txn.Transaction.SerializeHexWithPQ()
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
@@ -797,7 +797,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 		return nil, err
 	}
 
-	txn, err = coin.DeserializeTransaction(b)
+	txn, err = coin.DeserializeTransactionWithPQ(b)
 	if err != nil {
 		return nil, err
 	}

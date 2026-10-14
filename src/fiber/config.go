@@ -35,6 +35,9 @@ type NodeConfig struct {
 	BlockchainPQSeckeyStr string `mapstructure:"blockchain_pq_seckey_str"`
 	// PQForkSeq is the first block that needs a post-quantum signature
 	PQForkSeq uint64 `mapstructure:"pq_fork_seq"`
+	// PQAddressForkSeq is the first block that may hold post-quantum (version 1)
+	// addresses and their spends. Zero means never.
+	PQAddressForkSeq uint64 `mapstructure:"pq_address_fork_seq"`
 	// GenesisTimestamp is the genesis block creation unix timestamp
 	GenesisTimestamp uint64 `mapstructure:"genesis_timestamp"`
 	// GenesisCoinVolume is the total number of coins in genesis block

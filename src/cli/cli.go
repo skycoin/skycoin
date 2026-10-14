@@ -209,6 +209,8 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		listWalletsCmd(),
 		sendCmd(),
 		pqKeyGenCmd(),
+		pqAddressGenCmd(),
+		pqSendCmd(),
 		showConfigCmd(),
 		showSeedCmd(),
 		statusCmd(),

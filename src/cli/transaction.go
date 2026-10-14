@@ -62,7 +62,7 @@ func decodeRawTxnCmd() *cobra.Command {
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			txn, err := coin.DeserializeTransactionHex(args[0])
+			txn, err := coin.DeserializeTransactionHexWithPQ(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
@@ -355,7 +355,7 @@ func signTxnCmd() *cobra.Command {
 			rawTxn := args[1]
 
 			// Decode the raw transaction to see if the transaction already signed
-			txn, err := coin.DeserializeTransactionHex(rawTxn)
+			txn, err := coin.DeserializeTransactionHexWithPQ(rawTxn)
 			if err != nil {
 				return err
 			}

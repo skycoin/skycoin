@@ -38,6 +38,7 @@ type HealthResponse struct {
 	// An empty key means blocks need only the secp256k1 signature.
 	BlockchainPQPubkey   string               `json:"blockchain_pq_pubkey,omitempty"`
 	PQForkSeq            uint64               `json:"pq_fork_seq,omitempty"`
+	PQAddressForkSeq     uint64               `json:"pq_address_fork_seq,omitempty"`
 	UserVerifyTxn        readable.VerifyTxn   `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn readable.VerifyTxn   `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64                `json:"started_at"`
@@ -97,6 +98,7 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		BlockchainPubkey:     c.health.BlockchainPubkey.Hex(),
 		BlockchainPQPubkey:   c.health.PQBlocks.Pubkey.Hex(),
 		PQForkSeq:            c.health.PQBlocks.ForkSeq,
+		PQAddressForkSeq:     c.health.PQAddressForkSeq,
 		WalletAPIEnabled:     walletAPIEnabled,
 		UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 		UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),

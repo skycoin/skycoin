@@ -104,6 +104,8 @@ type HealthConfig struct {
 	BlockchainPubkey cipher.PubKey
 	// PQBlocks is the post-quantum block signature rule this node enforces
 	PQBlocks coin.PQBlockRule
+	// PQAddressForkSeq is the first block that may hold post-quantum addresses
+	PQAddressForkSeq uint64
 }
 
 type muxConfig struct {

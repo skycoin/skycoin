@@ -384,6 +384,7 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.BlockchainSeckey = c.config.Node.blockchainSeckey
 	vc.PQBlocks = coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq}
 	vc.BlockchainPQSeckey = c.config.Node.blockchainPQSeckey
+	vc.PQAddressForkSeq = c.config.Node.PQAddressForkSeq
 
 	vc.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 	vc.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
@@ -504,6 +505,7 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 			BlockPublisher:   c.config.Node.RunBlockPublisher,
 			BlockchainPubkey: c.config.Node.blockchainPubkey,
 			PQBlocks:         coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq},
+			PQAddressForkSeq: c.config.Node.PQAddressForkSeq,
 		},
 		Username:     c.config.Node.WebInterfaceUsername,
 		Password:     c.config.Node.WebInterfacePassword,

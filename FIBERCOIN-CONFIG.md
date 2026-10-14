@@ -72,6 +72,7 @@ All fiber coin parameters can now be configured via flags:
 - `--blockchain-pq-public-key` - Post-quantum (ML-DSA-44) blockchain public key
 - `--blockchain-pq-secret-key` - Post-quantum blockchain secret key (for block publishers)
 - `--pq-fork-seq` - First block that needs a post-quantum signature
+- `--pq-address-fork-seq` - First block that may hold post-quantum addresses and their spends
 
 ### Post-quantum block signatures
 
@@ -85,6 +86,21 @@ not change. Nodes that understand it announce protocol version 3 and pass the
 signatures to each other ahead of the blocks. Older nodes still verify only the
 secp256k1 signature and keep following the chain, without the post-quantum
 protection. A new fibercoin can set `pq_fork_seq = 1` to sign every block from the start.
+
+### Post-quantum addresses
+
+From `pq_address_fork_seq`, coins can be sent to post-quantum addresses. A
+post-quantum address is version 1 and holds the first 20 bytes of SHA-256 over an
+ML-DSA-44 public key, so it has the same size as a secp256k1 address. Spending
+from one takes a transaction of type 1, which carries each input's ML-DSA-44 key
+and signature as a witness beside the transaction. The witness is not part of the
+transaction ID, and nodes on protocol version 4 pass it to each other ahead of
+the transactions and blocks that need it.
+
+This is a hard fork: older nodes reject type 1 transactions and stop at the first
+block that holds one. `skycoin cli pqAddressGen` derives post-quantum addresses
+from a seed, and `skycoin cli pqSend` spends from one. Reusing a post-quantum
+address is safe, because its public key does not give away its secret key.
 
 ## Example: Creating a Test Coin
 

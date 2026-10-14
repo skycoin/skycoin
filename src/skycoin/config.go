@@ -206,6 +206,7 @@ type NodeConfig struct {
 	BlockchainPQPubkeyStr string
 	BlockchainPQSeckeyStr string
 	PQForkSeq             uint64
+	PQAddressForkSeq      uint64
 	GenesisTimestamp      uint64
 	GenesisCoinVolume     uint64
 	DefaultConnections    []string
@@ -246,6 +247,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		BlockchainPQPubkeyStr: node.BlockchainPQPubkeyStr,
 		BlockchainPQSeckeyStr: node.BlockchainPQSeckeyStr,
 		PQForkSeq:             node.PQForkSeq,
+		PQAddressForkSeq:      node.PQAddressForkSeq,
 		DefaultConnections:    node.DefaultConnections,
 		// Disable peer exchange
 		DisablePEX: false,
@@ -771,6 +773,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&c.BlockchainPQPubkeyStr, "blockchain-pq-public-key", c.BlockchainPQPubkeyStr, "post-quantum (ML-DSA-44) public key of the blockchain")
 	cmd.Flags().StringVar(&c.BlockchainPQSeckeyStr, "blockchain-pq-secret-key", c.BlockchainPQSeckeyStr, "post-quantum (ML-DSA-44) secret key of the blockchain")
 	cmd.Flags().Uint64Var(&c.PQForkSeq, "pq-fork-seq", c.PQForkSeq, "first block that needs a post-quantum signature")
+	cmd.Flags().Uint64Var(&c.PQAddressForkSeq, "pq-address-fork-seq", c.PQAddressForkSeq, "first block that may hold post-quantum addresses and their spends")
 
 	cmd.Flags().StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
 	cmd.Flags().StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
@@ -939,6 +942,7 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	c.BlockchainPQPubkeyStr = node.BlockchainPQPubkeyStr
 	c.BlockchainPQSeckeyStr = node.BlockchainPQSeckeyStr
 	c.PQForkSeq = node.PQForkSeq
+	c.PQAddressForkSeq = node.PQAddressForkSeq
 	c.GenesisTimestamp = node.GenesisTimestamp
 	c.GenesisCoinVolume = node.GenesisCoinVolume
 	c.DefaultConnections = node.DefaultConnections

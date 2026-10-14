@@ -35,7 +35,7 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs []visor.Transact
 		return nil, err
 	}
 
-	txnHex, err := txn.SerializeHex()
+	txnHex, err := txn.SerializeHexWithPQ()
 	if err != nil {
 		return nil, err
 	}

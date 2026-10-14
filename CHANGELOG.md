@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the signatures to each other ahead of the blocks, and older peers keep
   following the chain on the secp256k1 signature alone. `skycoin cli pqKeyGen`
   makes the key pair, and `/health` reports the rule. Off by default.
+- Post-quantum addresses. From `pq_address_fork_seq`, coins can go to version 1
+  addresses, which hash an ML-DSA-44 public key, and type 1 transactions spend
+  them with a witness carried beside the transaction. Peers on protocol version
+  4 pass the witnesses to each other. Older nodes stop at the first block with a
+  type 1 transaction. `skycoin cli pqAddressGen` and `skycoin cli pqSend` make
+  and spend these addresses. Off by default.
 
 ### Changed
 

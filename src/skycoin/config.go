@@ -23,6 +23,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -198,13 +199,16 @@ type NodeConfig struct {
 	LogToFile  bool
 	Version    bool // show node version
 
-	GenesisSignatureStr string
-	GenesisAddressStr   string
-	BlockchainPubkeyStr string
-	BlockchainSeckeyStr string
-	GenesisTimestamp    uint64
-	GenesisCoinVolume   uint64
-	DefaultConnections  []string
+	GenesisSignatureStr   string
+	GenesisAddressStr     string
+	BlockchainPubkeyStr   string
+	BlockchainSeckeyStr   string
+	BlockchainPQPubkeyStr string
+	BlockchainPQSeckeyStr string
+	PQForkSeq             uint64
+	GenesisTimestamp      uint64
+	GenesisCoinVolume     uint64
+	DefaultConnections    []string
 
 	genesisSignature cipher.Sig
 	genesisAddress   cipher.Address
@@ -212,6 +216,9 @@ type NodeConfig struct {
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
+
+	blockchainPQPubkey pqsig.PubKey
+	blockchainPQSeckey pqsig.SecKey
 
 	Fiber readable.FiberConfig
 
@@ -229,14 +236,17 @@ type NodeConfig struct {
 // NewNodeConfig returns a new node config instance
 func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 	nodeConfig := NodeConfig{
-		CoinName:            node.CoinName,
-		GenesisSignatureStr: node.GenesisSignatureStr,
-		GenesisAddressStr:   node.GenesisAddressStr,
-		GenesisCoinVolume:   node.GenesisCoinVolume,
-		GenesisTimestamp:    node.GenesisTimestamp,
-		BlockchainPubkeyStr: node.BlockchainPubkeyStr,
-		BlockchainSeckeyStr: node.BlockchainSeckeyStr,
-		DefaultConnections:  node.DefaultConnections,
+		CoinName:              node.CoinName,
+		GenesisSignatureStr:   node.GenesisSignatureStr,
+		GenesisAddressStr:     node.GenesisAddressStr,
+		GenesisCoinVolume:     node.GenesisCoinVolume,
+		GenesisTimestamp:      node.GenesisTimestamp,
+		BlockchainPubkeyStr:   node.BlockchainPubkeyStr,
+		BlockchainSeckeyStr:   node.BlockchainSeckeyStr,
+		BlockchainPQPubkeyStr: node.BlockchainPQPubkeyStr,
+		BlockchainPQSeckeyStr: node.BlockchainPQSeckeyStr,
+		PQForkSeq:             node.PQForkSeq,
+		DefaultConnections:    node.DefaultConnections,
 		// Disable peer exchange
 		DisablePEX: false,
 		// Don't make any outgoing connections
@@ -414,6 +424,15 @@ func (c *Config) parseBlockchainKeys() {
 		c.Node.blockchainSeckey, err = cipher.SecKeyFromHex(c.Node.BlockchainSeckeyStr)
 		panicIfError(err, "Invalid Seckey")
 		c.Node.BlockchainSeckeyStr = ""
+	}
+	if c.Node.BlockchainPQPubkeyStr != "" {
+		c.Node.blockchainPQPubkey, err = pqsig.PubKeyFromHex(c.Node.BlockchainPQPubkeyStr)
+		panicIfError(err, "Invalid post-quantum pubkey")
+	}
+	if c.Node.BlockchainPQSeckeyStr != "" {
+		c.Node.blockchainPQSeckey, err = pqsig.SecKeyFromHex(c.Node.BlockchainPQSeckeyStr)
+		panicIfError(err, "Invalid post-quantum seckey")
+		c.Node.BlockchainPQSeckeyStr = ""
 	}
 }
 
@@ -749,6 +768,9 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	cmd.Flags().StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
 	cmd.Flags().StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
+	cmd.Flags().StringVar(&c.BlockchainPQPubkeyStr, "blockchain-pq-public-key", c.BlockchainPQPubkeyStr, "post-quantum (ML-DSA-44) public key of the blockchain")
+	cmd.Flags().StringVar(&c.BlockchainPQSeckeyStr, "blockchain-pq-secret-key", c.BlockchainPQSeckeyStr, "post-quantum (ML-DSA-44) secret key of the blockchain")
+	cmd.Flags().Uint64Var(&c.PQForkSeq, "pq-fork-seq", c.PQForkSeq, "first block that needs a post-quantum signature")
 
 	cmd.Flags().StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
 	cmd.Flags().StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
@@ -914,6 +936,9 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	c.GenesisAddressStr = node.GenesisAddressStr
 	c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
 	c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
+	c.BlockchainPQPubkeyStr = node.BlockchainPQPubkeyStr
+	c.BlockchainPQSeckeyStr = node.BlockchainPQSeckeyStr
+	c.PQForkSeq = node.PQForkSeq
 	c.GenesisTimestamp = node.GenesisTimestamp
 	c.GenesisCoinVolume = node.GenesisCoinVolume
 	c.DefaultConnections = node.DefaultConnections

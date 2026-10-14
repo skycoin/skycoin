@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Post-quantum block signatures. With `blockchain_pq_pubkey_str` and
+  `pq_fork_seq` set, every block from that height must also carry an ML-DSA-44
+  signature by the post-quantum publisher key. Peers on protocol version 3 pass
+  the signatures to each other ahead of the blocks, and older peers keep
+  following the chain on the secp256k1 signature alone. `skycoin cli pqKeyGen`
+  makes the key pair, and `/health` reports the rule. Off by default.
+
+### Changed
+
+- The module needs Go 1.27, for `crypto/mldsa`.
+
 ## 0.28.6
 
 ### Added

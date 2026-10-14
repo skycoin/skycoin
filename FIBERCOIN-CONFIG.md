@@ -69,6 +69,22 @@ All fiber coin parameters can now be configured via flags:
 - `--genesis-timestamp` - Genesis timestamp
 - `--blockchain-public-key` - Blockchain public key
 - `--blockchain-secret-key` - Blockchain secret key (for block publishers)
+- `--blockchain-pq-public-key` - Post-quantum (ML-DSA-44) blockchain public key
+- `--blockchain-pq-secret-key` - Post-quantum blockchain secret key (for block publishers)
+- `--pq-fork-seq` - First block that needs a post-quantum signature
+
+### Post-quantum block signatures
+
+With `blockchain_pq_pubkey_str` set, every block from `pq_fork_seq` must carry an
+ML-DSA-44 (FIPS 204) signature by that key as well as the secp256k1 one. The
+genesis block never needs one. `skycoin cli pqKeyGen` makes the key pair, and the
+block publisher runs with `--blockchain-pq-secret-key`.
+
+The signature is stored and sent apart from the block, so the block encoding does
+not change. Nodes that understand it announce protocol version 3 and pass the
+signatures to each other ahead of the blocks. Older nodes still verify only the
+secp256k1 signature and keep following the chain, without the post-quantum
+protection. A new fibercoin can set `pq_fork_seq = 1` to sign every block from the start.
 
 ## Example: Creating a Test Coin
 

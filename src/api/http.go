@@ -22,6 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/gui"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -101,6 +102,8 @@ type HealthConfig struct {
 	// consumer (e.g. a skywire visor advertising this node in service discovery)
 	// can identify the chain by key rather than by the spoofable coin name.
 	BlockchainPubkey cipher.PubKey
+	// PQBlocks is the post-quantum block signature rule this node enforces
+	PQBlocks coin.PQBlockRule
 }
 
 type muxConfig struct {

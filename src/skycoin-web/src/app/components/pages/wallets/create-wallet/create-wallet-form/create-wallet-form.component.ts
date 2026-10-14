@@ -123,7 +123,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
    * (HD, multicoin-capable) whenever it is actually honored — Bitcoin (always,
    * segwit/bech32) and any server-managed coin (the node derives real bip44
    * accounts + xpub) — otherwise deterministic, for a pure client-side non-BTC
-   * coin whose in-browser create path only ever produces deterministic wallets.
+   * coin whose in-browser create path makes deterministic or pq wallets only.
    */
   private defaultTypeForCoin(coin: BaseCoin): string {
     if (!coin) {

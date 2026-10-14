@@ -4,7 +4,7 @@ import { mergeMap, map, filter, first, catchError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
-import { CipherProvider, GenerateAddressResponse } from '../cipher.provider';
+import { CipherProvider, GenerateAddressResponse, pqSeedState } from '../cipher.provider';
 import { Address, Wallet } from '../../app.datatypes';
 import { convertAsciiToHexa } from '../../utils/converters';
 import { defaultCoinId } from '../../constants/coins-id.const';
@@ -122,7 +122,9 @@ export class WalletService {
       return this.createServerWallet(label, seed, coinId, save, walletType, seedPassphrase, segwit);
     }
 
-    return this.cipherProvider.generateAddress(convertAsciiToHexa(seed)).pipe(
+    const isPQ = walletType === 'pq';
+
+    return this.cipherProvider.generateAddress(this.initialSeedState(seed, isPQ ? 'pq' : 'deterministic')).pipe(
       map((response: GenerateAddressResponse) => {
         const wallet: Wallet = {
           label: label,
@@ -133,7 +135,7 @@ export class WalletService {
           addresses: [response.address],
           nextSeed: response.nextSeed,
           coinId: coinId,
-          walletType: 'deterministic',
+          walletType: isPQ ? 'pq' : 'deterministic',
         };
 
         if ((this.wallets.value || []).some((wlt: Wallet) =>
@@ -229,7 +231,7 @@ export class WalletService {
 
   unlockWallet(wallet: Wallet, seed: string, onProgressChanged: EventEmitter<number>): Observable<void> {
     seed = this.getCleanSeed(seed);
-    const currentSeed = convertAsciiToHexa(seed);
+    const currentSeed = this.initialSeedState(seed, wallet.walletType);
 
     return this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).pipe(
       map((res: boolean) => {
@@ -275,7 +277,7 @@ export class WalletService {
 
       Promise.all(decryptPromises).then(([seed, nextSeed]) => {
         const cleanSeed = this.getCleanSeed(seed!);
-        const currentSeed = convertAsciiToHexa(cleanSeed);
+        const currentSeed = this.initialSeedState(cleanSeed, wallet.walletType);
 
         this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).subscribe(
           (res: boolean) => {
@@ -467,6 +469,12 @@ export class WalletService {
 
   private getCleanSeed(seed: string): string {
     return seed.replace(/(\n|\r\n)$/, '');
+  }
+
+  /** The state the first address of a wallet with this seed is derived from. */
+  private initialSeedState(seed: string, walletType?: string): string {
+    const seedHex = convertAsciiToHexa(seed);
+    return walletType === 'pq' ? pqSeedState(seedHex, 0) : seedHex;
   }
 
   private checkWalletAddresses(wallet: Wallet, lastIndexWithTxs: number, onProgressChanged: EventEmitter<ScanProgressData>, nextSeed: string): Observable<number> {

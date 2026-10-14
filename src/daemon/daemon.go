@@ -232,7 +232,7 @@ type DaemonConfig struct { //nolint:revive
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		ProtocolVersion:              2,
+		ProtocolVersion:              pqSigsProtocolVersion,
 		MinProtocolVersion:           2,
 		Address:                      "",
 		Port:                         6677,
@@ -289,6 +289,9 @@ type daemoner interface {
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
 	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error)
 	sendRandomPeers(addr string) error
+	addPQSigs(sigs []BlockPQSig)
+	pqSigFor(hash cipher.SHA256) []byte
+	sendPQSigs(addr string, blocks []coin.SignedBlock) error
 }
 
 // Daemon stateful properties of the daemon
@@ -304,6 +307,8 @@ type Daemon struct {
 
 	// Cache of announced transactions that are flushed to the database periodically
 	announcedTxns *announcedTxnsCache
+	// Post-quantum block signatures received ahead of their blocks
+	pqSigs *pqSigCache
 	// Cache of connection metadata
 	connections *Connections
 	// connect, disconnect, message, error events channel
@@ -336,6 +341,7 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 		visor:    v,
 
 		announcedTxns: newAnnouncedTxnsCache(),
+		pqSigs:        newPQSigCache(),
 		connections:   NewConnections(),
 		events:        make(chan interface{}, config.Pool.EventChannelSize),
 		quit:          make(chan struct{}),
@@ -1345,6 +1351,10 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.config.MaxOutgoingMessageLength)
 	if len(m.Blocks) != 1 {
 		logger.Critical().Error("NewGiveBlocksMessage truncated its only block")
+	}
+
+	if err := dm.broadcastPQSigs(m.Blocks); err != nil {
+		logger.WithError(err).Error("broadcast GivePQSigsMessage failed")
 	}
 
 	_, err := dm.broadcastMessage(m)

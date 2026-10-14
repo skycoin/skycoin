@@ -97,6 +97,8 @@ type Transaction struct {
 	Sigs []string            `json:"sigs"`
 	In   []string            `json:"inputs"`
 	Out  []TransactionOutput `json:"outputs"`
+	// PQ is the witness of a type 1 transaction
+	PQ []PQInputSig `json:"pq,omitempty"`
 }
 
 // NewTransaction creates a readable transaction
@@ -144,6 +146,7 @@ func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) 
 		Sigs: sigs,
 		In:   in,
 		Out:  out,
+		PQ:   NewPQInputSigs(txn.PQ),
 	}, nil
 }
 

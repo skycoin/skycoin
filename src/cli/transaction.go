@@ -129,7 +129,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rawTxn, err := txn.SerializeHex()
+			rawTxn, err := txn.SerializeHexWithPQ()
 			if err != nil {
 				return err
 			}
@@ -174,6 +174,7 @@ func readableToCreatedTransaction(rTxn *readable.Transaction) *api.CreatedTransa
 		Sigs:      rTxn.Sigs[:],
 		In:        inputs,
 		Out:       outputs,
+		PQ:        rTxn.PQ,
 	}
 	return &cTxn
 }

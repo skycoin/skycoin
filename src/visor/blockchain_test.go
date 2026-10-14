@@ -107,6 +107,10 @@ func (fcs *fakeChainStore) AddBlock(_ *dbutil.Tx, _ *coin.SignedBlock) error {
 	return nil
 }
 
+func (fcs *fakeChainStore) GetBlockPQ(_ *dbutil.Tx, _ *coin.Block) ([]byte, error) {
+	return nil, nil
+}
+
 func (fcs *fakeChainStore) GetBlockSignature(_ *dbutil.Tx, _ *coin.Block) (cipher.Sig, bool, error) {
 	return cipher.Sig{}, false, nil
 }

@@ -74,6 +74,7 @@ type chainStore interface {
 	UnspentPool() blockdb.UnspentPooler
 	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
+	GetBlockPQ(*dbutil.Tx, *coin.Block) ([]byte, error)
 	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
 }
 
@@ -789,8 +790,14 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 					return blockdb.NewErrMissingSignature(block)
 				}
 
+				pqSig, err := bc.store.GetBlockPQ(tx, block)
+				if err != nil {
+					return err
+				}
+
 				signedBlock := &coin.SignedBlock{
 					Sig:   sig,
+					PQSig: pqSig,
 					Block: *block,
 				}
 

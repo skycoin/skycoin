@@ -71,3 +71,20 @@ func (tw *txnPQWitnesses) load(tx *dbutil.Tx, b *coin.Block) error {
 	}
 	return nil
 }
+
+// GetBlockPQ returns the post-quantum signature of b, nil if it has none, and puts
+// the stored PQ witnesses back onto its transactions.
+func (bc *Blockchain) GetBlockPQ(tx *dbutil.Tx, b *coin.Block) ([]byte, error) {
+	// A database from before the post-quantum fork code has no bucket yet.
+	var sig []byte
+	if dbutil.Exists(tx, BlockPQSigsBkt) {
+		var err error
+		if sig, err = bc.pqSigs.Get(tx, b.HashHeader()); err != nil {
+			return nil, err
+		}
+	}
+	if err := bc.pqWits.load(tx, b); err != nil {
+		return nil, err
+	}
+	return sig, nil
+}

@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -30,7 +32,7 @@ func wrapDB(db *bbolt.DB) *dbutil.DB {
 }
 
 func checkDBCmd() *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Short: "Verify the database",
 		Use:   "checkdb [db path]",
 		Long: `Checks if the given database file contains valid skycoin blockchain data.
@@ -40,9 +42,12 @@ func checkDBCmd() *cobra.Command {
 		SilenceUsage:          true,
 		RunE:                  checkDB,
 	}
+	c.Flags().String("pq-pubkey", "", "post-quantum (ML-DSA-44) block publisher public key, in hex")
+	c.Flags().Uint64("pq-fork-seq", 0, "first block that needs a post-quantum signature")
+	return c
 }
 
-func checkDB(_ *cobra.Command, args []string) error {
+func checkDB(c *cobra.Command, args []string) error {
 	// get db path
 	dbPath := ""
 	if len(args) > 0 {
@@ -71,11 +76,25 @@ func checkDB(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
+	var pq coin.PQBlockRule
+	pqPubkey, err := c.Flags().GetString("pq-pubkey")
+	if err != nil {
+		return err
+	}
+	if pqPubkey != "" {
+		if pq.Pubkey, err = pqsig.PubKeyFromHex(pqPubkey); err != nil {
+			return fmt.Errorf("decode post-quantum pubkey failed: %v", err)
+		}
+		if pq.ForkSeq, err = c.Flags().GetUint64("pq-fork-seq"); err != nil {
+			return err
+		}
+	}
+
 	go func() {
 		apputil.CatchInterrupt(quitChan)
 	}()
 
-	if err := visor.CheckDatabase(wrapDB(db), pubkey, quitChan); err != nil {
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, pq, quitChan); err != nil {
 		if err == visor.ErrVerifyStopped {
 			return nil
 		}

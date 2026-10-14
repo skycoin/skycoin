@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -107,6 +108,30 @@ func TestVisorPQBlocks(t *testing.T) {
 	// A follower whose fork height is later takes the block without one.
 	later := newPQTestVisor(t, coin.PQBlockRule{Pubkey: pqPubkey, ForkSeq: 2}, nil)
 	require.NoError(t, execute(later, missing))
+
+	// The startup check verifies stored post-quantum signatures too.
+	require.NoError(t, CheckDatabase(pub.db, genPublic, rule, nil))
+	otherSeckey, err := pqsig.NewSecKey()
+	require.NoError(t, err)
+	otherPubkey, err := otherSeckey.PubKey()
+	require.NoError(t, err)
+	require.Equal(t, pqsig.ErrInvalidSig, CheckDatabase(pub.db, genPublic, coin.PQBlockRule{Pubkey: otherPubkey, ForkSeq: 1}, nil))
+
+	hash := sb.HashHeader()
+	setPQSig := func(sig []byte) {
+		require.NoError(t, pub.db.Update("", func(tx *dbutil.Tx) error {
+			if sig == nil {
+				return dbutil.Delete(tx, blockdb.BlockPQSigsBkt, hash[:])
+			}
+			return dbutil.PutBucketValue(tx, blockdb.BlockPQSigsBkt, hash[:], sig)
+		}))
+	}
+	setPQSig(bad.PQSig)
+	require.Equal(t, pqsig.ErrInvalidSig, CheckDatabase(pub.db, genPublic, rule, nil))
+	setPQSig(nil)
+	require.Equal(t, pqsig.ErrMissingSig, CheckDatabase(pub.db, genPublic, rule, nil))
+	setPQSig(sb.PQSig)
+	require.NoError(t, CheckDatabase(pub.db, genPublic, rule, nil))
 }
 
 func TestConfigVerifyPQ(t *testing.T) {

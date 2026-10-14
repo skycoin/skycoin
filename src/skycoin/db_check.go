@@ -6,6 +6,7 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -41,12 +42,13 @@ type dbCheckCorruptResetter interface {
 
 type dbVerify struct {
 	blockchainPubkey cipher.PubKey
+	pqBlocks         coin.PQBlockRule
 	logger           *logging.Logger
 	quit             chan struct{}
 }
 
 func (dv dbVerify) CheckDatabase(db *dbutil.DB) error {
-	if err := visor.CheckDatabase(db, dv.blockchainPubkey, dv.quit); err != nil {
+	if err := visor.CheckDatabase(db, dv.blockchainPubkey, dv.pqBlocks, dv.quit); err != nil {
 		if err != visor.ErrVerifyStopped {
 			dv.logger.WithError(err).Error("visor.CheckDatabase failed")
 		}
@@ -57,7 +59,7 @@ func (dv dbVerify) CheckDatabase(db *dbutil.DB) error {
 
 func (dv *dbVerify) ResetCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 	dv.logger.Info("Checking database and resetting if corrupted")
-	newDB, err := visor.ResetCorruptDB(db, dv.blockchainPubkey, dv.quit)
+	newDB, err := visor.ResetCorruptDB(db, dv.blockchainPubkey, dv.pqBlocks, dv.quit)
 	if err != nil {
 		if err != visor.ErrVerifyStopped {
 			dv.logger.WithError(err).Error("visor.ResetCorruptDB failed")

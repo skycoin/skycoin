@@ -180,6 +180,7 @@ func (c *Coin) Run() error {
 
 	dv := dbVerify{
 		blockchainPubkey: c.config.Node.blockchainPubkey,
+		pqBlocks:         coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq},
 		logger:           c.logger,
 		quit:             quit,
 	}

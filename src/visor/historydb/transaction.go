@@ -19,11 +19,27 @@ import (
 type Transaction struct {
 	Txn      coin.Transaction
 	BlockSeq uint64
+	// PQWitness stores Txn.PQ, which the transaction encoding leaves out
+	PQWitness []byte `enc:",omitempty"`
 }
 
 // Hash return the Txn hash.
 func (txn *Transaction) Hash() cipher.SHA256 {
 	return txn.Txn.Hash()
+}
+
+// loadPQ moves a stored post-quantum witness back onto the transaction.
+func (txn *Transaction) loadPQ() error {
+	if len(txn.PQWitness) == 0 {
+		return nil
+	}
+	pq, _, err := coin.DecodePQWitness(txn.PQWitness)
+	if err != nil {
+		return err
+	}
+	txn.Txn.PQ = pq
+	txn.PQWitness = nil
+	return nil
 }
 
 // TransactionsBkt holds Transactions
@@ -35,7 +51,12 @@ type transactions struct{}
 // put transaction in the db
 func (txs *transactions) put(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()
-	buf, err := encodeTransaction(txn)
+	stored := *txn
+	stored.PQWitness = nil
+	if len(txn.Txn.PQ) != 0 {
+		stored.PQWitness = coin.EncodePQWitness(txn.Txn.PQ)
+	}
+	buf, err := encodeTransaction(&stored)
 	if err != nil {
 		return err
 	}
@@ -55,6 +76,9 @@ func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 	}
 
 	if err := decodeTransactionExact(v, &txn); err != nil {
+		return nil, err
+	}
+	if err := txn.loadPQ(); err != nil {
 		return nil, err
 	}
 
@@ -99,6 +123,9 @@ func (txs *transactions) forEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transacti
 
 		var txn Transaction
 		if err := decodeTransactionExact(v, &txn); err != nil {
+			return err
+		}
+		if err := txn.loadPQ(); err != nil {
 			return err
 		}
 

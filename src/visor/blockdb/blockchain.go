@@ -61,6 +61,7 @@ func (e ErrMissingSignature) Error() string {
 func CreateBuckets(tx *dbutil.Tx) error {
 	return dbutil.CreateBuckets(tx, [][]byte{
 		BlockSigsBkt,
+		BlockPQSigsBkt,
 		BlocksBkt,
 		TreeBkt,
 		BlockchainMetaBkt,
@@ -115,6 +116,7 @@ type Blockchain struct {
 	unspent UnspentPooler
 	tree    BlockTree
 	sigs    BlockSigs
+	pqSigs  *blockPQSigs
 	walker  Walker
 }
 
@@ -134,6 +136,7 @@ func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
 		meta:    &chainMeta{},
 		tree:    &blockTree{},
 		sigs:    &blockSigs{},
+		pqSigs:  &blockPQSigs{},
 		walker:  walker,
 	}, nil
 }
@@ -147,6 +150,12 @@ func (bc *Blockchain) UnspentPool() UnspentPooler {
 func (bc *Blockchain) AddBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 	if err := bc.sigs.Add(tx, sb.HashHeader(), sb.Sig); err != nil {
 		return fmt.Errorf("save signature failed: %v", err)
+	}
+
+	if len(sb.PQSig) != 0 {
+		if err := bc.pqSigs.Add(tx, sb.HashHeader(), sb.PQSig); err != nil {
+			return fmt.Errorf("save post-quantum signature failed: %v", err)
+		}
 	}
 
 	if err := bc.tree.AddBlock(tx, &sb.Block); err != nil {
@@ -243,9 +252,15 @@ func (bc *Blockchain) GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*
 		return nil, NewErrMissingSignature(b)
 	}
 
+	pqSig, err := bc.pqSigs.Get(tx, b.HashHeader())
+	if err != nil {
+		return nil, fmt.Errorf("find post-quantum signature of block: %v failed: %v", b.Head.BkSeq, err)
+	}
+
 	return &coin.SignedBlock{
 		Block: *b,
 		Sig:   sig,
+		PQSig: pqSig,
 	}, nil
 }
 
@@ -268,9 +283,15 @@ func (bc *Blockchain) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.Sign
 		return nil, NewErrMissingSignature(b)
 	}
 
+	pqSig, err := bc.pqSigs.Get(tx, b.HashHeader())
+	if err != nil {
+		return nil, fmt.Errorf("find post-quantum signature of block: %v failed: %v", b.Head.BkSeq, err)
+	}
+
 	return &coin.SignedBlock{
 		Block: *b,
 		Sig:   sig,
+		PQSig: pqSig,
 	}, nil
 }
 

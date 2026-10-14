@@ -110,6 +110,8 @@ type BlockchainConfig struct {
 	// node will throw the error and return.
 	Arbitrating bool
 	Pubkey      cipher.PubKey
+	// PQBlocks is the post-quantum signature rule, see visor.Config
+	PQBlocks coin.PQBlockRule
 }
 
 // Blockchain maintains blockchain and provides apis for accessing the chain.
@@ -699,6 +701,9 @@ func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalc
 // and that all signatures are valid.
 func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
 	err := block.VerifySignature(bc.cfg.Pubkey)
+	if err == nil {
+		err = bc.cfg.PQBlocks.Verify(*block)
+	}
 	if err != nil {
 		logger.Errorf("Blockchain signature verification failed for block %d: %v", block.Head.BkSeq, err)
 	}

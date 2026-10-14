@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   4 pass the witnesses to each other. Older nodes stop at the first block with a
   type 1 transaction. `skycoin cli pqAddressGen` and `skycoin cli pqSend` make
   and spend these addresses. Off by default.
+- A `pq` wallet type. It derives ML-DSA-44 keys from its seed and holds version
+  1 addresses, and it can be encrypted, recovered and used to send coins like a
+  deterministic wallet. `skycoin cli walletCreate -t pq` creates one.
 
 ### Changed
 

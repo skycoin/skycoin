@@ -22,6 +22,7 @@ import (
 	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
 	_ "github.com/skycoin/skycoin/src/wallet/collection"
 	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/pqwallet"
 	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 

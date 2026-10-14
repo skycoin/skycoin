@@ -45,7 +45,7 @@ func walletCreateCmd() *cobra.Command {
 	walletCreateCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
 	walletCreateCmd.Flags().Uint64P("scan", "", 1, `Number of addresses to scan ahead for balances.`)
-	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
+	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\", \"xpub\" or \"pq\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", true, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
@@ -148,7 +148,7 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 			return err
 		}
 
-	case wallet.WalletTypeDeterministic:
+	case wallet.WalletTypeDeterministic, wallet.WalletTypePQ:
 		var err error
 		sd, err = parseDeterministicWalletSeedOptions(s, random, mnemonic, wordCount)
 		if err != nil {
@@ -270,7 +270,7 @@ func walletCreateTempCmd() *cobra.Command {
 	walletCreateTempCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
 	walletCreateTempCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
 	walletCreateTempCmd.Flags().Uint64P("scan", "", 1, `Number of addresses to scan ahead for balances.`)
-	walletCreateTempCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
+	walletCreateTempCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\", \"xpub\" or \"pq\"")
 	walletCreateTempCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
 	walletCreateTempCmd.Flags().StringP("private-keys", "", "", "Collection private keys")
 
@@ -367,7 +367,7 @@ func generateWalletTempHandler(c *cobra.Command, _ []string) error {
 			return err
 		}
 
-	case wallet.WalletTypeDeterministic:
+	case wallet.WalletTypeDeterministic, wallet.WalletTypePQ:
 		var err error
 		sd, err = parseDeterministicWalletSeedOptions(s, random, mnemonic, wordCount)
 		if err != nil {

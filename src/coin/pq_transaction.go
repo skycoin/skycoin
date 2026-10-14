@@ -30,8 +30,8 @@ func (txn *Transaction) pqSigned(i int) bool {
 	return i < len(txn.PQ) && len(txn.PQ[i].Sig) != 0
 }
 
-// inputSigned reports whether input i carries a signature of either kind.
-func (txn *Transaction) inputSigned(i int) bool {
+// InputSigned reports whether input i carries a signature of either kind.
+func (txn *Transaction) InputSigned(i int) bool {
 	return !txn.Sigs[i].Null() || txn.pqSigned(i)
 }
 
@@ -97,7 +97,7 @@ func (txn *Transaction) SignPQInput(sk pqsig.SecKey, index int) error {
 	if len(txn.Sigs) != len(txn.In) || len(txn.PQ) != len(txn.In) {
 		return errors.New("Number of signatures does not match number of inputs")
 	}
-	if txn.inputSigned(index) {
+	if txn.InputSigned(index) {
 		return errors.New("Input already signed")
 	}
 

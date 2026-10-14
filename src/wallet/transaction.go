@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/transaction"
 )
@@ -52,6 +53,7 @@ func copyTransaction(txn *coin.Transaction) *coin.Transaction {
 	copy(txn2.In, txn.In)
 	txn2.Out = make([]coin.TransactionOutput, len(txn.Out))
 	copy(txn2.Out, txn.Out)
+	txn2.PQ = append([]coin.PQInputSig(nil), txn.PQ...)
 
 	if txnInnerHash != txn2.HashInner() {
 		logger.Panic("copyTransaction copy broke InnerHash")
@@ -103,8 +105,8 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	}
 
 	nMissingSigs := 0
-	for _, s := range signedTxn.Sigs {
-		if s.Null() {
+	for i := range signedTxn.Sigs {
+		if !signedTxn.InputSigned(i) {
 			nMissingSigs++
 		}
 	}
@@ -113,14 +115,14 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	addrsMap := make(map[cipher.Address][]int)
 	if len(signIndexes) > 0 {
 		for _, in := range signIndexes {
-			if !signedTxn.Sigs[in].Null() {
+			if signedTxn.InputSigned(in) {
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
 			}
 			addrsMap[uxOuts[in].Body.Address] = append(addrsMap[uxOuts[in].Body.Address], in)
 		}
 	} else {
 		for i, o := range uxOuts {
-			if !signedTxn.Sigs[i].Null() {
+			if signedTxn.InputSigned(i) {
 				continue
 			}
 			addrsMap[o.Body.Address] = append(addrsMap[o.Body.Address], i)
@@ -128,7 +130,8 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	}
 
 	// Check that the wallet has all addresses needed for signing
-	toSign := make(map[cipher.SecKey][]int)
+	toSign := make(map[cipher.Address][]int)
+	signers := make(map[cipher.Address]Entry)
 	entries, err := w.GetEntries()
 	if err != nil {
 		return nil, err
@@ -139,7 +142,8 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 		}
 		addr := e.SkycoinAddress()
 		if x, ok := addrsMap[addr]; ok {
-			toSign[e.Secret] = x
+			toSign[addr] = x
+			signers[addr] = e
 		}
 	}
 
@@ -150,11 +154,11 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	// Sign the selected inputs
 	for k, v := range toSign {
 		for _, x := range v {
-			if !signedTxn.Sigs[x].Null() {
+			if signedTxn.InputSigned(x) {
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
 			}
 
-			if err := signedTxn.SignInput(k, x); err != nil {
+			if err := SignInput(signedTxn, signers[k], x); err != nil {
 				return nil, err
 			}
 		}
@@ -252,7 +256,7 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 			entriesMap[s.Address] = entry
 		}
 
-		if err := txn.SignInput(entry.Secret, i); err != nil {
+		if err := SignInput(txn, entry, i); err != nil {
 			logger.Critical().WithError(err).Errorf("CreateTransaction SignInput(%d) failed", i)
 			return nil, nil, err
 		}
@@ -276,4 +280,13 @@ func verifyCreatedSignedInvariants(p transaction.Params, txn *coin.Transaction, 
 	}
 
 	return nil
+}
+
+// SignInput signs input i of txn with the key of e. A post-quantum entry signs with
+// ML-DSA-44, which makes txn a TxnTypePQ transaction. Others sign with secp256k1.
+func SignInput(txn *coin.Transaction, e Entry, i int) error {
+	if e.IsPQ() {
+		return txn.SignPQInput(pqsig.SecKey(e.Secret[:]), i)
+	}
+	return txn.SignInput(e.Secret, i)
 }

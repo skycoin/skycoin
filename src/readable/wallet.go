@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -147,7 +148,7 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	for i, e := range entries {
 		wr.Entries[i] = WalletEntry{
 			Address: e.Address.String(),
-			Public:  e.Public.Hex(),
+			Public:  pubKeyHex(e.Public),
 		}
 
 		switch w.Type() {
@@ -173,10 +174,18 @@ func entriesToReadable(entries wallet.Entries) []WalletEntry {
 		change := e.Change
 		result[i] = WalletEntry{
 			Address:     e.Address.String(),
-			Public:      e.Public.Hex(),
+			Public:      pubKeyHex(e.Public),
 			ChildNumber: &childNumber,
 			Change:      &change,
 		}
 	}
 	return result
+}
+
+// pubKeyHex is empty for a post-quantum entry, which stores no public key
+func pubKeyHex(pk cipher.PubKey) string {
+	if pk.Null() {
+		return ""
+	}
+	return pk.Hex()
 }

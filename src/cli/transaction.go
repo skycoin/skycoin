@@ -360,8 +360,7 @@ func signTxnCmd() *cobra.Command {
 				return err
 			}
 
-			emptySig := cipher.Sig{}
-			if len(txn.Sigs) > 0 && txn.Sigs[0] != emptySig {
+			if len(txn.Sigs) > 0 && txn.InputSigned(0) {
 				return fmt.Errorf("Transaction already signed")
 			}
 

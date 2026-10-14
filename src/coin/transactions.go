@@ -258,7 +258,7 @@ func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i := range txn.In {
-		if !txn.inputSigned(i) {
+		if !txn.InputSigned(i) {
 			return errors.New("Unsigned input in transaction")
 		}
 		if err := txn.verifyInputSignature(uxIn[i].Body.Address, i); err != nil { //nolint:gosec // verifyInputSignaturesPrelude checks len(txn.In) against len(uxIn)
@@ -280,7 +280,7 @@ func (txn Transaction) VerifyPartialInputSignatures(uxIn UxArray) error {
 
 	// Check signatures against unspent address for signatures that are not null
 	for i := range txn.In {
-		if !txn.inputSigned(i) {
+		if !txn.InputSigned(i) {
 			continue
 		}
 		if err := txn.verifyInputSignature(uxIn[i].Body.Address, i); err != nil {
@@ -387,7 +387,7 @@ func (txn *Transaction) Size() (uint32, error) {
 // Returns true if the signatures array is empty.
 func (txn *Transaction) IsFullyUnsigned() bool {
 	for i := range txn.Sigs {
-		if txn.inputSigned(i) {
+		if txn.InputSigned(i) {
 			return false
 		}
 	}
@@ -403,7 +403,7 @@ func (txn *Transaction) IsFullySigned() bool {
 	}
 
 	for i := range txn.Sigs {
-		if !txn.inputSigned(i) {
+		if !txn.InputSigned(i) {
 			return false
 		}
 	}
@@ -414,7 +414,7 @@ func (txn *Transaction) IsFullySigned() bool {
 // hasNonNullSignature returns true if the transaction has at least one non-null signature
 func (txn *Transaction) hasNonNullSignature() bool {
 	for i := range txn.Sigs {
-		if txn.inputSigned(i) {
+		if txn.InputSigned(i) {
 			return true
 		}
 	}
@@ -425,7 +425,7 @@ func (txn *Transaction) hasNonNullSignature() bool {
 // hasNullSignature returns true if the transaction has at least one null signature
 func (txn *Transaction) hasNullSignature() bool {
 	for i := range txn.Sigs {
-		if !txn.inputSigned(i) {
+		if !txn.InputSigned(i) {
 			return true
 		}
 	}

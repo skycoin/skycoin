@@ -384,3 +384,27 @@ func (_m *mockDaemoner) sendPQSigs(addr string, blocks []coin.SignedBlock) error
 
 	return r0
 }
+
+// addPQWitnesses provides a mock function with given fields: ws
+func (_m *mockDaemoner) addPQWitnesses(ws []TxnPQWitness) {
+	_m.Called(ws)
+}
+
+// attachPQWitness provides a mock function with given fields: txn
+func (_m *mockDaemoner) attachPQWitness(txn *coin.Transaction) {
+	_m.Called(txn)
+}
+
+// sendPQWitnesses provides a mock function with given fields: addr, txns
+func (_m *mockDaemoner) sendPQWitnesses(addr string, txns []coin.Transaction) error {
+	ret := _m.Called(addr, txns)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []coin.Transaction) error); ok {
+		r0 = rf(addr, txns)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

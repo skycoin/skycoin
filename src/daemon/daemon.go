@@ -232,7 +232,7 @@ type DaemonConfig struct { //nolint:revive
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		ProtocolVersion:              pqSigsProtocolVersion,
+		ProtocolVersion:              pqWitnessProtocolVersion,
 		MinProtocolVersion:           2,
 		Address:                      "",
 		Port:                         6677,
@@ -292,6 +292,9 @@ type daemoner interface {
 	addPQSigs(sigs []BlockPQSig)
 	pqSigFor(hash cipher.SHA256) []byte
 	sendPQSigs(addr string, blocks []coin.SignedBlock) error
+	addPQWitnesses(ws []TxnPQWitness)
+	attachPQWitness(txn *coin.Transaction)
+	sendPQWitnesses(addr string, txns []coin.Transaction) error
 }
 
 // Daemon stateful properties of the daemon
@@ -309,6 +312,8 @@ type Daemon struct {
 	announcedTxns *announcedTxnsCache
 	// Post-quantum block signatures received ahead of their blocks
 	pqSigs *pqSigCache
+	// PQ witnesses of transactions received ahead of the transactions
+	pqWitnesses *pqSigCache
 	// Cache of connection metadata
 	connections *Connections
 	// connect, disconnect, message, error events channel
@@ -342,6 +347,7 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 
 		announcedTxns: newAnnouncedTxnsCache(),
 		pqSigs:        newPQSigCache(),
+		pqWitnesses:   newPQSigCache(),
 		connections:   NewConnections(),
 		events:        make(chan interface{}, config.Pool.EventChannelSize),
 		quit:          make(chan struct{}),
@@ -1198,6 +1204,10 @@ func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 		logger.Critical().Error("NewGiveTxnsMessage truncated its only transaction")
 	}
 
+	if err := dm.broadcastPQWitnesses(m.Transactions); err != nil {
+		logger.WithError(err).Error("broadcast GivePQWitnessesMessage failed")
+	}
+
 	ids, err := dm.broadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
@@ -1355,6 +1365,9 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 
 	if err := dm.broadcastPQSigs(m.Blocks); err != nil {
 		logger.WithError(err).Error("broadcast GivePQSigsMessage failed")
+	}
+	if err := dm.broadcastPQWitnesses(blockTxns(m.Blocks)); err != nil {
+		logger.WithError(err).Error("broadcast GivePQWitnessesMessage failed")
 	}
 
 	_, err := dm.broadcastMessage(m)

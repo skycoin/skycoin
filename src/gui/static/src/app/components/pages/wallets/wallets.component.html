@@ -41,6 +41,9 @@
                     @if (wallet.walletType === 'bip44' && !wallet.isHardware) {
                       <span class="bip44-badge" [matTooltip]="'wallet.bip44-tooltip' | translate">BIP44</span>
                     }
+                    @if (wallet.walletType === 'pq' && !wallet.isHardware) {
+                      <span class="bip44-badge" [matTooltip]="'wallet.pq-tooltip' | translate">PQ</span>
+                    }
                     @if (wallet.hasHwSecurityWarnings && wallet.isHardware) {
                       <img src="assets/img/alert-red.png"
                         [matTooltip]="'wallet.warning-hw-security' | translate"

@@ -25,10 +25,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   deterministic wallet. `skycoin cli walletCreate -t pq` creates one.
   A send that needs more post-quantum inputs than fit the transaction size
   limit fails at once and says so.
+  The desktop wallet and skycoin-web can create pq wallets, and the skycoin-web
+  browser cipher derives and signs for them.
+- The startup database check, and `cli checkdb` with `--pq-pubkey`, verify the
+  post-quantum block signatures as well.
 
 ### Changed
 
 - The module needs Go 1.27, for `crypto/mldsa`.
+- The TinyGo build of the skycoin-lite cipher is built with the 0magnet TinyGo
+  fork at 0.43.0. TinyGo 0.41 does not support Go 1.27, and the 0.42 fork
+  crashes in LLVM on `crypto/mldsa`.
 
 ## 0.28.6
 

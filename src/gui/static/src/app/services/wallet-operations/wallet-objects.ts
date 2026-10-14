@@ -51,7 +51,7 @@ export class WalletBase {
    */
   stopShowingHwSecurityPopup = false;
   /**
-   * The wallet type: 'deterministic' or 'bip44'. Only valid for software wallets.
+   * The wallet type: 'deterministic', 'bip44' or 'pq'. Only valid for software wallets.
    */
   walletType = 'deterministic';
   /**

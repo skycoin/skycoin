@@ -64,7 +64,7 @@ export class WalletFormData {
    */
   loadTemporarily = false;
   /**
-   * The wallet type: 'deterministic' or 'bip44'.
+   * The wallet type: 'deterministic', 'bip44' or 'pq'.
    */
   walletType = 'deterministic';
   /**

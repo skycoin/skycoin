@@ -213,20 +213,3 @@ func writeError(w http.ResponseWriter, apiVersion string, code int, msg string) 
 		wh.Error500(w, "Invalid internal API version")
 	}
 }
-
-// dropWebWalletAuth removes the web wallet's credentials from API requests. A
-// browser that logged in to the wallet sends them with every request under /.
-func dropWebWalletAuth(username, password string, f http.Handler) http.HandlerFunc {
-	walletHash := cipher.SumSHA256(append([]byte(username), []byte(password)...))
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		if user, pass, ok := r.BasicAuth(); ok {
-			hash := cipher.SumSHA256(append([]byte(user), []byte(pass)...))
-			if subtle.ConstantTimeCompare(hash[:], walletHash[:]) == 1 {
-				r = r.Clone(r.Context())
-				r.Header.Del("Authorization")
-			}
-		}
-		f.ServeHTTP(w, r)
-	}
-}

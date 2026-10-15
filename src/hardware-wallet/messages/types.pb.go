@@ -3,14 +3,19 @@
 
 package messages
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import protobuf "github.com/skycoin/skycoin/src/hardware-wallet/messages/google/protobuf"
+import (
+	fmt "fmt"
 
-import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
 
-import io "io"
+	math "math"
+
+	protobuf "github.com/skycoin/skycoin/src/hardware-wallet/messages/google/protobuf"
+
+	github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
+
+	io "io"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

@@ -20,7 +20,8 @@
     "pretest:watch": "node scripts/stage-cipher-fixtures.js && node scripts/stage-wasm.js",
     "test:watch": "ng test --browsers Chrome",
     "prestart-docker": "node scripts/stage-wasm.js",
-    "start-docker": "ng serve --proxy-config docker-proxy.config.js --delete-output-path false"
+    "start-docker": "ng serve --proxy-config docker-proxy.config.js --delete-output-path false",
+    "postbuild": "node scripts/ngsw-timestamp.js"
   },
   "private": true,
   "dependencies": {

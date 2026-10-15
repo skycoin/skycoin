@@ -1,0 +1,6 @@
+BitcoinTransactionInput.prev_hash       max_size:32
+
+BitcoinTransactionOutput.address        max_size:36
+
+BitcoinTransactionType.inputs           max_count:8
+BitcoinTransactionType.outputs          max_count:8

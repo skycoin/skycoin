@@ -96,8 +96,6 @@ github.com/sirupsen/logrus v1.10.2 h1:G2SED73/qrAu6YwbdxOD6peLkCBI3z7L+ykJFTXJBB
 github.com/sirupsen/logrus v1.10.2/go.mod h1:SLEg8TqYulVKKfIGHldVp2K2aYz2DKSVBq4g/H5bR7Q=
 github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9 h1:DElGw1Fhj4amuW1KM5q8Xowosb3RiOQce0lDJw0Qv0Y=
 github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9/go.mod h1:OQz8NXVJUWEw7PWYASZ/1BIw5GXgVMTGvrCGDlZa9+k=
-github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f h1:wKpqEhubs7kKtb7nqU4V8zkTxwnnwcB2797elV2z1t8=
-github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f/go.mod h1:Dq4cqJueacNCZe0qzvcsgEkrka+Zi9MZLRoQDUPeG4k=
 github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2 h1:U8mPhSSk/NE508daZwF+EWgoPqnMyqbuE+1Et8orjhY=
 github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2/go.mod h1:XxSbk28CuQk5in9+tr7ns6AP282s5JP5pgr6axuJhgo=
 github.com/spf13/afero v1.15.0 h1:b/YBCLWAJdFWJTN9cLhiXXcD7mzKn9Dm86dNnfyQw1I=

@@ -28,8 +28,6 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	"github.com/skycoin/skycoin/src/skycoin-lite/wasmgz"
 )
 
 var (
@@ -175,18 +173,6 @@ var RootCmd = &cobra.Command{
 		// An error is returned, never fatal, so it cannot take down an embedder.
 		return serve(cmd.Context())
 	},
-}
-
-// acceptsGzip reports whether the client will decompress a gzipped response.
-// Everything current does; the fallback is for anything that says otherwise.
-func acceptsGzip(r *http.Request) bool {
-	for _, encoding := range strings.Split(r.Header.Get("Accept-Encoding"), ",") {
-		if strings.EqualFold(strings.TrimSpace(strings.SplitN(encoding, ";", 2)[0]), "gzip") {
-			return true
-		}
-	}
-
-	return false
 }
 
 func init() {
@@ -569,59 +555,10 @@ func serve(ctx context.Context) error {
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
 	guiFS := initGUIFS()
 
-	// Serve the registered skycoin-lite WASM files. These are exact-match
-	// patterns, which take precedence over the "/" static handler in both the
-	// standard-library and TinyGo ServeMux implementations.
-	//
-	// Both routes are registered unconditionally and report 404 when no cipher
-	// wasm was registered (see wasm.go). Leaving the routes off entirely would
-	// hand the request to the "/" static handler, which answers an SPA fallback
-	// — so a missing wasm would arrive at the browser as index.html with a 200,
-	// and fail as a confusing content-type error rather than a plain 404.
-	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", func(w http.ResponseWriter, r *http.Request) {
-		c := newCtx(w, r)
-
-		if !cipherWasmRegistered() {
-			c.Data(http.StatusNotFound, "text/plain", []byte("no cipher wasm is registered in this build"))
-
-			return
-		}
-
-		c.Header("Content-Type", "application/wasm")
-
-		// The blob is committed gzipped. Handing it over as-is lets the browser
-		// decompress it — which every browser does, and which
-		// WebAssembly.instantiateStreaming is happy with — instead of spending
-		// the server's memory and CPU inflating ~5 MB per request.
-		if acceptsGzip(r) {
-			c.Header("Content-Encoding", "gzip")
-			c.Data(http.StatusOK, "application/wasm", wasmFileGz)
-
-			return
-		}
-
-		wasm, err := wasmgz.Decompress(wasmFileGz)
-		if err != nil {
-			c.Data(http.StatusInternalServerError, "text/plain", []byte("could not decompress the wasm cipher: "+err.Error()))
-
-			return
-		}
-
-		c.Data(http.StatusOK, "application/wasm", wasm)
-	})
-
-	mux.HandleFunc("/assets/scripts/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
-		c := newCtx(w, r)
-
-		if !cipherWasmRegistered() {
-			c.Data(http.StatusNotFound, "text/plain", []byte("no cipher wasm is registered in this build"))
-
-			return
-		}
-
-		c.Header("Content-Type", "application/javascript")
-		c.Data(http.StatusOK, "application/javascript", wasmExecJS)
-	})
+	// The cipher routes are exact matches, so they win over the "/" static
+	// handler and a missing wasm is a plain 404 rather than index.html.
+	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", gui.ServeCipherWasm)
+	mux.HandleFunc("/assets/scripts/wasm_exec.js", gui.ServeWasmExecJS)
 
 	// Per-coin proxy routes: /coin/{index}/api/*
 	//

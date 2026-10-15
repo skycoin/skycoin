@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	messages "github.com/skycoin/hardware-wallet-protob/go"
+	"github.com/skycoin/skycoin/src/hardware-wallet/messages"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"

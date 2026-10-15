@@ -1,0 +1,76 @@
+Initialize.state			max_size:64
+
+Features.vendor				max_size:33
+Features.device_id			max_size:25
+Features.language			max_size:17
+Features.label				max_size:33
+Features.bootloader_hash		max_size:32
+Features.model				max_size:17
+Features.fw_vendor			max_size:256
+Features.fw_vendor_keys		max_size:32
+Features.fw_version_head	max_size:33
+
+ApplySettings.language			max_size:17
+ApplySettings.label			max_size:33
+ApplySettings.homescreen		max_size:1024
+
+Ping.message				max_size:256
+
+SetMnemonic.mnemonic							max_size:256
+ResponseSkycoinAddress.addresses				max_size:36, max_count:100
+// signed_message with ecdsa algoritm have a length of 65 bytes, in hex format this is 130
+ResponseSkycoinSignMessage.signed_message		max_size:130
+SkycoinCheckMessageSignature.address			max_size:37
+SkycoinCheckMessageSignature.message			max_size:66
+SkycoinCheckMessageSignature.signature			max_size:131
+SkycoinSignMessage.message			            max_size:131
+TransactionSign.transactionIn					max_count:8
+TransactionSign.transactionOut					max_count:8
+// signed_message with ecdsa algoritm have a length of 65 bytes, in hex format this is 130
+ResponseTransactionSign.signatures				max_size:130, max_count:8
+
+
+Success.message				max_size:256
+
+Failure.message				max_size:256
+
+ButtonRequest.data			max_size:256
+
+PinMatrixAck.pin			max_size:10
+
+PassphraseAck.passphrase		max_size:51
+PassphraseAck.state			max_size:64
+
+PassphraseStateRequest.state		max_size:64
+
+Entropy.entropy				max_size:1024
+
+LoadDevice.mnemonic			max_size:241
+LoadDevice.pin				max_size:10
+LoadDevice.language			max_size:17
+LoadDevice.label			max_size:33
+
+ResetDevice.language			max_size:17
+ResetDevice.label			max_size:33
+
+EntropyAck.entropy			max_size:128
+
+RecoveryDevice.language			max_size:17
+RecoveryDevice.label			max_size:33
+
+WordAck.word				max_size:12
+
+SignTx.tx_hash                                  max_size:65
+SignTx.coin_name                                max_size:36
+
+TxRequest.sign_result                           max_count:8
+TxRequest.TxRequestDetailsType.tx_hash          max_size:65
+TxRequest.TxRequestSignResponseType.signature   max_size:151
+
+TxAck.TransactionType.inputs                    max_count:8
+TxAck.TransactionType.outputs                   max_count:8
+TxAck.TransactionType.TxInputType.hashIn        max_size:65
+TxAck.TransactionType.TxInputType.address_n     max_count:8
+
+TxAck.TransactionType.TxOutputType.address      max_size:36
+TxAck.TransactionType.TxOutputType.address_n    max_count:8

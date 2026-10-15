@@ -6,7 +6,7 @@ package messages
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import protobuf "github.com/skycoin/hardware-wallet-protob/go/google/protobuf"
+import protobuf "github.com/skycoin/skycoin/src/hardware-wallet/messages/google/protobuf"
 
 import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
 

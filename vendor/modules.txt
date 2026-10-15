@@ -142,10 +142,6 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
-# github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
-## explicit; go 1.24.5
-github.com/skycoin/hardware-wallet-protob/go
-github.com/skycoin/hardware-wallet-protob/go/google/protobuf
 # github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
 ## explicit; go 1.21
 github.com/skycoin/hardware-wallet/firmware

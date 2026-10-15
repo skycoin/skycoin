@@ -1,0 +1,40 @@
+syntax = "proto2";
+
+/**
+ * Messages for Skywallet communication for Bitcoin
+ */
+
+// Sugar for easier handling in Java
+option java_package = "net.skycoin.skywallet.protobuf";
+option java_outer_classname = "SkywalletType";
+option go_package = "messages";
+
+import "ethereum_types.proto";
+
+/**
+ * Request: Generate a Ethereum address from a seed, device sends back the address in a Success message
+ * @next Failure
+ * @next ResponseEthereumAddress
+ */
+message EthereumAddress {
+	required uint32 address_n       = 1;    // Address iterator
+	optional uint32 start_index     = 2;    // Index of the first address - if not provided the device will assume 0
+	optional bool confirm_address   = 3;
+}
+
+/**
+ * Response: Return the generated Ethereum address
+ * @prev EthereumAddress
+ */
+message ResponseEthereumAddress {
+    repeated bytes addresses = 1; 
+}
+
+/**
+ * Request: Send a part of data to Skywallet
+ * @next Failure
+ * @next TxRequest
+ */
+message EthereumTxAck {
+    optional EthereumTransactionType tx = 1;
+}

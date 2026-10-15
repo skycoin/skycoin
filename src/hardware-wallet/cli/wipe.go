@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 
-	messages "github.com/skycoin/hardware-wallet-protob/go"
+	"github.com/skycoin/skycoin/src/hardware-wallet/messages"
 
 	"github.com/spf13/cobra"
 

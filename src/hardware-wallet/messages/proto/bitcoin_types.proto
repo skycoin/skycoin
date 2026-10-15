@@ -1,0 +1,40 @@
+syntax = "proto2";
+
+/**
+ * Types for Skywallet communication for Bitcoin
+ */
+
+// Sugar for easier handling in Java
+option java_package = "net.skycoin.skywallet.protobuf";
+option java_outer_classname = "SkywalletType";
+option go_package = "messages";
+
+/**
+ * Structure representing Bitcoin transaction input
+ */
+message BitcoinTransactionInput {
+	required uint32 address_n = 1;	// Deterministic path to private/public keypair
+	required bytes prev_hash = 2;	// Hash of transaction, from which output will be used
+	// required uint32 index = 3;		// Index of output in previous transaction, which will be spended
+	optional uint64 value = 4;		// Amount of money to be spent
+	reserved 5 to 15;				// Will be used for MultiSignature and SegWit transactions
+}
+
+/**
+ * Structure representing transaction output
+ */
+message BitcoinTransactionOutput {
+	required string address = 1;		// Address of recipient
+	required uint64 coin = 2;				// Amount of coins, that will be sent
+	optional uint32 address_index = 3;	// Receiver address index if managed by this Skywallet
+}
+
+/**
+* Structure representing transaction
+*/
+message BitcoinTransactionType {
+	optional uint32 inputs_cnt = 2;
+	repeated BitcoinTransactionInput inputs = 3;
+	optional uint32 outputs_cnt = 4;
+	repeated BitcoinTransactionOutput outputs = 5;
+}

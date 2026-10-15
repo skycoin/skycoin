@@ -119,11 +119,6 @@ jobs:
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y wget tar libusb-1.0-0-dev autoconf automake libtool
 
-      - name: Fetch build-libusb-musl.sh
-        run: |
-          curl -sL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/ci-scripts/build-libusb-musl.sh" -o build-libusb-musl.sh
-          chmod +x build-libusb-musl.sh
-
       - name: Cache musl toolchain
         id: cache-toolchain
         uses: actions/cache@v6
@@ -140,7 +135,7 @@ jobs:
           rm "${{ matrix.toolchain_file }}"
 
       - name: Build libusb for musl target
-        run: ./build-libusb-musl.sh ${{ matrix.arch }} ${{ matrix.toolchain }} ./musl-data/${{ matrix.toolchain }}-cross
+        run: ./ci-scripts/build-libusb-musl.sh ${{ matrix.arch }} ${{ matrix.toolchain }} ./musl-data/${{ matrix.toolchain }}-cross
 
       - name: Build hardware-wallet utility (musl static)
         env:

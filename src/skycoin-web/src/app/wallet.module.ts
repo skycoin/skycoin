@@ -83,6 +83,8 @@ import { SpendingService } from './services/wallet/spending.service';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ScanAddressesComponent } from './components/pages/wallets/scan-addresses/scan-addresses.component';
 import { NodesComponent } from './components/pages/settings/nodes/nodes.component';
+import { AppPasswordComponent } from './components/pages/settings/app-password/app-password.component';
+import { AppLockComponent } from './components/layout/app-lock/app-lock.component';
 import { ChangeNodeURLComponent } from './components/pages/settings/nodes/change-url/change-node-url.component';
 import { GlobalsService } from './services/globals.service';
 import { WalletOptionsComponent } from './components/pages/wallets/wallet-detail/wallet-options/wallet-options.component';
@@ -149,6 +151,8 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         CreateWalletFormComponent,
         ScanAddressesComponent,
         NodesComponent,
+        AppPasswordComponent,
+        AppLockComponent,
         ChangeNodeURLComponent,
         WalletOptionsComponent,
         SendFormAdvancedComponent,

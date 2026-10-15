@@ -2,7 +2,7 @@ import { TestBed, waitForAsync, ComponentFixture } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, Renderer2 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { WalletShellComponent } from './wallet-shell.component';
 import { MockLanguageService, MockTranslatePipe, MockTranslateService, MockCustomMatDialogService, MockMsgBarService, MockCoinService, MockHwWalletService } from '../../../utils/test-mocks';
@@ -14,6 +14,7 @@ import { Bip39WordListService } from '../../../services/bip39-word-list.service'
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { HwWalletPinService } from '../../../services/hw-wallet-pin.service';
+import { WalletService } from '../../../services/wallet/wallet.service';
 
 describe('WalletShellComponent', () => {
   let component: WalletShellComponent;
@@ -25,6 +26,7 @@ describe('WalletShellComponent', () => {
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
         { provide: HwWalletService, useClass: MockHwWalletService },
+        { provide: WalletService, useValue: { locked: new BehaviorSubject<boolean>(false) } },
         // The component only stores a component reference on it.
         { provide: HwWalletPinService, useValue: {} },
         { provide: CoinService, useClass: MockCoinService },

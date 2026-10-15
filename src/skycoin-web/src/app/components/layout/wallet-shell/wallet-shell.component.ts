@@ -15,6 +15,7 @@ import { HwWalletService } from '../../../services/hw-wallet.service';
 import { HwPinDialogComponent } from '../hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwConfirmTxDialogComponent } from '../hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { WALLET_SCOPE_CLASS } from '../../../wallet-scope';
+import { WalletService } from '../../../services/wallet/wallet.service';
 
 /**
  * The wallet's frame: cipher start-up, the node status bar, the outlet for the
@@ -54,6 +55,7 @@ export class WalletShellComponent implements OnInit, OnDestroy {
     hwWalletPinService: HwWalletPinService,
     hwWalletService: HwWalletService,
     private changeDetectorRef: ChangeDetectorRef,
+    public walletService: WalletService,
   ) {
     // Set component references to avoid circular dependencies
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;

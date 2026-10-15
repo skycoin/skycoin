@@ -1,0 +1,28 @@
+<div class="lock-screen">
+  <div class="lock-box">
+    <img class="logo" src="assets/skycoin-wallet/img/coins/skycoin-icon-b.png" alt="Skycoin">
+
+    @if (!confirmingErase) {
+      <p>{{ 'app-lock.locked' | translate }}</p>
+      <div class="form-field" [formGroup]="form">
+        <label for="app-lock-password">{{ 'password.title' | translate }}</label>
+        <input type="password" formControlName="password" id="app-lock-password" autocomplete="current-password" (keydown.enter)="unlock()" />
+      </div>
+      @if (wrongPassword) {
+        <p class="error">{{ 'app-lock.wrong-password' | translate }}</p>
+      }
+      <div class="-buttons">
+        <app-button #unlockButton (action)="unlock()" class="primary" [disabled]="!form.valid">
+          {{ 'app-lock.unlock' | translate }}
+        </app-button>
+      </div>
+      <p class="forgot"><span class="link" (click)="confirmingErase = true">{{ 'app-lock.forgot' | translate }}</span></p>
+    } @else {
+      <p>{{ 'app-lock.erase-warning' | translate }}</p>
+      <div class="-buttons">
+        <app-button (action)="confirmingErase = false">{{ 'app-lock.cancel' | translate }}</app-button>
+        <app-button (action)="erase()" class="primary">{{ 'app-lock.erase' | translate }}</app-button>
+      </div>
+    }
+  </div>
+</div>

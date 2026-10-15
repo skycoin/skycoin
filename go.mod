@@ -23,7 +23,6 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
-	github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -77,7 +76,6 @@ require (
 //replace github.com/skycoin/hardware-wallet-daemon => ../hardware-wallet-daemon
 //replace github.com/skycoin/skycoin-lite => ../skycoin-lite
 //replace github.com/skycoin/skywire => ../skywire
-//replace github.com/skycoin/hardware-wallet/firmware => ../hardware-wallet/firmware
 
 // Below should reflect current versions of the following deps
 // To update deps to specific commit hash:

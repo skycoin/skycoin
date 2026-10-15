@@ -6,9 +6,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/skycoin/hardware-wallet/firmware"
 	"github.com/spf13/cobra"
 
+	"github.com/skycoin/skycoin/src/hardware-wallet/firmware"
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 

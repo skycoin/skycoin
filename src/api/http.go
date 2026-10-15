@@ -87,7 +87,12 @@ type Config struct {
 	EnabledAPISets     map[string]struct{}
 	Username           string
 	Password           string
-	ShutdownChan       chan struct{} // when closed, triggers daemon shutdown
+	// WebWallet, when set, is served at the site root in place of the GUI.
+	// WebWalletUsername and WebWalletPassword guard it and leave the API open.
+	WebWallet         http.Handler
+	WebWalletUsername string
+	WebWalletPassword string
+	ShutdownChan      chan struct{} // when closed, triggers daemon shutdown
 }
 
 // HealthConfig configuration data exposed in /health
@@ -116,6 +121,9 @@ type muxConfig struct {
 	password           string
 	health             HealthConfig
 	shutdownChan       chan struct{}
+	webWallet          http.Handler
+	webWalletUsername  string
+	webWalletPassword  string
 }
 
 // HTTPResponse represents the http response struct
@@ -192,6 +200,10 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Infof("Web resources directory: %s", appLoc)
 	}
 
+	if c.EnableGUI && c.WebWallet != nil {
+		return nil, errors.New("the GUI and the web wallet cannot both be served")
+	}
+
 	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
@@ -223,6 +235,9 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		username:           c.Username,
 		password:           c.Password,
 		shutdownChan:       c.ShutdownChan,
+		webWallet:          c.WebWallet,
+		webWalletUsername:  c.WebWalletUsername,
+		webWalletPassword:  c.WebWalletPassword,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -371,6 +386,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		})
 	}
 
+	walletAuthOnly := c.webWallet != nil && (c.webWalletUsername != "" || c.webWalletPassword != "") &&
+		c.username == "" && c.password == ""
+
 	webHandlerWithOptionals := func(apiVersion, endpoint string, handlerFunc http.Handler, checkCSRF, checkHeaders bool) {
 		handler := wh.ElapsedHandler(logger, handlerFunc)
 
@@ -389,6 +407,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
+		if walletAuthOnly {
+			handler = dropWebWalletAuth(c.webWalletUsername, c.webWalletPassword, handler)
+		}
 		handler = gzhttp.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
@@ -481,6 +502,10 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	}
 	if !c.disableCSP && indexHandler != nil {
 		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
+	}
+	if c.webWallet != nil {
+		wallet := basicAuth(apiVersion1, c.webWalletUsername, c.webWalletPassword, "skycoin web wallet", c.webWallet)
+		mux.Handle("/", gzhttp.GzipHandler(wallet))
 	}
 	if indexHandler != nil {
 		webHandler(apiVersion1, "/", indexHandler, nil)

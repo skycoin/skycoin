@@ -8,6 +8,7 @@ export class SkycoinCoin extends BaseCoin {
   constructor() {
     super({
       id: defaultCoinId,
+      // Empty means the node that served the wallet, as with the node's -web-wallet.
       nodeUrl: '',
       coinName: 'Skycoin',
       coinSymbol: 'SKY',

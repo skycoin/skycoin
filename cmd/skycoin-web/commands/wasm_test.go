@@ -62,6 +62,7 @@ func TestCipherWasmIsLinkedBySkycoinsOwnAssembly(t *testing.T) {
 		"github.com/skycoin/skycoin/cmd/skycoin-web",
 		"github.com/skycoin/skycoin/src/skycoin-web",
 		"github.com/skycoin/skycoin/cmd/release/commands",
+		"github.com/skycoin/skycoin/cmd/skycoin",
 	} {
 		if !deps(t, pkg)[cipherWasmBlob] {
 			t.Errorf("%s does not link %s; `skycoin web` would 404 both "+

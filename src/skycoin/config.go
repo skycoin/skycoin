@@ -55,6 +55,11 @@ type NodeConfig struct {
 	DisableNetworking bool
 	// Allow connections from legacy peers that don't send blockchain pubkey in introduction
 	LegacyPeerCompat bool
+	// Serve the skycoin web wallet at the site root, in place of the GUI
+	WebWallet bool
+	// Username and password for the web wallet only, the API stays open
+	WebWalletUsername string
+	WebWalletPassword string
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
@@ -497,7 +502,20 @@ func (c *Config) validateNetworkConfig() error {
 		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
 	}
 
-	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
+	if c.Node.WebWallet && c.Node.EnableGUI {
+		return errors.New("-web-wallet and -enable-gui both serve the site root, so only one can be set")
+	}
+
+	// A browser sends one set of credentials for the whole site, so the wallet and
+	// the API can only both be guarded with the same ones.
+	apiAuth := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != ""
+	walletAuth := c.Node.WebWalletUsername != "" || c.Node.WebWalletPassword != ""
+	if apiAuth && walletAuth && (c.Node.WebInterfaceUsername != c.Node.WebWalletUsername || c.Node.WebInterfacePassword != c.Node.WebWalletPassword) {
+		return errors.New("-web-wallet-username and -web-wallet-password must match the web interface ones when both are set")
+	}
+
+	httpAuthEnabled := c.Node.WebInterfaceUsername != "" || c.Node.WebInterfacePassword != "" ||
+		c.Node.WebWalletUsername != "" || c.Node.WebWalletPassword != ""
 	if httpAuthEnabled && !c.Node.WebInterfaceHTTPS && !c.Node.WebInterfacePlaintextAuth {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
@@ -683,6 +701,9 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	cmd.Flags().BoolVar(&c.LegacyPeerCompat, "legacy-peer-compat", c.LegacyPeerCompat, "Allow connections from legacy peers that don't send blockchain pubkey")
 	cmd.Flags().BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	cmd.Flags().BoolVar(&c.WebWallet, "web-wallet", c.WebWallet, "serve the skycoin web wallet at the site root, in place of the GUI")
+	cmd.Flags().StringVar(&c.WebWalletUsername, "web-wallet-username", c.WebWalletUsername, "username for the web wallet, leaving the API open")
+	cmd.Flags().StringVar(&c.WebWalletPassword, "web-wallet-password", c.WebWalletPassword, "password for the web wallet, leaving the API open")
 	cmd.Flags().BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	cmd.Flags().BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
 	cmd.Flags().BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable Content Security Policy in http response")

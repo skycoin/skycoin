@@ -22,19 +22,20 @@ var firmwareC []byte
 //go:embed skywallet-firmware-tinygo.bin
 var firmwareTinyGo []byte
 
-// FirmwareType identifies which firmware variant to use
-type FirmwareType int
+// Type identifies which firmware variant to use.
+type Type int
 
+// The embedded firmware variants.
 const (
-	FirmwareV100    FirmwareType = iota // Legacy v1.0.0 release
-	FirmwareV180                        // Legacy v1.8.0 release
-	FirmwareC                           // Current C firmware (v1.1.0)
-	FirmwareTinyGo                      // TinyGo firmware
+	FirmwareV100   Type = iota // Legacy v1.0.0 release
+	FirmwareV180               // Legacy v1.8.0 release
+	FirmwareC                  // Current C firmware (v1.1.0)
+	FirmwareTinyGo             // TinyGo firmware
 )
 
-// FirmwareInfo contains metadata about a firmware variant
-type FirmwareInfo struct {
-	Type        FirmwareType
+// Info contains metadata about a firmware variant
+type Info struct {
+	Type        Type
 	Name        string
 	Version     string
 	Description string
@@ -42,8 +43,8 @@ type FirmwareInfo struct {
 }
 
 // Available returns all available firmware variants
-func Available() []FirmwareInfo {
-	return []FirmwareInfo{
+func Available() []Info {
+	return []Info{
 		{
 			Type:        FirmwareV100,
 			Name:        "v1.0.0",
@@ -76,7 +77,7 @@ func Available() []FirmwareInfo {
 }
 
 // Get returns the firmware binary for the specified type
-func Get(t FirmwareType) []byte {
+func Get(t Type) []byte {
 	switch t {
 	case FirmwareV100:
 		return firmwareV100

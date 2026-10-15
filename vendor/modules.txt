@@ -142,9 +142,6 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
-# github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
-## explicit; go 1.21
-github.com/skycoin/hardware-wallet/firmware
 # github.com/spf13/afero v1.15.0
 ## explicit; go 1.23.0
 github.com/spf13/afero

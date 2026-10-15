@@ -50,13 +50,20 @@ export class AppPasswordComponent {
     this.saveButton.setLoading();
     this.walletService.setAppPassword(password).then(() => {
       this.done(changing ? 'app-password.changed' : 'app-password.was-set');
+      this.changeDetectorRef.markForCheck();
     });
   }
 
   remove() {
     this.walletService.removeAppPassword(this.form.value.current).then(
-      () => this.done('app-password.removed'),
-      () => this.fail('app-password.wrong-current'),
+      () => {
+        this.done('app-password.removed');
+        this.changeDetectorRef.markForCheck();
+      },
+      () => {
+        this.fail('app-password.wrong-current');
+        this.changeDetectorRef.markForCheck();
+      },
     );
   }
 
@@ -67,7 +74,6 @@ export class AppPasswordComponent {
 
   private fail(error: string) {
     this.error = error;
-    this.changeDetectorRef.markForCheck();
   }
 
   private done(message: string) {
@@ -77,6 +83,5 @@ export class AppPasswordComponent {
       this.saveButton.resetState();
     }
     this.msgBarService.showDone(message);
-    this.changeDetectorRef.markForCheck();
   }
 }

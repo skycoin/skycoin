@@ -514,8 +514,6 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 			return nil, err
 		}
 		config.WebWallet = wallet
-		config.WebWalletUsername = c.config.Node.WebWalletUsername
-		config.WebWalletPassword = c.config.Node.WebWalletPassword
 	}
 
 	var s *api.Server

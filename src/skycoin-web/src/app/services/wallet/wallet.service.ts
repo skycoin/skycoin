@@ -22,9 +22,20 @@ export class ScanProgressData {
 @Injectable()
 export class WalletService {
   wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>(null as any);
+  // True while this browser's wallets are stored under a password that has not
+  // been entered yet. No wallet loads until it is.
+  locked = new BehaviorSubject<boolean>(false);
 
   private currentCoin!: BaseCoin;
   private coinSubscription!: Subscription;
+
+  // The password the wallets in this browser are stored under, kept in memory
+  // only, and the stored list it decrypted.
+  private appPassword: string | null = null;
+  private unlockedStoredWallets: string | null = null;
+  private saves: Promise<void> = Promise.resolve();
+  private readonly walletsStorageKey = 'wallets';
+  private readonly lockedWalletsStorageKey = 'lockedWallets';
 
   constructor(
     private cipherProvider: CipherProvider,
@@ -336,10 +347,88 @@ export class WalletService {
         }
         strippedWallets.push(stripped);
       });
-      localStorage.setItem('wallets', JSON.stringify(strippedWallets));
+      this.storeWallets(JSON.stringify(strippedWallets));
     }
 
     this.wallets.next(currentWallets);
+  }
+
+  get hasAppPassword(): boolean {
+    return this.appPassword !== null;
+  }
+
+  // Writes the stored wallet list, encrypted when this browser has a password.
+  // Writes are chained so a slower encryption never lands after a newer save.
+  private storeWallets(serialized: string): Promise<void> {
+    const password = this.appPassword;
+    this.unlockedStoredWallets = password !== null ? serialized : null;
+    this.saves = this.saves.then(async () => {
+      if (password === null) {
+        localStorage.setItem(this.walletsStorageKey, serialized);
+        localStorage.removeItem(this.lockedWalletsStorageKey);
+      } else {
+        localStorage.setItem(this.lockedWalletsStorageKey, await this.encryptionService.encrypt(serialized, password));
+        localStorage.removeItem(this.walletsStorageKey);
+      }
+    });
+
+    return this.saves;
+  }
+
+  private currentStoredWallets(): string {
+    return this.unlockedStoredWallets ?? localStorage.getItem(this.walletsStorageKey) ?? '[]';
+  }
+
+  /** Decrypts the wallets stored in this browser and loads them. */
+  unlockApp(password: string): Observable<void> {
+    const encrypted = localStorage.getItem(this.lockedWalletsStorageKey);
+    if (!encrypted) {
+      return of(undefined);
+    }
+
+    return new Observable<void>(observer => {
+      this.encryptionService.decrypt(encrypted, password).then(stored => {
+        this.appPassword = password;
+        this.unlockedStoredWallets = stored;
+        this.locked.next(false);
+        this.loadWalletsFromLocalStorage();
+        observer.next();
+        observer.complete();
+      }, () => observer.error(new Error('Incorrect password')));
+    });
+  }
+
+  /** Stores this browser's wallets under a password, replacing any previous one. */
+  setAppPassword(password: string): Promise<void> {
+    const stored = this.currentStoredWallets();
+    this.appPassword = password;
+
+    return this.storeWallets(stored);
+  }
+
+  /** Stores this browser's wallets without a password again. */
+  removeAppPassword(currentPassword: string): Promise<void> {
+    if (currentPassword !== this.appPassword) {
+      return Promise.reject(new Error('Incorrect password'));
+    }
+    const stored = this.currentStoredWallets();
+    this.appPassword = null;
+
+    return this.storeWallets(stored);
+  }
+
+  checkAppPassword(password: string): boolean {
+    return this.appPassword !== null && password === this.appPassword;
+  }
+
+  /** Forgets the password and the wallets it guarded. This cannot be undone. */
+  eraseLockedWallets() {
+    localStorage.removeItem(this.lockedWalletsStorageKey);
+    localStorage.removeItem(this.walletsStorageKey);
+    this.appPassword = null;
+    this.unlockedStoredWallets = null;
+    this.locked.next(false);
+    this.wallets.next([]);
   }
 
   private loadWallets() {
@@ -368,7 +457,11 @@ export class WalletService {
   }
 
   private loadWalletsFromLocalStorage() {
-    const storedWallets: string | null = localStorage.getItem('wallets');
+    if (this.appPassword === null && localStorage.getItem(this.lockedWalletsStorageKey)) {
+      this.locked.next(true);
+      return;
+    }
+    const storedWallets: string | null = this.unlockedStoredWallets ?? localStorage.getItem(this.walletsStorageKey);
     if (storedWallets) {
       const wallets: Wallet[] = JSON.parse(storedWallets);
       wallets.forEach((wallet) => {

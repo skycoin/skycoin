@@ -57,7 +57,8 @@
     "seed": "Wallet Seed",
     "qrcode": "QR Code",
     "disclaimer": "Disclaimer",
-    "qr-code": "Address"
+    "qr-code": "Address",
+    "app-password": "Password"
   },
   "header": {
     "syncing-blocks": "Syncing blocks",
@@ -470,5 +471,31 @@
       "hours": "coin hours",
       "to": "to"
     }
+  },
+  "app-lock": {
+    "locked": "The wallets in this browser are locked. Enter the password to open them.",
+    "unlock": "Unlock",
+    "wrong-password": "That password is not correct.",
+    "forgot": "Forgot the password?",
+    "erase-warning": "The password cannot be recovered. Erasing removes every wallet stored in this browser, and only their seeds can bring them back. Erase the wallets?",
+    "cancel": "Cancel",
+    "erase": "Erase wallets"
+  },
+  "app-password": {
+    "help-none": "Set a password to store the wallets in this browser encrypted. The wallet will ask for it each time it opens. The password stays in this browser and cannot be recovered.",
+    "help-set": "The wallets in this browser are stored under a password. You can change it, remove it, or lock the wallet now.",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Confirm the new password",
+    "set": "Set password",
+    "change": "Change password",
+    "remove": "Remove password",
+    "lock": "Lock now",
+    "wrong-current": "The current password is not correct.",
+    "empty": "Enter a new password.",
+    "mismatch": "The two passwords do not match.",
+    "was-set": "The wallets in this browser are now stored under the password.",
+    "changed": "The password was changed.",
+    "removed": "The password was removed."
   }
 }

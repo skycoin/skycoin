@@ -88,11 +88,8 @@ type Config struct {
 	Username           string
 	Password           string
 	// WebWallet, when set, is served at the site root in place of the GUI.
-	// WebWalletUsername and WebWalletPassword guard it and leave the API open.
-	WebWallet         http.Handler
-	WebWalletUsername string
-	WebWalletPassword string
-	ShutdownChan      chan struct{} // when closed, triggers daemon shutdown
+	WebWallet    http.Handler
+	ShutdownChan chan struct{} // when closed, triggers daemon shutdown
 }
 
 // HealthConfig configuration data exposed in /health
@@ -122,8 +119,6 @@ type muxConfig struct {
 	health             HealthConfig
 	shutdownChan       chan struct{}
 	webWallet          http.Handler
-	webWalletUsername  string
-	webWalletPassword  string
 }
 
 // HTTPResponse represents the http response struct
@@ -236,8 +231,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		password:           c.Password,
 		shutdownChan:       c.ShutdownChan,
 		webWallet:          c.WebWallet,
-		webWalletUsername:  c.WebWalletUsername,
-		webWalletPassword:  c.WebWalletPassword,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -386,9 +379,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		})
 	}
 
-	walletAuthOnly := c.webWallet != nil && (c.webWalletUsername != "" || c.webWalletPassword != "") &&
-		c.username == "" && c.password == ""
-
 	webHandlerWithOptionals := func(apiVersion, endpoint string, handlerFunc http.Handler, checkCSRF, checkHeaders bool) {
 		handler := wh.ElapsedHandler(logger, handlerFunc)
 
@@ -407,9 +397,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
-		if walletAuthOnly {
-			handler = dropWebWalletAuth(c.webWalletUsername, c.webWalletPassword, handler)
-		}
 		handler = gzhttp.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
@@ -504,8 +491,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
 	if c.webWallet != nil {
-		wallet := basicAuth(apiVersion1, c.webWalletUsername, c.webWalletPassword, "skycoin web wallet", c.webWallet)
-		mux.Handle("/", gzhttp.GzipHandler(wallet))
+		mux.Handle("/", gzhttp.GzipHandler(c.webWallet))
 	}
 	if indexHandler != nil {
 		webHandler(apiVersion1, "/", indexHandler, nil)

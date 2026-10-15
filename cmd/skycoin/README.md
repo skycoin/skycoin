@@ -80,8 +80,6 @@
 	- [web-interface-port](#web-interface-port)
 	- [web-interface-username](#web-interface-username)
 	- [web-wallet](#web-wallet)
-	- [web-wallet-password](#web-wallet-password)
-	- [web-wallet-username](#web-wallet-username)
 - [Development Environment Variables](#development-environment-variables)
 	- [USER_BURN_FACTOR](#userburnfactor)
 	- [USER_MAX_TXN_SIZE](#usermax_txnsize)
@@ -240,10 +238,6 @@ Usage:
     	username for the web interface
   -web-wallet
     	serve the skycoin web wallet at the site root, in place of the GUI
-  -web-wallet-password string
-    	password for the web wallet, leaving the API open
-  -web-wallet-username string
-    	username for the web wallet, leaving the API open
 ```
 
 ## Scenarios
@@ -344,19 +338,14 @@ $ go run cmd/skycoin/skycoin.go \
 
 This serves the skycoin web wallet at the root of the web interface, so a browser
 opening the node gets the wallet. The wallet keeps its keys in the browser and
-uses the API of the node that served it. The username and password guard the
-wallet only, so other clients can still use the API.
+uses the API of the node that served it. A password set in the wallet encrypts
+the wallets stored in that browser, and never reaches the node.
 
 ```sh
 $ go run cmd/skycoin/skycoin.go \
   --enable-api-sets=READ,TXN \
-  --web-wallet \
-  --web-wallet-username=abcdef \
-  --web-wallet-password='aCN@9xA)(CZasdmc'
+  --web-wallet
 ```
-
-Without `--web-interface-https`, the password also needs
-`--web-interface-plaintext-auth`, as when HTTPS is provided by a proxy in front.
 
 ## Options
 
@@ -707,15 +696,6 @@ Optional username for the REST API. Used in `Basic` authentication.
 
 Serve the skycoin web wallet at the site root, in place of the GUI. It cannot be
 combined with `enable-gui`.
-
-### web-wallet-password
-
-Optional password for the web wallet. The API stays open, unless the web
-interface has its own username and password, which must then be the same.
-
-### web-wallet-username
-
-Optional username for the web wallet. Used in `Basic` authentication.
 
 ## Development Environment Variables
 

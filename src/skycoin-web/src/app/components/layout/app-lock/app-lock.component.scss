@@ -1,0 +1,51 @@
+@use '../../../../theme/variables' as *;
+
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light);
+}
+
+.lock-box {
+  width: 100%;
+  max-width: 380px;
+  padding: 32px 28px;
+  border-radius: 10px;
+  background: $white;
+  color: $grey-dark;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+
+  .logo {
+    width: 64px;
+    margin-bottom: 24px;
+  }
+
+  .form-field {
+    text-align: left;
+  }
+
+  .-buttons app-button {
+    display: inline-block;
+    margin: 12px 6px 0;
+  }
+
+  .error {
+    color: $red;
+  }
+
+  .forgot {
+    margin: 24px 0 0;
+  }
+
+  .link {
+    color: $blue;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}

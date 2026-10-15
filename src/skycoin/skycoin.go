@@ -26,6 +26,7 @@ import (
 	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -505,6 +506,16 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 		Username:     c.config.Node.WebInterfaceUsername,
 		Password:     c.config.Node.WebInterfacePassword,
 		ShutdownChan: quit,
+	}
+
+	if c.config.Node.WebWallet {
+		wallet, err := gui.Handler()
+		if err != nil {
+			return nil, err
+		}
+		config.WebWallet = wallet
+		config.WebWalletUsername = c.config.Node.WebWalletUsername
+		config.WebWalletPassword = c.config.Node.WebWalletPassword
 	}
 
 	var s *api.Server

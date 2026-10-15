@@ -24,7 +24,8 @@
             "tsConfig": "src/tsconfig.app.json",
             "assets": [
               "src/assets",
-              "src/favicon.ico"
+              "src/favicon.ico",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "node_modules/font-awesome/css/font-awesome.css",
@@ -67,8 +68,10 @@
                     "scripts/wasm_exec.js"
                   ]
                 },
-                "src/favicon.ico"
-              ]
+                "src/favicon.ico",
+                "src/manifest.webmanifest"
+              ],
+              "serviceWorker": "ngsw-config.json"
             },
             "local": {
               "fileReplacements": [
@@ -100,8 +103,10 @@
                     "scripts/wasm_exec.js"
                   ]
                 },
-                "src/favicon.ico"
-              ]
+                "src/favicon.ico",
+                "src/manifest.webmanifest"
+              ],
+              "serviceWorker": "ngsw-config.json"
             },
             "e2e": {
               "fileReplacements": [
@@ -133,8 +138,10 @@
                     "scripts/wasm_exec.js"
                   ]
                 },
-                "src/favicon.ico"
-              ]
+                "src/favicon.ico",
+                "src/manifest.webmanifest"
+              ],
+              "serviceWorker": "ngsw-config.json"
             }
           }
         },

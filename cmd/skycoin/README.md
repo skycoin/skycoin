@@ -9,6 +9,7 @@
 	- [Run a public API node with a self-signed cert](#run-a-public-api-node-with-a-self-signed-cert)
 	- [Control which peers the node connects to](#control-which-peers-the-node-connects-to)
 	- [Add Basic auth to the REST API interface](#add-basic-auth-to-the-rest-api-interface)
+	- [Serve the web wallet](#serve-the-web-wallet)
 - [Options](#options)
 	- [address](#address)
 	- [block-publisher](#block-publisher)
@@ -78,6 +79,9 @@
 	- [web-interface-plaintext-auth](#web-interface-plaintext-auth)
 	- [web-interface-port](#web-interface-port)
 	- [web-interface-username](#web-interface-username)
+	- [web-wallet](#web-wallet)
+	- [web-wallet-password](#web-wallet-password)
+	- [web-wallet-username](#web-wallet-username)
 - [Development Environment Variables](#development-environment-variables)
 	- [USER_BURN_FACTOR](#userburnfactor)
 	- [USER_MAX_TXN_SIZE](#usermax_txnsize)
@@ -234,6 +238,12 @@ Usage:
     	port to serve web interface on (default 6420)
   -web-interface-username string
     	username for the web interface
+  -web-wallet
+    	serve the skycoin web wallet at the site root, in place of the GUI
+  -web-wallet-password string
+    	password for the web wallet, leaving the API open
+  -web-wallet-username string
+    	username for the web wallet, leaving the API open
 ```
 
 ## Scenarios
@@ -329,6 +339,24 @@ $ go run cmd/skycoin/skycoin.go \
   --web-interface-username=abcdef \
   --web-interface-password='aCN@9xA)(CZasdmc'
 ```
+
+### Serve the web wallet
+
+This serves the skycoin web wallet at the root of the web interface, so a browser
+opening the node gets the wallet. The wallet keeps its keys in the browser and
+uses the API of the node that served it. The username and password guard the
+wallet only, so other clients can still use the API.
+
+```sh
+$ go run cmd/skycoin/skycoin.go \
+  --enable-api-sets=READ,TXN \
+  --web-wallet \
+  --web-wallet-username=abcdef \
+  --web-wallet-password='aCN@9xA)(CZasdmc'
+```
+
+Without `--web-interface-https`, the password also needs
+`--web-interface-plaintext-auth`, as when HTTPS is provided by a proxy in front.
 
 ## Options
 
@@ -674,6 +702,20 @@ Port number for the REST API interface. Default `6420`.
 ### web-interface-username
 
 Optional username for the REST API. Used in `Basic` authentication.
+
+### web-wallet
+
+Serve the skycoin web wallet at the site root, in place of the GUI. It cannot be
+combined with `enable-gui`.
+
+### web-wallet-password
+
+Optional password for the web wallet. The API stays open, unless the web
+interface has its own username and password, which must then be the same.
+
+### web-wallet-username
+
+Optional username for the web wallet. Used in `Basic` authentication.
 
 ## Development Environment Variables
 

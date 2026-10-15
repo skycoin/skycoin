@@ -1,7 +1,7 @@
 //go:build !tinygo
 
-// Package wasmassets registers the skycoin-lite cipher wasm with the
-// skycoin-web command, for the side effect of importing it:
+// Package wasmassets registers the skycoin-lite cipher wasm with the web
+// wallet, for `skycoin web` and the node's -web-wallet, by being imported:
 //
 //	import _ "github.com/skycoin/skycoin/cmd/skycoin-web/wasmassets"
 //
@@ -20,10 +20,10 @@
 package wasmassets
 
 import (
-	"github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 	wasmgo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-go"
+	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 )
 
 func init() {
-	commands.RegisterCipherWasm(wasmgo.WasmFileGz, wasmgo.WasmExecJS)
+	gui.RegisterCipherWasm(wasmgo.WasmFileGz, wasmgo.WasmExecJS)
 }

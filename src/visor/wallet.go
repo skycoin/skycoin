@@ -280,22 +280,19 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 		return nil, nil, err
 	}
 
-	if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {
-		// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
-		// only bip44 wallet will implement it, all others do nothing. In this way
-		// we don't have to explicitly check the wallet type here.
-		//
-		// For bip44 wallet, peek a change address if p.ChangeAddress is nill
-		if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
-			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs.tf)
-			if err != nil {
-				logger.Critical().WithError(err).Error("PeekChangeAddress failed")
-				return err
-			}
-			skyAddr := addr.(cipher.Address)
-			p.ChangeAddress = &skyAddr
-			return nil
-		}); err != nil {
+	if p.ChangeAddress == nil && w.Type() != wallet.WalletTypeCollection {
+		update := func(w wallet.Wallet) error {
+			var err error
+			p.ChangeAddress, err = vs.newChangeAddress(w)
+			return err
+		}
+		var err error
+		if w.IsEncrypted() && w.Type() != wallet.WalletTypeBip44 {
+			err = vs.wallets.UpdateSecrets(wltID, password, update)
+		} else {
+			err = vs.wallets.Update(wltID, update)
+		}
+		if err != nil {
 			return nil, nil, err
 		}
 	}
@@ -309,6 +306,37 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	}
 
 	return txn, inputs, nil
+}
+
+// ErrChangeAddressRequired is returned when an encrypted wallet must make a change
+// address but no password was given to unlock it.
+var ErrChangeAddressRequired = NewUserError(errors.New("change address required: an encrypted wallet needs its password to generate one"))
+
+// newChangeAddress returns an unused address of w to receive the change, so the
+// change does not go back to an address whose public key this spend reveals.
+// w must already be unlocked for a deterministic wallet.
+func (vs *Visor) newChangeAddress(w wallet.Wallet) (*cipher.Address, error) {
+	var addr cipher.Addresser
+	switch {
+	case w.Type() == wallet.WalletTypeBip44:
+		a, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs.tf)
+		if err != nil {
+			logger.Critical().WithError(err).Error("PeekChangeAddress failed")
+			return nil, err
+		}
+		addr = a
+	case w.IsEncrypted():
+		return nil, ErrChangeAddressRequired
+	default:
+		addrs, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
+		if err != nil {
+			return nil, err
+		}
+		addr = addrs[0]
+	}
+
+	skyAddr := addr.(cipher.Address)
+	return &skyAddr, nil
 }
 
 // WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
@@ -326,19 +354,11 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	var inputs []TransactionInput
 
 	if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
-		if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {
-			// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
-			// only bip44 wallet will implement it, all others do nothing. In this way
-			// we don't have to explicitly check the wallet type here.
-			//
-			// For bip44 wallet, peek a change address if p.ChangeAddress is nill
-			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs.tf)
-			if err != nil {
-				logger.Critical().WithError(err).Error("PeekChangeAddress failed")
+		if p.ChangeAddress == nil && w.Type() != wallet.WalletTypeCollection {
+			var err error
+			if p.ChangeAddress, err = vs.newChangeAddress(w); err != nil {
 				return err
 			}
-			skyAddr := addr.(cipher.Address)
-			p.ChangeAddress = &skyAddr
 		}
 
 		var err error

@@ -210,6 +210,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		sendCmd(),
 		showConfigCmd(),
 		showSeedCmd(),
+		sweepCmd(),
 		statusCmd(),
 		transactionCmd(),
 		verifyTransactionCmd(),

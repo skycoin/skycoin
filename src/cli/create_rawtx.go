@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -91,7 +92,7 @@ func createRawTxnCmd() *cobra.Command {
 
 	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
 	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
-Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+Defaults to a new address added to the wallet (an input address for collection wallets).`)
 	createRawTxnCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
 	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
@@ -128,6 +129,12 @@ func createRawTxnV2Cmd() *cobra.Command {
 				return err
 			}
 
+			to := make([]string, len(req.To))
+			for i, r := range req.To {
+				to[i] = r.Address
+			}
+			warnSpentAddresses(apiClient, os.Stderr, to)
+
 			rsp, err := apiClient.WalletCreateTransaction(*req)
 			if err != nil {
 				return err
@@ -145,7 +152,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 
 	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
 	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
-	Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+	Defaults to a new address added to the wallet (an input address for collection wallets).`)
 	createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
 	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
 	createRawTxnCmd.Flags().BoolP("unsign", "", false, "Do not sign the transaction")
@@ -338,31 +345,14 @@ func fromWalletOrAddress(c *cobra.Command, walletFile string) (walletAddress, er
 	return wltAddr, nil
 }
 
+// getChangeAddress validates chgAddr. An empty one stays empty, and the
+// transaction then gets a new change address from the wallet (see newChangeAddress).
 func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 	if chgAddr == "" {
-		switch {
-		case wltAddr.Address != "":
-			// use the from address as change address
-			chgAddr = wltAddr.Address
-		case wltAddr.Wallet != "":
-			// get the default wallet's coin base address
-			wlt, err := wallet.Load(wltAddr.Wallet)
-			if err != nil {
-				return "", WalletLoadError{err}
-			}
-			es, err := wlt.GetEntries()
-			if err != nil {
-				return "", err
-			}
-
-			if len(es) > 0 {
-				chgAddr = es[0].Address.String()
-			} else {
-				return "", errors.New("no change address was found")
-			}
-		default:
+		if wltAddr.Address == "" && wltAddr.Wallet == "" {
 			return "", errors.New("wallet file, from address and change address are empty")
 		}
+		return "", nil
 	}
 
 	// validate the address
@@ -599,6 +589,12 @@ func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction,
 		return nil, err
 	}
 
+	to := make([]string, len(parsedArgs.SendAmounts))
+	for i, s := range parsedArgs.SendAmounts {
+		to[i] = s.Addr
+	}
+	warnSpentAddresses(apiClient, os.Stderr, to)
+
 	// TODO -- load distribution params from config? Need to allow fiber chains to be used easily
 	// There's too many distribution parameters to put them in command line, but we could read them from a file.
 	// We could also have multiple hardcoded known distribution parameters for fiber coins, in the source,
@@ -637,23 +633,20 @@ func validateSendAmounts(toAddrs []SendAmount) error {
 // PUBLIC
 
 // CreateRawTxnFromWallet creates a transaction from any address or combination of addresses in a wallet
+// An empty chgAddr sends the change to a new address added to the wallet file.
 func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) (*coin.Transaction, error) {
-	// check change address
-	cAddr, err := cipher.DecodeBase58Address(chgAddr)
-	if err != nil {
-		return nil, ErrAddress
+	if chgAddr != "" {
+		if _, err := cipher.DecodeBase58Address(chgAddr); err != nil {
+			return nil, ErrAddress
+		}
 	}
 
-	// check if the change address is in wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := wlt.GetEntry(cAddr); err != nil {
-		if err == wallet.ErrEntryNotFound {
-			return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
-		}
+	if err := checkChangeAddress(wlt, chgAddr); err != nil {
 		return nil, err
 	}
 
@@ -693,7 +686,7 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 		addrStrArray[i] = a.String()
 	}
 
-	return CreateRawTxn(c, wlt, addrStrArray, chgAddr, toAddrs, password, distParams)
+	return createRawTxnWithChange(c, wlt, walletFile, addrStrArray, chgAddr, toAddrs, password, distParams)
 }
 
 // CreateRawTxnFromAddress creates a transaction from a specific address in a wallet
@@ -716,16 +709,7 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 		return nil, err
 	}
 
-	// validate change address
-	cAddr, err := cipher.DecodeBase58Address(chgAddr)
-	if err != nil {
-		return nil, ErrAddress
-	}
-
-	if _, err := wlt.GetEntry(cAddr); err != nil {
-		if err == wallet.ErrEntryNotFound {
-			return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
-		}
+	if err := checkChangeAddress(wlt, chgAddr); err != nil {
 		return nil, err
 	}
 
@@ -754,7 +738,92 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 		}
 	}
 
-	return CreateRawTxn(c, wlt, []string{addr}, chgAddr, toAddrs, password, distParams)
+	return createRawTxnWithChange(c, wlt, walletFile, []string{addr}, chgAddr, toAddrs, password, distParams)
+}
+
+// checkChangeAddress checks that a named change address belongs to wlt.
+func checkChangeAddress(wlt wallet.Wallet, chgAddr string) error {
+	if chgAddr == "" {
+		return nil
+	}
+	cAddr, err := cipher.DecodeBase58Address(chgAddr)
+	if err != nil {
+		return ErrAddress
+	}
+	if _, err := wlt.GetEntry(cAddr); err != nil {
+		if err == wallet.ErrEntryNotFound {
+			return fmt.Errorf("change address %v is not in wallet", chgAddr)
+		}
+		return err
+	}
+	return nil
+}
+
+// createRawTxnWithChange is CreateRawTxn that, given no change address, adds a new
+// one to the wallet and saves the wallet file once the transaction is made.
+func createRawTxnWithChange(c GetOutputser, wlt wallet.Wallet, walletFile string, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) (*coin.Transaction, error) {
+	added := false
+	if chgAddr == "" {
+		var err error
+		if chgAddr, added, err = newChangeAddress(wlt, password, inAddrs); err != nil {
+			return nil, err
+		}
+	}
+
+	txn, err := CreateRawTxn(c, wlt, inAddrs, chgAddr, toAddrs, password, distParams)
+	if err != nil || !added {
+		return txn, err
+	}
+	if err := saveWalletFile(wlt, walletFile); err != nil {
+		return nil, err
+	}
+	return txn, nil
+}
+
+// saveWalletFile writes wlt back to the file it was loaded from.
+func saveWalletFile(wlt wallet.Wallet, walletFile string) error {
+	data, err := wlt.Serialize()
+	if err != nil {
+		return err
+	}
+	if err := file.SaveBinary(walletFile, data, 0600); err != nil {
+		return fmt.Errorf("save the new address to %s: %v", walletFile, err)
+	}
+	return nil
+}
+
+// newChangeAddress adds an unused address to wlt for the change, so the change does
+// not return to an address whose public key this spend reveals. A collection wallet
+// cannot make one and keeps the old default, the first of inAddrs.
+func newChangeAddress(wlt wallet.Wallet, password []byte, inAddrs []string) (string, bool, error) {
+	opts := []wallet.Option{wallet.OptionGenerateN(1)}
+	switch wlt.Type() {
+	case wallet.WalletTypeCollection:
+		if len(inAddrs) == 0 {
+			return "", false, errors.New("no change address was found")
+		}
+		return inAddrs[0], false, nil
+	case wallet.WalletTypeBip44:
+		opts = append(opts, wallet.OptionChange())
+	}
+
+	var addrs []cipher.Addresser
+	generate := func(w wallet.Wallet) error {
+		var err error
+		addrs, err = w.GenerateAddresses(opts...)
+		return err
+	}
+
+	var err error
+	if wlt.IsEncrypted() && wlt.Type() != wallet.WalletTypeBip44 {
+		err = wallet.GuardUpdate(wlt, password, generate)
+	} else {
+		err = generate(wlt)
+	}
+	if err != nil {
+		return "", false, err
+	}
+	return addrs[0].String(), true, nil
 }
 
 // GetOutputser implements unspent output querying

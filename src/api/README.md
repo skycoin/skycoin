@@ -1184,10 +1184,13 @@ The request body includes:
 * A configuration for how destination hours are distributed, either manual or automatic
 * Additional options
 
-`change_address` is optional. If not provided and the wallet is a `deterministic` type
-wallet, then the change address will default to an address from one of the
-unspent outputs being spent as a transaction input.  If the wallet is a `bip44` type
-wallet, then a new, unused change address will be created.
+`change_address` is optional. If not provided, the change goes to a new address
+so that it does not return to an address whose public key the spend reveals.
+A `bip44` wallet uses an unused address on its change chain. A `deterministic`
+or `xpub` wallet generates its next address, and an encrypted `deterministic`
+wallet needs its password for that, so an unsigned request from one must name
+a `change_address`. A `collection` wallet cannot generate addresses, so its
+change goes to an address from one of the unspent outputs being spent.
 
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 

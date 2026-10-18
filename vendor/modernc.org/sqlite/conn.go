@@ -484,43 +484,14 @@ func (c *conn) bind(pstmt uintptr, n int, args []driver.NamedValue) (allocs []ui
 		allocs = nil
 	}()
 
+	f := newArgFinder(args)
 	for i := 1; i <= n; i++ {
 		name, err := c.bindParameterName(pstmt, i)
 		if err != nil {
 			return allocs, err
 		}
 
-		var found bool
-		var v driver.NamedValue
-		for _, v = range args {
-			if name != "" {
-				// For ?NNN and $NNN params, match if NNN == v.Ordinal.
-				//
-				// Supporting this for $NNN is a special case that makes eg
-				// `select $1, $2, $3 ...` work without needing to use
-				// sql.Named.
-				if (name[0] == '?' || name[0] == '$') && name[1:] == strconv.Itoa(v.Ordinal) {
-					found = true
-					break
-				}
-
-				// sqlite supports '$', '@' and ':' prefixes for string
-				// identifiers and '?' for numeric, so we cannot
-				// combine different prefixes with the same name
-				// because `database/sql` requires variable names
-				// to start with a letter
-				if name[1:] == v.Name[:] {
-					found = true
-					break
-				}
-			} else {
-				if v.Ordinal == i {
-					found = true
-					break
-				}
-			}
-		}
-
+		v, found := f.find(name, i)
 		if !found {
 			if name != "" {
 				return allocs, fmt.Errorf("missing named argument %q", name[1:])
@@ -591,6 +562,116 @@ func (c *conn) bind(pstmt uintptr, n int, args []driver.NamedValue) (allocs []ui
 		}
 	}
 	return allocs, nil
+}
+
+// argFinder finds the argument bound to a statement parameter.
+type argFinder struct {
+	args    []driver.NamedValue
+	byName  map[string]int // index of the first argument with a name, built on first use
+	ordered bool           // args[j].Ordinal == j+1 for every j
+	named   bool           // some argument has a name
+}
+
+func newArgFinder(args []driver.NamedValue) argFinder {
+	f := argFinder{args: args, ordered: true}
+	for j := range args {
+		f.ordered = f.ordered && args[j].Ordinal == j+1
+		f.named = f.named || args[j].Name != ""
+	}
+	return f
+}
+
+// find returns the argument scanArgs(f.args, name, i) returns. database/sql
+// passes args ordered by Ordinal, starting at 1, so the argument with ordinal
+// k is args[k-1] and find does not have to scan args for every parameter,
+// which made binding quadratic in the number of parameters.
+//
+// https://github.com/modernc-org/sqlite/issues/8
+func (f *argFinder) find(name string, i int) (driver.NamedValue, bool) {
+	if !f.ordered {
+		return scanArgs(f.args, name, i)
+	}
+
+	ord := i
+	if name != "" {
+		// scanArgs matches ?NNN and $NNN if NNN == strconv.Itoa(v.Ordinal),
+		// which for an ordinal >= 1 has no sign and no leading zero.
+		ord = 0
+		if (name[0] == '?' || name[0] == '$') && len(name) > 1 && name[1] >= '1' && name[1] <= '9' {
+			if k, err := strconv.Atoi(name[1:]); err == nil {
+				ord = k
+			}
+		}
+	}
+	j := -1 // index of the first matching argument
+	if ord >= 1 && ord <= len(f.args) {
+		j = ord - 1
+	}
+	if name != "" && f.named {
+		if k, ok := f.nameIndex(name[1:]); ok && (j < 0 || k < j) {
+			j = k
+		}
+	}
+	if j < 0 {
+		return driver.NamedValue{}, false
+	}
+
+	return f.args[j], true
+}
+
+// nameIndex returns the index of the first argument with the given name.
+func (f *argFinder) nameIndex(name string) (int, bool) {
+	// Up to a few dozen arguments, scanning beats building the map.
+	if len(f.args) <= 32 {
+		for j := range f.args {
+			if f.args[j].Name == name {
+				return j, true
+			}
+		}
+		return 0, false
+	}
+
+	if f.byName == nil {
+		f.byName = make(map[string]int, len(f.args))
+		for j := len(f.args) - 1; j >= 0; j-- {
+			if f.args[j].Name != "" {
+				f.byName[f.args[j].Name] = j
+			}
+		}
+	}
+	j, ok := f.byName[name]
+	return j, ok
+}
+
+// scanArgs returns the first argument in args matching the parameter at index
+// i named name, "" for an anonymous parameter. It is linear in len(args).
+func scanArgs(args []driver.NamedValue, name string, i int) (driver.NamedValue, bool) {
+	for _, v := range args {
+		if name != "" {
+			// For ?NNN and $NNN params, match if NNN == v.Ordinal.
+			//
+			// Supporting this for $NNN is a special case that makes eg
+			// `select $1, $2, $3 ...` work without needing to use
+			// sql.Named.
+			if (name[0] == '?' || name[0] == '$') && name[1:] == strconv.Itoa(v.Ordinal) {
+				return v, true
+			}
+
+			// sqlite supports '$', '@' and ':' prefixes for string
+			// identifiers and '?' for numeric, so we cannot
+			// combine different prefixes with the same name
+			// because `database/sql` requires variable names
+			// to start with a letter
+			if name[1:] == v.Name[:] {
+				return v, true
+			}
+		} else {
+			if v.Ordinal == i {
+				return v, true
+			}
+		}
+	}
+	return driver.NamedValue{}, false
 }
 
 // C documentation
@@ -732,7 +813,16 @@ func (c *conn) interrupt(pdb uintptr) (err error) {
 	defer c.Unlock()
 
 	if c.tls != nil {
-		sqlite3.Xsqlite3_interrupt(c.tls, pdb)
+		// Not c.tls. This runs on the goroutine watching the context,
+		// while the query it interrupts may be running on c.tls, and a
+		// libc.TLS is not safe for concurrent use. The transpiled
+		// sqlite3_interrupt is a single atomic store today and never
+		// touches the TLS, but nothing guarantees a future SQLite or ccgo
+		// keeps it so. A fresh TLS costs ~140 ns and is paid only when a
+		// query is actually interrupted.
+		tls := libc.NewTLS()
+		sqlite3.Xsqlite3_interrupt(tls, pdb)
+		tls.Close()
 	}
 	return nil
 }

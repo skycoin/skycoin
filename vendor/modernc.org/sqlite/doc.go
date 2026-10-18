@@ -146,11 +146,34 @@
 //
 //	...
 //
+// The dsnURI is a plain file name or a "file:" URI, either optionally followed
+// by '?' and query parameters. [Driver.Open] documents the parameters the
+// driver interprets and how SQLite's own URI parameters, such as mode=ro,
+// reach SQLite.
+//
 // [NewConnector] is an alternative entry point returning a
 // [driver.Connector] for use with [sql.OpenDB]. It opens the same
 // connections sql.Open does, from the same driver, and exists for callers that
 // need to interpose on them -- tracing, metrics, or connection-scoped setup --
 // which sql.Open gives no access to. See its docstring for an example.
+//
+// Connection-scoped state outlives the caller that set it. A [sql.DB] is a
+// pool, and a physical connection returned to it keeps whatever was done on
+// it: PRAGMAs set with Exec, ATTACHed databases, temporary tables, and
+// anything registered through [sql.Conn.Raw]. The next caller to borrow that
+// connection inherits it; the driver does not reset it between borrowers. For
+// state every connection should have, use DSN parameters or a connection hook,
+// which apply to each connection as it is opened. For state only one caller
+// should see, hold a [sql.Conn] for as long as it is needed and undo it, or
+// close that connection, before releasing it.
+//
+// A driver connection reached through [sql.Conn.Raw] is not safe for
+// concurrent use, and must not be used after the function passed to Raw
+// returns. Every connection is opened with SQLITE_OPEN_FULLMUTEX, but that
+// serializes access only inside SQLite: the driver's own per-connection
+// state, including the [modernc.org/libc.TLS] every call into SQLite runs
+// on, is used before that mutex is reached, and two goroutines using one
+// connection can corrupt memory.
 //
 // # Debug and development versions
 //
@@ -165,7 +188,14 @@
 // which reads them from checkouts of those two repositories placed next to
 // this one. To build a debug or otherwise modified version, adjust the
 // compile-time options in modernc.org/libsqlite3, regenerate there with 'make
-// generate', and vendor the result here.
+// generate', and vendor the result here with
+//
+//	$ make vendor VENDORFLAGS=-allow-dirty
+//
+// since plain 'make vendor' refuses a checkout with uncommitted changes. The
+// vendor.json it writes records the checkout as dirty, so the last step of
+// make vendor and TestVendorStamp both fail, by design: such a tree is for
+// local use and must not be committed or released.
 //
 // # Hacking
 //

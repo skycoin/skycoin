@@ -53,6 +53,7 @@ export class ButtonComponent implements OnDestroy {
    */
   setLoading() {
     this.state = ButtonStates.Loading;
+    this.changeDetectorRef.markForCheck();
   }
 
   /**
@@ -60,6 +61,7 @@ export class ButtonComponent implements OnDestroy {
    */
   setSuccess() {
     this.state = ButtonStates.Success;
+    this.changeDetectorRef.markForCheck();
     setTimeout(() => {
       this.state = ButtonStates.Normal;
       this.changeDetectorRef.markForCheck();
@@ -68,10 +70,12 @@ export class ButtonComponent implements OnDestroy {
 
   setDisabled() {
     this.disabled = true;
+    this.changeDetectorRef.markForCheck();
   }
 
   setEnabled() {
     this.disabled = false;
+    this.changeDetectorRef.markForCheck();
   }
 
   isLoading(): boolean {
@@ -84,6 +88,7 @@ export class ButtonComponent implements OnDestroy {
    */
   resetState() {
     this.state = ButtonStates.Normal;
+    this.changeDetectorRef.markForCheck();
 
     return this;
   }

@@ -199,5 +199,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.msgBarService.showError(error);
     this.button.resetState();
     this.working = false;
+    this.changeDetector.markForCheck();
   }
 }

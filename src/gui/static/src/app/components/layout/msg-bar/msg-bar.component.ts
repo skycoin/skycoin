@@ -60,10 +60,12 @@ export class MsgBarComponent {
       }, 32);
     } else {
       this.visible = true;
+      this.changeDetectorRef.markForCheck();
     }
   }
 
   hide() {
     this.visible = false;
+    this.changeDetectorRef.markForCheck();
   }
 }

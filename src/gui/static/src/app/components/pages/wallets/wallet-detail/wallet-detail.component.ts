@@ -289,6 +289,8 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
+    account.showXpub = true;
+    account.accountXpubError = null;
     // Fetch all three xpub levels in parallel
     const accountPath = `${account.index}`;
     const externalPath = `${account.index}/0`;
@@ -297,11 +299,10 @@ export class WalletDetailComponent implements OnDestroy {
     this.walletsAndAddressesService.getXPubKey(this.wallet, accountPath).subscribe(
       (xpub) => {
         account.accountXpubKey = xpub;
-        account.showXpub = true;
         this.changeDetectorRef.markForCheck();
       },
       (err) => {
-        this.msgBarService.showError(err);
+        account.accountXpubError = typeof err === 'string' ? err : (err?.message || 'Unavailable');
         this.changeDetectorRef.markForCheck();
       }
     );

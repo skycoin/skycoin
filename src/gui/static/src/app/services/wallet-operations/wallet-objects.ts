@@ -71,6 +71,7 @@ export class Bip44Account {
   accountXpubKey: string | null = null;  // m/44'/coin'/account' — derives both chains
   externalXpubKey: string | null = null; // m/44'/coin'/account'/0 — external chain only
   changeXpubKey: string | null = null;   // m/44'/coin'/account'/1 — change chain only
+  accountXpubError: string | null = null;
   showXpub = false;
   showChangeAddresses = false;
 }

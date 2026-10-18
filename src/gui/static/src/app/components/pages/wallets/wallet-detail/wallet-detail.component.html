@@ -51,9 +51,13 @@
         <span class="-account-name">{{ account.name || ('Account ' + account.index) }}</span>
         <span class="-account-toggle">{{ account.showXpub ? 'Hide' : 'Show' }} xPub Keys</span>
       </div>
-      @if (account.showXpub && account.accountXpubKey) {
+      @if (account.showXpub && (account.accountXpubKey || account.accountXpubError)) {
         <div class="-xpub-display">
           <span class="-xpub-label">Account xPub (m/44'/coin'/{{ account.index }}') — derives both chains:</span>
+          @if (!account.accountXpubKey) {
+            <p>{{ account.accountXpubError }}</p>
+          }
+          @if (account.accountXpubKey) {
           <p class="click-to-copy" [ngClass]="{ copying: copying.has(account.accountXpubKey) }"
             (click)="copyAddress($event, {address: account.accountXpubKey, confirmed: true})"
             (mouseleave)="copying.delete(account.accountXpubKey)">
@@ -62,6 +66,7 @@
               {{ 'wallet.address.copy' | translate }}
             </span>
           </p>
+          }
         </div>
       }
 

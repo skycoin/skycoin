@@ -100,6 +100,16 @@ func (ras readableBip44Accounts) toBip44Accounts(d wallet.AddressSecKeyDecoder) 
 			a.PrivateKey = key
 		}
 
+		if ra.PublicKey != "" {
+			pub, err := bip32.DeserializeEncodedPublicKey(ra.PublicKey)
+			if err != nil {
+				return nil, err
+			}
+			a.AccountPubKey = pub
+		} else if err := a.fillAccountPubKey(); err != nil {
+			return nil, err
+		}
+
 		for _, rc := range ra.Chains {
 			c, err := rc.toBip44Chain(d)
 			if err != nil {
@@ -117,10 +127,11 @@ func (ras readableBip44Accounts) toBip44Accounts(d wallet.AddressSecKeyDecoder) 
 // ReadableBip44Account is the JSON representation of account
 type readableBip44Account struct {
 	PrivateKey string               `json:"private_key,omitempty"`
-	Name       string               `json:"name"`      // Account name
-	Index      uint32               `json:"index"`     // Account index
-	CoinType   string               `json:"coin_type"` // Account coin type, determines the way to generate addresses
-	Chains     []readableBip44Chain `json:"chains"`    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
+	PublicKey  string               `json:"public_key,omitempty"` // Account xpub
+	Name       string               `json:"name"`                 // Account name
+	Index      uint32               `json:"index"`                // Account index
+	CoinType   string               `json:"coin_type"`            // Account coin type, determines the way to generate addresses
+	Chains     []readableBip44Chain `json:"chains"`               // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
 // ReadableBip44Chain bip44 chain with JSON tags
@@ -228,8 +239,13 @@ func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error)
 		if a.Account.PrivateKey != nil {
 			privateKey = a.Account.String()
 		}
+		var publicKey string
+		if a.AccountPubKey != nil {
+			publicKey = a.AccountPubKey.String()
+		}
 		ras = append(ras, &readableBip44Account{
 			PrivateKey: privateKey,
+			PublicKey:  publicKey,
 			Name:       a.Name,
 			Index:      a.Index,
 			CoinType:   string(a.CoinType),

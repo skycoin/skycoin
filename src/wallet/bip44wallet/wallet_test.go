@@ -1051,3 +1051,33 @@ func getExternalAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 func getChangeAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
 }
+
+func TestWalletGetAccountXPubKeyEncrypted(t *testing.T) {
+	w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase,
+		wallet.OptionCoinType(wallet.CoinTypeSkycoin))
+	require.NoError(t, err)
+
+	want, err := w.GetXPubKey("0")
+	require.NoError(t, err)
+
+	require.NoError(t, w.Lock([]byte("pwd")))
+	got, err := w.GetXPubKey("0")
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+
+	// survives a save/load round trip of the encrypted wallet
+	b, err := w.Serialize()
+	require.NoError(t, err)
+	w2 := &Wallet{}
+	err = w2.Deserialize(b)
+	require.NoError(t, err)
+	got, err = w2.GetXPubKey("0")
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+
+	// an older encrypted file without the key returns an error, not a panic
+	w2.accountManager.(*bip44Accounts).accounts[0].AccountPubKey = nil
+	_, err = w2.GetXPubKey("0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "decrypted once")
+}

@@ -24,6 +24,8 @@ type bip44Account struct {
 	Index    uint32          // Account index
 	CoinType wallet.CoinType // Account coin type, determines the way to generate addresses
 	Chains   []bip44Chain    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
+	// AccountPubKey is the account xpub, kept so it is available while the wallet is encrypted.
+	AccountPubKey *bip32.PublicKey
 }
 
 type bip44AccountCreateOptions struct {
@@ -74,6 +76,10 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		Name:     opts.name,
 		Index:    opts.index,
 		CoinType: opts.coinType,
+	}
+
+	if err := ba.fillAccountPubKey(); err != nil {
+		return nil, err
 	}
 
 	// init the external chain
@@ -189,6 +195,9 @@ func (a *bip44Account) unpackSecrets(ss wallet.Secrets) error {
 	}
 
 	a.Account.PrivateKey = key
+	if err := a.fillAccountPubKey(); err != nil {
+		return err
+	}
 
 	for i := range a.Chains {
 		if err := a.Chains[i].unpackSecrets(ss); err != nil {
@@ -253,6 +262,10 @@ func (a bip44Account) Clone() bip44Account {
 		Name:     a.Name,
 		Index:    a.Index,
 		CoinType: a.CoinType,
+	}
+	if a.AccountPubKey != nil {
+		pk := a.AccountPubKey.Clone()
+		na.AccountPubKey = &pk
 	}
 
 	na.Chains = make([]bip44Chain, len(a.Chains))
@@ -569,9 +582,26 @@ func (a *bip44Accounts) getAccountXPubKey(accountIndex uint32) (string, error) {
 		return "", errors.New("account index out of bounds")
 	}
 	act := a.accounts[accountIndex]
-	pub, err := act.Account.PublicKey()
-	if err != nil {
-		return "", fmt.Errorf("failed to derive account public key: %v", err)
+	if act.AccountPubKey == nil {
+		if act.Account.PrivateKey == nil {
+			return "", errors.New("account xpub is unavailable for this encrypted wallet until it is decrypted once")
+		}
+		if err := act.fillAccountPubKey(); err != nil {
+			return "", fmt.Errorf("failed to derive account public key: %v", err)
+		}
 	}
-	return pub.String(), nil
+	return act.AccountPubKey.String(), nil
+}
+
+// fillAccountPubKey derives the account public key from the private key when missing.
+func (a *bip44Account) fillAccountPubKey() error {
+	if a.AccountPubKey != nil || a.Account.PrivateKey == nil {
+		return nil
+	}
+	pub, err := a.Account.PublicKey()
+	if err != nil {
+		return err
+	}
+	a.AccountPubKey = pub
+	return nil
 }

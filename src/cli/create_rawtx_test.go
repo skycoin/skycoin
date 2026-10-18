@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,6 +12,8 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
 )
 
 func TestMakeChangeOut(t *testing.T) {
@@ -597,4 +600,44 @@ func TestParseSendAmountsFromCSV(t *testing.T) {
 			require.Equal(t, tc.amts, amts)
 		})
 	}
+}
+
+type fakeFinder map[string]bool
+
+func (f fakeFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	out := make([]bool, len(addrs))
+	for i, a := range addrs {
+		out[i] = f[a.String()]
+	}
+	return out, nil
+}
+
+func TestGetChangeAddressBip44(t *testing.T) {
+	dir := t.TempDir()
+	w, err := bip44wallet.NewWallet("b.wlt", "test", "voyage say extend find sheriff surge priority merit ignore maple cash argue", "")
+	require.NoError(t, err)
+	path := filepath.Join(dir, "b.wlt")
+	require.NoError(t, wallet.Save(w, dir))
+
+	wa := walletAddress{Wallet: path}
+	first, err := getChangeAddress(wa, "", fakeFinder{})
+	require.NoError(t, err)
+
+	// unused entry is reused
+	again, err := getChangeAddress(wa, "", fakeFinder{})
+	require.NoError(t, err)
+	require.Equal(t, first, again)
+
+	// used entry moves on, and the new entry is saved
+	next, err := getChangeAddress(wa, "", fakeFinder{first: true})
+	require.NoError(t, err)
+	require.NotEqual(t, first, next)
+	reused, err := getChangeAddress(wa, "", fakeFinder{first: true})
+	require.NoError(t, err)
+	require.Equal(t, next, reused)
+
+	// an explicit change address wins
+	got, err := getChangeAddress(wa, first, fakeFinder{})
+	require.NoError(t, err)
+	require.Equal(t, first, got)
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -20,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
 )
 
 var (
@@ -91,7 +93,7 @@ func createRawTxnCmd() *cobra.Command {
 
 	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
 	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
-Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+Defaults to one of the spending addresses (deterministic wallets) or to the next unused change address (bip44 wallets, needs the node).`)
 	createRawTxnCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
 	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
@@ -145,7 +147,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 
 	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
 	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
-	Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+Defaults to one of the spending addresses (deterministic wallets) or to the next unused change address (bip44 wallets).`)
 	createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
 	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
 	createRawTxnCmd.Flags().BoolP("unsign", "", false, "Do not sign the transaction")
@@ -338,7 +340,15 @@ func fromWalletOrAddress(c *cobra.Command, walletFile string) (walletAddress, er
 	return wltAddr, nil
 }
 
-func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
+func getChangeAddress(wltAddr walletAddress, chgAddr string, tf wallet.TransactionsFinder) (string, error) {
+	if chgAddr == "" && wltAddr.Wallet != "" {
+		a, err := bip44ChangeAddress(wltAddr.Wallet, tf)
+		if err != nil {
+			return "", err
+		}
+		chgAddr = a
+	}
+
 	if chgAddr == "" {
 		switch {
 		case wltAddr.Address != "":
@@ -565,7 +575,7 @@ func parseCreateRawTxnArgs(c *cobra.Command, args []string) (*createRawTxnArgs, 
 	if err != nil {
 		return nil, err
 	}
-	chgAddr, err := getChangeAddress(wltAddr, changeAddress)
+	chgAddr, err := getChangeAddress(wltAddr, changeAddress, apiTransactionsFinder{apiClient})
 	if err != nil {
 		return nil, err
 	}
@@ -1008,4 +1018,71 @@ func NewTransaction(utxos []transaction.UxBalance, keys []cipher.SecKey, outs []
 	}
 
 	return &txn, nil
+}
+
+// apiTransactionsFinder reports address activity using the node's API.
+type apiTransactionsFinder struct {
+	c *api.Client
+}
+
+// AddressesActivity implements wallet.TransactionsFinder
+func (f apiTransactionsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	strs := make([]string, len(addrs))
+	for i, a := range addrs {
+		strs[i] = a.String()
+	}
+	txns, err := f.c.Transactions(strs)
+	if err != nil {
+		return nil, fmt.Errorf("bip44 change address lookup needs the node: %w", err)
+	}
+	active := make([]bool, len(addrs))
+	for i, s := range strs {
+		for _, t := range txns {
+			if txnTouches(t, s) {
+				active[i] = true
+				break
+			}
+		}
+	}
+	return active, nil
+}
+
+func txnTouches(t readable.TransactionWithStatus, addr string) bool {
+	for _, o := range t.Transaction.Out {
+		if o.Address == addr {
+			return true
+		}
+	}
+	return false
+}
+
+// bip44ChangeAddress returns the next unused change address of a bip44
+// wallet file, or "" for other wallet types. A new entry is saved.
+func bip44ChangeAddress(path string, tf wallet.TransactionsFinder) (string, error) {
+	wlt, err := wallet.Load(path)
+	if err != nil {
+		return "", WalletLoadError{err}
+	}
+	bw, ok := wlt.(*bip44wallet.Wallet)
+	if !ok {
+		return "", nil
+	}
+	before, err := bw.GetEntries(wallet.OptionChange())
+	if err != nil {
+		return "", err
+	}
+	addr, err := bw.PeekChangeAddress(tf)
+	if err != nil {
+		return "", err
+	}
+	after, err := bw.GetEntries(wallet.OptionChange())
+	if err != nil {
+		return "", err
+	}
+	if len(after) != len(before) {
+		if err := wallet.Save(bw, filepath.Dir(path)); err != nil {
+			return "", err
+		}
+	}
+	return addr.String(), nil
 }

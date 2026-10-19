@@ -43,6 +43,13 @@
   </div>
 </div>
 
+@if (exposedWithCoinsCount > 0) {
+  <div class="-exposure-banner">
+    <mat-icon>warning</mat-icon>
+    <span>{{ 'wallet.exposed-banner' | translate: { count: exposedWithCoinsCount } }}</span>
+  </div>
+}
+
 @if (isBip44 && wallet.accounts?.length > 0) {
   <!-- BIP44 account-structured view -->
   @for (account of wallet.accounts; track account.index) {
@@ -94,9 +101,12 @@
       <div class="-records">
         @for (address of account.externalAddresses; track address.address; let i = $index) {
           @if (!hideEmpty || ($any(address).coins && $any(address).coins.isGreaterThan(0))) {
-            <div class="-record">
+            <div class="-record" [ngClass]="{ '-exposed': exposed.has(address.address), '-exposed-funded': exposedWithCoins(address) }">
               <div class="-width-50 grey-text" [title]="'Child index: ' + (address.childNumber != null ? address.childNumber : i)">{{ address.childNumber != null ? address.childNumber : i + 1 }}</div>
               <div class="-flex-fill address-column">
+                @if (exposed.has(address.address)) {
+                  <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+                }
                 <app-qr-code-button [address]="address.address"></app-qr-code-button>
                 <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
                   {{ address.address }}
@@ -153,9 +163,12 @@
           <div class="-records">
             @for (address of account.changeAddresses; track address.address; let i = $index) {
               @if (!hideEmpty || ($any(address).coins && $any(address).coins.isGreaterThan(0))) {
-                <div class="-record">
+                <div class="-record" [ngClass]="{ '-exposed': exposed.has(address.address), '-exposed-funded': exposedWithCoins(address) }">
                   <div class="-width-50 grey-text" [title]="'Child index: ' + (address.childNumber != null ? address.childNumber : i)">{{ address.childNumber != null ? address.childNumber : i + 1 }}</div>
                   <div class="-flex-fill address-column">
+                    @if (exposed.has(address.address)) {
+                      <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+                    }
                     <app-qr-code-button [address]="address.address"></app-qr-code-button>
                     <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
                       {{ address.address }}
@@ -192,11 +205,14 @@
   <!-- Deterministic flat address list -->
   @for (address of wallet.addresses; track address; let i = $index) {
     @if (!hideEmpty || $any(address).coins.isGreaterThan(0)) {
-      <div class="-record">
+      <div class="-record" [ngClass]="{ '-exposed': exposed.has(address.address), '-exposed-funded': exposedWithCoins(address) }">
         <!-- Address number. -->
         <div class="-width-50 grey-text">{{ i + 1 }}</div>
         <!-- Address. -->
         <div class="-flex-fill address-column">
+          @if (exposed.has(address.address)) {
+            <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+          }
           <!-- For confirmed addresses. -->
           @if (!wallet.isHardware || address.confirmed) {
             <app-qr-code-button [address]="address.address"></app-qr-code-button>

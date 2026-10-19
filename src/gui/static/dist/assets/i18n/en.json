@@ -95,6 +95,7 @@
   },
 
   "wallet": {
+    "exposed-banner": "{{ count }} address(es) in this wallet hold coins but have already sent coins, so their public keys are on the blockchain. A future quantum computer could steal these coins. Send them to a new address of this wallet.",
     "title-and-button": "Wallets",
     "show-empty-button": "Show Empty",
     "hide-empty-button": "Hide Empty",
@@ -206,7 +207,9 @@
       "copied": "Copied!",
       "confirm": "Confirm address",
       "outputs": "Unspent outputs",
-      "history": "History"
+      "history": "History",
+      "exposed": "This address has sent coins before, so its public key is on the blockchain. A future quantum computer could use it to steal coins sent to it. Do not receive coins at it again.",
+      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address."
     }
   },
 

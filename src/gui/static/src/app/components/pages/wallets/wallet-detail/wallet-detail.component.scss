@@ -379,3 +379,40 @@
     }
   }
 }
+
+// An address that has sent coins has its public key on the blockchain.
+.-record.-exposed .address-column p {
+  color: #d32f2f;
+}
+
+.-exposed-icon {
+  color: #d32f2f;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  cursor: help;
+}
+
+// Louder when such an address still holds coins.
+.-record.-exposed-funded {
+  background-color: rgba(211, 47, 47, 0.14);
+  box-shadow: inset 5px 0 0 #d32f2f;
+
+  .address-column p {
+    font-weight: bold;
+  }
+}
+
+.-exposure-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 $main-containers-small-padding 10px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  background-color: #d32f2f;
+  color: #ffffff;
+  font-size: $font-size-standard;
+  font-weight: bold;
+}

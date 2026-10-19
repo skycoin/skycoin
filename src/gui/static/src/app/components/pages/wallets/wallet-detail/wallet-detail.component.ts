@@ -20,6 +20,7 @@ import { WalletWithBalance, AddressBase, Bip44Account } from '../../../../servic
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 import { HistoryService } from '../../../../services/wallet-operations/history.service';
+import { AddressExposureService } from '../../../../services/wallet-operations/address-exposure.service';
 import { WalletsComponent } from '../wallets.component';
 
 /**
@@ -33,7 +34,17 @@ import { WalletsComponent } from '../wallets.component';
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet!: WalletWithBalance;
+  @Input() set wallet(val: WalletWithBalance) {
+    this.walletInternal = val;
+    this.checkExposure();
+  }
+  get wallet(): WalletWithBalance {
+    return this.walletInternal;
+  }
+  private walletInternal!: WalletWithBalance;
+
+  // Addresses that have sent coins, so their public keys are on the blockchain.
+  exposed = new Set<string>();
 
   // Index of the address currently being confirmed. Used for showing the loading animation
   // on the UI.
@@ -53,6 +64,7 @@ export class WalletDetailComponent implements OnDestroy {
   private scanSubscription!: SubscriptionLike;
   private numberOfAddressesSubscription!: SubscriptionLike;
   private addAddressesSubscription!: SubscriptionLike;
+  private exposureSubscription!: SubscriptionLike;
 
   constructor(
     private dialog: MatDialog,
@@ -64,10 +76,64 @@ export class WalletDetailComponent implements OnDestroy {
     private softwareWalletService: SoftwareWalletService,
     private hardwareWalletService: HardwareWalletService,
     private historyService: HistoryService,
+    private addressExposureService: AddressExposureService,
     private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
+  // Every address of the wallet, including the ones listed under BIP44 accounts.
+  private allAddresses(): any[] {
+    const all: any[] = [...this.walletInternal.addresses];
+    (this.walletInternal.accounts || []).forEach(account => {
+      all.push(...account.externalAddresses, ...account.changeAddresses);
+    });
+
+    return all;
+  }
+
+  // Asks the node which of the wallet's addresses have sent coins.
+  private checkExposure() {
+    if (!this.walletInternal) {
+      return;
+    }
+    const addresses = this.allAddresses().map(a => a.address);
+
+    if (this.exposureSubscription) {
+      this.exposureSubscription.unsubscribe();
+    }
+    this.exposureSubscription = this.addressExposureService.getExposed(addresses).subscribe(exposed => {
+      this.exposed = exposed;
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  /**
+   * True if the address has sent coins and still holds some.
+   */
+  exposedWithCoins(address: any): boolean {
+    return this.exposed.has(address.address) && !!address.coins && address.coins.isGreaterThan(0);
+  }
+
+  /**
+   * Number of addresses that have sent coins and still hold some.
+   */
+  get exposedWithCoinsCount(): number {
+    if (!this.walletInternal) {
+      return 0;
+    }
+    const seen = new Set<string>();
+    this.allAddresses().forEach(a => {
+      if (this.exposedWithCoins(a)) {
+        seen.add(a.address);
+      }
+    });
+
+    return seen.size;
+  }
+
   ngOnDestroy() {
+    if (this.exposureSubscription) {
+      this.exposureSubscription.unsubscribe();
+    }
     this.msgBarService.hide();
     if (this.renameSubscription) {
       this.renameSubscription.unsubscribe();

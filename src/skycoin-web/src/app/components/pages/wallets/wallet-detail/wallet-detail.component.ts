@@ -218,7 +218,7 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+    if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallet encryption
       this.walletService.encryptWallet(this.wallet, password).subscribe(
         () => {
@@ -252,7 +252,7 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+    if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallet decryption
       this.walletService.decryptWallet(this.wallet, password).subscribe(
         () => {
@@ -292,7 +292,7 @@ export class WalletDetailComponent implements OnDestroy {
   private verifyBeforeAddingNewAddress(accountIndex?: number) {
     if (this.wallet.isHardware) {
       this.addHwAddress();
-    } else if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+    } else if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallets don't need seed entry
       this.addNewAddress(accountIndex);
     } else if (!this.wallet.seed || !this.wallet.nextSeed) {

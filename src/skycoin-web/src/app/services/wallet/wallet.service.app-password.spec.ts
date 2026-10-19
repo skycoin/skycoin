@@ -74,7 +74,7 @@ describe('WalletService app password', () => {
 
     service.wallets.value[0].label = 'renamed';
     service.saveWallets();
-    await (service as any).saves;
+    await (service as any).browser.saves;
 
     expect(store['wallets']).toBeUndefined();
     const reopened = newService();

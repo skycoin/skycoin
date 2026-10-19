@@ -113,7 +113,7 @@ export class SpendingService {
           processedHours['share_factor'] = hoursSelection.ShareFactor;
         }
 
-        const isServerWallet = !!wallet['filename'];
+        const isServerWallet = this.walletService.isServerWallet(wallet);
 
         const params = {
           hours_selection: processedHours,

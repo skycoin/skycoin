@@ -205,6 +205,25 @@ export function walletWithBalanceFromBase(wallet: WalletBase): WalletWithBalance
     response.addresses.push(addressWithBalanceFromBase(address));
   });
 
+  // BIP44 accounts point at the same address objects, so they show the balances set on the list.
+  const byAddress = new Map<string, AddressWithBalance>();
+  response.addresses.forEach(a => byAddress.set(a.address, a));
+  const withBalance = (address: AddressBase): AddressWithBalance => {
+    const a = byAddress.get(address.address) || addressWithBalanceFromBase(address);
+    a.childNumber = address.childNumber;
+    a.change = address.change;
+
+    return a;
+  };
+  response.accounts = (wallet.accounts || []).map(account => {
+    const dup = new Bip44Account();
+    Object.assign(dup, account);
+    dup.externalAddresses = account.externalAddresses.map(withBalance);
+    dup.changeAddresses = account.changeAddresses.map(withBalance);
+
+    return dup;
+  });
+
   return response;
 }
 

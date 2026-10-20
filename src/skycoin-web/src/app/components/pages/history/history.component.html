@@ -54,6 +54,10 @@
       </div>
     }
 
+    @if (cachedAt) {
+      <div class="cached-notice">{{ 'history.cached' | translate: { time: (cachedAt.getTime() / 1000 | dateTime) } }}</div>
+    }
+
     @if (!transactions || transactions.length === 0) {
       <app-loading-content
         [isLoading]="!allTransactions"

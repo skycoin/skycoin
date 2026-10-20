@@ -39,6 +39,7 @@ export class Address {
 export class HistoryComponent implements OnInit, OnDestroy {
   currentCoin!: BaseCoin;
   showError = false;
+  cachedAt: Date | null = null;
 
   allTransactions!: NormalTransaction[] | null;
   transactions!: NormalTransaction[] | null;
@@ -82,6 +83,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
       this.transactions = null;
       this.currentCoin = coin;
       this.showError = false;
+      this.cachedAt = null;
       this.transactionsLoaded = false;
       this.walletsLoaded = false;
       this.form.get('filter')!.setValue([]);
@@ -92,6 +94,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
       this.transactionsSubscription = this.historyService.transactions().subscribe(transactions => {
           this.allTransactions = transactions;
           this.transactions = transactions;
+          this.cachedAt = this.historyService.cachedAt;
 
           this.transactionsLoaded = true;
           this.showRequestedAddress();

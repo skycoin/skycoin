@@ -378,6 +378,7 @@
     "pending": "Pendiente",
     "price-tooltip": "Calculado a la tasa actual",
     "no-txs": "Usted no tiene historial de transacciones",
+    "cached": "No se pudo actualizar el historial. Se muestra la copia guardada el {{ time }}.",
     "no-txs-filter": "No hay transacciones que coincidan con los criterios de filtro actuales",
     "no-filter": "Sin filtros activos (Presione para seleccionar billeteras/direcciones)",
     "filter": "Filtro activo: ",

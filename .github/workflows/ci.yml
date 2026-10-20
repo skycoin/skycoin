@@ -212,7 +212,7 @@ jobs:
         run: |
           choco install make
           # Install libusb, hidapi, and pkg-config via msys2/mingw for x64
-          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-x86_64-pkg-config"
+          C:\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-x86_64-pkg-config"
           # Add msys2 mingw64 to PATH for finding libraries and pkg-config
           echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "CGO_CFLAGS=-IC:/msys64/mingw64/include" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append

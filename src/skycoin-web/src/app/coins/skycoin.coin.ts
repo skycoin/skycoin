@@ -1,4 +1,4 @@
-import { BaseCoin } from './basecoin';
+import { BaseCoin, skycoinArt } from './basecoin';
 import { defaultCoinId } from '../constants/coins-id.const';
 
 /**
@@ -17,8 +17,7 @@ export class SkycoinCoin extends BaseCoin {
       priceTickerSource: 'coinpaprika',
       coinExplorer: 'https://explorer.skycoin.net',
       coinType: 'skycoin',
-      imageName: 'skycoin-header.jpg',
-      gradientName: 'skycoin-gradient.png',
+      ...skycoinArt,
       iconName: 'skycoin-icon.png',
       bigIconName: 'skycoin-icon-b.png',
     });

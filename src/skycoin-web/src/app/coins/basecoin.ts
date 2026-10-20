@@ -1,3 +1,10 @@
+// The Skycoin header art, for the built-in coin and for SKY in a server's coin list.
+export const skycoinArt = {
+  imageName: 'skycoin-header.jpg',
+  gradientName: 'skycoin-gradient.png',
+  mobileImageName: 'skycoin-city-header.jpg',
+};
+
 export class BaseCoin {
   id!: number;
   nodeUrl!: string;
@@ -13,6 +20,8 @@ export class BaseCoin {
   nodeOptions: string[] = [];
   imageName!: string;
   gradientName!: string;
+  // Art for the header on a phone, shown there in place of the image and gradient.
+  mobileImageName = '';
   iconName!: string;
   bigIconName!: string;
 
@@ -57,6 +66,9 @@ export class BaseCoin {
     coin.gradientName = '';
     coin.iconName = 'skycoin-icon.png';
     coin.bigIconName = 'skycoin-icon-b.png';
+    if (coin.coinType === 'skycoin' && coin.coinSymbol === 'SKY') {
+      Object.assign(coin, skycoinArt);
+    }
     return coin;
   }
 }

@@ -32,6 +32,7 @@ export class ButtonComponent {
 
   setLoading() {
     this.state = 0;
+    this.changeDetectorRef.markForCheck();
   }
 
   isLoading(): boolean {
@@ -40,6 +41,7 @@ export class ButtonComponent {
 
   setSuccess() {
     this.state = 1;
+    this.changeDetectorRef.markForCheck();
     setTimeout(() => {
       this.state = null;
       this.changeDetectorRef.markForCheck();
@@ -60,14 +62,17 @@ export class ButtonComponent {
 
   setEnabled() {
     this.disabled = false;
+    this.changeDetectorRef.markForCheck();
   }
 
   setDisabled() {
     this.disabled = true;
+    this.changeDetectorRef.markForCheck();
   }
 
   resetState() {
     this.state = null;
     this.error = '';
+    this.changeDetectorRef.markForCheck();
   }
 }

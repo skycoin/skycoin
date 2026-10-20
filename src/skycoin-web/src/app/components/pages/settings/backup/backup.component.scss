@@ -1,0 +1,27 @@
+@use '../../../../../theme/_variables.scss' as *;
+
+.-info p {
+  margin: 0 0 10px;
+}
+
+.-row {
+  gap: 20px;
+}
+
+.-link {
+  cursor: pointer;
+  color: $blue;
+  white-space: nowrap;
+}
+
+.-grey {
+  color: $grey;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.-seed textarea {
+  width: 100%;
+  font-family: monospace;
+  resize: none;
+}

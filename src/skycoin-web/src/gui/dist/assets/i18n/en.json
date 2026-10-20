@@ -58,7 +58,8 @@
     "qrcode": "QR Code",
     "disclaimer": "Disclaimer",
     "qr-code": "Address",
-    "app-password": "Password"
+    "app-password": "Password",
+    "backup": "Backup"
   },
   "header": {
     "syncing-blocks": "Syncing blocks",
@@ -483,6 +484,18 @@
     "erase-warning": "The password cannot be recovered. Erasing removes every wallet stored in this browser, and only their seeds can bring them back. Erase the wallets?",
     "cancel": "Cancel",
     "erase": "Erase wallets"
+  },
+  "backup": {
+    "wallet-directory": "Wallet directory:",
+    "seed-warning": "Keep your seed somewhere safe and offline. Anyone who has it controls the wallet's coins.",
+    "no-wallets": "There are no wallets to back up.",
+    "wallet": "Wallet",
+    "save-addresses": "Save addresses",
+    "show-seed": "Show seed",
+    "hide-seed": "Hide seed",
+    "hw-wallet-info": "A hardware wallet keeps its seed on the device. Back it up from the device.",
+    "unencrypted-info": "The wallet service shows the seed only of an encrypted wallet. Encrypt the wallet first.",
+    "no-seed-info": "This browser does not hold the seed of this wallet."
   },
   "app-password": {
     "help-none": "Set a password to store the wallets in this browser encrypted. The wallet will ask for it each time it opens. The password stays in this browser and cannot be recovered.",

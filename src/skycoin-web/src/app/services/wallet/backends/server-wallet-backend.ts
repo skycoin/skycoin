@@ -87,6 +87,16 @@ export class ServerWalletBackend implements WalletBackend {
 
   save(_wallets: Wallet[]): void { }
 
+  getSeed(wallet: Wallet, password: string | null): Observable<string> {
+    return this.apiService.post('wallet/seed', { id: wallet.filename, password: password || '' }).pipe(
+      map((response: any) => response.seed));
+  }
+
+  /** The folder the wallet service keeps its wallet files in. */
+  folder(): Observable<string> {
+    return this.apiService.get('wallets/folderName').pipe(map((response: any) => response.address));
+  }
+
   getXPubKey(wallet: Wallet, path: string): Observable<string> {
     return this.apiService.get('wallet/xpub', {
       id: wallet.filename,

@@ -27,4 +27,10 @@ export interface WalletBackend {
 
   /** Persists the list, where the backend has anything to persist. */
   save(wallets: Wallet[]): void;
+
+  /**
+   * The wallet's seed, for a backup. password unlocks it where the backend keeps it
+   * encrypted; null when it is not.
+   */
+  getSeed(wallet: Wallet, password: string | null): Observable<string>;
 }

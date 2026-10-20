@@ -31,7 +31,8 @@ import { WalletService } from '../../../services/wallet/wallet.service';
     host: { class: WALLET_SCOPE_CLASS },
 })
 export class WalletShellComponent implements OnInit, OnDestroy {
-  @ViewChild('msgBar') msgBar!: MsgBarComponent;
+  // Static so it is set in ngOnInit, where the bar is handed to MsgBarService.
+  @ViewChild('msgBar', { static: true }) msgBar!: MsgBarComponent;
 
   current!: number;
   highest!: number;

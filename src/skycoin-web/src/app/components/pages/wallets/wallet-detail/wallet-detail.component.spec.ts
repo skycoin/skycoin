@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -5,6 +6,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 
 import { WalletDetailComponent } from './wallet-detail.component';
+import { AddressExposureService } from '../../../../services/wallet/address-exposure.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { MockTranslatePipe, MockWalletService, MockTranslateService, MockCustomMatDialogService, MockMsgBarService, MockHwWalletService, MockCoinService } from '../../../../utils/test-mocks';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
@@ -26,6 +28,7 @@ describe('WalletDetailComponent', () => {
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
         { provide: CoinService, useClass: MockCoinService },
+        { provide: AddressExposureService, useValue: { getExposed: () => of(new Set<string>()) } },
         { provide: HwWalletService, useClass: MockHwWalletService },
         { provide: WalletService, useClass: MockWalletService },
         { provide: TranslateService, useClass: MockTranslateService },

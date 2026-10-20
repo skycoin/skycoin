@@ -43,6 +43,13 @@
   </div>
 </div>
 
+@if (exposedWithCoinsCount > 0) {
+  <div class="-exposure-banner">
+    <mat-icon>warning</mat-icon>
+    <span>{{ 'wallet.exposed-banner' | translate: { count: exposedWithCoinsCount } }}</span>
+  </div>
+}
+
 @if (isBip44 && wallet.accounts) {
   <!-- BIP44 account-structured view -->
   @for (account of wallet.accounts; track account.index) {
@@ -78,9 +85,12 @@
       <div class="-records">
         @for (address of account.externalAddresses; track address; let i = $index) {
           @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
-            <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
+            <div class="-record" #element (click)="onShowQrIfPointer(element, address)" [class.-exposed]="exposed.has(address.address)" [class.-exposed-funded]="exposedWithCoins(address)">
               <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + ($any(address).child_number != null ? $any(address).child_number : i)">{{ $any(address).child_number != null ? $any(address).child_number : i + 1 }}</div>
               <div class="address-column -not-on-small-and-below">
+                @if (exposed.has(address.address)) {
+                  <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+                }
                 <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
                 <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
                   [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
@@ -139,9 +149,12 @@
           <div class="-records">
             @for (address of account.changeAddresses; track address; let i = $index) {
               @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
-                <div class="-record" #chgElement (click)="onShowQrIfPointer(chgElement, address)">
+                <div class="-record" #chgElement (click)="onShowQrIfPointer(chgElement, address)" [class.-exposed]="exposed.has(address.address)" [class.-exposed-funded]="exposedWithCoins(address)">
                   <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + ($any(address).child_number != null ? $any(address).child_number : i)">{{ $any(address).child_number != null ? $any(address).child_number : i + 1 }}</div>
                   <div class="address-column -not-on-small-and-below">
+                    @if (exposed.has(address.address)) {
+                      <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+                    }
                     <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
                     <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
                       [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
@@ -187,9 +200,12 @@
   <div class="-records">
     @for (address of (wallet ? wallet.addresses : []); track address; let i = $index) {
       @if (!wallet.hideEmpty || address.balance!.isGreaterThan(0)) {
-        <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
+        <div class="-record" #element (click)="onShowQrIfPointer(element, address)" [class.-exposed]="exposed.has(address.address)" [class.-exposed-funded]="exposedWithCoins(address)">
           <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
           <div class="address-column -not-on-small-and-below">
+            @if (exposed.has(address.address)) {
+              <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+            }
             <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
             <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
               [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">

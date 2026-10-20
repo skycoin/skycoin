@@ -137,6 +137,7 @@
     "injecting-tx": "It is not possible to change the coin while a transaction is being sent."
   },
   "wallet": {
+    "exposed-banner": "{{ count }} address(es) in this wallet hold coins but have already sent coins, so their public keys are on the blockchain. A future quantum computer could steal these coins. Send them to a new address of this wallet.",
     "new-address": "New Address",
     "add-account": "Add Account",
     "show-empty": "Show Empty",
@@ -220,7 +221,9 @@
       "copy-address": "Copy Address",
       "copied": "Copied!",
       "outputs": "Unspent Outputs",
-      "history": "History"
+      "history": "History",
+      "exposed": "This address has sent coins before, so its public key is on the blockchain. A future quantum computer could use it to steal coins sent to it. Do not receive coins at it again.",
+      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address."
     }
   },
   "qr": {

@@ -7,6 +7,7 @@ import { ConfirmationData, Wallet, Address, Bip44Account } from '../../../../app
 import { BaseCoin } from '../../../../coins/basecoin';
 import { CoinService } from '../../../../services/coin.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
+import { AddressExposureService } from '../../../../services/wallet/address-exposure.service';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal } from '../../../../utils/index';
 import { WalletOptionsComponent, WalletOptionsResponses } from './wallet-options/wallet-options.component';
@@ -23,7 +24,17 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet!: Wallet;
+  @Input() set wallet(val: Wallet) {
+    this.walletInternal = val;
+    this.checkExposure();
+  }
+  get wallet(): Wallet {
+    return this.walletInternal;
+  }
+  private walletInternal!: Wallet;
+
+  // Addresses that have sent coins, so their public keys are on the blockchain.
+  exposed = new Set<string>();
 
   currentCoin?: BaseCoin;
   creatingAddress = false;
@@ -33,9 +44,11 @@ export class WalletDetailComponent implements OnDestroy {
   private unlockSubscription!: Subscription;
   private slowInfoSubscription!: Subscription;
   private coinSubscription: Subscription;
+  private exposureSubscription?: Subscription;
 
   constructor(
     private walletService: WalletService,
+    private addressExposureService: AddressExposureService,
     private dialog: CustomMatDialogService,
     private translateService: TranslateService,
     private msgBarService: MsgBarService,
@@ -45,17 +58,52 @@ export class WalletDetailComponent implements OnDestroy {
   ) {
     this.coinSubscription = coinService.currentCoin.subscribe(coin => {
       this.currentCoin = coin;
+      this.checkExposure();
       this.changeDetectorRef.markForCheck();
     });
   }
 
   ngOnDestroy() {
+    this.exposureSubscription?.unsubscribe();
     this.msgBarService.hide();
     this.removeUnlockSubscription();
     this.removeSlowInfoSubscription();
     if (this.coinSubscription) {
       this.coinSubscription.unsubscribe();
     }
+  }
+
+  // Asks the node which of the wallet's addresses have sent coins. Skycoin nodes only.
+  private checkExposure() {
+    if (!this.walletInternal || !this.currentCoin || this.currentCoin.isBitcoin()) {
+      return;
+    }
+    const addresses = this.walletInternal.addresses.map(a => a.address);
+    (this.walletInternal.accounts || []).forEach(account => {
+      account.externalAddresses.forEach(a => addresses.push(a.address));
+      account.changeAddresses.forEach(a => addresses.push(a.address));
+    });
+    this.exposureSubscription?.unsubscribe();
+    this.exposureSubscription = this.addressExposureService.getExposed(addresses).subscribe(exposed => {
+      this.exposed = exposed;
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  /** True if the address has sent coins and still holds some. */
+  exposedWithCoins(address: Address): boolean {
+    if (!this.exposed.has(address.address)) {
+      return false;
+    }
+    const listed = this.walletInternal.addresses.find(a => a.address === address.address);
+    const balance = (listed && listed.balance) || address.balance;
+
+    return !!balance && balance.isGreaterThan(0);
+  }
+
+  /** Number of addresses that have sent coins and still hold some. */
+  get exposedWithCoinsCount(): number {
+    return this.walletInternal ? this.walletInternal.addresses.filter(a => this.exposedWithCoins(a)).length : 0;
   }
 
   onShowQr(address: Address) {

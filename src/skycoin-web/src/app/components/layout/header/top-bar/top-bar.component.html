@@ -65,6 +65,7 @@
     <button mat-menu-item [routerLink]="'/settings/pending-transactions' | walletPath"> {{ 'title.pending-txs' | translate}} </button>
     <button mat-menu-item [routerLink]="'/settings/node' | walletPath"> {{ (hasManyCoins ? 'title.nodes' : 'title.node') | translate}} </button>
     <button mat-menu-item [routerLink]="'/settings/password' | walletPath"> {{ 'title.app-password' | translate}} </button>
+    <button mat-menu-item [routerLink]="'/settings/backup' | walletPath"> {{ 'title.backup' | translate}} </button>
     @if (currentCoin.coinExplorer) {
       <a
         mat-menu-item

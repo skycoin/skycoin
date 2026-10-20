@@ -1,5 +1,5 @@
 import { EventEmitter } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
@@ -131,6 +131,18 @@ export class BrowserWalletBackend implements WalletBackend {
       strippedWallets.push(stripped);
     });
     this.storeWallets(JSON.stringify(strippedWallets));
+  }
+
+  getSeed(wallet: Wallet, password: string | null): Observable<string> {
+    if (wallet.seed) {
+      return of(wallet.seed);
+    }
+    if (!wallet.encryptedSeed) {
+      return throwError(() => new Error(this.translate.instant('service.wallet.address-without-seed')));
+    }
+
+    return from(this.encryptionService.decrypt(wallet.encryptedSeed, password || '')).pipe(
+      catchError(() => throwError(() => new Error('Incorrect password'))));
   }
 
   get hasAppPassword(): boolean {

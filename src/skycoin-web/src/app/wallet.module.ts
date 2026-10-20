@@ -43,6 +43,7 @@ import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
+import { BackupComponent } from './components/pages/settings/backup/backup.component';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { TransactionDetailComponent } from './components/pages/history/transaction-detail/transaction-detail.component';
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
@@ -129,6 +130,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         NavBarComponent,
         NodeStatusBarComponent,
         OutputsComponent,
+        BackupComponent,
         OnboardingCreateWalletComponent,
         OnboardingEncryptWalletComponent,
         PendingTransactionsComponent,

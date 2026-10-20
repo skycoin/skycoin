@@ -187,6 +187,16 @@ export class WalletService {
     this.wallets.next([]);
   }
 
+  /** The wallet's seed, for a backup. password unlocks an encrypted one. */
+  getSeed(wallet: Wallet, password: string | null): Observable<string> {
+    return (this.isServerWallet(wallet) ? this.server : this.browser).getSeed(wallet, password);
+  }
+
+  /** The folder the wallet service keeps the files in, or null for wallets in this browser. */
+  walletFolder(): Observable<string | null> {
+    return this.backend.onServer ? this.server.folder() : of(null);
+  }
+
   getXPubKey(wallet: Wallet, path: string): Observable<string> {
     return this.server.getXPubKey(wallet, path);
   }

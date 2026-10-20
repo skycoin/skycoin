@@ -13,8 +13,8 @@
       <span class="sep">·</span>
       {{ (health.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (health.height | number) } }}
       @if (health.blockchainPubkey) {
-        <span class="sep">·</span>
-        <span class="pk">{{ short(health.blockchainPubkey) }}</span>
+        <span class="sep -pk">·</span>
+        <span class="pk -pk">{{ short(health.blockchainPubkey) }}</span>
       }
     </span>
     <span class="cog material-icons" aria-hidden="true">settings</span>

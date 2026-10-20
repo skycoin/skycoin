@@ -11,7 +11,7 @@
 
   @media (max-width: $max-very-small-width) {
     & {
-      margin: $content-vertical-margin ($very-small-content-lateral-margin - 15px);
+      margin: $content-vertical-margin calc(var(--bs-gutter-x, 1.5rem) * -0.5);
     }
   }
 

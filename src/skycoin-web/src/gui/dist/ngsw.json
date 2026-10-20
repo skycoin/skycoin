@@ -17,11 +17,11 @@
         "/chunk-CsucO_P5.js",
         "/favicon.ico",
         "/index.html",
-        "/main-BWU7GWS4.js",
+        "/main-XA22AM7E.js",
         "/manifest.webmanifest",
         "/polyfills-MLCYDCP3.js",
         "/scripts-LEJVCTYY.js",
-        "/styles-VZNEXXSF.css"
+        "/styles-VLW6PP7X.css"
       ],
       "patterns": []
     },
@@ -69,6 +69,7 @@
         "/assets/skycoin-wallet/img/chevron-right-grey.png",
         "/assets/skycoin-wallet/img/close-grey.png",
         "/assets/skycoin-wallet/img/coins/generic.jpg",
+        "/assets/skycoin-wallet/img/coins/skycoin-city-header.jpg",
         "/assets/skycoin-wallet/img/coins/skycoin-gradient.png",
         "/assets/skycoin-wallet/img/coins/skycoin-header.jpg",
         "/assets/skycoin-wallet/img/coins/skycoin-icon-b.png",
@@ -183,6 +184,7 @@
     "/assets/skycoin-wallet/img/chevron-right-grey.png": "50fd038d6f5d0ed677a3f05c5aec377fc97ac7d8",
     "/assets/skycoin-wallet/img/close-grey.png": "6e2e11ab7e66c4e936cc214c0460ca473b8abf6a",
     "/assets/skycoin-wallet/img/coins/generic.jpg": "272ce50d71f0539cffb7c3f2be8d0e758c53e5e1",
+    "/assets/skycoin-wallet/img/coins/skycoin-city-header.jpg": "9f7b2ada840a685f9fdfd08e2eb16ce7bac428c6",
     "/assets/skycoin-wallet/img/coins/skycoin-gradient.png": "daaea16bc17d9aa3cf930231abb59093891f9f79",
     "/assets/skycoin-wallet/img/coins/skycoin-header.jpg": "7d866eafb4dd2fa88eacec46248d5de56519fbd0",
     "/assets/skycoin-wallet/img/coins/skycoin-icon-b.png": "19b28cbdc148356ccc3583a6485fcf66df04a8b7",
@@ -226,8 +228,8 @@
     "/chunk-CiEGkYHw.js": "25b6b5e58884460d340ddfb5f9b7d05de901fe67",
     "/chunk-CsucO_P5.js": "6ba276fc4ef5de36fb2533eb05abce37ab31595a",
     "/favicon.ico": "25579a8f5d48320216a8fceb497ce1829650edf5",
-    "/index.html": "2e51ba8a3ac1a743bacfaba017b932bd14af76e4",
-    "/main-BWU7GWS4.js": "30b7fc4d80e2f77a436ce86c48f00dae935b0d5f",
+    "/index.html": "e096d609df82e9cbcc197a2ddb96c36dadb73b52",
+    "/main-XA22AM7E.js": "2d2254b5a0e6983926378a0b7247869ab0277c76",
     "/manifest.webmanifest": "b7dd4150bcb7d07266d96bf93bc8608bfa7da755",
     "/media/MaterialIcons-Regular-3OCSKOJA.woff": "c6c953c2ccb2ca9abb21db8dbf473b5a435f0082",
     "/media/MaterialIcons-Regular-DFX2JKJN.ttf": "fc05de31234e0090f7ddc28ce1b23af4026cb1da",
@@ -265,7 +267,7 @@
     "/media/unlock-grey-IQ4WNHIS.png": "d4483fa1d9b81ca67e33e0415c37ab505498cbc1",
     "/polyfills-MLCYDCP3.js": "ace41b92ad605c7018c56db5ca82786eeec21b12",
     "/scripts-LEJVCTYY.js": "4bf89c7615dd722ccaa0a896e3c0bc171b1a584a",
-    "/styles-VZNEXXSF.css": "0405dbb39989863f6fcb7903b86054d9869fbf63"
+    "/styles-VLW6PP7X.css": "0ed351c87231461e276d48819a54e57b3edd4bd0"
   },
   "navigationUrls": [
     {

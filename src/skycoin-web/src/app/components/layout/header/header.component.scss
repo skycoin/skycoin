@@ -20,6 +20,37 @@
     align-items: stretch;
     min-height: 190px;
   }
+
+  // On a phone the coin's own art fills the header, its city and coin at the
+  // bottom, with no gradient over it. Wider screens crop it to the buildings,
+  // so they keep the image. !important beats the inline image.
+  @media (max-width: $max-very-small-width) {
+    &.-mobile-art {
+      background-image: var(--mobile-art) !important;
+      background-position: center bottom;
+
+      .gradient {
+        background-image: none !important;
+      }
+
+      // The art is pale in the middle, where the small print sits.
+      .balance-container {
+        text-shadow: 0 1px 3px rgba(0, 30, 80, 0.5);
+      }
+
+      .hour-balance p {
+        background-color: rgba(255, 255, 255, 0.85);
+      }
+
+      .hour-balance div {
+        background-color: rgba(0, 40, 110, 0.45);
+        border-radius: 10px;
+        display: inline-block;
+        opacity: 1;
+        padding: 1px 10px;
+      }
+    }
+  }
 }
 
 

@@ -113,6 +113,7 @@ import { HardwareWalletComponent } from './components/pages/settings/hardware-wa
 import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
+import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-scan-dialog.component';
 
 /**
  * The whole wallet as one module: its pages, services and routes under
@@ -177,6 +178,7 @@ import { PasswordDialogComponent } from './components/layout/password-dialog/pas
         OfflineTxComponent,
         MsgBarComponent,
         PasswordDialogComponent,
+        QrScanDialogComponent,
         HwPinDialogComponent,
         HwMessageComponent,
         HwConfirmTxDialogComponent,

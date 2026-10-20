@@ -25,7 +25,10 @@
 
   <div class="form-field">
     <label for="address">{{ 'send.to-label' | translate }}</label>
-    <input formControlName="address" id="address" [placeholder]="'send.recipient-address' | translate" >
+    <div class="address-row">
+      <input formControlName="address" id="address" [placeholder]="'send.recipient-address' | translate" >
+      <img class="scan-button" src="assets/skycoin-wallet/img/qr-code-black.png" [matTooltip]="'qr-scan.title' | translate" (click)="scanAddress()">
+    </div>
   </div>
   <div class="form-field">
     <label for="amount" class="amount-label">{{ 'send.amount-label' | translate }}</label>

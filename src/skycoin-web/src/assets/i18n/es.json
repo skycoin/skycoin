@@ -443,6 +443,13 @@
     }
   },
 
+  "qr-scan": {
+    "title": "Escanear un código QR",
+    "image-label": "O leerlo de una imagen",
+    "no-code": "No se encontró ningún código QR en esa imagen.",
+    "insecure": "La cámara solo funciona en páginas https o en 127.0.0.1. Aún puede leer un código de una imagen.",
+    "no-camera": "No se pudo abrir la cámara. Aún puede leer un código de una imagen."
+  },
   "qr-code" : {
     "copy-address": "Copiar la dirección al portapapeles"
   },

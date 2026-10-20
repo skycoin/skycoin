@@ -1,0 +1,15 @@
+<app-modal class="modal" [headline]="'qr-scan.title' | translate" [dialog]="dialogRef">
+  <div class="viewfinder" [class.hidden]="cameraProblem">
+    <video #video playsinline muted></video>
+  </div>
+  @if (cameraProblem) {
+    <p class="-info">{{ cameraProblem | translate }}</p>
+  }
+  <div class="form-field">
+    <label for="qr-image">{{ 'qr-scan.image-label' | translate }}</label>
+    <input id="qr-image" type="file" accept="image/*" (change)="pickImage($event)">
+    @if (noCodeInImage) {
+      <div class="-error">{{ 'qr-scan.no-code' | translate }}</div>
+    }
+  </div>
+</app-modal>

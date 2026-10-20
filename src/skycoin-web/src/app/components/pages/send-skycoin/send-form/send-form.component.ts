@@ -20,6 +20,8 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { PriceService } from '../../../../services/price.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { QrScanDialogComponent } from '../../../layout/qr-scan-dialog/qr-scan-dialog.component';
+import { parseScannedPayment } from '../../../../utils/qr';
 import { BalanceService } from '../../../../services/wallet/balance.service';
 
 @Component({
@@ -193,6 +195,20 @@ export class SendFormComponent implements OnInit, OnDestroy {
         this.valueGreaterThanBalance = true;
       }
     }
+  }
+
+  /** Fills the address, and the amount when the code carries one, from a scanned QR code. */
+  scanAddress() {
+    QrScanDialogComponent.scan(this.dialog).subscribe(text => {
+      if (text) {
+        const scanned = parseScannedPayment(text);
+        this.form.get('address')!.setValue(scanned.address);
+        if (scanned.amount && this.selectedCurrency === DoubleButtonActive.LeftButton && !this.form.get('amount')!.value) {
+          this.form.get('amount')!.setValue(scanned.amount);
+        }
+      }
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private resetForm() {

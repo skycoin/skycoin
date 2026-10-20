@@ -200,8 +200,17 @@ func (h *ethHandler) fee(c *webCtx) {
 	if h.token != nil {
 		gas = tokenTransferGas
 	}
+	presets := H{}
+	for name, f := range eth.FeePresets(base, fees) {
+		presets[name] = H{
+			"max_priority_fee_per_gas": f.MaxPriorityFeePerGas.String(),
+			"max_fee_per_gas":          f.MaxFeePerGas.String(),
+			"max_fee":                  new(big.Int).Mul(big.NewInt(gas), f.MaxFeePerGas).String(),
+		}
+	}
 	c.JSON(http.StatusOK, H{
 		"base_fee":                 base.String(),
+		"presets":                  presets,
 		"max_priority_fee_per_gas": fees.MaxPriorityFeePerGas.String(),
 		"max_fee_per_gas":          fees.MaxFeePerGas.String(),
 		"gas":                      gas,

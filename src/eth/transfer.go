@@ -20,6 +20,19 @@ type Fees struct {
 // minTip is the least tip SuggestFees offers; some nodes suggest 0, which miners skip.
 var minTip = big.NewInt(1e8)
 
+// FeePresets are slow, normal and fast fees: the least tip, the suggested
+// one, and twice it, each capped at twice the base fee plus the tip.
+func FeePresets(base *big.Int, suggested Fees) map[string]Fees {
+	preset := func(tip *big.Int) Fees {
+		return Fees{MaxPriorityFeePerGas: tip, MaxFeePerGas: new(big.Int).Add(new(big.Int).Mul(base, big.NewInt(2)), tip)}
+	}
+	return map[string]Fees{
+		"slow":   preset(new(big.Int).Set(minTip)),
+		"normal": suggested,
+		"fast":   preset(new(big.Int).Mul(suggested.MaxPriorityFeePerGas, big.NewInt(2))),
+	}
+}
+
 // SuggestFees tips what the node suggests, at least minTip, and caps at twice
 // the base fee plus the tip, which outlasts six full blocks.
 func SuggestFees(ctx context.Context, r *RPC) (Fees, *big.Int, error) {

@@ -94,6 +94,8 @@ Bitcoin is available by default through the built-in electrum servers. `--btc-no
 
 With `--wallet-dir`, Ether and each token appear as coins of their own. They share the Ethereum wallets, since tokens are held at the same addresses, and the wallet keeps and signs with the keys like the other server wallets. RPC and indexer calls go through `--socks5-proxy` when one is set.
 
+The send form offers slow, normal and fast fees for Bitcoin and Ethereum coins. For Bitcoin they are the electrum estimates for 12, 6 and 2 blocks. For Ethereum they are the least tip, the node's suggested tip and twice it, each with a cap of twice the base fee plus the tip.
+
 ### Hardware Wallet
 
 The Skycoin hardware wallet is supported when the hardware wallet daemon is running on `127.0.0.1:9510`. The frontend communicates directly with the daemon for PIN entry, address generation, and transaction signing. No additional flags are needed.

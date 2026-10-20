@@ -225,9 +225,27 @@ func (h *btcHandler) estimateFee(c *webCtx) {
 		return
 	}
 
+	// Presets that fail to estimate take the requested rate, and a faster
+	// target never costs less than a slower one.
+	presets := H{}
+	prev := int64(0)
+	for _, p := range []struct {
+		name   string
+		blocks int
+	}{{"slow", 12}, {"normal", 6}, {"fast", 2}} {
+		rate, err := h.backend.EstimateFee(p.blocks)
+		if err != nil {
+			rate = satPerByte
+		}
+		rate = max(rate, prev)
+		prev = rate
+		presets[p.name] = H{"sat_per_byte": rate, "blocks": p.blocks}
+	}
+
 	c.JSON(http.StatusOK, H{
 		"sat_per_byte": satPerByte,
 		"blocks":       blocks,
+		"presets":      presets,
 	})
 }
 

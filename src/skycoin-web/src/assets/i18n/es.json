@@ -216,6 +216,10 @@
     "gateway-confirm-eth": "¿Enviar {{ amount }} {{ symbol }} a {{ to }}? La comisión de la red es como máximo {{ fee }} ETH.",
     "gateway-confirm-btc": "¿Enviar {{ amount }} {{ symbol }} a {{ to }}? La comisión de la red es {{ rate }} satoshis por byte.",
     "gateway-sent": "Enviado. Transacción {{ txid }}",
+    "fee-label": "Comisión de red",
+    "fee-slow": "Lenta",
+    "fee-normal": "Normal",
+    "fee-fast": "Rápida",
     "bulk-send-button": "Envío masivo",
     "bulk-send": {
       "title": "Envío Masivo",

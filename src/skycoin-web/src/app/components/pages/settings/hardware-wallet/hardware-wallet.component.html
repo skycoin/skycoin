@@ -1,0 +1,75 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'title.hardware-wallet' | translate"></app-header>
+  <div class="container">
+    <div class="-paper">
+      @switch (state) {
+        @case (states.Checking) {
+          <app-hw-message [icon]="icons.Spinner" [text]="'hardware-wallet.device.checking' | translate"></app-hw-message>
+        }
+        @case (states.Working) {
+          <app-hw-message [icon]="icons.Confirm" [text]="'hardware-wallet.device.follow-device' | translate"></app-hw-message>
+        }
+        @case (states.Disconnected) {
+          <app-hw-message [icon]="icons.Usb" [text]="'hardware-wallet.device.disconnected' | translate"></app-hw-message>
+          <div class="-buttons"><app-button (action)="refresh()">{{ 'hardware-wallet.device.retry-button' | translate }}</app-button></div>
+        }
+        @case (states.Error) {
+          <app-hw-message [icon]="icons.Error" [text]="error | translate"></app-hw-message>
+          <div class="-buttons"><app-button (action)="refresh()">{{ 'hardware-wallet.device.retry-button' | translate }}</app-button></div>
+        }
+        @case (states.Ready) {
+          @if (device) {
+            <div class="-info">
+              <div><span class="-grey">{{ 'hardware-wallet.device.label' | translate }}</span> {{ device.label || '-' }}</div>
+              <div><span class="-grey">{{ 'hardware-wallet.device.firmware' | translate }}</span> {{ device.firmware }}</div>
+              <div><span class="-grey">{{ 'hardware-wallet.device.pin' | translate }}</span>
+                {{ (device.pinProtection ? 'hardware-wallet.device.yes' : 'hardware-wallet.device.no') | translate }}</div>
+            </div>
+            @if (device.bootloaderMode) {
+              <p class="-warning">{{ 'hardware-wallet.device.bootloader-info' | translate }}</p>
+            } @else if (!device.initialized) {
+              <p>{{ 'hardware-wallet.device.no-seed-info' | translate }}</p>
+              <div class="-actions">
+                <app-button (action)="generateSeed(12)">{{ 'hardware-wallet.device.generate-12' | translate }}</app-button>
+                <app-button (action)="generateSeed(24)">{{ 'hardware-wallet.device.generate-24' | translate }}</app-button>
+                <app-button (action)="restoreSeed(12)">{{ 'hardware-wallet.device.restore-12' | translate }}</app-button>
+                <app-button (action)="restoreSeed(24)">{{ 'hardware-wallet.device.restore-24' | translate }}</app-button>
+              </div>
+            } @else {
+              @if (device.needsBackup) {
+                <p class="-warning">{{ 'hardware-wallet.device.backup-warning' | translate }}</p>
+              }
+              @if (!device.pinProtection) {
+                <p class="-warning">{{ 'hardware-wallet.device.pin-warning' | translate }}</p>
+              }
+              <div class="-actions">
+                @if (device.needsBackup) {
+                  <app-button (action)="backup()" class="primary">{{ 'hardware-wallet.device.backup-button' | translate }}</app-button>
+                }
+                <app-button (action)="changePin()">
+                  {{ (device.pinProtection ? 'hardware-wallet.device.change-pin-button' : 'hardware-wallet.device.set-pin-button') | translate }}
+                </app-button>
+                @if (device.pinProtection) {
+                  <app-button (action)="removePin()">{{ 'hardware-wallet.device.remove-pin-button' | translate }}</app-button>
+                }
+                <app-button (action)="checkSeed(12)">{{ 'hardware-wallet.device.check-12' | translate }}</app-button>
+                <app-button (action)="checkSeed(24)">{{ 'hardware-wallet.device.check-24' | translate }}</app-button>
+                <app-button (action)="wipe()" class="-danger">{{ 'hardware-wallet.device.wipe-button' | translate }}</app-button>
+              </div>
+              <div class="form-field -label-form">
+                <label for="hw-label">{{ 'hardware-wallet.device.label' | translate }}</label>
+                <div class="-label-row">
+                  <input id="hw-label" [(ngModel)]="label" [maxlength]="maxLabelLength" (keydown.enter)="changeLabel()">
+                  <app-button (action)="changeLabel()" [disabled]="!label.trim() || label.trim() === device.label">
+                    {{ 'hardware-wallet.device.label-button' | translate }}
+                  </app-button>
+                </div>
+              </div>
+            }
+            <p class="-grey -small">{{ 'hardware-wallet.device.firmware-info' | translate }}</p>
+          }
+        }
+      }
+    </div>
+  </div>
+</div>

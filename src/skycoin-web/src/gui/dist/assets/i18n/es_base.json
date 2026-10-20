@@ -20,6 +20,7 @@
   },
 
   "title": {
+    "hardware-wallet": "Hardware Wallet",
     "change-coin": "Change active coin",
     "language": "Select Language",
     "wallets": "Wallets",

@@ -106,6 +106,9 @@ import { EncryptionService } from './services/encryption.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { HardwareWalletComponent } from './components/pages/settings/hardware-wallet/hardware-wallet.component';
+import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
 
@@ -173,6 +176,8 @@ import { PasswordDialogComponent } from './components/layout/password-dialog/pas
         HwPinDialogComponent,
         HwMessageComponent,
         HwConfirmTxDialogComponent,
+        HwSeedWordDialogComponent,
+        HardwareWalletComponent,
     ],
     imports: [CommonModule,
         MatButtonModule,
@@ -227,6 +232,7 @@ import { PasswordDialogComponent } from './components/layout/password-dialog/pas
         Bip39WordListService,
         MsgBarService,
         HwWalletPinService,
+        HwWalletSeedWordService,
         HwWalletDaemonService,
         HwWalletService,
         EncryptionService,

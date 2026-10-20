@@ -105,6 +105,7 @@ import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin
 import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
+import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
 
 /**
  * The whole wallet as one module: its pages, services and routes under
@@ -164,6 +165,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         SendFormAdvancedComponent,
         SelectAddressComponent,
         MsgBarComponent,
+        PasswordDialogComponent,
         HwPinDialogComponent,
         HwMessageComponent,
         HwConfirmTxDialogComponent,

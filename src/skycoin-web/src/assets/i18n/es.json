@@ -73,7 +73,10 @@
     "title": "Introduzca Su Contraseña",
     "label": "Contraseña",
     "confirm-label": "Confirmar contraseña",
-    "button": "Continuar"
+    "button": "Continuar",
+    "cancel-button": "Cancelar",
+    "mismatch": "Las contraseñas no coinciden",
+    "save-seed-text": "Establezca una contraseña para desbloquear esta billetera sin su semilla la próxima vez. Déjela vacía para omitirla."
   },
 
   "buy": {

@@ -16,7 +16,8 @@ import {
   TransactionOutput,
   TransactionInput,
   Output,
-  GetOutputsRequestOutput } from '../../app.datatypes';
+  GetOutputsRequestOutput,
+  PreviewTransaction } from '../../app.datatypes';
 import { BlockchainService } from '../blockchain.service';
 import { HwWalletService } from '../hw-wallet.service';
 
@@ -643,6 +644,59 @@ describe('SpendingService', () => {
           encoded: 'preparedTransaction'
         });
       });
+    }));
+  });
+
+  describe('createTransaction on a server wallet', () => {
+    let post: jasmine.Spy;
+
+    beforeEach(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.27.0');
+      post = jasmine.createSpy('post').and.callFake((url: string) => {
+        if (url === 'transaction') {
+          return of({ data: {
+            encoded_transaction: 'unsigned',
+            transaction: {
+              fee: '1',
+              inputs: [{ uxid: 'hash1', address: 'address1', calculated_hours: '2', coins: '5' }],
+              outputs: [{ address: 'dest', coins: '5', hours: '1' }],
+            },
+          } });
+        }
+
+        return of({ data: { encoded_transaction: 'signed' } });
+      });
+      (spyApiService as any).post = post;
+    });
+
+    function send(password?: string) {
+      const wallet = Object.assign(createWallet(), { filename: 'w.wlt', addresses: [createAddress('address1', '')] });
+      let encoded = '';
+      spendingService.createTransaction(
+        wallet, null, null,
+        [{ address: 'dest', coins: new BigNumber(5) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) },
+        null, password,
+      ).subscribe(tx => encoded = (tx as PreviewTransaction).encoded);
+
+      return encoded;
+    }
+
+    it('signs with the wallet service and passes the password', fakeAsync(() => {
+      expect(send('secret')).toBe('signed');
+      const signCall = post.calls.all().find(c => c.args[0] === 'wallet/transaction/sign')!;
+      expect(signCall.args[1]).toEqual({
+        wallet_id: 'w.wlt',
+        encoded_transaction: 'unsigned',
+        input_addresses: ['address1'],
+        password: 'secret',
+      });
+    }));
+
+    it('sends an empty password for an unencrypted wallet', fakeAsync(() => {
+      send();
+      const signCall = post.calls.all().find(c => c.args[0] === 'wallet/transaction/sign')!;
+      expect(signCall.args[1].password).toBe('');
     }));
   });
 

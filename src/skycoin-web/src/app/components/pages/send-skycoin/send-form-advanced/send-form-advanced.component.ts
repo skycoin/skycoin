@@ -20,6 +20,7 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { PriceService } from '../../../../services/price.service';
 import { SendFormComponent } from '../send-form/send-form.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
     selector: 'app-send-form-advanced',
@@ -56,6 +57,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private getOutputsSubscriptions!: Subscription;
   private unlockSubscription!: Subscription;
   private destinationSubscriptions: Subscription[] = [];
+  // An encrypted server wallet's password, held only until the transaction is signed.
+  private password: string | undefined;
 
   constructor(
     public walletService: WalletService,
@@ -225,7 +228,19 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     const wallet = this.form.value.wallet;
 
-    if (!wallet.seed) {
+    this.password = undefined;
+    if (this.walletService.isServerWallet(wallet) && wallet.encrypted) {
+      this.removeUnlockSubscription();
+      this.unlockSubscription = PasswordDialogComponent.ask(this.dialog, { text: wallet.label }).subscribe(password => {
+        if (password) {
+          this.password = password;
+          this.checkBeforeSending();
+        }
+        this.changeDetectorRef.markForCheck();
+      });
+    } else if (wallet.isHardware || this.walletService.isServerWallet(wallet)) {
+      this.checkBeforeSending();
+    } else if (!wallet.seed) {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance
@@ -463,6 +478,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     const selectedOutputs = this.form.get('outputs')!.value && (this.form.get('outputs')!.value as UnspentOutput[]).length > 0 ?
       this.form.get('outputs')!.value.map((addr: any) => addr.hash) : null;
 
+    const password = this.password;
+    this.password = undefined;
+
     this.spendingService.createTransaction(
       this.form.get('wallet')!.value,
       selectedAddresses,
@@ -470,6 +488,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.destinations,
       this.hoursSelection,
       this.form.get('changeAddress')!.value ? this.form.get('changeAddress')!.value : null,
+      password,
     )
       .toPromise()
       .then(transaction => {

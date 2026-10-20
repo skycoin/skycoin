@@ -90,7 +90,10 @@
     "title": "Enter Password",
     "label": "Password",
     "confirm-label": "Confirm password",
-    "button": "Proceed"
+    "button": "Proceed",
+    "cancel-button": "Cancel",
+    "mismatch": "The passwords do not match",
+    "save-seed-text": "Set a password to unlock this wallet without its seed next time. Leave it empty to skip."
   },
   "buy": {
     "deposit-address": "Choose an address to generate a BTC deposit link for:",

@@ -12,9 +12,13 @@ import { BaseCoin } from '../../coins/basecoin';
 import { WalletService } from './wallet.service';
 import { GlobalsService } from '../globals.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
+import { withOfflineCache } from '../../utils/offline-cache';
 
 @Injectable()
 export class HistoryService {
+  // When the history could not be refreshed, the time of the cached one returned instead.
+  cachedAt: Date | null = null;
+
   private currentCoin!: BaseCoin;
 
   constructor(
@@ -47,7 +51,7 @@ export class HistoryService {
           return this.retrieveGatewayHistory(addresses, addressesMap);
         }
 
-        return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
+        const raw$ = this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
           let TxObsv: Observable<any>;
           if (isEqualOrSuperiorVersion(version, '0.25.0')) {
             TxObsv = this.retrieveAddressesTransactions(addresses).pipe(map(transactions => {
@@ -68,7 +72,10 @@ export class HistoryService {
               }));
           }
 
-          return TxObsv.pipe(map(transactions => {
+          return TxObsv;
+        }));
+
+        return this.cached(addresses, raw$).pipe(map(transactions => {
             return transactions.map((transaction: any) => {
               const outgoing = transaction.inputs.some((input: any) => addressesMap.has(input.owner));
 
@@ -135,7 +142,6 @@ export class HistoryService {
               return transaction;
             });
           }));
-        }));
       }));
   }
 
@@ -143,7 +149,7 @@ export class HistoryService {
   private retrieveGatewayHistory(addresses: Address[], addressesMap: Map<string, boolean>): Observable<any[]> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
     const multiplier = this.currentCoin.coinsMultiplier;
-    return this.apiService.get(this.currentCoin.gatewayPrefix + '/history', { addrs: formattedAddresses } as any).pipe(
+    return this.cached(addresses, this.apiService.get(this.currentCoin.gatewayPrefix + '/history', { addrs: formattedAddresses } as any)).pipe(
       map((transactions: any[]) => {
         return (transactions || []).map(tx => {
           const outgoing = tx.inputs && tx.inputs.some((input: any) => addressesMap.has(input.address));
@@ -190,6 +196,13 @@ export class HistoryService {
         }).sort((a: any, b: any) => b.timestamp - a.timestamp);
       })
     );
+  }
+
+  // The history fetched for addresses, or the cached one when the fetch fails.
+  private cached(addresses: Address[], source: Observable<any>): Observable<any> {
+    const scope = addresses.map(a => a.address).join(',');
+
+    return withOfflineCache('history:' + this.currentCoin.id, scope, source, t => this.cachedAt = t);
   }
 
   retrieveAddressTransactions(address: Address): Observable<NormalTransaction[]> {

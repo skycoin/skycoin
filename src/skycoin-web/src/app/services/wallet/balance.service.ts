@@ -10,6 +10,7 @@ import { WalletService, walletAddresses } from './wallet.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 import { GlobalsService } from '../globals.service';
 import { BaseCoin } from '../../coins/basecoin';
+import { withOfflineCache } from '../../utils/offline-cache';
 
 export enum BalanceStates {
   Obtained,
@@ -27,6 +28,8 @@ export class BalanceService {
   lastBalancesUpdateTime: Date = new Date();
   totalBalance: ReplaySubject<BalanceEvent> = new ReplaySubject<BalanceEvent>();
   hasPendingTransactions: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  // When the balance could not be refreshed, the time of the cached one shown instead.
+  cachedAt: Date | null = null;
 
   private canGetBalance = false;
   private schedulerSubscription!: Subscription;
@@ -97,7 +100,11 @@ export class BalanceService {
         return of(false);
       }
 
-      return this.retrieveAddressesBalance(addresses).pipe(mergeMap((balance) => {
+      const scope = addresses.map(a => a.address).join(',');
+      const coinId = this.currentCoin ? this.currentCoin.id : 0;
+      const balance$ = withOfflineCache('balance:' + coinId, scope, this.retrieveAddressesBalance(addresses), t => this.cachedAt = t);
+
+      return balance$.pipe(mergeMap((balance) => {
         return this.walletService.currentWallets.pipe(first(), map(wallets => this.calculateBalance(wallets, balance)));
       }));
     }));
@@ -190,7 +197,7 @@ export class BalanceService {
       });
     }
 
-    this.lastBalancesUpdateTime = new Date();
+    this.lastBalancesUpdateTime = this.cachedAt || new Date();
     this.sendTotalBalanceEvent({
       state: BalanceStates.Obtained,
       balance: {
@@ -198,6 +205,15 @@ export class BalanceService {
         hours: isGateway ? new BigNumber('0') : new BigNumber(balance.confirmed.hours || 0),
       }
     });
+
+    // A cached balance is shown as a failed refresh, which is retried soon.
+    if (this.cachedAt) {
+      this.sendTotalBalanceEvent({ state: BalanceStates.Error });
+      this.refreshPendingTransactions(balance);
+
+      return true;
+    }
+
     return this.refreshPendingTransactions(balance);
   }
 

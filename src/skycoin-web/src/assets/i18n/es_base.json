@@ -366,6 +366,7 @@
     "pending": "Pending",
     "price-tooltip": "Calculated at the current rate",
     "no-txs": "You have no transaction history",
+    "cached": "The history could not be refreshed. Showing the copy saved at {{ time }}.",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",
     "filter": "Active filter: ",

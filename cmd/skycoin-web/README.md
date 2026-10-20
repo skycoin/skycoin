@@ -62,6 +62,7 @@ When `--wallet-dir` is specified, wallets are stored on disk and managed by the 
 - **A malicious node could return false balance or transaction data.** The remote node provides blockchain data that skycoin-web displays. A compromised node could show incorrect balances, hide transactions, or provide manipulated transaction data. However, it cannot steal your coins because it does not have access to your private keys.
 - **Wallet files contain private keys.** The wallet directory contains unencrypted (or password-encrypted) wallet files with private keys. Protect this directory with appropriate filesystem permissions. Anyone with access to these files can spend your coins.
 - **Run skycoin-web locally.** Since skycoin-web reads wallet files from disk, it should be run on the same machine where the wallet files reside. Do not expose skycoin-web's web interface to untrusted networks when `--wallet-dir` is configured.
+- **Other websites cannot use it.** The server sends no CORS headers, so other pages cannot read wallet data, and it refuses requests that change state when the browser reports another origin, so they cannot send coins or edit wallets either.
 
 ### Hardware wallet mode
 

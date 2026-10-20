@@ -586,7 +586,6 @@ func serve(ctx context.Context) error {
 			return
 		}
 		c.params = map[string]string{"coinIndex": coinIndexStr, "path": apiPath}
-		setCORSHeaders(c)
 		if c.Request.Method == "OPTIONS" {
 			c.Status(http.StatusOK)
 			return
@@ -665,7 +664,6 @@ func serve(ctx context.Context) error {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		c := newCtx(w, r)
 		c.params = map[string]string{"path": strings.TrimPrefix(r.URL.Path, "/api")}
-		setCORSHeaders(c)
 		if c.Request.Method == "OPTIONS" {
 			c.Status(http.StatusOK)
 			return
@@ -752,7 +750,7 @@ func serve(ctx context.Context) error {
 	// it can't take down an embedding process. Uses the net/http mux (so the
 	// web wallet also builds under TinyGo) wrapped in the recovery middleware.
 	go rediscoverCoins(ctx, coins)
-	handler := recoverMiddleware(mux)
+	handler := recoverMiddleware(sameOriginWrites(mux))
 	if Mount != nil {
 		Mount(handler)
 		defer Mount(nil)
@@ -803,12 +801,6 @@ func handleBtcStubEndpoints(c *webCtx, apiPath string) bool {
 		return false
 	}
 	return true
-}
-
-func setCORSHeaders(c *webCtx) {
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	c.Header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
 }
 
 // handleMultiWalletAPI dispatches wallet API requests across all configured wallet services.

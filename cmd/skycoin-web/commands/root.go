@@ -129,6 +129,11 @@ type discoveredCoin struct {
 	CoinExplorer      string `json:"coinExplorer"`
 	CoinType          string `json:"coinType"`
 	ServerWallets     bool   `json:"serverWallets"`
+	// Decimals is the coin's base units per whole coin, as a power of ten, for
+	// Ethereum coins; the wallet knows the others.
+	Decimals int `json:"decimals,omitempty"`
+	// Contract is an ERC-20 token's contract address.
+	Contract string `json:"contract,omitempty"`
 	// NodeOptions are the servers the wallet's node settings offer.
 	NodeOptions []string `json:"nodeOptions,omitempty"`
 	// placeholder marks a node whose health check failed; it is retried.
@@ -552,7 +557,14 @@ func serve(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	coins, ethHandlers, ethWltServices, err := initEthereumBackend(coins)
+	if err != nil {
+		return err
+	}
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
+	for i := range ethHandlers {
+		coinWltServices[i] = ethWltServices
+	}
 	guiFS := initGUIFS()
 
 	// The cipher routes are exact matches, so they win over the "/" static
@@ -587,6 +599,23 @@ func serve(ctx context.Context) error {
 		}
 
 		coin := coins[coinIndex]
+
+		// Ether and tokens are handled by the ethHandler, not proxied to a node
+		if isEthereumCoin(coin) {
+			if handleBtcStubEndpoints(c, apiPath) {
+				return
+			}
+			if handler, ok := ethHandlers[coinIndex]; ok && handler.handleEthAPI(c, apiPath) {
+				return
+			}
+			if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
+				if handleMultiWalletAPI(c, apiPath, services, "") {
+					return
+				}
+			}
+			c.String(http.StatusNotFound, "endpoint not available for %s", coin.CoinSymbol)
+			return
+		}
 
 		// Bitcoin coins are handled by the btcHandler, not proxied to a node
 		if coin.CoinType == "bitcoin" {

@@ -21,6 +21,7 @@
   },
 
   "title": {
+    "hardware-wallet": "Billetera de Hardware",
     "change-coin": "Cambiar la moneda activa",
     "language": "Seleccionar Lenguaje",
     "wallets": "Billeteras",

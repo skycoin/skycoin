@@ -14,6 +14,7 @@ import { Bip39WordListService } from '../../../services/bip39-word-list.service'
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { HwWalletPinService } from '../../../services/hw-wallet-pin.service';
+import { HwWalletSeedWordService } from '../../../services/hw-wallet-seed-word.service';
 import { WalletService } from '../../../services/wallet/wallet.service';
 
 describe('WalletShellComponent', () => {
@@ -29,6 +30,7 @@ describe('WalletShellComponent', () => {
         { provide: WalletService, useValue: { locked: new BehaviorSubject<boolean>(false) } },
         // The component only stores a component reference on it.
         { provide: HwWalletPinService, useValue: {} },
+        { provide: HwWalletSeedWordService, useValue: {} },
         { provide: CoinService, useClass: MockCoinService },
         { provide: LanguageService, useClass: MockLanguageService },
         { provide: TranslateService, useClass: MockTranslateService },

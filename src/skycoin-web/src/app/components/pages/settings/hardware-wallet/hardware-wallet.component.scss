@@ -1,0 +1,39 @@
+@use '../../../../../theme/_variables.scss' as *;
+
+.-paper {
+  padding: 30px;
+}
+
+.-grey {
+  color: $grey;
+}
+
+.-small {
+  font-size: 12px;
+  margin-top: 20px;
+}
+
+.-info div {
+  margin-bottom: 5px;
+}
+
+.-warning {
+  color: $red;
+}
+
+.-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.-label-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  input {
+    flex: 1;
+  }
+}

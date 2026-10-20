@@ -287,7 +287,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     this.removeProcessSubscription();
     this.processSubscription = this.spendingService.gatewayFee().pipe(
-      mergeMap((fee: any) => {
+      mergeMap((estimate: any) => {
+        const fee = (estimate.presets && estimate.presets[this.form.value.feeSpeed]) || estimate;
         const params = { amount: amount.toFixed(), symbol: coin.coinSymbol, to: to };
         const text = coin.isEthereum() ?
           this.translate.instant('send.gateway-confirm-eth', { ...params, fee: new BigNumber(fee.max_fee).dividedBy(1e18).toFixed() }) :
@@ -301,7 +302,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
         return showConfirmationModal(this.dialog, data).afterClosed().pipe(
           mergeMap(confirmed => confirmed ?
-            this.spendingService.sendGateway(wallet, to, amount, password, fee.sat_per_byte) : of(null)),
+            this.spendingService.sendGateway(wallet, to, amount, password, fee) : of(null)),
         );
       }),
     ).subscribe(txid => {
@@ -347,7 +348,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
       address: ['', Validators.required],
-      amount: ['', [Validators.required]]
+      amount: ['', [Validators.required]],
+      feeSpeed: ['normal'],
     });
 
     this.subscriptionsGroup.push(this.form.controls.wallet.valueChanges.subscribe(value => {

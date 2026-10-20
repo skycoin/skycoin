@@ -214,6 +214,10 @@
     "gateway-confirm-eth": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is at most {{ fee }} ETH.",
     "gateway-confirm-btc": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is {{ rate }} satoshis per byte.",
     "gateway-sent": "Sent. Transaction {{ txid }}",
+    "fee-label": "Network fee",
+    "fee-slow": "Slow",
+    "fee-normal": "Normal",
+    "fee-fast": "Fast",
     "bulk-send-button": "Bulk send",
     "bulk-send": {
       "title": "Bulk Send",

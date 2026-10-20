@@ -932,17 +932,17 @@ describe('SpendingService gateway sends', () => {
     coin = BaseCoin.fromServerData({ id: 1, coinSymbol: 'ETH', coinType: 'ethereum', decimals: 18 });
     spending = TestBed.inject(SpendingService);
     let txid = '';
-    spending.sendGateway({ filename: 'e.wlt' } as any, '0xto', new BigNumber('1.5'), 'pw').subscribe(t => txid = t);
+    spending.sendGateway({ filename: 'e.wlt' } as any, '0xto', new BigNumber('1.5'), 'pw', { max_fee_per_gas: '30', max_priority_fee_per_gas: '2' }).subscribe(t => txid = t);
     expect(txid).toBe('0xabc');
     expect(post).toHaveBeenCalledWith('eth/send', {
-      wallet_id: 'e.wlt', password: 'pw', to: '0xto', amount: '1500000000000000000',
+      wallet_id: 'e.wlt', password: 'pw', to: '0xto', amount: '1500000000000000000', max_fee_per_gas: '30', max_priority_fee_per_gas: '2',
     }, { json: true });
   }));
 
   it('sends Bitcoin in satoshis with the fee rate', fakeAsync(() => {
     coin = BaseCoin.fromServerData({ id: 2, coinSymbol: 'BTC', coinType: 'bitcoin' });
     spending = TestBed.inject(SpendingService);
-    spending.sendGateway({ filename: 'b.wlt' } as any, 'bc1q', new BigNumber('0.0001'), undefined, 7).subscribe();
+    spending.sendGateway({ filename: 'b.wlt' } as any, 'bc1q', new BigNumber('0.0001'), undefined, { sat_per_byte: 7 }).subscribe();
     expect(post).toHaveBeenCalledWith('btc/send', {
       wallet_id: 'b.wlt', password: '', destinations: [{ address: 'bc1q', coins: 10000 }], fee_rate: 7,
     }, { json: true });

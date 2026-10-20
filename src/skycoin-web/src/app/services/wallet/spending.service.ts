@@ -65,9 +65,10 @@ export class SpendingService {
 
   /**
    * Sends a gateway coin from a server wallet, which signs and broadcasts it.
+   * fee is a preset from gatewayFee, or the server's own estimate when absent.
    * Returns the transaction id.
    */
-  sendGateway(wallet: Wallet, to: string, amount: BigNumber, password?: string, satPerByte?: number): Observable<string> {
+  sendGateway(wallet: Wallet, to: string, amount: BigNumber, password?: string, fee?: any): Observable<string> {
     const units = amount.multipliedBy(this.currentCoin.coinsMultiplier).integerValue(BigNumber.ROUND_DOWN);
     const walletId = wallet['filename'] || wallet.label;
     const body: any = this.currentCoin.isEthereum() ? {
@@ -75,11 +76,13 @@ export class SpendingService {
       password: password || '',
       to: to,
       amount: units.toFixed(0),
+      max_fee_per_gas: fee ? fee.max_fee_per_gas : undefined,
+      max_priority_fee_per_gas: fee ? fee.max_priority_fee_per_gas : undefined,
     } : {
       wallet_id: walletId,
       password: password || '',
       destinations: [{ address: to, coins: units.toNumber() }],
-      fee_rate: satPerByte,
+      fee_rate: fee ? fee.sat_per_byte : undefined,
     };
 
     return this.apiService.post(this.currentCoin.gatewayPrefix + '/send', body, { json: true }).pipe(

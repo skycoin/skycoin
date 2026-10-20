@@ -191,3 +191,14 @@ func TestSuggestFees(t *testing.T) {
 	require.Equal(t, minTip, fees.MaxPriorityFeePerGas)
 	require.Equal(t, "2100000000", fees.MaxFeePerGas.String())
 }
+
+func TestFeePresets(t *testing.T) {
+	base := big.NewInt(1e9)
+	normal := Fees{MaxPriorityFeePerGas: big.NewInt(5e8), MaxFeePerGas: big.NewInt(25e8)}
+	p := FeePresets(base, normal)
+	require.Equal(t, minTip, p["slow"].MaxPriorityFeePerGas)
+	require.Equal(t, "2100000000", p["slow"].MaxFeePerGas.String())
+	require.Equal(t, normal, p["normal"])
+	require.Equal(t, "1000000000", p["fast"].MaxPriorityFeePerGas.String())
+	require.Equal(t, "3000000000", p["fast"].MaxFeePerGas.String())
+}

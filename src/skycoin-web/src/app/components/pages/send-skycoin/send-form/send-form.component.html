@@ -60,6 +60,19 @@
     }
   </div>
 
+  @if (currentCoin.isGateway()) {
+    <div class="form-field">
+      <label for="feeSpeed">{{ 'send.fee-label' | translate }}</label>
+      <div class="-select">
+        <select formControlName="feeSpeed" id="feeSpeed">
+          <option value="slow">{{ 'send.fee-slow' | translate }}</option>
+          <option value="normal">{{ 'send.fee-normal' | translate }}</option>
+          <option value="fast">{{ 'send.fee-fast' | translate }}</option>
+        </select>
+      </div>
+    </div>
+  }
+
   @if (showSlowMobileInfo) {
     <div class="form-field -on-small-and-below-only">
       <label class="slow-mobile-info">{{ 'common.slow-on-mobile' | translate}}</label>

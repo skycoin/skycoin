@@ -324,7 +324,20 @@
   },
   "network": {
     "automatic-peers": "Automatic peers",
-    "default-peers": "Default peers"
+    "default-peers": "Default peers",
+    "no-connections": "The node has no peer connections.",
+    "peer": "Peer",
+    "source": "Source",
+    "block": "Block",
+    "last-seen": "Last seen",
+    "outgoing": "The node connected to this peer.",
+    "incoming": "This peer connected to the node.",
+    "last-sent": "Since the node last sent to this peer",
+    "last-received": "Since the node last heard from this peer",
+    "sources": {
+      "default": "Default peer",
+      "exchange": "Peer exchange"
+    }
   },
   "pending-txs": {
     "timestamp": "Timestamp",

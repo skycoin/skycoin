@@ -10,6 +10,7 @@ import { BuyComponent } from './components/pages/buy/buy.component';
 import { OnboardingCreateWalletComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-create-wallet.component';
 import { NodesComponent } from './components/pages/settings/nodes/nodes.component';
 import { AppPasswordComponent } from './components/pages/settings/app-password/app-password.component';
+import { NetworkComponent } from './components/pages/settings/network/network.component';
 import { BackupComponent } from './components/pages/settings/backup/backup.component';
 import { Routes } from "@angular/router";
 
@@ -67,6 +68,10 @@ export const AppRoutes: Routes = [
       {
         path: 'password',
         component: AppPasswordComponent,
+      },
+      {
+        path: 'network',
+        component: NetworkComponent,
       },
       {
         path: 'backup',

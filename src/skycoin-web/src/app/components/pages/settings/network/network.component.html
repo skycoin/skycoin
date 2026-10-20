@@ -1,0 +1,40 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'title.network' | translate"></app-header>
+  <div class="container">
+    @if (!peers || peers.length === 0) {
+      <app-loading-content [isLoading]="!peers && !showError" [showError]="showError"
+        [noDataText]="'network.no-connections'"></app-loading-content>
+    }
+    @if (peers && peers.length > 0) {
+      <div class="-table">
+        <div class="-headers">
+          <div class="-width-40"></div>
+          <div class="flex-fill">{{ 'network.peer' | translate }}</div>
+          <div class="-width-150 -not-on-small-and-below">{{ 'network.source' | translate }}</div>
+          <div class="-width-100 -text-right">{{ 'network.block' | translate }}</div>
+          <div class="-width-150 -text-right">{{ 'network.last-seen' | translate }}</div>
+        </div>
+        <div class="-paper">
+          @for (peer of peers; track peer.address) {
+            <div class="-row">
+              <div class="-width-40">
+                <mat-icon [matTooltip]="(peer.outgoing ? 'network.outgoing' : 'network.incoming') | translate">
+                  {{ peer.outgoing ? 'north_east' : 'south_west' }}
+                </mat-icon>
+              </div>
+              <div class="flex-fill -one-line-ellipsis">
+                {{ peer.address.split(':')[0] }}<span class="-grey">:{{ peer.listenPort }}</span>
+              </div>
+              <div class="-width-150 -grey -not-on-small-and-below">{{ ('network.sources.' + peer.source) | translate }}</div>
+              <div class="-width-100 -text-right">{{ peer.height }}</div>
+              <div class="-width-150 -text-right -grey">
+                <span [matTooltip]="'network.last-sent' | translate">↑ {{ ago(peer.lastSent) }}</span>
+                <span [matTooltip]="'network.last-received' | translate">↓ {{ ago(peer.lastReceived) }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,30 @@
+@use '../../../../../theme/_variables.scss' as *;
+
+.-grey {
+  color: $grey;
+}
+
+.-text-right {
+  text-align: right;
+}
+
+.-width-40 {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.-width-100 {
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.-width-150 span + span {
+  margin-left: 10px;
+}
+
+mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: $blue;
+}

@@ -18,6 +18,7 @@ import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../services/price.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
     selector: 'app-send-form',
@@ -47,6 +48,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
   private processSubscription!: Subscription;
   private subscriptionsGroup: Subscription[] = [];
   private slowInfoSubscription!: Subscription;
+  // An encrypted server wallet's password, held only until the transaction is signed.
+  private password: string | undefined;
 
   constructor(
     public blockchainService: BlockchainService,
@@ -121,7 +124,17 @@ export class SendFormComponent implements OnInit, OnDestroy {
     const wallet = this.form.value.wallet;
 
     // Hardware wallets and server-managed wallets don't need seed unlocking
-    if (wallet.isHardware || this.walletService.isServerWallet(wallet)) {
+    this.password = undefined;
+    if (this.walletService.isServerWallet(wallet) && wallet.encrypted) {
+      this.removeProcessSubscription();
+      this.processSubscription = PasswordDialogComponent.ask(this.dialog, { text: wallet.label }).subscribe(password => {
+        if (password) {
+          this.password = password;
+          this.checkBeforeSending();
+        }
+        this.changeDetectorRef.markForCheck();
+      });
+    } else if (wallet.isHardware || this.walletService.isServerWallet(wallet)) {
       this.checkBeforeSending();
     } else if (!wallet.seed) {
       // In-memory wallet needs seed entry for client-side signing
@@ -215,6 +228,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
         this.changeDetectorRef.markForCheck();
       });
 
+    const password = this.password;
+    this.password = undefined;
     this.removeProcessSubscription();
     this.processSubscription = this.spendingService.createTransaction(
       wallet,
@@ -228,7 +243,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
         type: HoursSelectionTypes.Auto,
         ShareFactor: new BigNumber(0.5),
       },
-      null
+      null,
+      password,
     ).subscribe(
         transaction => {
           this.onTransactionCreated(transaction);

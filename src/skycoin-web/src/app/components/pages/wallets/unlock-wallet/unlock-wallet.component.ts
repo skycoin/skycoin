@@ -9,6 +9,8 @@ import { WalletService } from '../../../../services/wallet/wallet.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
+import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 export class ConfirmSeedParams {
   wallet!: Wallet;
@@ -43,6 +45,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private dialog: CustomMatDialogService,
     private changeDetectorRef: ChangeDetectorRef,
   ) {
     if (data.wallet) {
@@ -138,13 +141,13 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
 
     // After seed-based unlock, offer to set a password for future convenience
     if (!this.hasEncryptedSeed && this.wallet.seed) {
-      const password = window.prompt('Set a password to avoid entering your seed next time (leave empty to skip):');
-      if (password) {
-        const confirm = window.prompt('Confirm password:');
-        if (password === confirm) {
-          this.walletService.setWalletPassword(this.wallet, password).subscribe();
-        }
-      }
+      const wallet = this.wallet;
+      PasswordDialogComponent.ask(this.dialog, { text: 'password.save-seed-text', confirm: true, allowEmpty: true })
+        .subscribe(password => {
+          if (password) {
+            this.walletService.setWalletPassword(wallet, password).subscribe();
+          }
+        });
     }
 
     this.closePopup();

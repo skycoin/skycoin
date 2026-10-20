@@ -77,7 +77,8 @@ export class SpendingService {
     unspents: string[]|null,
     destinations: Destination[],
     hoursSelection: HoursSelection,
-    changeAddress: string|null): Observable<Transaction> {
+    changeAddress: string|null,
+    password?: string): Observable<Transaction> {
 
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       if (isEqualOrSuperiorVersion(version, '0.26.0')) {
@@ -168,6 +169,7 @@ export class SpendingService {
               wallet_id: wallet['filename'],
               encoded_transaction: data.encoded_transaction,
               input_addresses: txInputs.map(i => i.address),
+              password: password || '',
             };
 
             return this.apiService.post('wallet/transaction/sign', signBody, { json: true }, true).pipe(

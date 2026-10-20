@@ -1,9 +1,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription, of } from 'rxjs';
+import { mergeMap } from 'rxjs';
 
 import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 /**
  * Backs up the current coin's wallets: their addresses as a CSV file, and their seeds.
@@ -29,6 +32,7 @@ export class BackupComponent implements OnInit, OnDestroy {
   constructor(
     private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private dialog: CustomMatDialogService,
     private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
@@ -75,16 +79,16 @@ export class BackupComponent implements OnInit, OnDestroy {
   /** Asks for the password where the seed is encrypted, then shows it. */
   showSeed(wallet: Wallet) {
     const encrypted = this.walletService.isServerWallet(wallet) ? !!wallet.encrypted : !wallet.seed;
-    let password: string | null = null;
-    if (encrypted) {
-      password = window.prompt(this.passwordPrompt(wallet));
-      if (password === null) {
-        return;
-      }
-    }
+    const password: Observable<string | null | undefined> = encrypted ?
+      PasswordDialogComponent.ask(this.dialog, { text: wallet.label }) : of(null);
     this.msgBarService.hide();
     this.seedSubscription?.unsubscribe();
-    this.seedSubscription = this.walletService.getSeed(wallet, password).subscribe(seed => {
+    this.seedSubscription = password.pipe(
+      mergeMap(p => p === undefined ? of(undefined) : this.walletService.getSeed(wallet, p)),
+    ).subscribe(seed => {
+      if (seed === undefined) {
+        return;
+      }
       this.shownSeeds.set(wallet, seed);
       this.changeDetectorRef.markForCheck();
     }, err => {
@@ -109,9 +113,5 @@ export class BackupComponent implements OnInit, OnDestroy {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }
-
-  private passwordPrompt(wallet: Wallet): string {
-    return 'Password for ' + wallet.label;
   }
 }

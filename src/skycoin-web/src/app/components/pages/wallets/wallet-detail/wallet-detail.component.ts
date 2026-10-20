@@ -15,6 +15,7 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
     selector: 'app-wallet-detail',
@@ -256,16 +257,15 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onEncryptWallet() {
-    const password = window.prompt(this.translateService.instant('password.title'));
-    if (!password) {
-      return;
-    }
-    const confirm = window.prompt(this.translateService.instant('password.confirm-label'));
-    if (password !== confirm) {
-      this.msgBarService.showError('Passwords do not match');
-      return;
-    }
+    PasswordDialogComponent.ask(this.dialog, { confirm: true }).subscribe(password => {
+      if (password) {
+        this.encryptWith(password);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
 
+  private encryptWith(password: string) {
     if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallet encryption
       this.walletService.encryptWallet(this.wallet, password).subscribe(
@@ -295,11 +295,19 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onDecryptWallet() {
-    const password = window.prompt(this.translateService.instant('password.title'));
-    if (!password) {
+    if (!this.walletService.isServerWallet(this.wallet)) {
+      this.decryptWith('');
       return;
     }
+    PasswordDialogComponent.ask(this.dialog).subscribe(password => {
+      if (password) {
+        this.decryptWith(password);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
 
+  private decryptWith(password: string) {
     if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallet decryption
       this.walletService.decryptWallet(this.wallet, password).subscribe(

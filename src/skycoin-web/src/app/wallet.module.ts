@@ -87,6 +87,7 @@ import { SpendingService } from './services/wallet/spending.service';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ScanAddressesComponent } from './components/pages/wallets/scan-addresses/scan-addresses.component';
 import { NodesComponent } from './components/pages/settings/nodes/nodes.component';
+import { EthEndpointsComponent } from './components/pages/settings/nodes/eth-endpoints/eth-endpoints.component';
 import { AppPasswordComponent } from './components/pages/settings/app-password/app-password.component';
 import { AppLockComponent } from './components/layout/app-lock/app-lock.component';
 import { ChangeNodeURLComponent } from './components/pages/settings/nodes/change-url/change-node-url.component';
@@ -163,6 +164,7 @@ import { PasswordDialogComponent } from './components/layout/password-dialog/pas
         CreateWalletFormComponent,
         ScanAddressesComponent,
         NodesComponent,
+        EthEndpointsComponent,
         AppPasswordComponent,
         AppLockComponent,
         ChangeNodeURLComponent,

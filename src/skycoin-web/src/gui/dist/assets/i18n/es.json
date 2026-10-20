@@ -335,6 +335,15 @@
   },
 
   "nodes" : {
+    "eth": {
+      "title": "Servidores de Ethereum",
+      "help": "Ether y todos los tokens los usan. Los servidores RPC se prueban en orden, uno por línea. El indexador es una API al estilo de Etherscan que lista el historial de transacciones.",
+      "rpc-label": "Servidores RPC",
+      "indexer-label": "Indexador del historial",
+      "save-button": "Guardar",
+      "defaults-button": "Usar valores predeterminados",
+      "saved": "Los servidores de Ethereum se han guardado."
+    },
     "coin": "Moneda",
     "url": "URL del nodo",
     "custom-label": "URL personalizada",

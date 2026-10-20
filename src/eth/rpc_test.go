@@ -202,3 +202,26 @@ func TestFeePresets(t *testing.T) {
 	require.Equal(t, "1000000000", p["fast"].MaxPriorityFeePerGas.String())
 	require.Equal(t, "3000000000", p["fast"].MaxFeePerGas.String())
 }
+
+func TestRPCSetURLs(t *testing.T) {
+	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":"0x1"}`)) //nolint:errcheck
+	}))
+	defer good.Close()
+
+	r, err := NewRPC([]string{"http://127.0.0.1:1"}, nil)
+	require.NoError(t, err)
+	_, err = r.ChainID(context.Background())
+	require.Error(t, err)
+
+	require.Error(t, r.SetURLs(nil))
+	require.NoError(t, r.SetURLs([]string{good.URL}))
+	require.Equal(t, []string{good.URL}, r.URLs())
+	id, err := r.ChainID(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(1), id.Int64())
+
+	ix := NewIndexer("https://a.example/", nil)
+	ix.SetBase("https://b.example/")
+	require.Equal(t, "https://b.example", ix.Base())
+}

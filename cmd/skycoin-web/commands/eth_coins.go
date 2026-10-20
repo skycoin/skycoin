@@ -94,6 +94,7 @@ func initEthereumBackend(coins []*discoveredCoin) ([]*discoveredCoin, map[int]*e
 	indexer := eth.NewIndexer(ethIndexerURL, client)
 
 	var services []*wallet.Service
+	var endpointsDir string
 	for _, dir := range walletDirs {
 		if dir == "" {
 			continue
@@ -109,11 +110,19 @@ func initEthereumBackend(coins []*discoveredCoin) ([]*discoveredCoin, map[int]*e
 		if err != nil {
 			return coins, nil, nil, fmt.Errorf("ethereum wallet service for %s: %w", dir, err)
 		}
+		if endpointsDir == "" {
+			endpointsDir = dir
+		}
 		services = append(services, svc)
 	}
 	if len(services) == 0 {
 		log.Printf("[ETH] No --wallet-dir specified, Ethereum wallets disabled")
 		return coins, nil, nil, nil
+	}
+
+	endpoints := newEthEndpoints(rpc, indexer, endpointsDir)
+	if err := endpoints.load(); err != nil {
+		log.Printf("[ETH] Ignoring the saved RPC and indexer addresses: %v", err)
 	}
 
 	handlers := make(map[int]*ethHandler)
@@ -124,7 +133,7 @@ func initEthereumBackend(coins []*discoveredCoin) ([]*discoveredCoin, map[int]*e
 		c.CoinExplorer = strings.TrimSuffix(ethIndexerURL, "/")
 		c.ServerWallets = true
 		coins = append(coins, c)
-		handlers[c.ID] = &ethHandler{rpc: rpc, indexer: indexer, wltService: services[0], token: token}
+		handlers[c.ID] = &ethHandler{rpc: rpc, indexer: indexer, wltService: services[0], token: token, endpoints: endpoints}
 		log.Printf("[COIN] Added %s at index %d", c.CoinSymbol, c.ID)
 	}
 	add(&discoveredCoin{

@@ -29,6 +29,7 @@ type ethHandler struct {
 	indexer    *eth.Indexer
 	wltService *wallet.Service
 	token      *ethToken
+	endpoints  *ethEndpoints
 }
 
 const ethRequestTimeout = 60 * time.Second
@@ -45,6 +46,10 @@ func (h *ethHandler) handleEthAPI(c *webCtx, apiPath string) bool {
 		h.fee(c)
 	case path == "/v1/eth/send" && method == http.MethodPost:
 		h.send(c)
+	case path == "/v1/eth/endpoints" && method == http.MethodGet:
+		h.endpoints.get(c)
+	case path == "/v1/eth/endpoints" && method == http.MethodPut:
+		h.endpoints.put(c)
 	case path == "/v1/eth/health" && method == http.MethodGet:
 		h.health(c)
 	default:

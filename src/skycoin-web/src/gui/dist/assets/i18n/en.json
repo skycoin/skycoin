@@ -368,6 +368,15 @@
     "change-url": "Change URL",
     "nodes": "Nodes",
     "help": "The node each coin queries for chain data (wallets, keys and signing stay in this browser). Point it at a Skywire mesh node with an http://<name>.<base32-pk>.dmsg URL — it's routed over the mesh, no IP or DNS needed — or a clearnet http(s):// URL. Leave a coin on its default to use the built-in node.",
+    "eth": {
+      "title": "Ethereum servers",
+      "help": "Ether and every token use these. The RPC servers are tried in order, one per line. The indexer is an Etherscan-style API that lists the transaction history.",
+      "rpc-label": "RPC servers",
+      "indexer-label": "History indexer",
+      "save-button": "Save",
+      "defaults-button": "Use defaults",
+      "saved": "The Ethereum servers have been saved."
+    },
     "change": {
       "preset-label": "Known servers",
       "preset-default": "Default (built-in)",

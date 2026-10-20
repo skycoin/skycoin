@@ -67,5 +67,8 @@
         }
       </div>
     </div>
+    @if (ethCoin) {
+      <app-eth-endpoints [coin]="ethCoin"></app-eth-endpoints>
+    }
   </div>
 </div>

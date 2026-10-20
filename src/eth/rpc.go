@@ -32,6 +32,7 @@ type RPC struct {
 
 	mu   sync.Mutex
 	next int
+	gen  int // counts SetURLs, so a call that began on older URLs does not move next
 }
 
 // RPCError is an error the node returned, as opposed to a failure to reach it.
@@ -54,7 +55,24 @@ func NewRPC(urls []string, client *http.Client) (*RPC, error) {
 }
 
 // URLs are the endpoints in the order the client tries them.
-func (r *RPC) URLs() []string { return append([]string{}, r.urls...) }
+func (r *RPC) URLs() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string{}, r.urls...)
+}
+
+// SetURLs replaces the endpoints, starting again from the first.
+func (r *RPC) SetURLs(urls []string) error {
+	if len(urls) == 0 {
+		return errors.New("no Ethereum RPC URLs")
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.urls = append([]string{}, urls...)
+	r.next = 0
+	r.gen++
+	return nil
+}
 
 // Call runs method, moving to the next URL when one cannot be reached or
 // answers badly. An error from the node itself is returned at once.
@@ -68,16 +86,18 @@ func (r *RPC) Call(ctx context.Context, result interface{}, method string, param
 	}
 
 	r.mu.Lock()
-	start := r.next
+	urls, start, gen := r.urls, r.next, r.gen
 	r.mu.Unlock()
 
 	var errs []string
-	for i := 0; i < len(r.urls); i++ {
-		n := (start + i) % len(r.urls)
-		raw, err := r.post(ctx, r.urls[n], body)
+	for i := 0; i < len(urls); i++ {
+		n := (start + i) % len(urls)
+		raw, err := r.post(ctx, urls[n], body)
 		if err == nil {
 			r.mu.Lock()
-			r.next = n
+			if r.gen == gen {
+				r.next = n
+			}
 			r.mu.Unlock()
 			if result == nil {
 				return nil
@@ -91,7 +111,7 @@ func (r *RPC) Call(ctx context.Context, result interface{}, method string, param
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		errs = append(errs, fmt.Sprintf("%s: %v", r.urls[n], err))
+		errs = append(errs, fmt.Sprintf("%s: %v", urls[n], err))
 	}
 	return fmt.Errorf("no Ethereum RPC answered %s: %s", method, strings.Join(errs, "; "))
 }

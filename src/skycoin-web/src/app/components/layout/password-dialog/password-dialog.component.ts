@@ -21,6 +21,7 @@ export interface PasswordDialogData {
 @Component({
     selector: 'app-password-dialog',
     templateUrl: './password-dialog.component.html',
+    styleUrls: ['./password-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })

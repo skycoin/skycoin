@@ -96,6 +96,7 @@ import { CustomMatDialogService } from './services/custom-mat-dialog.service';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { BulkSendComponent } from './components/pages/send-skycoin/send-form-advanced/bulk-send/bulk-send.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
@@ -164,6 +165,7 @@ import { PasswordDialogComponent } from './components/layout/password-dialog/pas
         WalletOptionsComponent,
         SendFormAdvancedComponent,
         SelectAddressComponent,
+        BulkSendComponent,
         MsgBarComponent,
         PasswordDialogComponent,
         HwPinDialogComponent,

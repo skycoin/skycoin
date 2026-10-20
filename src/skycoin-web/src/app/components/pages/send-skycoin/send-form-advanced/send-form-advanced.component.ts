@@ -20,6 +20,7 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { PriceService } from '../../../../services/price.service';
 import { SendFormComponent } from '../send-form/send-form.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { BulkSendComponent, BulkDestination } from './bulk-send/bulk-send.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
@@ -284,6 +285,42 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.push(this.createDestinationFormGroup());
     this.updateValues();
+  }
+
+  /** Replaces the destinations with ones typed as text, one per line. */
+  openBulkSend() {
+    const current = this.destControls
+      .map(c => c.value)
+      .filter(v => v.address || v.coins)
+      .map(v => [v.address, v.coins].concat(this.autoHours ? [] : [v.hours]).join(','))
+      .join('\n');
+
+    BulkSendComponent.ask(this.dialog, current).subscribe(destinations => {
+      if (destinations) {
+        this.setDestinations(destinations);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private setDestinations(destinations: BulkDestination[]) {
+    while (this.destControls.length > 0) {
+      this.removeDestination(0);
+    }
+    this.selectedCurrency = DoubleButtonActive.LeftButton;
+    this.autoHours = destinations[0].hours === undefined;
+    if (!this.autoHours) {
+      this.autoOptions = false;
+    }
+
+    destinations.forEach((d, i) => {
+      this.addDestination();
+      const group = this.destControls[i];
+      group.get('address')!.setValue(d.address);
+      group.get('coins')!.setValue(d.coins);
+      group.get('hours')!.setValue(d.hours || '');
+    });
+    this.form.get('destinations')!.updateValueAndValidity();
   }
 
   removeDestination(index: any) {

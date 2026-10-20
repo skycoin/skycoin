@@ -467,6 +467,13 @@
       "dismiss-tooltip": "Dismiss warning"
     }
   },
+  "qr-scan": {
+    "title": "Scan a QR code",
+    "image-label": "Or read it from an image",
+    "no-code": "No QR code was found in that image.",
+    "insecure": "The camera only works on https pages or on 127.0.0.1. You can still read a code from an image.",
+    "no-camera": "The camera could not be opened. You can still read a code from an image."
+  },
   "qr-code": {
     "copy-address": "Copy address to clipboard"
   },

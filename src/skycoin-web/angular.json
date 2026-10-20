@@ -42,7 +42,8 @@
               ]
             },
             "allowedCommonJsDependencies": [
-              "bip39"
+              "bip39",
+              "jsqr"
             ]
           },
           "configurations": {

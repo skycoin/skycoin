@@ -1,0 +1,24 @@
+.eth-endpoints {
+  margin-top: 20px;
+  padding: 20px;
+
+  h4 {
+    margin: 0 0 10px;
+  }
+
+  .help {
+    font-size: 13px;
+    margin: 0 0 15px;
+  }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  .-buttons {
+    text-align: center;
+  }
+}

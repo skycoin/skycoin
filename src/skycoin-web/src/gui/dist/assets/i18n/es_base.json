@@ -332,6 +332,15 @@
   },
 
   "nodes" : {
+    "eth": {
+      "title": "Ethereum servers",
+      "help": "Ether and every token use these. The RPC servers are tried in order, one per line. The indexer is an Etherscan-style API that lists the transaction history.",
+      "rpc-label": "RPC servers",
+      "indexer-label": "History indexer",
+      "save-button": "Save",
+      "defaults-button": "Use defaults",
+      "saved": "The Ethereum servers have been saved."
+    },
     "coin": "Coin",
     "url": "Node URL",
     "custom-label": "Custom URL",

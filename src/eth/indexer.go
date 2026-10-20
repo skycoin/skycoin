@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // DefaultIndexerURL is Blockscout's Ethereum mainnet instance, whose
@@ -19,8 +20,10 @@ const DefaultIndexerURL = "https://eth.blockscout.com"
 
 // Indexer reads an address's history from an Etherscan-style API.
 type Indexer struct {
-	base   string
 	client *http.Client
+
+	mu   sync.Mutex
+	base string
 }
 
 // IndexedTx is one transaction or token transfer the indexer lists.
@@ -43,6 +46,20 @@ func NewIndexer(base string, client *http.Client) *Indexer {
 	return &Indexer{base: strings.TrimSuffix(base, "/"), client: client}
 }
 
+// Base is the API address the indexer is queried at.
+func (ix *Indexer) Base() string {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	return ix.base
+}
+
+// SetBase moves the indexer to another API address.
+func (ix *Indexer) SetBase(base string) {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	ix.base = strings.TrimSuffix(base, "/")
+}
+
 // Transactions are the Ether transactions of address, newest first.
 func (ix *Indexer) Transactions(ctx context.Context, address string) ([]IndexedTx, error) {
 	return ix.list(ctx, url.Values{"action": {"txlist"}, "address": {address}})
@@ -58,7 +75,7 @@ func (ix *Indexer) list(ctx context.Context, q url.Values) ([]IndexedTx, error) 
 	q.Set("sort", "desc")
 	q.Set("page", "1")
 	q.Set("offset", "100")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ix.base+"/api?"+q.Encode(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ix.Base()+"/api?"+q.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,18 @@
+@if (defaults) {
+  <div class="-paper eth-endpoints">
+    <h4>{{ 'nodes.eth.title' | translate }}</h4>
+    <p class="help">{{ 'nodes.eth.help' | translate }}</p>
+    <div class="form-field">
+      <label for="eth-rpc">{{ 'nodes.eth.rpc-label' | translate }}</label>
+      <textarea id="eth-rpc" rows="5" [(ngModel)]="rpcText" [disabled]="busy"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="eth-indexer">{{ 'nodes.eth.indexer-label' | translate }}</label>
+      <input id="eth-indexer" [(ngModel)]="indexer" [disabled]="busy">
+    </div>
+    <div class="-buttons">
+      <app-button (action)="useDefaults()" [disabled]="busy || usingDefaults">{{ 'nodes.eth.defaults-button' | translate }}</app-button>
+      <app-button (action)="save()" class="primary" [disabled]="busy">{{ 'nodes.eth.save-button' | translate }}</app-button>
+    </div>
+  </div>
+}

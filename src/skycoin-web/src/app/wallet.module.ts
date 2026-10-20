@@ -77,6 +77,7 @@ import { LanguageService } from './services/language.service';
 import { SelectCoinOverlayComponent } from './components/layout/select-coin-overlay/select-coin-overlay.component';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { WalletService } from './services/wallet/wallet.service';
+import { AddressExposureService } from './services/wallet/address-exposure.service';
 import { BalanceService } from './services/wallet/balance.service';
 import { HistoryService } from './services/wallet/history.service';
 import { SpendingService } from './services/wallet/spending.service';
@@ -205,6 +206,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         NodeHealthService,
         LanguageService,
         WalletService,
+        AddressExposureService,
         BalanceService,
         HistoryService,
         SpendingService,

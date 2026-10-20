@@ -122,6 +122,8 @@ const (
 	CoinTypeBitcoin CoinType = "bitcoin"
 	// CoinTypeBitcoinSegwit bitcoin segwit type (P2WPKH native segwit / bech32 addresses)
 	CoinTypeBitcoinSegwit CoinType = "bitcoin-segwit"
+	// CoinTypeEthereum ethereum type, which also holds ERC-20 tokens
+	CoinTypeEthereum CoinType = "ethereum"
 
 	// WalletTypeDeterministic deterministic wallet type.
 	// Uses the original Skycoin deterministic key generator.
@@ -498,6 +500,10 @@ func AddressConstructor(m Meta) func(cipher.PubKey) cipher.Addresser {
 	case CoinTypeBitcoinSegwit:
 		return func(pk cipher.PubKey) cipher.Addresser {
 			return cipher.BitcoinSegwitAddressFromPubKey(pk)
+		}
+	case CoinTypeEthereum:
+		return func(pk cipher.PubKey) cipher.Addresser {
+			return ethereumDecoder{}.AddressFromPubKey(pk)
 		}
 	default:
 		logger.Panicf("Invalid wallet coin type %q", m.Coin())

@@ -52,7 +52,7 @@ func loadWallets(dir string, loader Loader) (Wallets, error) { //nolint:unused
 		// 	return nil, err
 		// }
 
-		if w.Coin() != CoinTypeSkycoin && w.Coin() != CoinTypeBitcoin && w.Coin() != CoinTypeBitcoinSegwit {
+		if w.Coin() != CoinTypeSkycoin && w.Coin() != CoinTypeBitcoin && w.Coin() != CoinTypeBitcoinSegwit && w.Coin() != CoinTypeEthereum {
 			logger.WithField("name", name).WithField("coin", w.Coin()).
 				Info("loadWallets: skipping wallet with unsupported coin type")
 			delete(wallets, name)

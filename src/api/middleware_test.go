@@ -179,7 +179,6 @@ func TestHostCheck(t *testing.T) {
 					rr := httptest.NewRecorder()
 					handler := newServerMux(muxConfig{
 						host:               configuredHost,
-						appLoc:             ".",
 						disableCSRF:        false,
 						disableHeaderCheck: !tc.enableHeaderCheck,
 						disableCSP:         true,
@@ -210,47 +209,52 @@ func TestHostCheck(t *testing.T) {
 }
 
 func TestContentSecurityPolicy(t *testing.T) {
+	wallet := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("wallet")) //nolint:errcheck
+	})
+
 	tt := []struct {
 		name            string
 		endpoint        string
 		enableCSP       bool
-		appLoc          string
+		webWallet       http.Handler
 		expectCSPHeader string
-		enableGUI       bool
 	}{
 		{
 			name:            "enable CSP GET /",
 			endpoint:        "/",
 			enableCSP:       true,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "default-src 'self'; connect-src 'self' https://api.coinpaprika.com https://api.coingecko.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510; img-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; block-all-mixed-content; base-uri 'self'",
-			enableGUI:       true,
+			webWallet:       wallet,
+			expectCSPHeader: ContentSecurityPolicy,
+		},
+		{
+			name:            "enable CSP GET a wallet file",
+			endpoint:        "/main.js",
+			enableCSP:       true,
+			webWallet:       wallet,
+			expectCSPHeader: ContentSecurityPolicy,
 		},
 		{
 			name:            "disable CSP GET /",
 			endpoint:        "/",
 			enableCSP:       false,
-			appLoc:          "../gui/static/dist",
+			webWallet:       wallet,
 			expectCSPHeader: "",
-			enableGUI:       true,
 		},
 		{
 			// Confirms that the /csrf api won't be affected by the csp setting
 			name:            "enable CSP GET /csrf",
 			endpoint:        "/api/v1/csrf",
 			enableCSP:       true,
-			appLoc:          "",
+			webWallet:       wallet,
 			expectCSPHeader: "",
-			enableGUI:       false,
 		},
 		{
 			// Confirms that the /version api won't be affected by the csp setting
 			name:            "enable CSP GET /version",
 			endpoint:        "/api/v1/version",
 			enableCSP:       true,
-			appLoc:          "",
 			expectCSPHeader: "",
-			enableGUI:       false,
 		},
 	}
 
@@ -262,8 +266,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{
 				host:        configuredHost,
-				appLoc:      tc.appLoc,
-				enableGUI:   tc.enableGUI,
+				webWallet:   tc.webWallet,
 				disableCSP:  !tc.enableCSP,
 				disableCSRF: true,
 			}, &MockGatewayer{})

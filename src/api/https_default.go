@@ -23,15 +23,7 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 	// we need to get the assigned address to know the full hostname
 	host = listener.Addr().String()
 
-	s, err := create(host, c, gateway)
-	if err != nil {
-		if s != nil {
-			if closeErr := s.listener.Close(); closeErr != nil {
-				logger.WithError(err).Warning("s.listener.Close() error")
-			}
-		}
-		return nil, err
-	}
+	s := create(host, c, gateway)
 
 	s.listener = listener
 

@@ -470,6 +470,67 @@ func (serv *Service) NewAddresses(wltID string, password []byte, options ...Opti
 	return SkycoinAddresses(addrs), nil
 }
 
+// accountCreator is a wallet that holds accounts, which is a bip44 wallet.
+type accountCreator interface {
+	NewAccount(name string) (uint32, error)
+}
+
+// NewAccount adds an account to a bip44 wallet and generates the first address on
+// its external chain. The account keys come from the seed, so an encrypted wallet
+// needs its password.
+func (serv *Service) NewAccount(wltID string, password []byte, name string) (Wallet, error) {
+	serv.Lock()
+	defer serv.Unlock()
+
+	if !serv.config.EnableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := w.(accountCreator); !ok {
+		return nil, NewError(fmt.Errorf("wallet %s is not a bip44 wallet", wltID))
+	}
+
+	f := func(w Wallet) error {
+		index, err := w.(accountCreator).NewAccount(name)
+		if err != nil {
+			return err
+		}
+		_, err = w.GenerateAddresses(OptionAccount(index), OptionExternal(), OptionGenerateN(1))
+		return err
+	}
+
+	if w.IsEncrypted() {
+		if err := GuardUpdate(w, password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if len(password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
+		if err := f(w); err != nil {
+			return nil, err
+		}
+	}
+
+	if !w.IsTemp() {
+		wf := filepath.Join(serv.config.WalletDir, w.Filename())
+		if !file.IsWritable(wf) {
+			return nil, ErrWalletPermission
+		}
+		if err := Save(w, serv.config.WalletDir); err != nil {
+			return nil, err
+		}
+	}
+
+	serv.wallets.set(w)
+	return w.Clone(), nil
+}
+
 // ScanAddresses scan ahead addresses to see if contains balance.
 func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf TransactionsFinder) ([]cipher.Address, error) {
 	serv.Lock()

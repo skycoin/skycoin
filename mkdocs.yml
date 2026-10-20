@@ -85,7 +85,6 @@ nav:
       - daemon/gnet: packages/daemon-gnet.md
   - Clients:
       - Overview: clients/index.md
-      - Desktop (GUI): clients/desktop.md
       - Web client: clients/web.md
       - Lite client: clients/lite.md
       - Explorer: clients/explorer.md

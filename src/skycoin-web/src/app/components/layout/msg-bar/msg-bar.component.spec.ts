@@ -28,7 +28,7 @@ import { MsgBarComponent } from './msg-bar.component';
  * proving the contract holds at runtime for a representative component, so the
  * structural sweep is known to be guarding something real.
  *
- * The setup mirrors the guards in /explorer and /src/gui/static:
+ * The setup mirrors the guards in /explorer:
  *
  *  - Change detection is driven from a host using the default strategy. Calling
  *    detectChanges() on a fixture of the OnPush component itself checks that

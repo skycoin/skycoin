@@ -56,3 +56,30 @@ skycoin-web is the base, for three reasons.
 5. Check every flow on the node, `skycoin web` (browser and `--wallet-dir`)
    and the hypervisor dashboard: create, load, encrypt and decrypt wallets,
    deterministic and BIP44, send, history and the hardware wallet.
+
+## Status
+
+Steps 1 to 4 are done. The node serves skycoin-web for `-enable-gui` and
+`-web-wallet`, and `src/gui/static` is gone. With no coin list to read, the
+wallet asks the node for its wallets and keeps them there when the node's
+wallet API answers.
+
+| area | PR |
+|---|---|
+| backend interface | #3126 |
+| exposed address marks | #3127 |
+| seed backup | #3128 |
+| network page | #3129 |
+| password dialog, sends from encrypted server wallets | #3130 |
+| bulk send | #3131 |
+| unsigned, signed and broadcast transactions | #3132 |
+| Skywallet setup and care | #3133 |
+| node's wallets and CSRF token when a node serves it | #3135 |
+
+Sending to several destinations was already in skycoin-web. Two features did not
+move. The exchange page used swaplab.cc, whose API no longer answers. Firmware
+updates download the firmware in the page, and the download servers send no
+CORS headers, so they are left to the Skywallet tools.
+
+Step 5 is open. Sends and the Skywallet are covered by specs and by checks
+against a node, but not yet by a funded wallet or a device.

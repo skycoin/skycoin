@@ -201,8 +201,8 @@ export class WalletService {
     return this.server.getXPubKey(wallet, path);
   }
 
-  addAccount(wallet: Wallet, name: string): Observable<Wallet> {
-    return this.server.addAccount(wallet, name).pipe(map(w => {
+  addAccount(wallet: Wallet, name: string, password?: string): Observable<Wallet> {
+    return this.server.addAccount(wallet, name, password).pipe(map(w => {
       this.saveWallets();
 
       return w;

@@ -32,7 +32,6 @@ jobs:
           node-version: '24'
           cache: 'npm'
           cache-dependency-path: |
-            src/gui/static/package-lock.json
             explorer/package-lock.json
             src/skycoin-web/package-lock.json
             cmd/skydex-client/package-lock.json

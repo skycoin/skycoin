@@ -609,6 +609,63 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Adds an account to a bip44 wallet, with one address on its external chain
+// URI: /api/v1/wallet/newAccount
+// Method: POST
+// Args:
+//
+//	id: wallet id [required]
+//	name: the account name [optional]
+//	password: the wallet password, for an encrypted wallet [optional]
+func walletNewAccountHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
+
+		wlt, err := gateway.NewAccount(wltID, []byte(password), r.FormValue("name"))
+		if err != nil {
+			switch err {
+			case wallet.ErrMissingPassword,
+				wallet.ErrWalletNotEncrypted,
+				wallet.ErrInvalidPassword:
+				wh.Error400(w, err.Error())
+			case wallet.ErrWalletAPIDisabled:
+				wh.Error403(w, "")
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w, "")
+			default:
+				if _, ok := err.(wallet.Error); ok {
+					wh.Error400(w, err.Error())
+				} else {
+					wh.Error500(w, err.Error())
+				}
+			}
+			return
+		}
+
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, rlt)
+	}
+}
+
 // Returns a wallet by id
 // URI: /api/v1/wallet
 // Method: GET

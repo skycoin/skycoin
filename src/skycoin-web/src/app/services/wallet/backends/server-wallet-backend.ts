@@ -104,11 +104,14 @@ export class ServerWalletBackend implements WalletBackend {
     } as any).pipe(map((response: any) => response.xpub_key));
   }
 
-  addAccount(wallet: Wallet, name: string): Observable<Wallet> {
-    return this.apiService.post('wallet/newAccount', {
-      id: wallet.filename,
-      name: name,
-    }).pipe(map((response: any) => {
+  /** Adds a BIP44 account. An encrypted wallet needs its password, as the keys come from the seed. */
+  addAccount(wallet: Wallet, name: string, password?: string): Observable<Wallet> {
+    const params: any = { id: wallet.filename, name: name };
+    if (password) {
+      params.password = password;
+    }
+
+    return this.apiService.post('wallet/newAccount', params).pipe(map((response: any) => {
       if (response.accounts) {
         wallet.accounts = parseAccounts(response.accounts);
       }

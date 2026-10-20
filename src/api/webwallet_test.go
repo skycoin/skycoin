@@ -34,11 +34,3 @@ func TestWebWallet(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.NotEqual(t, "wallet", rr.Body.String())
 }
-
-func TestWebWalletAndGUIConflict(t *testing.T) {
-	_, err := Create("127.0.0.1:0", Config{
-		EnableGUI: true,
-		WebWallet: http.NotFoundHandler(),
-	}, &MockGatewayer{})
-	require.Error(t, err)
-}

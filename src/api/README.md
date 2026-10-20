@@ -33,6 +33,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
     - [Scan addresses in wallet](#scan-addresses-in-wallet)
 	- [Change wallet label](#change-wallet-label)
+	- [Add a bip44 account](#add-a-bip44-account)
 	- [Get wallet balance](#get-wallet-balance)
 	- [Create transaction](#create-transaction)
 	- [Sign transaction](#sign-transaction)
@@ -1075,6 +1076,31 @@ Result:
 
 ```json
 "success"
+```
+
+### Add a bip44 account
+
+API sets: `WALLET`
+
+```
+URI: /api/v1/wallet/newAccount
+Method: POST
+Args:
+    id: wallet file name
+    name: account name [optional]
+    password: wallet password, for an encrypted wallet [optional]
+```
+
+Adds an account to a bip44 wallet and generates the first address on its
+external chain. The result is the wallet, as `GET /api/v1/wallet` returns it.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/newAccount \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=$id' \
+ -d 'name=savings'
 ```
 
 ### Get wallet balance

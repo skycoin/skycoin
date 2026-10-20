@@ -1,0 +1,12 @@
+@use '../../../../../theme/_variables' as *;
+
+textarea {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.-error {
+  color: $red;
+  font-size: 13px;
+}

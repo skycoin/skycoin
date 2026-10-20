@@ -1,3 +1,17 @@
+@use '../../../../theme/_variables' as *;
+
 .-paper {
   padding: 30px;
+}
+
+.-offline-links {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 13px;
+
+  .-link {
+    color: $gradient-blue-dark;
+    cursor: pointer;
+    margin: 0 15px;
+  }
 }

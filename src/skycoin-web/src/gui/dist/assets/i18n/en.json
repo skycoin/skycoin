@@ -528,5 +528,30 @@
     "was-set": "The wallets in this browser are now stored under the password.",
     "changed": "The password was changed.",
     "removed": "The password was removed."
+  },
+  "offline-tx": {
+    "unsigned-button": "Unsigned",
+    "show-raw-button": "Raw transaction",
+    "sign-link": "Sign a transaction",
+    "broadcast-link": "Broadcast a transaction",
+    "unsigned-title": "Unsigned Transaction",
+    "unsigned-text": "Copy this transaction to the computer that holds the wallet, sign it there, and broadcast the signed transaction from any online wallet.",
+    "signed-title": "Signed Transaction",
+    "signed-text": "This transaction is signed and has not been sent. Broadcast it from any online wallet.",
+    "sign-title": "Sign Transaction",
+    "sign-text": "Paste an unsigned transaction. The wallet must own every input.",
+    "broadcast-title": "Broadcast Transaction",
+    "broadcast-text": "Paste a signed transaction to send it to the network.",
+    "wallet-label": "Wallet",
+    "select-wallet": "Select a wallet",
+    "tx-label": "Transaction",
+    "copy-button": "Copy",
+    "copied": "Copied",
+    "sign-button": "Sign",
+    "broadcast-button": "Broadcast",
+    "close-button": "Close",
+    "broadcast-done": "The transaction was sent.",
+    "not-in-wallet": "This wallet does not hold the keys of every input of the transaction.",
+    "node-too-old": "This node is too old to create unsigned transactions."
   }
 }

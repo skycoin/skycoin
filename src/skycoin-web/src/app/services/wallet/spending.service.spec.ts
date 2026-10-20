@@ -700,6 +700,88 @@ describe('SpendingService', () => {
     }));
   });
 
+  describe('offline transactions', () => {
+    const created = { data: {
+      encoded_transaction: 'unsigned',
+      transaction: {
+        fee: '1',
+        inputs: [{ uxid: 'hash1', address: 'address1', calculated_hours: '2', coins: '5' }],
+        outputs: [{ address: 'dest', coins: '1.5', hours: '1' }],
+      },
+    } };
+    let post: jasmine.Spy;
+
+    beforeEach(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.27.0');
+      spyTranslateService.instant.and.callFake((key: any) => key);
+      spyCipherProvider.prepareTransaction.and.returnValue(of('signedInBrowser'));
+      post = jasmine.createSpy('post').and.callFake((url: string) =>
+        of(url === 'wallet/transaction/sign' ? { data: { encoded_transaction: 'signedOnServer' } } : created));
+      (spyApiService as any).post = post;
+    });
+
+    it('creates an unsigned transaction without signing or keys', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', 'secretKey1')] });
+      let tx: any;
+      spendingService.createTransaction(
+        wallet, null, null, [{ address: 'dest', coins: new BigNumber(1.5) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) }, null, undefined, true,
+      ).subscribe(t => tx = t);
+
+      expect(tx.encoded).toBe('unsigned');
+      expect(tx.inputs[0].secret).toBe('');
+      expect(spyCipherProvider.prepareTransaction).not.toHaveBeenCalled();
+      expect(post.calls.all().map(c => c.args[0])).toEqual(['transaction']);
+    }));
+
+    it('refuses an unsigned transaction on a node older than 0.26', fakeAsync(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.25.0');
+      let error = '';
+      spendingService.createTransaction(
+        createWallet(), null, null, [{ address: 'dest', coins: new BigNumber(1) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) }, null, undefined, true,
+      ).subscribe({ error: e => error = e.message });
+
+      expect(error).toBe('offline-tx.node-too-old');
+    }));
+
+    it('signs a pasted transaction with a server wallet', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { filename: 'w.wlt', addresses: [] });
+      let signed = '';
+      spendingService.signTransaction(wallet, 'secret', ' unsigned \n').subscribe(s => signed = s);
+
+      expect(signed).toBe('signedOnServer');
+      expect(post.calls.argsFor(0)).toEqual(['transaction/verify', { encoded_transaction: 'unsigned', unsigned: true }, { json: true }, true]);
+      expect(post.calls.argsFor(1)[1]).toEqual({
+        wallet_id: 'w.wlt',
+        encoded_transaction: 'unsigned',
+        input_addresses: ['address1'],
+        password: 'secret',
+      });
+    }));
+
+    it('signs a pasted transaction with the keys of a browser wallet', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', 'secretKey1')] });
+      let signed = '';
+      spendingService.signTransaction(wallet, undefined, 'unsigned').subscribe(s => signed = s);
+
+      expect(signed).toBe('signedInBrowser');
+      expect(spyCipherProvider.prepareTransaction).toHaveBeenCalledWith(
+        [{ hash: 'hash1', secret: 'secretKey1', address: 'address1', calculated_hours: '2', coins: '5' } as any],
+        [{ address: 'dest', coins: 1500000, hours: 1 }],
+      );
+    }));
+
+    it('refuses a pasted transaction whose inputs the browser wallet cannot sign', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', '')] });
+      let error = '';
+      spendingService.signTransaction(wallet, undefined, 'unsigned').subscribe({ error: e => error = e.message });
+
+      expect(error).toBe('offline-tx.not-in-wallet');
+      expect(spyCipherProvider.prepareTransaction).not.toHaveBeenCalled();
+    }));
+  });
+
   describe('outputsWithWallets', () => {
     it('should return outputs by wallet', fakeAsync(() => {
       const walletAddress1 = 'address 1';

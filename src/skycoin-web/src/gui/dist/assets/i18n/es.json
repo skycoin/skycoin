@@ -423,5 +423,30 @@
       "wrong-seed": "Semilla incorrecta",
       "invalid-wallet": "Billetera inválida"
     }
+  },
+  "offline-tx": {
+    "unsigned-button": "Sin firmar",
+    "show-raw-button": "Transacción en bruto",
+    "sign-link": "Firmar una transacción",
+    "broadcast-link": "Transmitir una transacción",
+    "unsigned-title": "Transacción Sin Firmar",
+    "unsigned-text": "Copie esta transacción a la computadora que tiene la billetera, fírmela allí y transmita la transacción firmada desde cualquier billetera en línea.",
+    "signed-title": "Transacción Firmada",
+    "signed-text": "Esta transacción está firmada y no ha sido enviada. Transmítala desde cualquier billetera en línea.",
+    "sign-title": "Firmar Transacción",
+    "sign-text": "Pegue una transacción sin firmar. La billetera debe ser dueña de todas las entradas.",
+    "broadcast-title": "Transmitir Transacción",
+    "broadcast-text": "Pegue una transacción firmada para enviarla a la red.",
+    "wallet-label": "Billetera",
+    "select-wallet": "Seleccione una billetera",
+    "tx-label": "Transacción",
+    "copy-button": "Copiar",
+    "copied": "Copiado",
+    "sign-button": "Firmar",
+    "broadcast-button": "Transmitir",
+    "close-button": "Cerrar",
+    "broadcast-done": "La transacción fue enviada.",
+    "not-in-wallet": "Esta billetera no tiene las claves de todas las entradas de la transacción.",
+    "node-too-old": "Este nodo es demasiado antiguo para crear transacciones sin firmar."
   }
 }

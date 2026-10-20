@@ -55,20 +55,35 @@ export class SpendingService {
     coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
   }
 
-  sendBitcoin(
-    wallet: Wallet,
-    destinations: Destination[],
-    feeRate: number): Observable<string> {
-    const body = {
-      wallet_id: wallet['filename'] || wallet.label,
-      destinations: destinations.map(d => ({
-        address: d.address,
-        coins: d.coins.multipliedBy(this.currentCoin.coinsMultiplier).integerValue().toNumber(),
-      })),
-      fee_rate: feeRate,
+  /**
+   * What a send of a gateway coin will pay: for Ethereum coins max_fee, the most
+   * the fee can be in wei, and for Bitcoin sat_per_byte.
+   */
+  gatewayFee(): Observable<any> {
+    return this.apiService.get(this.currentCoin.gatewayPrefix + '/fee');
+  }
+
+  /**
+   * Sends a gateway coin from a server wallet, which signs and broadcasts it.
+   * Returns the transaction id.
+   */
+  sendGateway(wallet: Wallet, to: string, amount: BigNumber, password?: string, satPerByte?: number): Observable<string> {
+    const units = amount.multipliedBy(this.currentCoin.coinsMultiplier).integerValue(BigNumber.ROUND_DOWN);
+    const walletId = wallet['filename'] || wallet.label;
+    const body: any = this.currentCoin.isEthereum() ? {
+      wallet_id: walletId,
+      password: password || '',
+      to: to,
+      amount: units.toFixed(0),
+    } : {
+      wallet_id: walletId,
+      password: password || '',
+      destinations: [{ address: to, coins: units.toNumber() }],
+      fee_rate: satPerByte,
     };
 
-    return this.apiService.post('btc/send', body, { json: true });
+    return this.apiService.post(this.currentCoin.gatewayPrefix + '/send', body, { json: true }).pipe(
+      map((response: any) => response.txid as string));
   }
 
   createTransaction(

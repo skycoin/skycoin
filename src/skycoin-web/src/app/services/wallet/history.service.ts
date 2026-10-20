@@ -42,9 +42,9 @@ export class HistoryService {
 
         addresses.map(add => addressesMap.set(add.address, true));
 
-        // Bitcoin uses its own history endpoint
-        if (this.currentCoin && this.currentCoin.isBitcoin()) {
-          return this.retrieveBitcoinHistory(addresses, addressesMap);
+        // Gateway coins have their own history endpoint
+        if (this.currentCoin && this.currentCoin.isGateway()) {
+          return this.retrieveGatewayHistory(addresses, addressesMap);
         }
 
         return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
@@ -139,9 +139,11 @@ export class HistoryService {
       }));
   }
 
-  private retrieveBitcoinHistory(addresses: Address[], addressesMap: Map<string, boolean>): Observable<any[]> {
+  // Gateway history lists amounts in base units: satoshis, wei or a token's smallest unit.
+  private retrieveGatewayHistory(addresses: Address[], addressesMap: Map<string, boolean>): Observable<any[]> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
-    return this.apiService.get('btc/history', { addrs: formattedAddresses } as any).pipe(
+    const multiplier = this.currentCoin.coinsMultiplier;
+    return this.apiService.get(this.currentCoin.gatewayPrefix + '/history', { addrs: formattedAddresses } as any).pipe(
       map((transactions: any[]) => {
         return (transactions || []).map(tx => {
           const outgoing = tx.inputs && tx.inputs.some((input: any) => addressesMap.has(input.address));
@@ -161,10 +163,20 @@ export class HistoryService {
             });
           }
 
+          // The other side: where an outgoing payment went, or where an incoming one came from.
+          const others = (outgoing ? (tx.outputs || []) : (tx.inputs || []))
+            .map((io: any) => io.address)
+            .filter((a: string) => a && !addressesMap.has(a));
+          // Ether pays its fee from the same balance, so an outgoing payment costs that too.
+          if (outgoing && this.currentCoin.coinType === 'ethereum' && tx.fee) {
+            balance = balance.minus(new BigNumber(tx.fee));
+          }
+
           return {
             txid: tx.txid,
-            addresses: [],
-            balance: balance,
+            addresses: Array.from(new Set(others)),
+            coinsMovedInternally: outgoing && others.length === 0,
+            balance: balance.dividedBy(multiplier),
             timestamp: tx.timestamp || 0,
             block: tx.block_height || 0,
             confirmed: (tx.confirmations || 0) > 0,
@@ -172,7 +184,8 @@ export class HistoryService {
             outputs: tx.outputs || [],
             hoursSent: new BigNumber('0'),
             hoursBurned: new BigNumber('0'),
-            fee: tx.fee || 0,
+            fee: new BigNumber(tx.fee || 0).dividedBy(multiplier),
+            failed: !!tx.failed,
           };
         }).sort((a: any, b: any) => b.timestamp - a.timestamp);
       })

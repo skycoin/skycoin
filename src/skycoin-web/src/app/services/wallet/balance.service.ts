@@ -6,7 +6,7 @@ import { BigNumber } from 'bignumber.js';
 import { ApiService } from '../api.service';
 import { CoinService } from '../coin.service';
 import { Address, Wallet, TotalBalance, Balance } from '../../app.datatypes';
-import { WalletService } from './wallet.service';
+import { WalletService, walletAddresses } from './wallet.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 import { GlobalsService } from '../globals.service';
 import { BaseCoin } from '../../coins/basecoin';
@@ -106,8 +106,8 @@ export class BalanceService {
   private retrieveAddressesBalance(addresses: Address[]): Observable<Balance> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
-    if (this.currentCoin && this.currentCoin.isBitcoin()) {
-      return this.apiService.get('btc/balance', { addrs: formattedAddresses } as any);
+    if (this.currentCoin && this.currentCoin.isGateway()) {
+      return this.apiService.get(this.currentCoin.gatewayPrefix + '/balance', { addrs: formattedAddresses } as any);
     }
 
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
@@ -167,19 +167,24 @@ export class BalanceService {
   }
 
   private calculateBalance(wallets: Wallet[], balance: Balance): boolean {
-    const isBtc = this.currentCoin && this.currentCoin.isBitcoin();
+    const isGateway = this.currentCoin && this.currentCoin.isGateway();
 
     if (balance.addresses) {
       wallets.map((wallet: Wallet) => {
         wallet.balance = new BigNumber('0');
         wallet.hours = new BigNumber('0');
 
-        wallet.addresses.map((address: Address) => {
+        // Each address counts once, though a BIP44 account lists it again.
+        const counted = new Set<string>();
+        walletAddresses(wallet).forEach((address: Address) => {
           if (balance.addresses[address.address]) {
             address.balance = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(this.coinsMultiplier);
-            address.hours = isBtc ? new BigNumber('0') : new BigNumber(balance.addresses[address.address].confirmed.hours || 0);
-            wallet.balance = wallet.balance!.plus(address.balance);
-            wallet.hours = wallet.hours!.plus(address.hours);
+            address.hours = isGateway ? new BigNumber('0') : new BigNumber(balance.addresses[address.address].confirmed.hours || 0);
+            if (!counted.has(address.address)) {
+              counted.add(address.address);
+              wallet.balance = wallet.balance!.plus(address.balance);
+              wallet.hours = wallet.hours!.plus(address.hours);
+            }
           }
         });
       });
@@ -190,7 +195,7 @@ export class BalanceService {
       state: BalanceStates.Obtained,
       balance: {
         coins: new BigNumber(balance.confirmed.coins).dividedBy(this.coinsMultiplier),
-        hours: isBtc ? new BigNumber('0') : new BigNumber(balance.confirmed.hours || 0),
+        hours: isGateway ? new BigNumber('0') : new BigNumber(balance.confirmed.hours || 0),
       }
     });
     return this.refreshPendingTransactions(balance);
@@ -198,7 +203,7 @@ export class BalanceService {
 
   private refreshPendingTransactions(balance: Balance) {
     const hasPendingTxs = balance.confirmed.coins !== balance.predicted.coins ||
-      (!this.currentCoin?.isBitcoin() && balance.confirmed.hours !== balance.predicted.hours);
+      (!this.currentCoin?.isGateway() && balance.confirmed.hours !== balance.predicted.hours);
 
     this.hasPendingTransactions.next(hasPendingTxs);
     return hasPendingTxs;

@@ -76,8 +76,17 @@ export class WalletService {
       map(wallets => wallets ? wallets : []));
   }
 
+  /** Every address of every wallet, including those of a BIP44 wallet's other accounts. */
   get addresses(): Observable<Address[]> {
-    return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [] as Address[])));
+    return this.currentWallets.pipe(map(wallets => {
+      const byAddress = new Map<string, Address>();
+      wallets.forEach(wallet => walletAddresses(wallet).forEach(a => {
+        if (!byAddress.has(a.address)) {
+          byAddress.set(a.address, a);
+        }
+      }));
+      return Array.from(byAddress.values());
+    }));
   }
 
   addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number): Observable<void> {
@@ -244,4 +253,13 @@ export class WalletService {
   private getCleanSeed(seed: string): string {
     return seed.replace(/(\n|\r\n)$/, '');
   }
+}
+
+/**
+ * A wallet's address objects, those of its BIP44 accounts included. The
+ * accounts list their addresses as separate objects, which may repeat.
+ */
+export function walletAddresses(wallet: Wallet): Address[] {
+  const accounts = (wallet.accounts || []).map(a => [...a.externalAddresses, ...a.changeAddresses]);
+  return ([] as Address[]).concat(wallet.addresses, ...accounts);
 }

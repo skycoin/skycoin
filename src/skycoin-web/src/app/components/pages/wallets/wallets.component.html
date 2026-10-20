@@ -47,7 +47,7 @@
                   }
                 </div>
                 <div class="mobile-label-container">
-                  <div class="-width-130 -coins">{{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.coinDecimals).toString() : 0) | number:('1.0-' + currentCoin.coinDecimals) }}</div>
+                  <div class="-width-130 -coins">{{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.displayDecimals).toString() : 0) | number:('1.0-' + currentCoin.displayDecimals) }}</div>
                 </div>
                 @if (currentCoin.hasHours()) {
                   <div class="mobile-label-container">
@@ -74,9 +74,11 @@
       <button mat-button (click)="addWallet(false)">
         <img src="assets/skycoin-wallet/img/load-gold.png"> {{ 'wallet.load' | translate }}
       </button>
-      <button mat-button (click)="addHardwareWallet()" [disabled]="addingHwWallet">
-        <mat-icon>memory</mat-icon> {{ 'hardware-wallet.add' | translate }}
-      </button>
+      @if (!currentCoin.isGateway()) {
+        <button mat-button (click)="addHardwareWallet()" [disabled]="addingHwWallet">
+          <mat-icon>memory</mat-icon> {{ 'hardware-wallet.add' | translate }}
+        </button>
+      }
     </div>
   </div>
 </div>

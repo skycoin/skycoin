@@ -11,7 +11,7 @@
             {{ wallet.label }} —
             @if (wallet.balance) {
               <span>
-                {{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.coinDecimals).toString() : 0) | number:('1.0-' + currentCoin.coinDecimals) }} {{ currentCoin.coinSymbol }}
+                {{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.displayDecimals).toString() : 0) | number:('1.0-' + currentCoin.displayDecimals) }} {{ currentCoin.coinSymbol }}
                 @if (currentCoin.hasHours() && wallet.hours) {
                   ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
                 }

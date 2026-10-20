@@ -61,6 +61,7 @@ export class HardwareWalletComponent implements OnInit, OnDestroy {
       if (this.state !== HwPageStates.Working) {
         this.refresh();
       }
+      this.changeDetectorRef.markForCheck();
     });
     this.refresh();
   }
@@ -138,6 +139,7 @@ export class HardwareWalletComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.run(this.hwWalletService.wipe(), 'hardware-wallet.device.wiped');
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 
@@ -148,9 +150,11 @@ export class HardwareWalletComponent implements OnInit, OnDestroy {
     this.operation = operation.subscribe(() => {
       this.msgBarService.showDone(doneText);
       this.refresh();
+      this.changeDetectorRef.markForCheck();
     }, err => {
       this.msgBarService.showError(errorText(err));
       this.refresh();
+      this.changeDetectorRef.markForCheck();
     });
     this.changeDetectorRef.markForCheck();
   }

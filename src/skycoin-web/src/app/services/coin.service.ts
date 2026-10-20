@@ -95,21 +95,28 @@ export class CoinService {
       (serverCoins: any) => {
         if (serverCoins && serverCoins.length > 0) {
           this.coins = serverCoins.map((data: any) => BaseCoin.fromServerData(data));
+          this.finishCoinLoading();
         } else {
           this.loadFallbackCoins();
         }
-        this.finishCoinLoading();
       },
-      () => {
-        // Server not available — use fallback hardcoded coin
-        this.loadFallbackCoins();
-        this.finishCoinLoading();
-      }
+      () => this.loadFallbackCoins(),
     );
   }
 
+  /**
+   * With no coin list to read, the wallet was served by a node. It keeps the wallets
+   * in the node when the node's wallet API is on, and in this browser otherwise.
+   */
   private loadFallbackCoins() {
-    this.coins = [new SkycoinCoin()];
+    const done = (serverWallets: boolean) => {
+      const coin = new SkycoinCoin();
+      coin.serverWallets = serverWallets;
+      this.coins = [coin];
+      this.finishCoinLoading();
+    };
+
+    this.http.get('/api/v1/wallets').subscribe(wallets => done(Array.isArray(wallets)), () => done(false));
   }
 
   private finishCoinLoading() {

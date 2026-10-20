@@ -251,6 +251,7 @@ export class WalletDetailComponent implements OnDestroy {
         if (password) {
           this.addAccount(password);
         }
+        this.changeDetectorRef.markForCheck();
       });
     } else {
       this.addAccount();

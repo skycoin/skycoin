@@ -147,6 +147,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
           if (password) {
             this.walletService.setWalletPassword(wallet, password).subscribe();
           }
+          this.changeDetectorRef.markForCheck();
         });
     }
 

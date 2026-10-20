@@ -153,12 +153,14 @@ export class OfflineTxComponent implements OnInit, OnDestroy {
         const done = unlocked.componentInstance.onWalletUnlocked.pipe(first()).subscribe(() => {
           subscriber.next(null);
           subscriber.complete();
+          this.changeDetectorRef.markForCheck();
         });
         const closed = unlocked.afterClosed().subscribe(() => {
           if (!wallet.seed) {
             subscriber.next(undefined);
             subscriber.complete();
           }
+          this.changeDetectorRef.markForCheck();
         });
 
         return () => { done.unsubscribe(); closed.unsubscribe(); };

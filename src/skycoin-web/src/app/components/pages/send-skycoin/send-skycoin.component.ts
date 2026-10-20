@@ -87,6 +87,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       if (sent) {
         this.msgBarService.showDone('offline-tx.broadcast-done');
       }
+      this.changeDetectorRef.markForCheck();
     });
   }
 

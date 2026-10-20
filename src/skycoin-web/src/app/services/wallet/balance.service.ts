@@ -101,8 +101,8 @@ export class BalanceService {
       }
 
       const scope = addresses.map(a => a.address).join(',');
-      const coinId = this.currentCoin ? this.currentCoin.id : 0;
-      const balance$ = withOfflineCache('balance:' + coinId, scope, this.retrieveAddressesBalance(addresses), t => this.cachedAt = t);
+      const coinKey = this.currentCoin ? this.currentCoin.id + ':' + this.currentCoin.coinSymbol : '0';
+      const balance$ = withOfflineCache('balance:' + coinKey, scope, this.retrieveAddressesBalance(addresses), t => this.cachedAt = t);
 
       return balance$.pipe(mergeMap((balance) => {
         return this.walletService.currentWallets.pipe(first(), map(wallets => this.calculateBalance(wallets, balance)));

@@ -13,6 +13,7 @@ import { AppPasswordComponent } from './components/pages/settings/app-password/a
 import { NetworkComponent } from './components/pages/settings/network/network.component';
 import { HardwareWalletComponent } from './components/pages/settings/hardware-wallet/hardware-wallet.component';
 import { BackupComponent } from './components/pages/settings/backup/backup.component';
+import { CoinsComponent } from './components/pages/settings/coins/coins.component';
 import { Routes } from "@angular/router";
 
 export const AppRoutes: Routes = [
@@ -77,6 +78,10 @@ export const AppRoutes: Routes = [
       {
         path: 'backup',
         component: BackupComponent,
+      },
+      {
+        path: 'coins',
+        component: CoinsComponent,
       },
       {
         path: 'hardware-wallet',

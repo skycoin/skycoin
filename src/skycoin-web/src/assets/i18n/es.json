@@ -21,6 +21,7 @@
   },
 
   "title": {
+    "coins": "Monedas",
     "hardware-wallet": "Billetera de Hardware",
     "change-coin": "Cambiar la moneda activa",
     "language": "Seleccionar Lenguaje",
@@ -334,6 +335,29 @@
     "delete-confirm": "¿Estás seguro de que quieres eliminar esta transacción pendiente del pool local? Esta acción no se puede deshacer."
   },
 
+  "coins": {
+    "unavailable": "Agregar monedas requiere un servicio de billetera iniciado con --wallet-dir.",
+    "added-coins": "Monedas agregadas",
+    "remove": "Quitar",
+    "add-title": "Agregar una moneda",
+    "kind": "Tipo",
+    "kind-fiber": "Moneda fiber (con su propio nodo)",
+    "kind-erc20": "Token ERC-20 en Ethereum",
+    "name": "Nombre",
+    "ticker": "Símbolo",
+    "from-node": "Del nodo si se deja vacío",
+    "optional": "El símbolo si se deja vacío",
+    "node-url": "URL del nodo",
+    "contract": "Dirección del contrato",
+    "decimals": "Decimales",
+    "icon": "Icono (opcional)",
+    "icon-too-big": "El icono debe pesar menos de 72 KB.",
+    "fiber-hint": "El nodo se comprueba antes de agregar la moneda. Las monedas fiber usan las mismas billeteras que la primera moneda.",
+    "erc20-hint": "Los tokens usan las billeteras y servidores de Ethereum. Los decimales deben coincidir con el contrato, o los montos serán incorrectos.",
+    "add-button": "Agregar",
+    "added": "La moneda se ha agregado. La billetera se está recargando.",
+    "removed": "La moneda se ha quitado. La billetera se está recargando."
+  },
   "nodes" : {
     "eth": {
       "title": "Servidores de Ethereum",

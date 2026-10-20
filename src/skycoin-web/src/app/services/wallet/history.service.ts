@@ -202,7 +202,7 @@ export class HistoryService {
   private cached(addresses: Address[], source: Observable<any>): Observable<any> {
     const scope = addresses.map(a => a.address).join(',');
 
-    return withOfflineCache('history:' + this.currentCoin.id, scope, source, t => this.cachedAt = t);
+    return withOfflineCache('history:' + this.currentCoin.id + ':' + this.currentCoin.coinSymbol, scope, source, t => this.cachedAt = t);
   }
 
   retrieveAddressTransactions(address: Address): Observable<NormalTransaction[]> {

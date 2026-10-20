@@ -99,6 +99,10 @@ The RPC and indexer addresses can also be changed in the wallet, under node sett
 
 The send form offers slow, normal and fast fees for Bitcoin and Ethereum coins. For Bitcoin they are the electrum estimates for 12, 6 and 2 blocks. For Ethereum they are the least tip, the node's suggested tip and twice it, each with a cap of twice the base fee plus the tip.
 
+### Adding coins
+
+With `--wallet-dir`, the wallet's Coins settings page adds fiber coins by their node URL and ERC-20 tokens by contract and decimals, each with an optional icon. A fiber coin's node must answer before it is added, and fiber coins share the first coin's wallets. Tokens share the Ethereum wallets and servers. The added coins are kept as `custom-coins.json` in the first wallet directory. A removed coin disappears at once and leaves the other coins where they are until a restart.
+
 ### Hardware Wallet
 
 The Skycoin hardware wallet is supported when the hardware wallet daemon is running on `127.0.0.1:9510`. The frontend communicates directly with the daemon for PIN entry, address generation, and transaction signing. No additional flags are needed.

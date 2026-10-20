@@ -418,8 +418,8 @@ jobs:
         if: matrix.arch == 'amd64'
         shell: pwsh
         run: |
-          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-x86_64-pkg-config"
-          echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          C:\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libusb mingw-w64-ucrt-x86_64-hidapi mingw-w64-ucrt-x86_64-pkg-config"
+          echo "C:\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Fetch Windows installer files
         if: matrix.arch != 'arm64'
@@ -433,8 +433,8 @@ jobs:
           GOPROXY: direct
           GOSUMDB: "off"
           CGO_ENABLED: ${{ matrix.cgo_enabled }}
-          CGO_CFLAGS: -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/libusb-1.0
-          CGO_LDFLAGS: -LC:/msys64/mingw64/lib
+          CGO_CFLAGS: -IC:/msys64/ucrt64/include -IC:/msys64/ucrt64/include/libusb-1.0
+          CGO_LDFLAGS: -LC:/msys64/ucrt64/lib
           GOOS: windows
           GOARCH: ${{ matrix.goarch }}
         shell: pwsh
@@ -468,8 +468,8 @@ jobs:
           GOPROXY: direct
           GOSUMDB: "off"
           CGO_ENABLED: "1"
-          CGO_CFLAGS: -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/libusb-1.0
-          CGO_LDFLAGS: -LC:/msys64/mingw64/lib
+          CGO_CFLAGS: -IC:/msys64/ucrt64/include -IC:/msys64/ucrt64/include/libusb-1.0
+          CGO_LDFLAGS: -LC:/msys64/ucrt64/lib
           GOOS: windows
           GOARCH: amd64
         shell: pwsh
@@ -494,7 +494,7 @@ jobs:
           # Include hardware wallet binary and required DLLs if present
           if (Test-Path "bin\skyhw.exe") {
             Copy-Item "bin\skyhw.exe" "dist\"
-            $dllDir = "C:\msys64\mingw64\bin"
+            $dllDir = "C:\msys64\ucrt64\bin"
             foreach ($dll in @("libhidapi-0.dll", "libusb-1.0.dll")) {
               $dllPath = "$dllDir\$dll"
               if (Test-Path $dllPath) {
@@ -526,7 +526,7 @@ jobs:
           # Include hardware wallet binary and DLLs for amd64
           if (Test-Path "..\..\bin\skyhw.exe") {
             Copy-Item ..\..\bin\skyhw.exe build\skyhw.exe
-            $dllDir = "C:\msys64\mingw64\bin"
+            $dllDir = "C:\msys64\ucrt64\bin"
             foreach ($dll in @("libhidapi-0.dll", "libusb-1.0.dll")) {
               $dllPath = "$dllDir\$dll"
               if (Test-Path $dllPath) {

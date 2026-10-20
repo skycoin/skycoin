@@ -76,10 +76,9 @@ func TestHealthHandler(t *testing.T) {
 					BlockPublisher: true,
 				},
 				host:        configuredHost,
-				appLoc:      ".",
 				disableCSRF: false,
 				disableCSP:  false,
-				enableGUI:   true,
+				webWallet:   http.NotFoundHandler(),
 				enabledAPISets: map[string]struct{}{
 					EndpointsStatus: struct{}{},
 					EndpointsRead:   struct{}{},
@@ -243,7 +242,7 @@ func TestHealthHandler(t *testing.T) {
 
 			require.Equal(t, !tc.cfg.disableCSRF, r.CSRFEnabled)
 			require.Equal(t, !tc.cfg.disableCSP, r.CSPEnabled)
-			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
+			require.Equal(t, tc.cfg.webWallet != nil, r.GUIEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
 			require.Equal(t, uint32(10), r.UserVerifyTxn.BurnFactor)

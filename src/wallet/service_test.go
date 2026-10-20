@@ -4542,3 +4542,72 @@ func combineAddrs(a []cipher.Address, b []cipher.Address) []cipher.Address {
 	copy(addrs[len(a):], b[:])
 	return addrs
 }
+
+func TestServiceNewAccount(t *testing.T) {
+	seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	newService := func(t *testing.T) *wallet.Service {
+		s, err := wallet.NewService(wallet.Config{
+			WalletDir:       prepareWltDir(),
+			CryptoType:      crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			EnableWalletAPI: true,
+		})
+		require.NoError(t, err)
+		return s
+	}
+
+	t.Run("adds an account with one external address", func(t *testing.T) {
+		s := newService(t)
+		_, err := s.CreateWallet("t.wlt", wallet.Options{Label: "t", Seed: seed, Type: wallet.WalletTypeBip44})
+		require.NoError(t, err)
+
+		w, err := s.NewAccount("t.wlt", nil, "savings")
+		require.NoError(t, err)
+		accounts := w.(*bip44wallet.Wallet).Accounts()
+		require.Len(t, accounts, 2)
+		require.Equal(t, "savings", accounts[1].Name)
+		n, err := w.EntriesLen(wallet.OptionAccount(1), wallet.OptionExternal())
+		require.NoError(t, err)
+		require.Equal(t, 1, n)
+
+		// The account is saved.
+		saved, err := s.GetWallet("t.wlt")
+		require.NoError(t, err)
+		require.Len(t, saved.(*bip44wallet.Wallet).Accounts(), 2)
+	})
+
+	t.Run("an encrypted wallet needs its password", func(t *testing.T) {
+		s := newService(t)
+		_, err := s.CreateWallet("t.wlt", wallet.Options{
+			Label: "t", Seed: seed, Type: wallet.WalletTypeBip44, Encrypt: true, Password: []byte("pwd"),
+		})
+		require.NoError(t, err)
+
+		_, err = s.NewAccount("t.wlt", nil, "a")
+		require.Equal(t, wallet.ErrMissingPassword, err)
+		_, err = s.NewAccount("t.wlt", []byte("wrong"), "a")
+		require.Equal(t, wallet.ErrInvalidPassword, err)
+
+		w, err := s.NewAccount("t.wlt", []byte("pwd"), "a")
+		require.NoError(t, err)
+		require.True(t, w.IsEncrypted())
+		require.Len(t, w.(*bip44wallet.Wallet).Accounts(), 2)
+		checkNoSensitiveData(t, w)
+	})
+
+	t.Run("refuses a password for an unencrypted wallet", func(t *testing.T) {
+		s := newService(t)
+		_, err := s.CreateWallet("t.wlt", wallet.Options{Label: "t", Seed: seed, Type: wallet.WalletTypeBip44})
+		require.NoError(t, err)
+		_, err = s.NewAccount("t.wlt", []byte("pwd"), "a")
+		require.Equal(t, wallet.ErrWalletNotEncrypted, err)
+	})
+
+	t.Run("refuses a wallet without accounts", func(t *testing.T) {
+		s := newService(t)
+		_, err := s.CreateWallet("t.wlt", wallet.Options{Label: "t", Seed: seed, Type: wallet.WalletTypeDeterministic})
+		require.NoError(t, err)
+		_, err = s.NewAccount("t.wlt", nil, "a")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not a bip44 wallet")
+	})
+}

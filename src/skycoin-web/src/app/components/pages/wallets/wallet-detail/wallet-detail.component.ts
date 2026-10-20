@@ -246,8 +246,20 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onAddAccount() {
+    if (this.wallet.encrypted) {
+      PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
+        if (password) {
+          this.addAccount(password);
+        }
+      });
+    } else {
+      this.addAccount();
+    }
+  }
+
+  private addAccount(password?: string) {
     const name = `Account ${(this.wallet.accounts || []).length}`;
-    this.walletService.addAccount(this.wallet, name).subscribe(
+    this.walletService.addAccount(this.wallet, name, password).subscribe(
       () => { this.changeDetectorRef.markForCheck(); },
       (error) => {
         this.msgBarService.showError(error.message);

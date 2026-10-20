@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- The node's wallet GUI is now skycoin-web, the wallet `skycoin web` serves.
+  `-enable-gui` serves it with the wallets kept in the node, and `-web-wallet`
+  serves it without the `WALLET` API set, with the wallets kept in the browser.
+  `-gui-dir` now takes a skycoin-web build directory. The old GUI in
+  `src/gui/static` is gone; its features moved into skycoin-web, except the
+  exchange page, whose service no longer answers, and firmware updates, which
+  the Skywallet tools do.
+
+### Added
+
+- `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
+
 ## 0.28.6
 
 ### Added

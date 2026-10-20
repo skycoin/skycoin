@@ -764,31 +764,9 @@ func handleNewAccount(c *webCtx, s *wallet.Service) {
 		return
 	}
 
-	name := c.Request.FormValue("name")
-
-	var resultWlt wallet.Wallet
-	err := s.Update(wltID, func(w wallet.Wallet) error {
-		bip44Wlt, ok := w.(*bip44wallet.Wallet)
-		if !ok {
-			return fmt.Errorf("wallet %s is not a bip44 wallet", wltID)
-		}
-
-		acctIndex, err := bip44Wlt.NewAccount(name)
-		if err != nil {
-			return fmt.Errorf("failed to create account: %v", err)
-		}
-
-		// Generate a default address on the new account's external chain
-		_, err = bip44Wlt.GenerateAddresses(wallet.OptionAccount(acctIndex), wallet.OptionExternal())
-		if err != nil {
-			return fmt.Errorf("failed to generate address for new account: %v", err)
-		}
-
-		resultWlt = w
-		return nil
-	})
+	resultWlt, err := s.NewAccount(wltID, []byte(c.Request.FormValue("password")), c.Request.FormValue("name"))
 	if err != nil {
-		errInternal(c, err.Error())
+		handleWalletError(c, err)
 		return
 	}
 

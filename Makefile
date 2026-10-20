@@ -28,15 +28,13 @@
 .PHONY: test-skyhw test-skyhw-race lint-skyhw check-skyhw
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
-.PHONY: check-lang check-lang-es check-lang-zh
+.PHONY: check-lang check-lang-es
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
-.PHONY: test-ui-e2e test-explorer-e2e build-wasm check-wasm
+.PHONY: test-explorer-e2e build-wasm check-wasm
 
 COIN ?= skycoin
 
-# Static files directory
-GUI_STATIC_DIR = src/gui/static
-# The other two Angular front-ends
+# The Angular front-ends
 EXPLORER_DIR = explorer
 SKYCOIN_WEB_DIR = src/skycoin-web
 # Holds the wasm cipher the web wallet serves, one copy per toolchain
@@ -44,7 +42,7 @@ SKYCOIN_LITE_DIR = src/skycoin-lite
 
 # All Angular front-ends, installed/linted/tested/built as a set so a change to
 # one cannot silently break the others.
-ANGULAR_UI_DIRS = $(GUI_STATIC_DIR) $(EXPLORER_DIR) $(SKYCOIN_WEB_DIR)
+ANGULAR_UI_DIRS = $(EXPLORER_DIR) $(SKYCOIN_WEB_DIR)
 
 # Every front-end now has a unit suite that runs. src/skycoin-web's ~60 original
 # specs still import APIs Angular removed years ago and remain excluded from its
@@ -53,10 +51,10 @@ ANGULAR_UI_DIRS = $(GUI_STATIC_DIR) $(EXPLORER_DIR) $(SKYCOIN_WEB_DIR)
 # regression fails CI.
 ANGULAR_UI_TEST_DIRS = $(ANGULAR_UI_DIRS)
 
-# Production bundles that are committed to the repository. src/gui/static/dist
-# and src/skycoin-web/src/gui/dist are embedded into the Go binary, so a stale
+# Production bundles that are committed to the repository. explorer/dist and
+# src/skycoin-web/src/gui/dist are embedded into the Go binary, so a stale
 # bundle ships to users.
-UI_DIST_DIRS = $(GUI_STATIC_DIR)/dist $(EXPLORER_DIR)/dist $(SKYCOIN_WEB_DIR)/src/gui/dist
+UI_DIST_DIRS = $(EXPLORER_DIR)/dist $(SKYCOIN_WEB_DIR)/src/gui/dist
 # skydex-client trading UI: Vite builds straight into the Go embed dir
 # (cmd/skydex-client/commands/static, per its vite.config.js) — no separate copy step.
 SKYDEX_UI_DIR = cmd/skydex-client
@@ -239,14 +237,10 @@ lint-ui:  ## Lint every Angular front-end
 		(cd $$d && npm run lint); \
 	done
 
-check-lang-es: ## Check the Spanish translation
-	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js es
+check-lang-es: ## Check the Spanish translation of the wallet
+	cd $(SKYCOIN_WEB_DIR)/src/assets/i18n && node check.js es
 
-check-lang-zh: ## Check the Chinese translation
-	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js zh
-
-check-lang: check-lang-es \
-	check-lang-zh
+check-lang: check-lang-es
 
 test-ui:  ## Run the unit tests of the Angular front-ends that have a working suite
 	@set -e; for d in $(ANGULAR_UI_TEST_DIRS); do \
@@ -260,9 +254,6 @@ test-ui:  ## Run the unit tests of the Angular front-ends that have a working su
 	@# empty directory there fails the Go build with "contains no embeddable
 	@# files". Remove it so `make test-ui && go build .` works in any order.
 	@for d in $(ANGULAR_UI_DIRS); do rm -rf "$$d/dist/test-out"; done
-
-test-ui-e2e:  ## Run the desktop GUI e2e tests
-	./ci-scripts/ui-e2e.sh
 
 test-explorer-e2e:  ## Run the explorer e2e tests against the pinned blockchain database
 	./ci-scripts/explorer-e2e.sh

@@ -62,13 +62,19 @@ func ServeWasmExecJS(w http.ResponseWriter, _ *http.Request) {
 }
 
 // Handler serves the embedded web wallet and its cipher wasm from the site
-// root. The wallet keeps its keys in the browser and talks to the node API on
-// the same origin, so it needs nothing else from the server.
+// root. The wallet talks to the node API on the same origin, so it needs
+// nothing else from the server.
 func Handler() (http.Handler, error) {
 	dist, err := fs.Sub(DistFS, "dist")
 	if err != nil {
 		return nil, err
 	}
+	return HandlerFS(dist), nil
+}
+
+// HandlerFS serves the web wallet built into dist, such as a local build in
+// place of the embedded one.
+func HandlerFS(dist fs.FS) http.Handler {
 	files := http.FileServer(http.FS(dist))
 
 	mux := http.NewServeMux()
@@ -82,7 +88,7 @@ func Handler() (http.Handler, error) {
 		files.ServeHTTP(w, r)
 	})
 
-	return mux, nil
+	return mux
 }
 
 // acceptsGzip reports whether the client will decompress a gzipped response.

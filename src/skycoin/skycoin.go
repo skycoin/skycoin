@@ -482,11 +482,9 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api.Server, error) {
 	config := api.Config{
-		StaticDir:          c.config.Node.GUIDirectory,
 		DisableCSRF:        c.config.Node.DisableCSRF,
 		DisableHeaderCheck: c.config.Node.DisableHeaderCheck,
 		DisableCSP:         c.config.Node.DisableCSP,
-		EnableGUI:          c.config.Node.EnableGUI,
 		ReadTimeout:        c.config.Node.HTTPReadTimeout,
 		WriteTimeout:       c.config.Node.HTTPWriteTimeout,
 		IdleTimeout:        c.config.Node.HTTPIdleTimeout,
@@ -508,12 +506,18 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 		ShutdownChan: quit,
 	}
 
-	if c.config.Node.WebWallet {
-		wallet, err := gui.Handler()
-		if err != nil {
-			return nil, err
+	// -enable-gui and -web-wallet serve the same wallet. With the WALLET API set
+	// it keeps the wallets in the node, and without it in the browser.
+	if c.config.Node.EnableGUI || c.config.Node.WebWallet {
+		if dir := c.config.Node.GUIDirectory; dir != "" {
+			config.WebWallet = gui.HandlerFS(os.DirFS(dir))
+		} else {
+			wallet, err := gui.Handler()
+			if err != nil {
+				return nil, err
+			}
+			config.WebWallet = wallet
 		}
-		config.WebWallet = wallet
 	}
 
 	var s *api.Server

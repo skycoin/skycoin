@@ -7,11 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -19,11 +16,8 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/rs/cors"
 
-	"github.com/skycoin/skycoin/src/gui"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
@@ -35,10 +29,6 @@ var (
 )
 
 const (
-	resourceDir = "dist/"
-	devDir      = "dev/"
-	indexPage   = "index.html"
-
 	apiVersion1 = "v1"
 	apiVersion2 = "v2"
 
@@ -74,11 +64,9 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir          string
 	DisableCSRF        bool
 	DisableHeaderCheck bool
 	DisableCSP         bool
-	EnableGUI          bool
 	ReadTimeout        time.Duration
 	WriteTimeout       time.Duration
 	IdleTimeout        time.Duration
@@ -87,7 +75,7 @@ type Config struct {
 	EnabledAPISets     map[string]struct{}
 	Username           string
 	Password           string
-	// WebWallet, when set, is served at the site root in place of the GUI.
+	// WebWallet, when set, is the wallet GUI, served at the site root.
 	WebWallet    http.Handler
 	ShutdownChan chan struct{} // when closed, triggers daemon shutdown
 }
@@ -107,8 +95,6 @@ type HealthConfig struct {
 
 type muxConfig struct {
 	host               string
-	appLoc             string
-	enableGUI          bool
 	disableCSRF        bool
 	disableHeaderCheck bool
 	disableCSP         bool
@@ -184,21 +170,7 @@ func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 	}
 }
 
-func create(host string, c Config, gateway Gatewayer) (*Server, error) {
-	var appLoc string
-	if c.EnableGUI && c.StaticDir != "" {
-		var err error
-		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("Web resources directory: %s", appLoc)
-	}
-
-	if c.EnableGUI && c.WebWallet != nil {
-		return nil, errors.New("the GUI and the web wallet cannot both be served")
-	}
-
+func create(host string, c Config, gateway Gatewayer) *Server {
 	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
@@ -219,8 +191,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 
 	mc := muxConfig{
 		host:               host,
-		appLoc:             appLoc,
-		enableGUI:          c.EnableGUI,
 		disableCSRF:        c.DisableCSRF,
 		disableHeaderCheck: c.DisableHeaderCheck,
 		disableCSP:         c.DisableCSP,
@@ -245,7 +215,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	return &Server{
 		server: srv,
 		done:   make(chan struct{}),
-	}, nil
+	}
 }
 
 // Create creates a new Server instance that listens on HTTP
@@ -261,15 +231,7 @@ func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	// we need to get the assigned address to know the full hostname
 	host = listener.Addr().String()
 
-	s, err := create(host, c, gateway)
-	if err != nil {
-		if s != nil {
-			if closeErr := s.listener.Close(); closeErr != nil {
-				logger.WithError(err).Warning("s.listener.Close() error")
-			}
-		}
-		return nil, err
-	}
+	s := create(host, c, gateway)
 
 	s.listener = listener
 
@@ -419,82 +381,12 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler(apiVersion2, "/api/v2"+endpoint, handler, methodAPISets)
 	}
 
-	var subFS fs.FS
-	var err error
-	var indexHandler http.Handler
-
-	if c.appLoc != "" && c.enableGUI {
-		fileInfos, err := os.ReadDir(c.appLoc)
-		if err != nil {
-			logger.WithError(err).Errorf("os.ReadDir(%s) failed", c.appLoc)
-		}
-
-		fs := http.FileServer(http.Dir(c.appLoc))
-		if !c.disableCSP {
-			fs = CSPHandler(fs, ContentSecurityPolicy)
-		}
-		indexHTMLFound := false
-		for _, fileInfo := range fileInfos {
-			if fileInfo.Name() == "index.html" {
-				indexHTMLFound = true
-			}
-			route := fmt.Sprintf("/%s", fileInfo.Name())
-			if fileInfo.IsDir() {
-				route = route + "/"
-			}
-			webHandler(apiVersion1, route, fs, nil)
-		}
-		if !indexHTMLFound {
-			logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
-		}
-		indexHandler = oldIndexHandler(c.appLoc, c.enableGUI)
-	}
-
-	if c.appLoc == "" && c.enableGUI {
-		subFS, err = fs.Sub(gui.GuiFiles, "static/dist")
-		if err != nil {
-			logger.WithError(err).Error("fs.Sub() failed")
-		}
-
-		fileInfos, err := fs.ReadDir(subFS, ".")
-		if err != nil {
-			logger.WithError(err).Error("fs.ReadDir() failed")
-		}
-
-		if len(fileInfos) == 0 {
-			logger.Error("Embedded gui does not contain any files")
-		}
-
-		fsHandler := http.FileServer(http.FS(subFS))
-		if !c.disableCSP {
-			fsHandler = CSPHandler(fsHandler, ContentSecurityPolicy)
-		}
-
-		indexHTMLFound := false
-		for _, fileInfo := range fileInfos {
-			if fileInfo.Name() == "index.html" {
-				indexHTMLFound = true
-			}
-			route := fmt.Sprintf("/%s", fileInfo.Name())
-			if fileInfo.IsDir() {
-				route = route + "/"
-			}
-			logger.Debug("route: ", route)
-			webHandler(apiVersion1, route, fsHandler, nil)
-		}
-		if !indexHTMLFound {
-			logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
-		}
-		indexHandler = newIndexHandler(subFS, c.enableGUI)
-	}
-	if !c.disableCSP && indexHandler != nil {
-		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
-	}
 	if c.webWallet != nil {
-		mux.Handle("/", gzhttp.GzipHandler(c.webWallet))
-	}
-	if indexHandler != nil {
-		webHandler(apiVersion1, "/", indexHandler, nil)
+		wallet := c.webWallet
+		if !c.disableCSP {
+			wallet = CSPHandler(wallet, ContentSecurityPolicy)
+		}
+		mux.Handle("/", gzhttp.GzipHandler(wallet))
 	}
 
 	// get the current CSRF token
@@ -538,6 +430,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/update", walletUpdateHandler(gateway), map[string][]string{
+		http.MethodPost: {EndpointsWallet},
+	})
+	webHandlerV1("/wallet/newAccount", walletNewAccountHandler(gateway), map[string][]string{
 		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallets", walletsHandler(gateway), map[string][]string{
@@ -701,55 +596,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 
 	return mux
-}
-
-// newIndexHandler returns a http.Handler for index.html, where index.html is in appLoc
-func oldIndexHandler(appLoc string, enableGUI bool) http.Handler {
-	// Serves the main page
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !enableGUI {
-			logger.Error("GUI disabled")
-			wh.Error404(w, "GUI disabled")
-			return
-		}
-
-		if r.URL.Path != "/" {
-			logger.Error(`r.URL.Path != "/"`)
-			wh.Error404(w, `r.URL.Path != "/"`)
-			return
-		}
-
-		if r.URL.Path == "/" {
-			page := filepath.Join(appLoc, indexPage)
-			logger.Debugf("Serving index page: %s", page)
-			http.ServeFile(w, r, page)
-		}
-	})
-}
-
-func newIndexHandler(guiFS fs.FS, enableGUI bool) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !enableGUI || r.URL.Path != "/" {
-			logger.Error("GUI disabled")
-			wh.Error404(w, "GUI disabled")
-			return
-		}
-		if guiFS == nil {
-			logger.Error("guiFS == nil")
-			wh.Error404(w, `guiFS == nil`)
-			return
-		}
-		data, err := fs.ReadFile(guiFS, "index.html")
-		if err != nil {
-			logger.WithError(err).Error("index.html not found in embedded GUI")
-			wh.Error404(w, `index.html not found in embedded GUI`)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(data) //nolint
-	})
 }
 
 // splitCommaString splits a string separated by commas or whitespace into tokens

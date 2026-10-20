@@ -63,21 +63,6 @@ updates:
       - dependency-name: "jasmine-core"
         update-types: ["version-update:semver-major"]
 
-  # Desktop GUI (Angular)
-  - package-ecosystem: npm
-    directory: "/src/gui/static"
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      gui-npm:
-        patterns:
-          - "*"
-    ignore:
-      # See the note on TypeScript majors at the bottom of this file.
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-
   # SkyDEX trading UI (React/Vite)
   - package-ecosystem: npm
     directory: "/cmd/skydex-client"
@@ -89,8 +74,8 @@ updates:
         patterns:
           - "*"
 
-# TypeScript majors are ignored for the three Angular front-ends
-# (/explorer, /src/gui/static, /src/skycoin-web).
+# TypeScript majors are ignored for the two Angular front-ends
+# (/explorer and /src/skycoin-web).
 #
 # Angular pins a single TypeScript minor per major release: @angular/compiler-cli
 # 22.1.1 declares "typescript": ">=6.0 <6.1", so TypeScript 7 cannot be installed
@@ -109,7 +94,6 @@ updates:
 # jasmine-core 7 makes the `describe` global read-only, and zone.js/testing
 # (through 0.16.3) assigns to it, so the suites stop at load time. Those two
 # apps need zone.js/testing for their fakeAsync/waitForAsync specs.
-# /src/gui/static has none, loads no zone.js/testing, and runs jasmine 7.
 #
 # Remove these entries once a zone.js release supports jasmine 7, or the
 # specs move off fakeAsync.

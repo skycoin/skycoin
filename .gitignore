@@ -94,7 +94,6 @@ benefactor-wallet.json
 masterdata/
 .genv
 
-src/gui/static/dev
 src/mesh/gui/static/dev
 
 npm-debug.log

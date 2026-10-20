@@ -145,7 +145,7 @@ Usage:
   -enable-api-sets string
     	enable API set. Options are READ, STATUS, WALLET, TXN, NET_CTRL, INSECURE_WALLET_SEED, STORAGE. Multiple values should be separated by comma (default "READ,TXN")
   -enable-gui
-    	Enable GUI
+    	serve the wallet GUI, with the wallets kept in the node (needs the WALLET API set)
   -genesis-address string
     	genesis address (default "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
   -genesis-signature string
@@ -153,7 +153,7 @@ Usage:
   -genesis-timestamp uint
     	genesis block timestamp (default 1426562704)
   -gui-dir string
-    	static content directory for the HTML interface (default "./src/gui/static/")
+    	serve the wallet GUI from this skycoin-web build directory instead of the embedded one
   -help
     	Show help
   -host-whitelist string
@@ -237,7 +237,7 @@ Usage:
   -web-interface-username string
     	username for the web interface
   -web-wallet
-    	serve the skycoin web wallet at the site root, in place of the GUI
+    	serve the wallet GUI even without the WALLET API set, with the wallets kept in the browser
 ```
 
 ## Scenarios
@@ -336,10 +336,12 @@ $ go run cmd/skycoin/skycoin.go \
 
 ### Serve the web wallet
 
-This serves the skycoin web wallet at the root of the web interface, so a browser
-opening the node gets the wallet. The wallet keeps its keys in the browser and
-uses the API of the node that served it. A password set in the wallet encrypts
-the wallets stored in that browser, and never reaches the node.
+This serves the wallet at the root of the web interface, so a browser opening
+the node gets the wallet, with the node API sets given here. Without the `WALLET`
+set the wallet keeps its keys in the browser and uses the API of the node that
+served it. A password set in the wallet encrypts the wallets stored in that
+browser, and never reaches the node. `enable-gui` serves the same wallet with the
+wallets kept in the node.
 
 ```sh
 $ go run cmd/skycoin/skycoin.go \
@@ -473,7 +475,10 @@ Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/s
 
 ### enable-gui
 
-Serve the wallet GUI pages over the `web-interface-addr` and `web-interface-port` on the root path `/`.
+Serve the wallet GUI over the `web-interface-addr` and `web-interface-port` on the
+root path `/`. The GUI is skycoin-web, the same wallet `skycoin web` serves, and it
+keeps the wallets in the node. It needs the `WALLET` API set; without it the GUI
+is off.
 
 ### genesis-address
 
@@ -489,7 +494,9 @@ The timestamp of the genesis block. This is used to reconstruct the genesis, whi
 
 ### gui-dir
 
-The static content directory for the wallet GUI interface.
+A skycoin-web build directory (`src/skycoin-web/src/gui/dist`) to serve in place
+of the wallet GUI embedded in the binary. Use it to try a GUI change without
+rebuilding the node.
 
 ### host-whitelist
 
@@ -694,8 +701,8 @@ Optional username for the REST API. Used in `Basic` authentication.
 
 ### web-wallet
 
-Serve the skycoin web wallet at the site root, in place of the GUI. It cannot be
-combined with `enable-gui`.
+Serve the wallet GUI at the site root even without the `WALLET` API set, as a
+public node does. The wallet then keeps its keys in the browser.
 
 ## Development Environment Variables
 

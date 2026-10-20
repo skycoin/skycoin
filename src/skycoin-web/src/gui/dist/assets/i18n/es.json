@@ -212,6 +212,16 @@
   },
 
   "send": {
+    "bulk-send-button": "Envío masivo",
+    "bulk-send": {
+      "title": "Envío Masivo",
+      "indications": "Para enviar a varios destinos a la vez, escriba cada dirección, cantidad de monedas y cantidad de horas (opcional) en una línea, separadas por comas. Por ejemplo, escriba \"xyz,10,5\" para enviar 10 monedas y 5 horas a la dirección \"xyz\", o \"xyz,10\" para que las horas se calculen automáticamente. Use un punto para los decimales.",
+      "no-data-error": "No hay texto para procesar.",
+      "invalid-data-error": "Cada línea debe ser una dirección y una cantidad de monedas, y opcionalmente una cantidad de horas, separadas por comas.",
+      "inconsistent-data-error": "Si establece las horas de un destino, debe hacerlo para todos.",
+      "process-button": "Procesar",
+      "cancel-button": "Cancelar"
+    },
     "synchronizing-warning": "El nodo todavía está sincronizando los datos, por lo que el saldo que se muestra puede ser incorrecto. ¿Seguro de que desea continuar?",
     "from-label": "Enviar desde",
     "to-label": "Enviar a",

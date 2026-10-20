@@ -86,6 +86,14 @@ The operation without any flags was described above in the [history](#history) s
 
 Bitcoin is available by default through the built-in electrum servers. `--btc-node-url` uses a Bitcoin Core node instead, and `--btc-electrum-url none` removes Bitcoin. Servers are contacted only when a Bitcoin call is made, through `--socks5-proxy` when one is set.
 
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--eth-rpc-url` | | `default` | Ethereum JSON-RPC URLs, comma separated and tried in order. `default` is a built-in list of keyless public endpoints and `none` turns Ethereum off. |
+| `--eth-indexer-url` | | `https://eth.blockscout.com` | Etherscan-style API for transaction history. |
+| `--erc20-tokens` | | `USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6` | ERC-20 tokens to offer, comma separated `SYMBOL:contract:decimals`, or `none`. |
+
+With `--wallet-dir`, Ether and each token appear as coins of their own. They share the Ethereum wallets, since tokens are held at the same addresses, and the wallet keeps and signs with the keys like the other server wallets. RPC and indexer calls go through `--socks5-proxy` when one is set.
+
 ### Hardware Wallet
 
 The Skycoin hardware wallet is supported when the hardware wallet daemon is running on `127.0.0.1:9510`. The frontend communicates directly with the daemon for PIN entry, address generation, and transaction signing. No additional flags are needed.

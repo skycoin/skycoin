@@ -215,3 +215,12 @@ func (r *RPC) SendRaw(ctx context.Context, raw []byte) (string, error) {
 	}
 	return h, nil
 }
+
+// BlockNumber is the number of the latest block.
+func (r *RPC) BlockNumber(ctx context.Context) (uint64, error) {
+	n, err := r.quantity(ctx, "eth_blockNumber")
+	if err != nil {
+		return 0, err
+	}
+	return n.Uint64(), nil
+}

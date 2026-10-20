@@ -43,6 +43,7 @@ import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
+import { NetworkComponent } from './components/pages/settings/network/network.component';
 import { BackupComponent } from './components/pages/settings/backup/backup.component';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { TransactionDetailComponent } from './components/pages/history/transaction-detail/transaction-detail.component';
@@ -78,6 +79,7 @@ import { LanguageService } from './services/language.service';
 import { SelectCoinOverlayComponent } from './components/layout/select-coin-overlay/select-coin-overlay.component';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { WalletService } from './services/wallet/wallet.service';
+import { NetworkService } from './services/network.service';
 import { AddressExposureService } from './services/wallet/address-exposure.service';
 import { BalanceService } from './services/wallet/balance.service';
 import { HistoryService } from './services/wallet/history.service';
@@ -130,6 +132,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         NavBarComponent,
         NodeStatusBarComponent,
         OutputsComponent,
+        NetworkComponent,
         BackupComponent,
         OnboardingCreateWalletComponent,
         OnboardingEncryptWalletComponent,
@@ -208,6 +211,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         NodeHealthService,
         LanguageService,
         WalletService,
+        NetworkService,
         AddressExposureService,
         BalanceService,
         HistoryService,

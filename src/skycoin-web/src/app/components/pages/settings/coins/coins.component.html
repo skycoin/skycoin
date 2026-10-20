@@ -1,0 +1,80 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'title.coins' | translate"></app-header>
+  <div class="container">
+    @if (unavailable) {
+      <p class="-info">{{ 'coins.unavailable' | translate }}</p>
+    }
+
+    @if (added && added.length > 0) {
+      <div class="-table">
+        <div class="-headers">
+          <div class="flex-fill">{{ 'coins.added-coins' | translate }}</div>
+        </div>
+        <div class="-paper">
+          @for (coin of added; track coin.id) {
+            <div class="-row">
+              @if (coin.icon) {
+                <img class="coin-icon" [src]="coin.icon">
+              }
+              <div class="flex-fill -one-line-ellipsis">
+                {{ coin.name }} <span class="-grey">{{ coin.ticker }} · {{ coin.kind === 'erc20' ? coin.contract : coin.node_url }}</span>
+              </div>
+              <div class="-link" [class.disabled]="busy" (click)="busy ? null : remove(coin)">{{ 'coins.remove' | translate }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (added) {
+      <div class="-paper add-form">
+        <h4>{{ 'coins.add-title' | translate }}</h4>
+        <div class="form-field">
+          <label for="coin-kind">{{ 'coins.kind' | translate }}</label>
+          <div class="-select">
+            <select id="coin-kind" [(ngModel)]="kind" [disabled]="busy">
+              <option value="fiber">{{ 'coins.kind-fiber' | translate }}</option>
+              <option value="erc20">{{ 'coins.kind-erc20' | translate }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="coin-name">{{ 'coins.name' | translate }}</label>
+          <input id="coin-name" [(ngModel)]="name" [disabled]="busy" [placeholder]="(kind === 'fiber' ? 'coins.from-node' : 'coins.optional') | translate">
+        </div>
+        <div class="form-field">
+          <label for="coin-ticker">{{ 'coins.ticker' | translate }}</label>
+          <input id="coin-ticker" [(ngModel)]="ticker" [disabled]="busy" [placeholder]="kind === 'fiber' ? ('coins.from-node' | translate) : ''">
+        </div>
+        @if (kind === 'fiber') {
+          <div class="form-field">
+            <label for="coin-node">{{ 'coins.node-url' | translate }}</label>
+            <input id="coin-node" [(ngModel)]="nodeUrl" [disabled]="busy" placeholder="https://node.example.com">
+          </div>
+        } @else {
+          <div class="form-field">
+            <label for="coin-contract">{{ 'coins.contract' | translate }}</label>
+            <input id="coin-contract" [(ngModel)]="contract" [disabled]="busy" placeholder="0x…">
+          </div>
+          <div class="form-field">
+            <label for="coin-decimals">{{ 'coins.decimals' | translate }}</label>
+            <input id="coin-decimals" type="number" min="0" max="36" [(ngModel)]="decimals" [disabled]="busy">
+          </div>
+        }
+        <div class="form-field">
+          <label for="coin-icon">{{ 'coins.icon' | translate }}</label>
+          <div class="icon-row">
+            @if (icon) {
+              <img class="coin-icon" [src]="icon">
+            }
+            <input id="coin-icon" type="file" accept="image/png,image/jpeg,image/webp,image/gif" (change)="pickIcon($event)" [disabled]="busy">
+          </div>
+        </div>
+        <p class="-grey hint">{{ (kind === 'fiber' ? 'coins.fiber-hint' : 'coins.erc20-hint') | translate }}</p>
+        <div class="-buttons">
+          <app-button (action)="add()" class="primary" [disabled]="busy">{{ 'coins.add-button' | translate }}</app-button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

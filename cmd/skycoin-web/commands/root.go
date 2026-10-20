@@ -136,6 +136,12 @@ type discoveredCoin struct {
 	Contract string `json:"contract,omitempty"`
 	// NodeOptions are the servers the wallet's node settings offer.
 	NodeOptions []string `json:"nodeOptions,omitempty"`
+	// CustomID marks a coin added in the wallet, which can remove it.
+	CustomID string `json:"customId,omitempty"`
+	// IconURL is an added coin's icon, as a data URL.
+	IconURL string `json:"iconUrl,omitempty"`
+	// hidden marks a removed coin, which keeps its index until a restart.
+	hidden bool
 	// placeholder marks a node whose health check failed; it is retried.
 	placeholder bool
 	// internal: the actual remote node URL (not exposed to frontend)
@@ -565,6 +571,11 @@ func serve(ctx context.Context) error {
 	for i := range ethHandlers {
 		coinWltServices[i] = ethWltServices
 	}
+	table := &coinTable{coins: coins, eth: ethHandlers, btc: btcHandlers, wlt: coinWltServices}
+	custom := newCustomCoins(table)
+	if err := custom.load(); err != nil {
+		log.Printf("[COIN] Ignoring the saved coins: %v", err)
+	}
 	guiFS := initGUIFS()
 
 	// The cipher routes are exact matches, so they win over the "/" static
@@ -592,22 +603,25 @@ func serve(ctx context.Context) error {
 		}
 
 		coinIndex := 0
-		if _, err := fmt.Sscanf(c.Param("coinIndex"), "%d", &coinIndex); err != nil || coinIndex < 0 || coinIndex >= len(coins) {
+		if _, err := fmt.Sscanf(c.Param("coinIndex"), "%d", &coinIndex); err != nil {
 			c.String(http.StatusBadRequest, "invalid coin index")
 			return
 		}
-
-		coin := coins[coinIndex]
+		coin, ethHandler, btcHandler, services := table.get(coinIndex)
+		if coin == nil {
+			c.String(http.StatusBadRequest, "invalid coin index")
+			return
+		}
 
 		// Ether and tokens are handled by the ethHandler, not proxied to a node
 		if isEthereumCoin(coin) {
 			if handleBtcStubEndpoints(c, apiPath) {
 				return
 			}
-			if handler, ok := ethHandlers[coinIndex]; ok && handler.handleEthAPI(c, apiPath) {
+			if ethHandler != nil && ethHandler.handleEthAPI(c, apiPath) {
 				return
 			}
-			if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
+			if len(services) > 0 {
 				if handleMultiWalletAPI(c, apiPath, services, "") {
 					return
 				}
@@ -623,14 +637,14 @@ func serve(ctx context.Context) error {
 				return
 			}
 
-			if handler, ok := btcHandlers[coinIndex]; ok {
+			if btcHandler != nil {
 				// Try BTC-specific API endpoints first
-				if handler.handleBtcAPI(c, apiPath) {
+				if btcHandler.handleBtcAPI(c, apiPath) {
 					return
 				}
 			}
 			// Try wallet endpoints (create, list, etc.)
-			if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
+			if len(services) > 0 {
 				if handleMultiWalletAPI(c, apiPath, services, "") {
 					return
 				}
@@ -648,7 +662,7 @@ func serve(ctx context.Context) error {
 		}
 
 		// Try local wallet handling first
-		if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
+		if len(services) > 0 {
 			if handleMultiWalletAPI(c, apiPath, services, coin.remoteNodeURL) {
 				return
 			}
@@ -674,8 +688,11 @@ func serve(ctx context.Context) error {
 		// Coins discovery endpoint
 		if apiPath == "/v1/coins" && c.Request.Method == http.MethodGet {
 			coinsMu.RLock()
-			c.JSON(http.StatusOK, coins)
+			c.JSON(http.StatusOK, table.visible())
 			coinsMu.RUnlock()
+			return
+		}
+		if custom.handle(c, apiPath) {
 			return
 		}
 
@@ -690,7 +707,7 @@ func serve(ctx context.Context) error {
 		}
 
 		// Wallet endpoints served locally (legacy route uses coin 0's wallet services)
-		if services, ok := coinWltServices[0]; ok && len(services) > 0 {
+		if _, _, _, services := table.get(0); len(services) > 0 {
 			defaultNodeURL := ""
 			if len(coins) > 0 {
 				defaultNodeURL = coins[0].remoteNodeURL

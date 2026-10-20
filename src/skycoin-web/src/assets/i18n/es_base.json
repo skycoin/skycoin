@@ -20,6 +20,7 @@
   },
 
   "title": {
+    "coins": "Coins",
     "hardware-wallet": "Hardware Wallet",
     "change-coin": "Change active coin",
     "language": "Select Language",
@@ -331,6 +332,29 @@
     "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
 
+  "coins": {
+    "unavailable": "Adding coins needs a wallet service started with --wallet-dir.",
+    "added-coins": "Added coins",
+    "remove": "Remove",
+    "add-title": "Add a coin",
+    "kind": "Kind",
+    "kind-fiber": "Fiber coin (its own node)",
+    "kind-erc20": "ERC-20 token on Ethereum",
+    "name": "Name",
+    "ticker": "Ticker",
+    "from-node": "From the node when empty",
+    "optional": "The ticker when empty",
+    "node-url": "Node URL",
+    "contract": "Contract address",
+    "decimals": "Decimals",
+    "icon": "Icon (optional)",
+    "icon-too-big": "The icon must be under 72 KB.",
+    "fiber-hint": "The node is checked before the coin is added. Fiber coins use the same wallets as the first coin.",
+    "erc20-hint": "Tokens use the Ethereum wallets and servers. The decimals must match the contract, or amounts will be wrong.",
+    "add-button": "Add",
+    "added": "The coin has been added. The wallet is reloading.",
+    "removed": "The coin has been removed. The wallet is reloading."
+  },
   "nodes" : {
     "eth": {
       "title": "Ethereum servers",

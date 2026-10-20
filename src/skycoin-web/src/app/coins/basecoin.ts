@@ -36,6 +36,10 @@ export class BaseCoin {
   decimals?: number;
   // An ERC-20 token's contract address.
   contract?: string;
+  // An added coin's id, which the server removes it by.
+  customId?: string;
+  // An added coin's icon, as a data URL.
+  iconUrl?: string;
 
   constructor(data?: Partial<BaseCoin>) {
     if (data) {
@@ -85,6 +89,14 @@ export class BaseCoin {
     return this.isBitcoin() ? 8 : 6;
   }
 
+  get iconSrc(): string {
+    return this.iconUrl || 'assets/skycoin-wallet/img/coins/' + this.iconName;
+  }
+
+  get bigIconSrc(): string {
+    return this.iconUrl || 'assets/skycoin-wallet/img/coins/' + this.bigIconName;
+  }
+
   /** Decimals worth showing; Ether has 18, more than anyone reads. */
   get displayDecimals(): number {
     return Math.min(this.coinDecimals, 8);
@@ -107,6 +119,8 @@ export class BaseCoin {
       coin.decimals = data.decimals;
     }
     coin.contract = data.contract || undefined;
+    coin.customId = data.customId || undefined;
+    coin.iconUrl = data.iconUrl || undefined;
     // Use generic/skycoin assets as fallback for dynamically discovered coins
     coin.imageName = '';
     coin.gradientName = '';

@@ -1,4 +1,4 @@
 <div class="icon-container">
-  <img [src]="'assets/skycoin-wallet/img/coins/' + (selectedCoin ? selectedCoin.bigIconName : '')">
+  <img [src]="selectedCoin ? selectedCoin.bigIconSrc : ''">
 </div>
 <input readonly (click)="onInputClick()" [value]="selectedCoin ? selectedCoin.coinName : ''">

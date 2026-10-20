@@ -13,7 +13,7 @@
           <div class="buttons-container">
             @for (coin of coins; track coin) {
               <button mat-button color="accent" class="button" (click)="close(coin)">
-                <img [src]="'assets/skycoin-wallet/img/coins/' + coin.bigIconName">
+                <img [src]="coin.bigIconSrc">
                 <div class="label">{{ coin.coinName }} ({{ coin.coinSymbol }})</div>
               </button>
             }

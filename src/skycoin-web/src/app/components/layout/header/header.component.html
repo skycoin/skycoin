@@ -15,7 +15,7 @@
             <p class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
           }
           @if (!loading) {
-            <p class="coins"><span>{{ coins.decimalPlaces(currentCoin.coinDecimals).toString() | number:('1.0-' + currentCoin.coinDecimals) }}</span> {{ currentCoin.coinSymbol }}</p>
+            <p class="coins"><span>{{ coins.decimalPlaces(currentCoin.displayDecimals).toString() | number:('1.0-' + currentCoin.displayDecimals) }}</span> {{ currentCoin.coinSymbol }}</p>
           }
           @if (!loading && balance) {
             <p class="dollars">{{ balance }}</p>

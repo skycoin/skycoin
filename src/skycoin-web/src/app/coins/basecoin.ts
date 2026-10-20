@@ -5,6 +5,14 @@ export const skycoinArt = {
   mobileImageName: 'skycoin-city-header.jpg',
 };
 
+// Icons of gateway coins, by coin type or by token symbol.
+const gatewayIcons: Record<string, string> = {
+  'bitcoin': 'btc-icon.png',
+  'bitcoin-segwit': 'btc-icon.png',
+  'ethereum': 'eth-icon.png',
+  'USDT': 'usdt-icon.png',
+};
+
 export class BaseCoin {
   id!: number;
   nodeUrl!: string;
@@ -24,6 +32,10 @@ export class BaseCoin {
   mobileImageName = '';
   iconName!: string;
   bigIconName!: string;
+  // Base units per coin as a power of ten, for Ether and tokens.
+  decimals?: number;
+  // An ERC-20 token's contract address.
+  contract?: string;
 
   constructor(data?: Partial<BaseCoin>) {
     if (data) {
@@ -32,23 +44,53 @@ export class BaseCoin {
   }
 
   hasHours(): boolean {
-    return !this.isBitcoin();
+    return !this.isGateway();
   }
 
   isBitcoin(): boolean {
     return this.coinType === 'bitcoin' || this.coinType === 'bitcoin-segwit';
   }
 
+  /** Ether, or an ERC-20 token held at Ethereum addresses. */
+  isEthereum(): boolean {
+    return this.coinType === 'ethereum' || this.coinType === 'erc20';
+  }
+
+  isToken(): boolean {
+    return this.coinType === 'erc20';
+  }
+
+  /**
+   * A coin skycoin web serves from its own /v1/btc/ or /v1/eth/ routes, with
+   * server wallets, rather than through a Skycoin node.
+   */
+  isGateway(): boolean {
+    return this.isBitcoin() || this.isEthereum();
+  }
+
+  /** The route prefix of a gateway coin. */
+  get gatewayPrefix(): string {
+    return this.isEthereum() ? 'eth' : 'btc';
+  }
+
   get coinsMultiplier(): number {
-    return this.isBitcoin() ? 100000000 : 1000000;
+    return Math.pow(10, this.coinDecimals);
   }
 
   get coinDecimals(): number {
+    if (this.isEthereum()) {
+      return this.decimals ?? 18;
+    }
+
     return this.isBitcoin() ? 8 : 6;
   }
 
+  /** Decimals worth showing; Ether has 18, more than anyone reads. */
+  get displayDecimals(): number {
+    return Math.min(this.coinDecimals, 8);
+  }
+
   static fromServerData(data: any): BaseCoin {
-    const isBtc = data.coinType === 'bitcoin' || data.coinType === 'bitcoin-segwit';
     const coin = new BaseCoin();
     coin.id = data.id;
     coin.nodeUrl = data.nodeUrl || '';
@@ -61,6 +103,10 @@ export class BaseCoin {
     coin.coinType = data.coinType || 'skycoin';
     coin.serverWallets = !!data.serverWallets;
     coin.nodeOptions = Array.isArray(data.nodeOptions) ? data.nodeOptions.filter((s: any) => typeof s === 'string') : [];
+    if (typeof data.decimals === 'number') {
+      coin.decimals = data.decimals;
+    }
+    coin.contract = data.contract || undefined;
     // Use generic/skycoin assets as fallback for dynamically discovered coins
     coin.imageName = '';
     coin.gradientName = '';
@@ -68,6 +114,11 @@ export class BaseCoin {
     coin.bigIconName = 'skycoin-icon-b.png';
     if (coin.coinType === 'skycoin' && coin.coinSymbol === 'SKY') {
       Object.assign(coin, skycoinArt);
+    }
+    const icon = gatewayIcons[coin.isToken() ? coin.coinSymbol : coin.coinType];
+    if (icon) {
+      coin.iconName = icon;
+      coin.bigIconName = icon;
     }
     return coin;
   }

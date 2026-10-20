@@ -243,6 +243,9 @@
     "copied": "The text has been copied to the clipboard."
   },
   "send": {
+    "gateway-confirm-eth": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is at most {{ fee }} ETH.",
+    "gateway-confirm-btc": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is {{ rate }} satoshis per byte.",
+    "gateway-sent": "Sent. Transaction {{ txid }}",
     "bulk-send-button": "Bulk send",
     "bulk-send": {
       "title": "Bulk Send",
@@ -294,6 +297,7 @@
     "sent": "Transaction successfully sent."
   },
   "tx": {
+    "fee": "Fee",
     "transaction": "Transaction",
     "confirm-transaction": "Confirm Transaction",
     "from": "From",

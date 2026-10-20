@@ -76,7 +76,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   // Asks the node which of the wallet's addresses have sent coins. Skycoin nodes only.
   private checkExposure() {
-    if (!this.walletInternal || !this.currentCoin || this.currentCoin.isBitcoin()) {
+    if (!this.walletInternal || !this.currentCoin || this.currentCoin.isGateway()) {
       return;
     }
     const addresses = this.walletInternal.addresses.map(a => a.address);

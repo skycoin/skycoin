@@ -20,6 +20,7 @@ import {
   PreviewTransaction } from '../../app.datatypes';
 import { BlockchainService } from '../blockchain.service';
 import { HwWalletService } from '../hw-wallet.service';
+import { BaseCoin } from '../../coins/basecoin';
 
 describe('SpendingService', () => {
   let store: Record<string, string> = {};
@@ -904,3 +905,46 @@ function createRequestOutput(hash: string, address: string, coins = '10', calcul
     calculated_hours: calculated_hours
   };
 }
+
+describe('SpendingService gateway sends', () => {
+  let spending: SpendingService;
+  let post: jasmine.Spy;
+  let coin: BaseCoin;
+
+  beforeEach(() => {
+    post = jasmine.createSpy('post').and.returnValue(of({ txid: '0xabc' }));
+    TestBed.configureTestingModule({
+      providers: [
+        SpendingService,
+        { provide: WalletService, useClass: MockWalletService },
+        { provide: ApiService, useValue: { post, get: () => of({}) } },
+        { provide: CipherProvider, useValue: {} },
+        { provide: TranslateService, useValue: { instant: (k: string) => k } },
+        { provide: CoinService, useValue: { currentCoin: { subscribe: (f: (c: BaseCoin) => void) => f(coin) } } },
+        { provide: GlobalsService, useClass: MockGlobalsService },
+        { provide: BlockchainService, useClass: MockBlockchainService },
+        { provide: HwWalletService, useClass: MockHwWalletService },
+      ],
+    });
+  });
+
+  it('sends Ether amounts in wei, as a string', fakeAsync(() => {
+    coin = BaseCoin.fromServerData({ id: 1, coinSymbol: 'ETH', coinType: 'ethereum', decimals: 18 });
+    spending = TestBed.inject(SpendingService);
+    let txid = '';
+    spending.sendGateway({ filename: 'e.wlt' } as any, '0xto', new BigNumber('1.5'), 'pw').subscribe(t => txid = t);
+    expect(txid).toBe('0xabc');
+    expect(post).toHaveBeenCalledWith('eth/send', {
+      wallet_id: 'e.wlt', password: 'pw', to: '0xto', amount: '1500000000000000000',
+    }, { json: true });
+  }));
+
+  it('sends Bitcoin in satoshis with the fee rate', fakeAsync(() => {
+    coin = BaseCoin.fromServerData({ id: 2, coinSymbol: 'BTC', coinType: 'bitcoin' });
+    spending = TestBed.inject(SpendingService);
+    spending.sendGateway({ filename: 'b.wlt' } as any, 'bc1q', new BigNumber('0.0001'), undefined, 7).subscribe();
+    expect(post).toHaveBeenCalledWith('btc/send', {
+      wallet_id: 'b.wlt', password: '', destinations: [{ address: 'bc1q', coins: 10000 }], fee_rate: 7,
+    }, { json: true });
+  }));
+});

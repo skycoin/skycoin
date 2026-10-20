@@ -16,7 +16,8 @@
     }
   </div>
   <div class="flex-fill"></div>
-  @if (isBip44) {
+  <!-- Ethereum wallets use addresses on account 0, as other Ethereum wallets do. -->
+  @if (isBip44 && !currentCoin?.isEthereum()) {
     <div class="-button -not-on-small-and-below" (click)="onAddAccount()">
       <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
     </div>
@@ -101,7 +102,7 @@
                 {{ address.address }}
               </div>
               <div class="mobile-label-container">
-                <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+                <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.displayDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.displayDecimals || 6)) }}</div>
               </div>
               @if (currentCoin?.hasHours()) {
                 <div class="mobile-label-container">
@@ -128,6 +129,8 @@
         }
       </div>
 
+      <!-- Ethereum keeps one balance per address and makes no change. -->
+      @if (!currentCoin?.isEthereum()) {
       <!-- Change chain: xpub + derived addresses -->
       <div class="-chain-label -change-label" (click)="onToggleChangeAddresses(account)">
         Change Chain (m/44'/coin'/{{ account.index }}'/1) ({{ account.changeAddresses.length || 0 }})
@@ -165,7 +168,7 @@
                     {{ address.address }}
                   </div>
                   <div class="mobile-label-container">
-                    <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+                    <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.displayDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.displayDecimals || 6)) }}</div>
                   </div>
                   @if (currentCoin?.hasHours()) {
                     <div class="mobile-label-container">
@@ -193,6 +196,7 @@
           </div>
         }
       }
+      }
     </div>
   }
 } @else {
@@ -216,7 +220,7 @@
             {{ address.address }}
           </div>
           <div class="mobile-label-container">
-            <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+            <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.displayDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.displayDecimals || 6)) }}</div>
           </div>
           @if (currentCoin?.hasHours()) {
             <div class="mobile-label-container">

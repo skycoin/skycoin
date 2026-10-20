@@ -139,26 +139,29 @@ func (h *btcHandler) sendTransaction(c *webCtx) {
 		return
 	}
 
-	// Get wallet
-	wlt, err := h.wltService.GetWallet(req.WalletID)
+	// Collect addresses and keys, unlocking an encrypted wallet with its password
+	var addresses []string
+	keys := make(map[string]cipher.SecKey)
+	defer func() {
+		for addr := range keys {
+			keys[addr] = cipher.SecKey{}
+		}
+	}()
+	err := h.wltService.ViewSecrets(req.WalletID, []byte(req.Password), func(w wallet.Wallet) error {
+		entries, err := w.GetEntries()
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			addr := entry.Address.String()
+			addresses = append(addresses, addr)
+			keys[addr] = entry.Secret
+		}
+		return nil
+	})
 	if err != nil {
-		c.JSON(http.StatusBadRequest, H{"error": fmt.Sprintf("wallet not found: %v", err)})
+		handleWalletError(c, err)
 		return
-	}
-
-	// Collect addresses and keys from wallet
-	entries, err := wlt.GetEntries()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, H{"error": fmt.Sprintf("get wallet entries: %v", err)})
-		return
-	}
-
-	addresses := make([]string, 0, len(entries))
-	keys := make(map[string]cipher.SecKey, len(entries))
-	for _, entry := range entries {
-		addr := entry.Address.String()
-		addresses = append(addresses, addr)
-		keys[addr] = entry.Secret
 	}
 
 	// Calculate total amount needed

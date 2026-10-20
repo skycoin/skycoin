@@ -234,7 +234,7 @@
 </div>
 
 <div class="-buttons">
-  @if (currentCoin && !currentCoin.isBitcoin()) {
+  @if (currentCoin && !currentCoin.isGateway()) {
     <app-button #unsignedButton (action)="createUnsigned()" [disabled]="!form.valid">{{ 'offline-tx.unsigned-button' | translate }}</app-button>
   }
   <app-button #button (action)="preview()" class="primary" [disabled]="!form.valid">{{ 'send.verify-button' | translate }}</app-button>

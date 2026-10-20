@@ -18,8 +18,12 @@ import { MockTranslatePipe,
   MockCustomMatDialogService,
   MockNavBarService,
   MockPriceService,
-  MockMsgBarService} from '../../../../utils/test-mocks';
+  MockMsgBarService,
+  MockTranslateService,
+  MockBalanceService} from '../../../../utils/test-mocks';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { TranslateService } from '@ngx-translate/core';
+import { BalanceService } from '../../../../services/wallet/balance.service';
 
 describe('SendFormComponent', () => {
   let component: SendFormComponent;
@@ -39,6 +43,8 @@ describe('SendFormComponent', () => {
         { provide: NavBarService, useClass: MockNavBarService },
         { provide: PriceService, useClass: MockPriceService },
         { provide: MsgBarService, useClass: MockMsgBarService },
+        { provide: TranslateService, useClass: MockTranslateService },
+        { provide: BalanceService, useClass: MockBalanceService },
       ]
     }).compileComponents();
   }));

@@ -181,3 +181,7 @@ CLAUDE.md
 
 # go build output of ./src/skycoin-lite at the repo root
 /skycoin-lite
+
+# TinyGo builds of the node
+/skycoin-tiny
+/skycoin-tiny-precise

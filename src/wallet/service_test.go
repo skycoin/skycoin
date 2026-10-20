@@ -22,6 +22,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
+	"github.com/skycoin/skycoin/src/eth"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -4610,4 +4611,63 @@ func TestServiceNewAccount(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "not a bip44 wallet")
 	})
+}
+
+func TestServiceEthereumWallet(t *testing.T) {
+	// The Hardhat development mnemonic; its addresses are well known.
+	mnemonic := "test test test test test test test test test test test junk"
+	ethCoin := bip44.CoinTypeEthereum
+	dir := prepareWltDir()
+	s, err := wallet.NewService(wallet.Config{
+		WalletDir:       dir,
+		CryptoType:      crypto.CryptoTypeScryptChacha20poly1305Insecure,
+		EnableWalletAPI: true,
+		Bip44Coin:       &ethCoin,
+	})
+	require.NoError(t, err)
+
+	w, err := s.CreateWallet("eth.wlt", wallet.Options{
+		Label: "eth", Seed: mnemonic, Type: wallet.WalletTypeBip44, GenerateN: 2,
+	})
+	require.NoError(t, err)
+	require.Equal(t, wallet.CoinTypeEthereum, w.Coin())
+
+	addrs, err := w.GetAddresses(wallet.OptionExternal())
+	require.NoError(t, err)
+	require.Equal(t, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", addrs[0].String())
+	require.Equal(t, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", addrs[1].String())
+
+	entries, err := w.GetEntries(wallet.OptionExternal())
+	require.NoError(t, err)
+	want, err := eth.Key(mnemonic, "", 0)
+	require.NoError(t, err)
+	require.Equal(t, want, entries[0].Secret)
+
+	// The wallet reads back from its file, and a Skycoin service skips it.
+	reloaded, err := wallet.NewService(wallet.Config{
+		WalletDir: dir, CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure, EnableWalletAPI: true, Bip44Coin: &ethCoin,
+	})
+	require.NoError(t, err)
+	got, err := reloaded.GetWallet("eth.wlt")
+	require.NoError(t, err)
+	gotAddrs, err := got.GetAddresses(wallet.OptionExternal())
+	require.NoError(t, err)
+	require.Equal(t, addrs[0].String(), gotAddrs[0].String())
+
+	sky, err := wallet.NewService(wallet.Config{
+		WalletDir: dir, CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure, EnableWalletAPI: true,
+	})
+	require.NoError(t, err)
+	skyWallets, err := sky.GetWallets()
+	require.NoError(t, err)
+	require.Len(t, skyWallets, 0)
+
+	_, err = s.EncryptWallet("eth.wlt", []byte("pwd"))
+	require.NoError(t, err)
+	enc, err := s.GetWallet("eth.wlt")
+	require.NoError(t, err)
+	require.True(t, enc.IsEncrypted())
+	encAddrs, err := enc.GetAddresses(wallet.OptionExternal())
+	require.NoError(t, err)
+	require.Equal(t, addrs[0].String(), encAddrs[0].String())
 }

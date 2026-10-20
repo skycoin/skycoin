@@ -68,3 +68,36 @@ func ParseAddress(s string) (Address, error) {
 	}
 	return a, nil
 }
+
+// ErrAddressPubKey is returned when a public key is not behind an address.
+var ErrAddressPubKey = errors.New("public key does not match the Ethereum address")
+
+// Bytes is the 20 address bytes.
+func (a Address) Bytes() []byte {
+	return append([]byte{}, a[:]...)
+}
+
+// Null reports whether a is the zero address.
+func (a Address) Null() bool {
+	return a == Address{}
+}
+
+// Checksum is the first 4 bytes of the Keccak-256 of the address bytes.
+func (a Address) Checksum() cipher.Checksum {
+	h := Keccak256(a[:])
+	var c cipher.Checksum
+	copy(c[:], h[:4])
+	return c
+}
+
+// Verify checks that pk is the public key behind a.
+func (a Address) Verify(pk cipher.PubKey) error {
+	got, err := AddressFromPubKey(pk)
+	if err != nil {
+		return err
+	}
+	if got != a {
+		return ErrAddressPubKey
+	}
+	return nil
+}

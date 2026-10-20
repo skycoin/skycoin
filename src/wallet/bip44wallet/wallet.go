@@ -139,6 +139,8 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 			wlt.SetBip44Coin(bip44.CoinTypeSkycoin)
 		case wallet.CoinTypeBitcoin, wallet.CoinTypeBitcoinSegwit:
 			wlt.SetBip44Coin(bip44.CoinTypeBitcoin)
+		case wallet.CoinTypeEthereum:
+			wlt.SetBip44Coin(bip44.CoinTypeEthereum)
 		default:
 			return nil, errors.New("bip44 coin type not set")
 		}

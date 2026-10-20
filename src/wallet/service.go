@@ -161,6 +161,8 @@ func (serv *Service) loadWallets() (Wallets, error) {
 				CoinTypeBitcoin:       true,
 				CoinTypeBitcoinSegwit: true,
 			}
+		case bip44.CoinTypeEthereum:
+			expectedCoins = map[CoinType]bool{CoinTypeEthereum: true}
 		}
 	}
 
@@ -198,6 +200,8 @@ func (serv *Service) updateOptions(opts Options) Options {
 		case bip44.CoinTypeBitcoin:
 			// Default new Bitcoin wallets to segwit (bech32) addresses
 			opts.Coin = CoinTypeBitcoinSegwit
+		case bip44.CoinTypeEthereum:
+			opts.Coin = CoinTypeEthereum
 		default:
 			opts.Coin = CoinTypeSkycoin
 		}

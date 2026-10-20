@@ -78,9 +78,14 @@ export class SpendingService {
     destinations: Destination[],
     hoursSelection: HoursSelection,
     changeAddress: string|null,
-    password?: string): Observable<Transaction> {
+    password?: string,
+    unsigned = false): Observable<Transaction> {
 
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
+      if (unsigned && !isEqualOrSuperiorVersion(version, '0.26.0')) {
+        return throwError(() => new Error(this.translate.instant('offline-tx.node-too-old')));
+      }
+
       if (isEqualOrSuperiorVersion(version, '0.26.0')) {
         if (unspents) {
           addresses = null;
@@ -142,7 +147,7 @@ export class SpendingService {
           data.transaction.inputs.forEach((input: any) => {
             txInputs.push({
               hash: input.uxid,
-              secret: (wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || ({} as any)).secret_key,
+              secret: (unsigned || wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || ({} as any)).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -157,6 +162,16 @@ export class SpendingService {
               hours: new BigNumber(output.hours).toNumber(),
             });
           });
+
+          if (unsigned) {
+            return of({
+              inputs: txInputs,
+              outputs: txOutputs,
+              hoursSent: hoursSent,
+              hoursBurned: new BigNumber(data.transaction.fee),
+              encoded: data.encoded_transaction,
+            });
+          }
 
           if (wallet.isHardware) {
             return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
@@ -286,6 +301,54 @@ export class SpendingService {
         return throwError(() => err);
       }),
     );
+  }
+
+  /**
+   * Signs an encoded unsigned transaction with wallet, whose addresses must own
+   * every input. Returns the encoded signed transaction.
+   */
+  signTransaction(wallet: Wallet, password: string | undefined, encoded: string): Observable<string> {
+    const body = { encoded_transaction: encoded.trim(), unsigned: true };
+
+    return this.apiService.post('transaction/verify', body, { json: true }, true).pipe(mergeMap((response: any) => {
+      const tx = response.data.transaction;
+      const inputs: any[] = tx.inputs;
+
+      if (this.walletService.isServerWallet(wallet)) {
+        const signBody = {
+          wallet_id: wallet.filename,
+          encoded_transaction: body.encoded_transaction,
+          input_addresses: inputs.map(i => i.address),
+          password: password || '',
+        };
+
+        return this.apiService.post('wallet/transaction/sign', signBody, { json: true }, true).pipe(
+          map((signResponse: any) => signResponse.data.encoded_transaction as string));
+      }
+
+      const txInputs: TransactionInput[] = [];
+      for (const input of inputs) {
+        const address = wallet.addresses.find(a => a.address === input.address);
+        if (!address || !address.secret_key) {
+          return throwError(() => new Error(this.translate.instant('offline-tx.not-in-wallet')));
+        }
+        txInputs.push({
+          hash: input.uxid,
+          secret: address.secret_key,
+          address: input.address,
+          calculated_hours: input.calculated_hours,
+          coins: input.coins,
+        });
+      }
+
+      const txOutputs: TransactionOutput[] = tx.outputs.map((output: any) => ({
+        address: output.address,
+        coins: new BigNumber(output.coins).toNumber(),
+        hours: new BigNumber(output.hours).toNumber(),
+      }));
+
+      return this.generateRawTransaction(txInputs, txOutputs);
+    }));
   }
 
   outputsWithWallets(): Observable<Wallet[]> {

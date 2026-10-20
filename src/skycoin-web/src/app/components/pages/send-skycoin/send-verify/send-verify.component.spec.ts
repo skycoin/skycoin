@@ -4,7 +4,8 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { SendVerifyComponent } from './send-verify.component';
 import { BalanceService } from '../../../../services/wallet/balance.service';
 import { SpendingService } from '../../../../services/wallet/spending.service';
-import { MockTranslatePipe, MockBalanceService, MockSpendingService, MockMsgBarService } from '../../../../utils/test-mocks';
+import { MockTranslatePipe, MockBalanceService, MockSpendingService, MockMsgBarService, MockCustomMatDialogService } from '../../../../utils/test-mocks';
+import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 describe('SendVerifyComponent', () => {
@@ -19,6 +20,7 @@ describe('SendVerifyComponent', () => {
         { provide: BalanceService, useClass: MockBalanceService },
         { provide: SpendingService, useClass: MockSpendingService },
         { provide: MsgBarService, useClass: MockMsgBarService },
+        { provide: CustomMatDialogService, useClass: MockCustomMatDialogService },
       ]
     })
     .compileComponents();

@@ -138,7 +138,7 @@ func (g *createGolden) compute(t *testing.T) {
 // serialization changes without testdata/create.golden being regenerated.
 func TestCreateGolden(t *testing.T) {
 	path := filepath.Join("testdata", "create.golden")
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) //nolint:gosec // a file in the test directory
 	require.NoError(t, err)
 
 	var want, got createGolden
@@ -149,7 +149,7 @@ func TestCreateGolden(t *testing.T) {
 	if *update {
 		out, err := json.MarshalIndent(got, "", "  ")
 		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(path, append(out, '\n'), 0o644))
+		require.NoError(t, os.WriteFile(path, append(out, '\n'), 0o644)) //nolint:gosec // testdata stays readable
 		return
 	}
 	require.Equal(t, want, got)

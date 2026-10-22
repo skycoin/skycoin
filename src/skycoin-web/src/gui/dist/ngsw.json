@@ -12,17 +12,17 @@
       },
       "urls": [
         "/chunk-CiEGkYHw.js",
-        "/chunk-D65oU7NG.js",
+        "/chunk-D9EnHegD.js",
         "/chunk-RMmRBH6b.js",
         "/chunk-_0IKzkeA.js",
         "/chunk-dxDbLOez.js",
         "/favicon.ico",
         "/index.html",
-        "/main-UPNA5PET.js",
+        "/main-OUMNWMMZ.js",
         "/manifest.webmanifest",
         "/polyfills-MLCYDCP3.js",
         "/scripts-LEJVCTYY.js",
-        "/styles-VLW6PP7X.css"
+        "/styles-ODQAORB2.css"
       ],
       "patterns": []
     },
@@ -231,13 +231,13 @@
     "/assets/skycoin-wallet/logo-white.png": "dc2ab41d9120f46de3463790287088188f0dfb50",
     "/assets/skycoin-wallet/spinner.png": "aeb7af051425aba2367b2f3222affece2031c3ac",
     "/chunk-CiEGkYHw.js": "25b6b5e58884460d340ddfb5f9b7d05de901fe67",
-    "/chunk-D65oU7NG.js": "56b2c4390d890b95cdeef24757c7162d948f1364",
+    "/chunk-D9EnHegD.js": "bb14b8ce7febf43118aaaab83cd0e4fa6cbb58b4",
     "/chunk-RMmRBH6b.js": "7454d96b5dc03aa13c4d10a7f21f796214c8e823",
     "/chunk-_0IKzkeA.js": "7330476c8a6951e1829c951718308f96cc55546b",
     "/chunk-dxDbLOez.js": "582ab33c28220ad2b9af58dfb6efbf4373194373",
     "/favicon.ico": "25579a8f5d48320216a8fceb497ce1829650edf5",
-    "/index.html": "440c9bbc0f57f6c3bf16f8d58fb4714f3e1b1bfc",
-    "/main-UPNA5PET.js": "88d54bcda90b045beddf1a2626469d178b1db5e9",
+    "/index.html": "83ca8d12f750f159ed8c88fcbbfe37f8d52c4067",
+    "/main-OUMNWMMZ.js": "8f0f676f4c4cff463d99c1ee1931448b8e7f0cbe",
     "/manifest.webmanifest": "b7dd4150bcb7d07266d96bf93bc8608bfa7da755",
     "/media/MaterialIcons-Regular-3OCSKOJA.woff": "c6c953c2ccb2ca9abb21db8dbf473b5a435f0082",
     "/media/MaterialIcons-Regular-DFX2JKJN.ttf": "fc05de31234e0090f7ddc28ce1b23af4026cb1da",
@@ -275,7 +275,7 @@
     "/media/unlock-grey-IQ4WNHIS.png": "d4483fa1d9b81ca67e33e0415c37ab505498cbc1",
     "/polyfills-MLCYDCP3.js": "ace41b92ad605c7018c56db5ca82786eeec21b12",
     "/scripts-LEJVCTYY.js": "4bf89c7615dd722ccaa0a896e3c0bc171b1a584a",
-    "/styles-VLW6PP7X.css": "0ed351c87231461e276d48819a54e57b3edd4bd0"
+    "/styles-ODQAORB2.css": "d0faf7810f16a0954e8b9f0d7348843440269110"
   },
   "navigationUrls": [
     {

@@ -1,9 +1,9 @@
 // @ts-check
 //
-// Shared ESLint flat-config base for the Angular front-ends: /explorer,
-// /src/gui/static and /src/skycoin-web.
+// Shared ESLint flat-config base for the Angular front-ends: /explorer and
+// /src/skycoin-web.
 //
-// The three projects had drifted into three different rule sets, so the same
+// The projects had drifted into different rule sets, so the same
 // code could be clean in one and rejected in another. This file holds the rules
 // that should hold everywhere; each project's eslint.config.js passes in only
 // what is genuinely local to it.

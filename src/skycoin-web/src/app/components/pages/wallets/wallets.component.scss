@@ -18,7 +18,9 @@
 
   @media (max-width: $max-very-small-width) {
     & {
-      width: 70px;
+      width: auto;
+      min-width: 70px;
+      white-space: nowrap;
     }
   }
 }
@@ -38,6 +40,7 @@
   .internal-container {
     padding: 0 100px 0 20px;
     width: 100%;
+    box-sizing: border-box;
     display: flex;
   }
 

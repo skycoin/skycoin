@@ -1,0 +1,5 @@
+EthereumTransactionType.nonce               max_size:32
+EthereumTransactionType.gasPrice            max_size:32
+EthereumTransactionType.gasLimit            max_size:32
+EthereumTransactionType.recipient_address   max_size:20
+EthereumTransactionType.coins               max_size:32

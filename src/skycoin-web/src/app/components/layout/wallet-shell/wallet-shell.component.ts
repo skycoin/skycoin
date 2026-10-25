@@ -13,8 +13,11 @@ import { MsgBarService } from '../../../services/msg-bar.service';
 import { HwWalletPinService } from '../../../services/hw-wallet-pin.service';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { HwPinDialogComponent } from '../hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+import { HwSeedWordDialogComponent } from '../hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { HwWalletSeedWordService } from '../../../services/hw-wallet-seed-word.service';
 import { HwConfirmTxDialogComponent } from '../hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { WALLET_SCOPE_CLASS } from '../../../wallet-scope';
+import { WalletService } from '../../../services/wallet/wallet.service';
 
 /**
  * The wallet's frame: cipher start-up, the node status bar, the outlet for the
@@ -30,7 +33,8 @@ import { WALLET_SCOPE_CLASS } from '../../../wallet-scope';
     host: { class: WALLET_SCOPE_CLASS },
 })
 export class WalletShellComponent implements OnInit, OnDestroy {
-  @ViewChild('msgBar') msgBar!: MsgBarComponent;
+  // Static so it is set in ngOnInit, where the bar is handed to MsgBarService.
+  @ViewChild('msgBar', { static: true }) msgBar!: MsgBarComponent;
 
   current!: number;
   highest!: number;
@@ -52,11 +56,14 @@ export class WalletShellComponent implements OnInit, OnDestroy {
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
     hwWalletPinService: HwWalletPinService,
+    hwWalletSeedWordService: HwWalletSeedWordService,
     hwWalletService: HwWalletService,
     private changeDetectorRef: ChangeDetectorRef,
+    public walletService: WalletService,
   ) {
     // Set component references to avoid circular dependencies
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
+    hwWalletSeedWordService.requestWordComponent = HwSeedWordDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
     this.subscriptions.add(router.events.pipe(
       filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd)

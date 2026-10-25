@@ -16,9 +16,11 @@ import {
   TransactionOutput,
   TransactionInput,
   Output,
-  GetOutputsRequestOutput } from '../../app.datatypes';
+  GetOutputsRequestOutput,
+  PreviewTransaction } from '../../app.datatypes';
 import { BlockchainService } from '../blockchain.service';
 import { HwWalletService } from '../hw-wallet.service';
+import { BaseCoin } from '../../coins/basecoin';
 
 describe('SpendingService', () => {
   let store: Record<string, string> = {};
@@ -646,6 +648,141 @@ describe('SpendingService', () => {
     }));
   });
 
+  describe('createTransaction on a server wallet', () => {
+    let post: jasmine.Spy;
+
+    beforeEach(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.27.0');
+      post = jasmine.createSpy('post').and.callFake((url: string) => {
+        if (url === 'transaction') {
+          return of({ data: {
+            encoded_transaction: 'unsigned',
+            transaction: {
+              fee: '1',
+              inputs: [{ uxid: 'hash1', address: 'address1', calculated_hours: '2', coins: '5' }],
+              outputs: [{ address: 'dest', coins: '5', hours: '1' }],
+            },
+          } });
+        }
+
+        return of({ data: { encoded_transaction: 'signed' } });
+      });
+      (spyApiService as any).post = post;
+    });
+
+    function send(password?: string) {
+      const wallet = Object.assign(createWallet(), { filename: 'w.wlt', addresses: [createAddress('address1', '')] });
+      let encoded = '';
+      spendingService.createTransaction(
+        wallet, null, null,
+        [{ address: 'dest', coins: new BigNumber(5) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) },
+        null, password,
+      ).subscribe(tx => encoded = (tx as PreviewTransaction).encoded);
+
+      return encoded;
+    }
+
+    it('signs with the wallet service and passes the password', fakeAsync(() => {
+      expect(send('secret')).toBe('signed');
+      const signCall = post.calls.all().find(c => c.args[0] === 'wallet/transaction/sign')!;
+      expect(signCall.args[1]).toEqual({
+        wallet_id: 'w.wlt',
+        encoded_transaction: 'unsigned',
+        input_addresses: ['address1'],
+        password: 'secret',
+      });
+    }));
+
+    it('sends an empty password for an unencrypted wallet', fakeAsync(() => {
+      send();
+      const signCall = post.calls.all().find(c => c.args[0] === 'wallet/transaction/sign')!;
+      expect(signCall.args[1].password).toBe('');
+    }));
+  });
+
+  describe('offline transactions', () => {
+    const created = { data: {
+      encoded_transaction: 'unsigned',
+      transaction: {
+        fee: '1',
+        inputs: [{ uxid: 'hash1', address: 'address1', calculated_hours: '2', coins: '5' }],
+        outputs: [{ address: 'dest', coins: '1.5', hours: '1' }],
+      },
+    } };
+    let post: jasmine.Spy;
+
+    beforeEach(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.27.0');
+      spyTranslateService.instant.and.callFake((key: any) => key);
+      spyCipherProvider.prepareTransaction.and.returnValue(of('signedInBrowser'));
+      post = jasmine.createSpy('post').and.callFake((url: string) =>
+        of(url === 'wallet/transaction/sign' ? { data: { encoded_transaction: 'signedOnServer' } } : created));
+      (spyApiService as any).post = post;
+    });
+
+    it('creates an unsigned transaction without signing or keys', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', 'secretKey1')] });
+      let tx: any;
+      spendingService.createTransaction(
+        wallet, null, null, [{ address: 'dest', coins: new BigNumber(1.5) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) }, null, undefined, true,
+      ).subscribe(t => tx = t);
+
+      expect(tx.encoded).toBe('unsigned');
+      expect(tx.inputs[0].secret).toBe('');
+      expect(spyCipherProvider.prepareTransaction).not.toHaveBeenCalled();
+      expect(post.calls.all().map(c => c.args[0])).toEqual(['transaction']);
+    }));
+
+    it('refuses an unsigned transaction on a node older than 0.26', fakeAsync(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.25.0');
+      let error = '';
+      spendingService.createTransaction(
+        createWallet(), null, null, [{ address: 'dest', coins: new BigNumber(1) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) }, null, undefined, true,
+      ).subscribe({ error: e => error = e.message });
+
+      expect(error).toBe('offline-tx.node-too-old');
+    }));
+
+    it('signs a pasted transaction with a server wallet', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { filename: 'w.wlt', addresses: [] });
+      let signed = '';
+      spendingService.signTransaction(wallet, 'secret', ' unsigned \n').subscribe(s => signed = s);
+
+      expect(signed).toBe('signedOnServer');
+      expect(post.calls.argsFor(0)).toEqual(['transaction/verify', { encoded_transaction: 'unsigned', unsigned: true }, { json: true }, true]);
+      expect(post.calls.argsFor(1)[1]).toEqual({
+        wallet_id: 'w.wlt',
+        encoded_transaction: 'unsigned',
+        input_addresses: ['address1'],
+        password: 'secret',
+      });
+    }));
+
+    it('signs a pasted transaction with the keys of a browser wallet', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', 'secretKey1')] });
+      let signed = '';
+      spendingService.signTransaction(wallet, undefined, 'unsigned').subscribe(s => signed = s);
+
+      expect(signed).toBe('signedInBrowser');
+      expect(spyCipherProvider.prepareTransaction).toHaveBeenCalledWith(
+        [{ hash: 'hash1', secret: 'secretKey1', address: 'address1', calculated_hours: '2', coins: '5' } as any],
+        [{ address: 'dest', coins: 1500000, hours: 1 }],
+      );
+    }));
+
+    it('refuses a pasted transaction whose inputs the browser wallet cannot sign', fakeAsync(() => {
+      const wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', '')] });
+      let error = '';
+      spendingService.signTransaction(wallet, undefined, 'unsigned').subscribe({ error: e => error = e.message });
+
+      expect(error).toBe('offline-tx.not-in-wallet');
+      expect(spyCipherProvider.prepareTransaction).not.toHaveBeenCalled();
+    }));
+  });
+
   describe('outputsWithWallets', () => {
     it('should return outputs by wallet', fakeAsync(() => {
       const walletAddress1 = 'address 1';
@@ -768,3 +905,46 @@ function createRequestOutput(hash: string, address: string, coins = '10', calcul
     calculated_hours: calculated_hours
   };
 }
+
+describe('SpendingService gateway sends', () => {
+  let spending: SpendingService;
+  let post: jasmine.Spy;
+  let coin: BaseCoin;
+
+  beforeEach(() => {
+    post = jasmine.createSpy('post').and.returnValue(of({ txid: '0xabc' }));
+    TestBed.configureTestingModule({
+      providers: [
+        SpendingService,
+        { provide: WalletService, useClass: MockWalletService },
+        { provide: ApiService, useValue: { post, get: () => of({}) } },
+        { provide: CipherProvider, useValue: {} },
+        { provide: TranslateService, useValue: { instant: (k: string) => k } },
+        { provide: CoinService, useValue: { currentCoin: { subscribe: (f: (c: BaseCoin) => void) => f(coin) } } },
+        { provide: GlobalsService, useClass: MockGlobalsService },
+        { provide: BlockchainService, useClass: MockBlockchainService },
+        { provide: HwWalletService, useClass: MockHwWalletService },
+      ],
+    });
+  });
+
+  it('sends Ether amounts in wei, as a string', fakeAsync(() => {
+    coin = BaseCoin.fromServerData({ id: 1, coinSymbol: 'ETH', coinType: 'ethereum', decimals: 18 });
+    spending = TestBed.inject(SpendingService);
+    let txid = '';
+    spending.sendGateway({ filename: 'e.wlt' } as any, '0xto', new BigNumber('1.5'), 'pw', { max_fee_per_gas: '30', max_priority_fee_per_gas: '2' }).subscribe(t => txid = t);
+    expect(txid).toBe('0xabc');
+    expect(post).toHaveBeenCalledWith('eth/send', {
+      wallet_id: 'e.wlt', password: 'pw', to: '0xto', amount: '1500000000000000000', max_fee_per_gas: '30', max_priority_fee_per_gas: '2',
+    }, { json: true });
+  }));
+
+  it('sends Bitcoin in satoshis with the fee rate', fakeAsync(() => {
+    coin = BaseCoin.fromServerData({ id: 2, coinSymbol: 'BTC', coinType: 'bitcoin' });
+    spending = TestBed.inject(SpendingService);
+    spending.sendGateway({ filename: 'b.wlt' } as any, 'bc1q', new BigNumber('0.0001'), undefined, { sat_per_byte: 7 }).subscribe();
+    expect(post).toHaveBeenCalledWith('btc/send', {
+      wallet_id: 'b.wlt', password: '', destinations: [{ address: 'bc1q', coins: 10000 }], fee_rate: 7,
+    }, { json: true });
+  }));
+});

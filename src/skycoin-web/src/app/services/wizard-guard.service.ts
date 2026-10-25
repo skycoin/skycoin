@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { WALLET_BASE_PATH, walletPath } from '../wallet-path';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, filter, first, map, merge } from 'rxjs';
 
 import { WalletService } from './wallet/wallet.service';
 
@@ -18,8 +18,13 @@ export class WizardGuardService  {
   canActivate(next: ActivatedRouteSnapshot,
               state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
     return new Promise<boolean>((resolve, reject) => {
-      this.walletService.haveWallets.subscribe(result => {
-        if (!result) {
+      // While the wallets are locked the page opens under the lock screen, which
+      // has to render before any wallet can load.
+      merge(
+        this.walletService.locked.pipe(filter(locked => locked), map(() => null)),
+        this.walletService.haveWallets,
+      ).pipe(first()).subscribe(result => {
+        if (result === false) {
           this.router.navigate([walletPath(this.walletBase, '/wizard')]);
           return resolve(false);
         }

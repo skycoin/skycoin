@@ -62,38 +62,12 @@ func TestCipherWasmIsLinkedBySkycoinsOwnAssembly(t *testing.T) {
 		"github.com/skycoin/skycoin/cmd/skycoin-web",
 		"github.com/skycoin/skycoin/src/skycoin-web",
 		"github.com/skycoin/skycoin/cmd/release/commands",
+		"github.com/skycoin/skycoin/cmd/skycoin",
 	} {
 		if !deps(t, pkg)[cipherWasmBlob] {
 			t.Errorf("%s does not link %s; `skycoin web` would 404 both "+
 				"/assets/scripts routes and the wallet would have no cipher",
 				pkg, cipherWasmBlob)
 		}
-	}
-}
-
-func TestRegisterCipherWasm(t *testing.T) {
-	origGz, origJS := wasmFileGz, wasmExecJS
-	defer func() { wasmFileGz, wasmExecJS = origGz, origJS }()
-
-	wasmFileGz, wasmExecJS = nil, nil
-	if cipherWasmRegistered() {
-		t.Error("no cipher wasm registered, but cipherWasmRegistered() is true")
-	}
-
-	// Both halves are required: serving a wasm without the matching loader, or a
-	// loader with no wasm, fails in the browser rather than at the route.
-	RegisterCipherWasm([]byte("gz"), nil)
-	if cipherWasmRegistered() {
-		t.Error("only the wasm was registered, but cipherWasmRegistered() is true")
-	}
-
-	RegisterCipherWasm(nil, []byte("js"))
-	if cipherWasmRegistered() {
-		t.Error("only the loader was registered, but cipherWasmRegistered() is true")
-	}
-
-	RegisterCipherWasm([]byte("gz"), []byte("js"))
-	if !cipherWasmRegistered() {
-		t.Error("both halves registered, but cipherWasmRegistered() is false")
 	}
 }

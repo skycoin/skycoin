@@ -105,6 +105,7 @@
     <label for="destination0" class="destinations-label">
       {{ 'send.destinations-label' | translate }}
       <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
+      <span class="-options -bulk-send" (click)="openBulkSend()">{{ 'send.bulk-send-button' | translate }}</span>
     </label>
     @if (price) {
       <div class="coin-selector-container" [ngClass]="{ disabled: $any(this).busy }">
@@ -233,5 +234,8 @@
 </div>
 
 <div class="-buttons">
+  @if (currentCoin && !currentCoin.isGateway()) {
+    <app-button #unsignedButton (action)="createUnsigned()" [disabled]="!form.valid">{{ 'offline-tx.unsigned-button' | translate }}</app-button>
+  }
   <app-button #button (action)="preview()" class="primary" [disabled]="!form.valid">{{ 'send.verify-button' | translate }}</app-button>
 </div>

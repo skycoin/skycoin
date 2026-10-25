@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/skycoin/skycoin/src/skycoin-web/src/gui"
+
 // The skycoin-lite cipher WebAssembly module and its JavaScript loader, served
 // at /assets/scripts/skycoin-lite.wasm and /assets/scripts/wasm_exec.js. The
 // wallet loads them to get its Cipher and CipherExtras globals, which is how
@@ -21,11 +23,8 @@ package commands
 // from the handlers below and so is linked into every importer whether or not it
 // wants it; a registered one is only linked by an importer that asks for it.
 //
-// The blob is held gzipped, as committed, and served that way.
-var (
-	wasmFileGz []byte
-	wasmExecJS []byte
-)
+// The registry and both routes live in src/skycoin-web/src/gui, which the node
+// also uses to serve the wallet.
 
 // RegisterCipherWasm supplies the cipher wasm and the wasm_exec.js loader that
 // matches the toolchain which compiled it. The two always travel together —
@@ -37,9 +36,5 @@ var (
 // own cipher wants: the routes are absent rather than serving an empty body that
 // would fail deep inside WebAssembly.instantiate.
 func RegisterCipherWasm(gz, execJS []byte) {
-	wasmFileGz = gz
-	wasmExecJS = execJS
+	gui.RegisterCipherWasm(gz, execJS)
 }
-
-// cipherWasmRegistered reports whether a cipher wasm is available to serve.
-func cipherWasmRegistered() bool { return len(wasmFileGz) > 0 && len(wasmExecJS) > 0 }

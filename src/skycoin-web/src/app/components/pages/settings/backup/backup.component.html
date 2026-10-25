@@ -1,0 +1,52 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'title.backup' | translate"></app-header>
+  <div class="container">
+    <div class="-info">
+      @if (folder) {
+        <p>{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
+      }
+      <p>{{ 'backup.seed-warning' | translate }}</p>
+    </div>
+
+    @if (!wallets || wallets.length === 0) {
+      <app-loading-content [isLoading]="!wallets" [noDataText]="'backup.no-wallets'"></app-loading-content>
+    }
+
+    @if (wallets && wallets.length > 0) {
+      <div class="-table">
+        <div class="-headers">
+          <div class="flex-fill">{{ 'backup.wallet' | translate }}</div>
+        </div>
+        <div class="-paper">
+          @for (wallet of wallets; track wallet) {
+            <div class="-row">
+              <div class="flex-fill -one-line-ellipsis" [attr.title]="wallet.label">
+                {{ wallet.label }}
+                @if (wallet.filename) {
+                  <span class="-grey">{{ wallet.filename }}</span>
+                }
+              </div>
+              <div class="-link" (click)="saveAddresses(wallet)">{{ 'backup.save-addresses' | translate }}</div>
+              @if (canShowSeed(wallet)) {
+                @if (shownSeeds.has(wallet)) {
+                  <div class="-link" (click)="hideSeed(wallet)">{{ 'backup.hide-seed' | translate }}</div>
+                } @else {
+                  <div class="-link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</div>
+                }
+              } @else {
+                <div class="-grey" [matTooltip]="seedUnavailableReason(wallet) | translate">
+                  {{ 'backup.show-seed' | translate }}
+                </div>
+              }
+            </div>
+            @if (shownSeeds.has(wallet)) {
+              <div class="-row -seed">
+                <textarea readonly rows="2">{{ shownSeeds.get(wallet) }}</textarea>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

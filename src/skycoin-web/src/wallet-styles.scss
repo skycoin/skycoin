@@ -21,5 +21,10 @@
   @include tables.styles;
   @include modals.styles;
   @include meta.load-css('bootstrap/scss/bootstrap-grid');
+  // The grid sizes its containers as content-box, so on a phone a container's
+  // padding pushed it past the screen and the page scrolled sideways.
+  .container, .container-fluid {
+    box-sizing: border-box;
+  }
   @include wallet-classes.styles;
 }

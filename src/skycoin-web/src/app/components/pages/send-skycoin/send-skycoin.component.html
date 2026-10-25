@@ -1,14 +1,14 @@
 <div class="sky-container sky-container-grey">
-  <app-header [headline]="'title.wallets' | translate"></app-header>
+  <app-header [headline]="'title.send' | translate"></app-header>
   <div class="container">
     <div class="-paper">
-      @if (showForm && activeForm === activeForms.LeftButton) {
+      @if (showForm && (activeForm === activeForms.LeftButton || currentCoin?.isGateway())) {
         <app-send-form
           [formData]="formData"
           (onFormSubmitted)="onFormSubmitted($event)">
         </app-send-form>
       }
-      @if (showForm && activeForm === activeForms.RightButton) {
+      @if (showForm && activeForm === activeForms.RightButton && !currentCoin?.isGateway()) {
         <app-send-form-advanced
           [formData]="formData"
           (onFormSubmitted)="onFormSubmitted($event)">
@@ -21,5 +21,11 @@
         </app-send-verify>
       }
     </div>
+    @if (showForm && currentCoin && !currentCoin.isGateway()) {
+      <div class="-offline-links">
+        <span class="-link" (click)="signTransaction()">{{ 'offline-tx.sign-link' | translate }}</span>
+        <span class="-link" (click)="broadcastTransaction()">{{ 'offline-tx.broadcast-link' | translate }}</span>
+      </div>
+    }
   </div>
 </div>

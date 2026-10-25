@@ -1,0 +1,40 @@
+<app-modal class="modal" [headline]="title | translate" [dialog]="dialogRef">
+  <p>{{ text | translate }}</p>
+  <div [formGroup]="form">
+    @if (data.mode === modes.Sign) {
+      <div class="form-field">
+        <label for="offline-wallet">{{ 'offline-tx.wallet-label' | translate }}</label>
+        <div class="-select">
+          <select formControlName="wallet" id="offline-wallet">
+            <option disabled hidden [ngValue]="null">{{ 'offline-tx.select-wallet' | translate }}</option>
+            @for (wallet of wallets; track wallet) {
+              <option [ngValue]="wallet">{{ wallet.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    }
+    <div class="form-field">
+      <label for="offline-raw-tx">{{ 'offline-tx.tx-label' | translate }}</label>
+      <textarea formControlName="rawTx" id="offline-raw-tx" rows="6" [readonly]="data.mode === modes.Show"
+        (input)="error = ''"></textarea>
+      @if (error) {
+        <div class="-error">{{ error | translate }}</div>
+      }
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="close()">{{ 'offline-tx.close-button' | translate }}</app-button>
+    @if (data.mode === modes.Show) {
+      <app-button (action)="copy()" class="primary">
+        {{ (copied ? 'offline-tx.copied' : 'offline-tx.copy-button') | translate }}
+      </app-button>
+    }
+    @if (data.mode === modes.Sign) {
+      <app-button (action)="sign()" class="primary" [disabled]="!canSubmit">{{ 'offline-tx.sign-button' | translate }}</app-button>
+    }
+    @if (data.mode === modes.Broadcast) {
+      <app-button (action)="broadcast()" class="primary" [disabled]="!canSubmit">{{ 'offline-tx.broadcast-button' | translate }}</app-button>
+    }
+  </div>
+</app-modal>

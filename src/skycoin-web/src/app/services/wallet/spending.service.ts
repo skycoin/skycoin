@@ -55,20 +55,38 @@ export class SpendingService {
     coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
   }
 
-  sendBitcoin(
-    wallet: Wallet,
-    destinations: Destination[],
-    feeRate: number): Observable<string> {
-    const body = {
-      wallet_id: wallet['filename'] || wallet.label,
-      destinations: destinations.map(d => ({
-        address: d.address,
-        coins: d.coins.multipliedBy(this.currentCoin.coinsMultiplier).integerValue().toNumber(),
-      })),
-      fee_rate: feeRate,
+  /**
+   * What a send of a gateway coin will pay: for Ethereum coins max_fee, the most
+   * the fee can be in wei, and for Bitcoin sat_per_byte.
+   */
+  gatewayFee(): Observable<any> {
+    return this.apiService.get(this.currentCoin.gatewayPrefix + '/fee');
+  }
+
+  /**
+   * Sends a gateway coin from a server wallet, which signs and broadcasts it.
+   * fee is a preset from gatewayFee, or the server's own estimate when absent.
+   * Returns the transaction id.
+   */
+  sendGateway(wallet: Wallet, to: string, amount: BigNumber, password?: string, fee?: any): Observable<string> {
+    const units = amount.multipliedBy(this.currentCoin.coinsMultiplier).integerValue(BigNumber.ROUND_DOWN);
+    const walletId = wallet['filename'] || wallet.label;
+    const body: any = this.currentCoin.isEthereum() ? {
+      wallet_id: walletId,
+      password: password || '',
+      to: to,
+      amount: units.toFixed(0),
+      max_fee_per_gas: fee ? fee.max_fee_per_gas : undefined,
+      max_priority_fee_per_gas: fee ? fee.max_priority_fee_per_gas : undefined,
+    } : {
+      wallet_id: walletId,
+      password: password || '',
+      destinations: [{ address: to, coins: units.toNumber() }],
+      fee_rate: fee ? fee.sat_per_byte : undefined,
     };
 
-    return this.apiService.post('btc/send', body, { json: true });
+    return this.apiService.post(this.currentCoin.gatewayPrefix + '/send', body, { json: true }).pipe(
+      map((response: any) => response.txid as string));
   }
 
   createTransaction(
@@ -77,9 +95,15 @@ export class SpendingService {
     unspents: string[]|null,
     destinations: Destination[],
     hoursSelection: HoursSelection,
-    changeAddress: string|null): Observable<Transaction> {
+    changeAddress: string|null,
+    password?: string,
+    unsigned = false): Observable<Transaction> {
 
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
+      if (unsigned && !isEqualOrSuperiorVersion(version, '0.26.0')) {
+        return throwError(() => new Error(this.translate.instant('offline-tx.node-too-old')));
+      }
+
       if (isEqualOrSuperiorVersion(version, '0.26.0')) {
         if (unspents) {
           addresses = null;
@@ -113,7 +137,7 @@ export class SpendingService {
           processedHours['share_factor'] = hoursSelection.ShareFactor;
         }
 
-        const isServerWallet = !!wallet['filename'];
+        const isServerWallet = this.walletService.isServerWallet(wallet);
 
         const params = {
           hours_selection: processedHours,
@@ -141,7 +165,7 @@ export class SpendingService {
           data.transaction.inputs.forEach((input: any) => {
             txInputs.push({
               hash: input.uxid,
-              secret: (wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || ({} as any)).secret_key,
+              secret: (unsigned || wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || ({} as any)).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -157,6 +181,16 @@ export class SpendingService {
             });
           });
 
+          if (unsigned) {
+            return of({
+              inputs: txInputs,
+              outputs: txOutputs,
+              hoursSent: hoursSent,
+              hoursBurned: new BigNumber(data.transaction.fee),
+              encoded: data.encoded_transaction,
+            });
+          }
+
           if (wallet.isHardware) {
             return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
           }
@@ -168,6 +202,7 @@ export class SpendingService {
               wallet_id: wallet['filename'],
               encoded_transaction: data.encoded_transaction,
               input_addresses: txInputs.map(i => i.address),
+              password: password || '',
             };
 
             return this.apiService.post('wallet/transaction/sign', signBody, { json: true }, true).pipe(
@@ -284,6 +319,54 @@ export class SpendingService {
         return throwError(() => err);
       }),
     );
+  }
+
+  /**
+   * Signs an encoded unsigned transaction with wallet, whose addresses must own
+   * every input. Returns the encoded signed transaction.
+   */
+  signTransaction(wallet: Wallet, password: string | undefined, encoded: string): Observable<string> {
+    const body = { encoded_transaction: encoded.trim(), unsigned: true };
+
+    return this.apiService.post('transaction/verify', body, { json: true }, true).pipe(mergeMap((response: any) => {
+      const tx = response.data.transaction;
+      const inputs: any[] = tx.inputs;
+
+      if (this.walletService.isServerWallet(wallet)) {
+        const signBody = {
+          wallet_id: wallet.filename,
+          encoded_transaction: body.encoded_transaction,
+          input_addresses: inputs.map(i => i.address),
+          password: password || '',
+        };
+
+        return this.apiService.post('wallet/transaction/sign', signBody, { json: true }, true).pipe(
+          map((signResponse: any) => signResponse.data.encoded_transaction as string));
+      }
+
+      const txInputs: TransactionInput[] = [];
+      for (const input of inputs) {
+        const address = wallet.addresses.find(a => a.address === input.address);
+        if (!address || !address.secret_key) {
+          return throwError(() => new Error(this.translate.instant('offline-tx.not-in-wallet')));
+        }
+        txInputs.push({
+          hash: input.uxid,
+          secret: address.secret_key,
+          address: input.address,
+          calculated_hours: input.calculated_hours,
+          coins: input.coins,
+        });
+      }
+
+      const txOutputs: TransactionOutput[] = tx.outputs.map((output: any) => ({
+        address: output.address,
+        coins: new BigNumber(output.coins).toNumber(),
+        hours: new BigNumber(output.hours).toNumber(),
+      }));
+
+      return this.generateRawTransaction(txInputs, txOutputs);
+    }));
   }
 
   outputsWithWallets(): Observable<Wallet[]> {

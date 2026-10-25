@@ -112,6 +112,10 @@ export class MockCoinService {
 export class MockWalletService {
   haveWallets: Observable<boolean> = of(true);
 
+  isServerWallet(wallet: any): boolean {
+    return !!(wallet && wallet.filename);
+  }
+
   get addresses(): Observable<any[]> {
     return of([]);
   }

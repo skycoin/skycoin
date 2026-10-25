@@ -7,6 +7,7 @@ import { ConfirmationData, Wallet, Address, Bip44Account } from '../../../../app
 import { BaseCoin } from '../../../../coins/basecoin';
 import { CoinService } from '../../../../services/coin.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
+import { AddressExposureService } from '../../../../services/wallet/address-exposure.service';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal } from '../../../../utils/index';
 import { WalletOptionsComponent, WalletOptionsResponses } from './wallet-options/wallet-options.component';
@@ -14,6 +15,7 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
     selector: 'app-wallet-detail',
@@ -23,7 +25,17 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet!: Wallet;
+  @Input() set wallet(val: Wallet) {
+    this.walletInternal = val;
+    this.checkExposure();
+  }
+  get wallet(): Wallet {
+    return this.walletInternal;
+  }
+  private walletInternal!: Wallet;
+
+  // Addresses that have sent coins, so their public keys are on the blockchain.
+  exposed = new Set<string>();
 
   currentCoin?: BaseCoin;
   creatingAddress = false;
@@ -33,9 +45,11 @@ export class WalletDetailComponent implements OnDestroy {
   private unlockSubscription!: Subscription;
   private slowInfoSubscription!: Subscription;
   private coinSubscription: Subscription;
+  private exposureSubscription?: Subscription;
 
   constructor(
     private walletService: WalletService,
+    private addressExposureService: AddressExposureService,
     private dialog: CustomMatDialogService,
     private translateService: TranslateService,
     private msgBarService: MsgBarService,
@@ -45,17 +59,52 @@ export class WalletDetailComponent implements OnDestroy {
   ) {
     this.coinSubscription = coinService.currentCoin.subscribe(coin => {
       this.currentCoin = coin;
+      this.checkExposure();
       this.changeDetectorRef.markForCheck();
     });
   }
 
   ngOnDestroy() {
+    this.exposureSubscription?.unsubscribe();
     this.msgBarService.hide();
     this.removeUnlockSubscription();
     this.removeSlowInfoSubscription();
     if (this.coinSubscription) {
       this.coinSubscription.unsubscribe();
     }
+  }
+
+  // Asks the node which of the wallet's addresses have sent coins. Skycoin nodes only.
+  private checkExposure() {
+    if (!this.walletInternal || !this.currentCoin || this.currentCoin.isGateway()) {
+      return;
+    }
+    const addresses = this.walletInternal.addresses.map(a => a.address);
+    (this.walletInternal.accounts || []).forEach(account => {
+      account.externalAddresses.forEach(a => addresses.push(a.address));
+      account.changeAddresses.forEach(a => addresses.push(a.address));
+    });
+    this.exposureSubscription?.unsubscribe();
+    this.exposureSubscription = this.addressExposureService.getExposed(addresses).subscribe(exposed => {
+      this.exposed = exposed;
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  /** True if the address has sent coins and still holds some. */
+  exposedWithCoins(address: Address): boolean {
+    if (!this.exposed.has(address.address)) {
+      return false;
+    }
+    const listed = this.walletInternal.addresses.find(a => a.address === address.address);
+    const balance = (listed && listed.balance) || address.balance;
+
+    return !!balance && balance.isGreaterThan(0);
+  }
+
+  /** Number of addresses that have sent coins and still hold some. */
+  get exposedWithCoinsCount(): number {
+    return this.walletInternal ? this.walletInternal.addresses.filter(a => this.exposedWithCoins(a)).length : 0;
   }
 
   onShowQr(address: Address) {
@@ -197,8 +246,21 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onAddAccount() {
+    if (this.wallet.encrypted) {
+      PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
+        if (password) {
+          this.addAccount(password);
+        }
+        this.changeDetectorRef.markForCheck();
+      });
+    } else {
+      this.addAccount();
+    }
+  }
+
+  private addAccount(password?: string) {
     const name = `Account ${(this.wallet.accounts || []).length}`;
-    this.walletService.addAccount(this.wallet, name).subscribe(
+    this.walletService.addAccount(this.wallet, name, password).subscribe(
       () => { this.changeDetectorRef.markForCheck(); },
       (error) => {
         this.msgBarService.showError(error.message);
@@ -208,17 +270,16 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onEncryptWallet() {
-    const password = window.prompt(this.translateService.instant('password.title'));
-    if (!password) {
-      return;
-    }
-    const confirm = window.prompt(this.translateService.instant('password.confirm-label'));
-    if (password !== confirm) {
-      this.msgBarService.showError('Passwords do not match');
-      return;
-    }
+    PasswordDialogComponent.ask(this.dialog, { confirm: true }).subscribe(password => {
+      if (password) {
+        this.encryptWith(password);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
 
-    if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+  private encryptWith(password: string) {
+    if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallet encryption
       this.walletService.encryptWallet(this.wallet, password).subscribe(
         () => {
@@ -247,12 +308,20 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onDecryptWallet() {
-    const password = window.prompt(this.translateService.instant('password.title'));
-    if (!password) {
+    if (!this.walletService.isServerWallet(this.wallet)) {
+      this.decryptWith('');
       return;
     }
+    PasswordDialogComponent.ask(this.dialog).subscribe(password => {
+      if (password) {
+        this.decryptWith(password);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
 
-    if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+  private decryptWith(password: string) {
+    if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallet decryption
       this.walletService.decryptWallet(this.wallet, password).subscribe(
         () => {
@@ -292,7 +361,7 @@ export class WalletDetailComponent implements OnDestroy {
   private verifyBeforeAddingNewAddress(accountIndex?: number) {
     if (this.wallet.isHardware) {
       this.addHwAddress();
-    } else if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+    } else if (this.walletService.isServerWallet(this.wallet)) {
       // Server-managed wallets don't need seed entry
       this.addNewAddress(accountIndex);
     } else if (!this.wallet.seed || !this.wallet.nextSeed) {

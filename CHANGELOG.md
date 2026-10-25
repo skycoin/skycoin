@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
 - Post-quantum block signatures. With `blockchain_pq_pubkey_str` and
   `pq_fork_seq` set, every block from that height must also carry an ML-DSA-44
   signature by the post-quantum publisher key. Peers on protocol version 3 pass
@@ -24,14 +25,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   1 addresses, and it can be encrypted, recovered and used to send coins like a
   deterministic wallet. `skycoin cli walletCreate -t pq` creates one.
   A send that needs more post-quantum inputs than fit the transaction size
-  limit fails at once and says so.
-  The desktop wallet and skycoin-web can create pq wallets, and the skycoin-web
-  browser cipher derives and signs for them.
+  limit fails at once and says so. The skycoin-lite cipher derives and signs
+  for pq wallets.
 - The startup database check, and `cli checkdb` with `--pq-pubkey`, verify the
   post-quantum block signatures as well.
 
 ### Changed
 
+- The node's wallet GUI is now skycoin-web, the wallet `skycoin web` serves.
+  `-enable-gui` serves it with the wallets kept in the node, and `-web-wallet`
+  serves it without the `WALLET` API set, with the wallets kept in the browser.
+  `-gui-dir` now takes a skycoin-web build directory. The old GUI in
+  `src/gui/static` is gone; its features moved into skycoin-web, except the
+  exchange page, whose service no longer answers, and firmware updates, which
+  the Skywallet tools do.
 - The module needs Go 1.27, for `crypto/mldsa`.
 - The TinyGo build of the skycoin-lite cipher is built with the 0magnet TinyGo
   fork at 0.43.0. TinyGo 0.41 does not support Go 1.27, and the 0.42 fork

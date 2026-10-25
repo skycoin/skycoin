@@ -6,10 +6,11 @@ import { BigNumber } from 'bignumber.js';
 import { ApiService } from '../api.service';
 import { CoinService } from '../coin.service';
 import { Address, Wallet, TotalBalance, Balance } from '../../app.datatypes';
-import { WalletService } from './wallet.service';
+import { WalletService, walletAddresses } from './wallet.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 import { GlobalsService } from '../globals.service';
 import { BaseCoin } from '../../coins/basecoin';
+import { withOfflineCache } from '../../utils/offline-cache';
 
 export enum BalanceStates {
   Obtained,
@@ -27,6 +28,8 @@ export class BalanceService {
   lastBalancesUpdateTime: Date = new Date();
   totalBalance: ReplaySubject<BalanceEvent> = new ReplaySubject<BalanceEvent>();
   hasPendingTransactions: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  // When the balance could not be refreshed, the time of the cached one shown instead.
+  cachedAt: Date | null = null;
 
   private canGetBalance = false;
   private schedulerSubscription!: Subscription;
@@ -97,7 +100,11 @@ export class BalanceService {
         return of(false);
       }
 
-      return this.retrieveAddressesBalance(addresses).pipe(mergeMap((balance) => {
+      const scope = addresses.map(a => a.address).join(',');
+      const coinKey = this.currentCoin ? this.currentCoin.id + ':' + this.currentCoin.coinSymbol : '0';
+      const balance$ = withOfflineCache('balance:' + coinKey, scope, this.retrieveAddressesBalance(addresses), t => this.cachedAt = t);
+
+      return balance$.pipe(mergeMap((balance) => {
         return this.walletService.currentWallets.pipe(first(), map(wallets => this.calculateBalance(wallets, balance)));
       }));
     }));
@@ -106,8 +113,8 @@ export class BalanceService {
   private retrieveAddressesBalance(addresses: Address[]): Observable<Balance> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
-    if (this.currentCoin && this.currentCoin.isBitcoin()) {
-      return this.apiService.get('btc/balance', { addrs: formattedAddresses } as any);
+    if (this.currentCoin && this.currentCoin.isGateway()) {
+      return this.apiService.get(this.currentCoin.gatewayPrefix + '/balance', { addrs: formattedAddresses } as any);
     }
 
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
@@ -167,38 +174,52 @@ export class BalanceService {
   }
 
   private calculateBalance(wallets: Wallet[], balance: Balance): boolean {
-    const isBtc = this.currentCoin && this.currentCoin.isBitcoin();
+    const isGateway = this.currentCoin && this.currentCoin.isGateway();
 
     if (balance.addresses) {
       wallets.map((wallet: Wallet) => {
         wallet.balance = new BigNumber('0');
         wallet.hours = new BigNumber('0');
 
-        wallet.addresses.map((address: Address) => {
+        // Each address counts once, though a BIP44 account lists it again.
+        const counted = new Set<string>();
+        walletAddresses(wallet).forEach((address: Address) => {
           if (balance.addresses[address.address]) {
             address.balance = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(this.coinsMultiplier);
-            address.hours = isBtc ? new BigNumber('0') : new BigNumber(balance.addresses[address.address].confirmed.hours || 0);
-            wallet.balance = wallet.balance!.plus(address.balance);
-            wallet.hours = wallet.hours!.plus(address.hours);
+            address.hours = isGateway ? new BigNumber('0') : new BigNumber(balance.addresses[address.address].confirmed.hours || 0);
+            if (!counted.has(address.address)) {
+              counted.add(address.address);
+              wallet.balance = wallet.balance!.plus(address.balance);
+              wallet.hours = wallet.hours!.plus(address.hours);
+            }
           }
         });
       });
     }
 
-    this.lastBalancesUpdateTime = new Date();
+    this.lastBalancesUpdateTime = this.cachedAt || new Date();
     this.sendTotalBalanceEvent({
       state: BalanceStates.Obtained,
       balance: {
         coins: new BigNumber(balance.confirmed.coins).dividedBy(this.coinsMultiplier),
-        hours: isBtc ? new BigNumber('0') : new BigNumber(balance.confirmed.hours || 0),
+        hours: isGateway ? new BigNumber('0') : new BigNumber(balance.confirmed.hours || 0),
       }
     });
+
+    // A cached balance is shown as a failed refresh, which is retried soon.
+    if (this.cachedAt) {
+      this.sendTotalBalanceEvent({ state: BalanceStates.Error });
+      this.refreshPendingTransactions(balance);
+
+      return true;
+    }
+
     return this.refreshPendingTransactions(balance);
   }
 
   private refreshPendingTransactions(balance: Balance) {
     const hasPendingTxs = balance.confirmed.coins !== balance.predicted.coins ||
-      (!this.currentCoin?.isBitcoin() && balance.confirmed.hours !== balance.predicted.hours);
+      (!this.currentCoin?.isGateway() && balance.confirmed.hours !== balance.predicted.hours);
 
     this.hasPendingTransactions.next(hasPendingTxs);
     return hasPendingTxs;

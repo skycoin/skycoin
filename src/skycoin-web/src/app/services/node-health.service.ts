@@ -82,6 +82,13 @@ export class NodeHealthService {
       );
     }
 
+    if (coin.isEthereum()) {
+      return this.http.get(url + '/api/v1/eth/health').pipe(
+        map((r: any) => ({ ...base, available: true, height: (r && r.tip_height) || 0 })),
+        catchError(err => of({ ...base, error: this.msg(err) })),
+      );
+    }
+
     return this.http.get(url + '/api/v1/health').pipe(
       map((r: any) => ({
         ...base,

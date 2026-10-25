@@ -26,6 +26,7 @@ import (
 	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -485,11 +486,9 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 
 func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api.Server, error) {
 	config := api.Config{
-		StaticDir:          c.config.Node.GUIDirectory,
 		DisableCSRF:        c.config.Node.DisableCSRF,
 		DisableHeaderCheck: c.config.Node.DisableHeaderCheck,
 		DisableCSP:         c.config.Node.DisableCSP,
-		EnableGUI:          c.config.Node.EnableGUI,
 		ReadTimeout:        c.config.Node.HTTPReadTimeout,
 		WriteTimeout:       c.config.Node.HTTPWriteTimeout,
 		IdleTimeout:        c.config.Node.HTTPIdleTimeout,
@@ -511,6 +510,20 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 		Username:     c.config.Node.WebInterfaceUsername,
 		Password:     c.config.Node.WebInterfacePassword,
 		ShutdownChan: quit,
+	}
+
+	// -enable-gui and -web-wallet serve the same wallet. With the WALLET API set
+	// it keeps the wallets in the node, and without it in the browser.
+	if c.config.Node.EnableGUI || c.config.Node.WebWallet {
+		if dir := c.config.Node.GUIDirectory; dir != "" {
+			config.WebWallet = gui.HandlerFS(os.DirFS(dir))
+		} else {
+			wallet, err := gui.Handler()
+			if err != nil {
+				return nil, err
+			}
+			config.WebWallet = wallet
+		}
 	}
 
 	var s *api.Server

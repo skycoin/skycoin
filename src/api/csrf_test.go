@@ -76,7 +76,6 @@ func TestCSRFWrapper(t *testing.T) {
 					rr := httptest.NewRecorder()
 					handler := newServerMux(muxConfig{
 						host:           configuredHost,
-						appLoc:         ".",
 						disableCSRF:    false,
 						disableCSP:     true,
 						enabledAPISets: allAPISetsEnabled,
@@ -116,7 +115,6 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 
 	handler := newServerMux(muxConfig{
 		host:           configuredHost,
-		appLoc:         ".",
 		disableCSRF:    false,
 		disableCSP:     true,
 		enabledAPISets: allAPISetsEnabled,
@@ -198,7 +196,6 @@ func TestCSRF(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler := newServerMux(muxConfig{
 			host:           configuredHost,
-			appLoc:         ".",
 			disableCSRF:    false,
 			disableCSP:     true,
 			enabledAPISets: allAPISetsEnabled,

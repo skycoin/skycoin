@@ -2,8 +2,10 @@ package wallet
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/eth"
 )
 
 var registeredAddressSecKeyDecoders = initAddressSecKeyDecoders()
@@ -18,6 +20,7 @@ func initAddressSecKeyDecoders() addressSecKeyDecoders {
 			CoinTypeSkycoin:       skycoinDecoder{},
 			CoinTypeBitcoin:       bitcoinDecoder{},
 			CoinTypeBitcoinSegwit: bitcoinSegwitDecoder{},
+			CoinTypeEthereum:      ethereumDecoder{},
 		},
 	}
 }
@@ -130,4 +133,26 @@ func (b bitcoinSegwitDecoder) SecKeyToHex(secKey cipher.SecKey) string {
 
 func (b bitcoinSegwitDecoder) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
 	return cipher.SecKeyFromBitcoinWalletImportFormat(secKey)
+}
+
+type ethereumDecoder struct{}
+
+func (e ethereumDecoder) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
+	a, err := eth.AddressFromPubKey(key)
+	if err != nil {
+		logger.Panicf("ethereum address from a valid public key: %v", err)
+	}
+	return a
+}
+
+func (e ethereumDecoder) DecodeBase58Address(addr string) (cipher.Addresser, error) {
+	return eth.ParseAddress(addr)
+}
+
+func (e ethereumDecoder) SecKeyToHex(secKey cipher.SecKey) string {
+	return secKey.Hex()
+}
+
+func (e ethereumDecoder) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
+	return cipher.SecKeyFromHex(strings.TrimPrefix(secKey, "0x"))
 }

@@ -131,8 +131,8 @@ export class BlockchainService {
   }
 
   private checkConnectionState(): Observable<any> {
-    // Bitcoin doesn't use Skycoin's peer-to-peer connections; skip the check
-    if (this.currentCoin && this.currentCoin.isBitcoin()) {
+    // Gateway coins don't use Skycoin's peer-to-peer connections; skip the check
+    if (this.currentCoin && this.currentCoin.isGateway()) {
       return this.apiService.get('health').pipe(
         map((response: any) => {
           this.globalsService.setNodeVersion(response.version?.version || '0.28.0');

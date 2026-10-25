@@ -93,7 +93,7 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		CSRFEnabled:          !c.disableCSRF,
 		HeaderCheckEnabled:   !c.disableHeaderCheck,
 		CSPEnabled:           !c.disableCSP,
-		GUIEnabled:           c.enableGUI,
+		GUIEnabled:           c.webWallet != nil,
 		BlockPublisher:       c.health.BlockPublisher,
 		BlockchainPubkey:     c.health.BlockchainPubkey.Hex(),
 		BlockchainPQPubkey:   c.health.PQBlocks.Pubkey.Hex(),

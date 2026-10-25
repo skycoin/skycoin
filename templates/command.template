@@ -14,6 +14,8 @@ import (
 	"github.com/skycoin/skycoin/src/util/flags"
 
 	"github.com/skycoin/skycoin/cmd/{{.CoinName}}/commands"
+	// The cipher wasm for -web-wallet.
+	_ "github.com/skycoin/skycoin/cmd/skycoin-web/wasmassets"
 )
 
 func init() {

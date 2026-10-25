@@ -54,7 +54,6 @@ MAPPING = {
     "src/daemon/pex/README.md": "packages/daemon-pex.md",
     "src/daemon/gnet/README.md": "packages/daemon-gnet.md",
     # Clients
-    "src/gui/static/README.md": "clients/desktop.md",
     "src/skycoin-web/README.md": "clients/web.md",
     "src/skycoin-lite/README.md": "clients/lite.md",
     "explorer/README.md": "clients/explorer.md",

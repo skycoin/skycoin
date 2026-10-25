@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
-import { catchError, mergeMap } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { CoinService } from './coin.service';
@@ -36,7 +36,8 @@ export class ApiService {
   }
 
   delete(url: any, params = null, options = {}): Observable<any> {
-    return this.transport.request('DELETE', this.getUrl(url), null, this.getRequestOptions(options, params)).pipe(
+    return this.withCsrf(options).pipe(
+      mergeMap(opts => this.transport.request('DELETE', this.getUrl(url), null, this.getRequestOptions(opts, params))),
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
@@ -45,12 +46,30 @@ export class ApiService {
       options.json = true;
     }
 
-    return this.transport.request(
-      'POST',
-      this.getUrl(url, useV2),
-      options.json ? JSON.stringify(body) : this.getQueryString(body),
-      this.getRequestOptions(options)
-    ).pipe(catchError((error: any) => this.getErrorMessage(error)));
+    return this.withCsrf(options).pipe(
+      mergeMap(opts => this.transport.request(
+        'POST',
+        this.getUrl(url, useV2),
+        opts.json ? JSON.stringify(body) : this.getQueryString(body),
+        this.getRequestOptions(opts),
+      )),
+      catchError((error: any) => this.getErrorMessage(error)));
+  }
+
+  /**
+   * Adds the node's CSRF token to the options of a request that changes state. A node
+   * checks it on every POST and DELETE; a node with CSRF off, or a server in front of
+   * one, answers without a token and the request goes as it is.
+   */
+  private withCsrf(options: any): Observable<any> {
+    if (options.csrf) {
+      return of(options);
+    }
+
+    return this.transport.request('GET', this.getUrl('csrf'), null, this.getRequestOptions({})).pipe(
+      map((response: any) => response && response.csrf_token ? { ...options, csrf: response.csrf_token } : options),
+      catchError(() => of(options)),
+    );
   }
 
   private getQueryString(parameters: any = null) {

@@ -1,0 +1,49 @@
+@use '../../../../../theme/_variables.scss' as *;
+
+.-grey {
+  color: $grey;
+}
+
+.-text-right {
+  text-align: right;
+}
+
+.-width-40 {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.-width-100 {
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.-width-150 span + span {
+  margin-left: 10px;
+}
+
+mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: $blue;
+}
+
+// On a phone the times stack and the columns shrink, so the address keeps room.
+@media (max-width: $max-very-small-width) {
+  .-width-100 {
+    width: 60px;
+  }
+
+  .-width-150 {
+    width: 70px;
+
+    span {
+      display: block;
+    }
+
+    span + span {
+      margin-left: 0;
+    }
+  }
+}

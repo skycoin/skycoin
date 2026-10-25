@@ -1,0 +1,23 @@
+.viewfinder {
+  background: #000;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 15px;
+
+  &.hidden {
+    display: none;
+  }
+
+  video {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    object-fit: cover;
+  }
+}
+
+.-error {
+  color: #ff004e;
+  font-size: 12px;
+  margin-top: 5px;
+}

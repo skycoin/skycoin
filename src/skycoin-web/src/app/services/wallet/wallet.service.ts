@@ -1,40 +1,57 @@
-import { Injectable, EventEmitter, Injector } from '@angular/core';
-import { BehaviorSubject, Subscription, Observable, of, throwError } from 'rxjs';
-import { mergeMap, map, filter, first, catchError } from 'rxjs';
+import { Injectable, EventEmitter } from '@angular/core';
+import { BehaviorSubject, Subscription, Observable, of } from 'rxjs';
+import { mergeMap, map, filter, first } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
-import { BigNumber } from 'bignumber.js';
 
-import { CipherProvider, GenerateAddressResponse, pqSeedState } from '../cipher.provider';
+import { CipherProvider } from '../cipher.provider';
 import { Address, Wallet } from '../../app.datatypes';
-import { convertAsciiToHexa } from '../../utils/converters';
-import { defaultCoinId } from '../../constants/coins-id.const';
 import { BaseCoin } from '../../coins/basecoin';
 import { CoinService } from '../coin.service';
 import { ApiService } from '../api.service';
 import { EncryptionService } from '../encryption.service';
-import { environment } from '../../../environments/environment';
+import { WalletBackend } from './backends/wallet-backend';
+import { ServerWalletBackend } from './backends/server-wallet-backend';
+import { BrowserWalletBackend, ScanProgressData } from './backends/browser-wallet-backend';
 
-export class ScanProgressData {
-  addressesFound = 1;
-  progress = 0;
-}
+export { ScanProgressData };
 
+/**
+ * The wallets of the current coin. Where they are kept is the coin's backend:
+ * a skycoin wallet service when the coin has serverWallets, else this browser.
+ */
 @Injectable()
 export class WalletService {
   wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>(null as any);
+  // True while this browser's wallets are stored under a password that has not
+  // been entered yet. No wallet loads until it is.
+  locked = new BehaviorSubject<boolean>(false);
 
   private currentCoin!: BaseCoin;
   private coinSubscription!: Subscription;
+  private readonly server: ServerWalletBackend;
+  private readonly browser: BrowserWalletBackend;
 
   constructor(
-    private cipherProvider: CipherProvider,
+    cipherProvider: CipherProvider,
     private translate: TranslateService,
     private coinService: CoinService,
-    private apiService: ApiService,
-    private encryptionService: EncryptionService,
+    apiService: ApiService,
+    encryptionService: EncryptionService,
   ) {
+    this.server = new ServerWalletBackend(apiService, () => this.currentCoin?.id);
+    this.browser = new BrowserWalletBackend(cipherProvider, translate, apiService, encryptionService);
     this.loadWallets();
     this.coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
+  }
+
+  /** The backend that keeps the current coin's wallets. */
+  private get backend(): WalletBackend {
+    return this.currentCoin && this.currentCoin.serverWallets ? this.server : this.browser;
+  }
+
+  /** True when wallet is kept by a wallet service rather than this browser. */
+  isServerWallet(wallet: Wallet): boolean {
+    return this.backend.onServer && !!wallet.filename;
   }
 
   get haveWallets(): Observable<boolean> {
@@ -59,130 +76,36 @@ export class WalletService {
       map(wallets => wallets ? wallets : []));
   }
 
+  /** Every address of every wallet, including those of a BIP44 wallet's other accounts. */
   get addresses(): Observable<Address[]> {
-    return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [] as Address[])));
+    return this.currentWallets.pipe(map(wallets => {
+      const byAddress = new Map<string, Address>();
+      wallets.forEach(wallet => walletAddresses(wallet).forEach(a => {
+        if (!byAddress.has(a.address)) {
+          byAddress.set(a.address, a);
+        }
+      }));
+      return Array.from(byAddress.values());
+    }));
   }
 
   addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number): Observable<void> {
-    // Server-managed wallets generate addresses via the backend API
-    if (this.currentCoin && this.currentCoin.serverWallets && wallet.filename) {
-      return this.addServerAddress(wallet, accountIndex, chainIndex);
+    if (this.isServerWallet(wallet)) {
+      return this.server.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => this.saveWallets()));
     }
 
-    if (!wallet.seed || !wallet.nextSeed) {
-      throw new Error(this.translate.instant('service.wallet.address-without-seed'));
-    }
-
-    return this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
-      map((response: GenerateAddressResponse) => {
-        wallet.nextSeed = response.nextSeed;
-        wallet.addresses.push(response.address);
-        if (saveWallet) {
-          this.saveWallets();
-        }
-      }));
-  }
-
-  private addServerAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
-    const params: any = {
-      id: wallet.filename,
-      num: '1',
-    };
-    if (accountIndex !== undefined) {
-      params.account = accountIndex.toString();
-    }
-    if (chainIndex !== undefined) {
-      params.chain = chainIndex === 1 ? 'change' : 'external';
-    }
-
-    return this.apiService.post('wallet/newAddress', params).pipe(
-      mergeMap(() => {
-        // Reload wallet from server to get updated addresses and accounts
-        return this.apiService.get('wallet', { id: wallet.filename } as any).pipe(
-          map((response: any) => {
-            wallet.addresses = (response.entries || []).map((e: any) => ({ address: e.address }));
-            if (response.meta.type === 'bip44' && response.accounts) {
-              wallet.accounts = response.accounts.map((a: any) => ({
-                name: a.name,
-                index: a.index,
-                externalAddresses: (a.external_entries || []).map((e: any) => ({ address: e.address })),
-                changeAddresses: (a.change_entries || []).map((e: any) => ({ address: e.address })),
-              }));
-            }
-            this.saveWallets();
-          }));
-      }));
+    return this.browser.addAddress(wallet).pipe(map(() => {
+      if (saveWallet) {
+        this.saveWallets();
+      }
+    }));
   }
 
   create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string, segwit?: boolean): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
 
-    // When the backend has wallet management, create via the API so wallets persist to disk
-    if (this.currentCoin && this.currentCoin.serverWallets) {
-      return this.createServerWallet(label, seed, coinId, save, walletType, seedPassphrase, segwit);
-    }
-
-    const isPQ = walletType === 'pq';
-
-    return this.cipherProvider.generateAddress(this.initialSeedState(seed, isPQ ? 'pq' : 'deterministic')).pipe(
-      map((response: GenerateAddressResponse) => {
-        const wallet: Wallet = {
-          label: label,
-          seed: seed,
-          needSeedConfirmation: true,
-          balance: new BigNumber('0'),
-          hours: new BigNumber('0'),
-          addresses: [response.address],
-          nextSeed: response.nextSeed,
-          coinId: coinId,
-          walletType: isPQ ? 'pq' : 'deterministic',
-        };
-
-        if ((this.wallets.value || []).some((wlt: Wallet) =>
-            wlt.addresses[0].address === wallet.addresses[0].address &&
-            wlt.coinId === wallet.coinId)) {
-          throw new Error(this.translate.instant('service.wallet.wallet-exists'));
-        }
-
-        if (save) {
-          this.add(wallet);
-        }
-
-        return wallet;
-      }));
-  }
-
-  private createServerWallet(label: string, seed: string, coinId: number, save: boolean, walletType: string, seedPassphrase?: string, segwit?: boolean): Observable<Wallet> {
-    const params: any = {
-      label: label || 'undefined',
-      seed: seed,
-      type: walletType,
-    };
-
-    if (walletType === 'bip44') {
-      params.scan = 100;
-    }
-
-    if (seedPassphrase) {
-      params['seed-passphrase'] = seedPassphrase;
-    }
-
-    // For Bitcoin BIP44 wallets, signal segwit preference to the backend
-    if (segwit !== undefined) {
-      params.segwit = segwit;
-    }
-
-    return this.apiService.post('wallet/create', params).pipe(
-      map((response: any) => {
-        const wallet: Wallet = {
-          label: response.meta.label,
-          balance: new BigNumber('0'),
-          hours: new BigNumber('0'),
-          addresses: (response.entries || []).map((e: any) => ({ address: e.address })),
-          coinId: coinId,
-          walletType: response.meta.type || walletType,
-        };
-
+    return this.backend.create(label, seed, coinId, this.wallets.value || [], walletType, seedPassphrase, segwit).pipe(
+      map(wallet => {
         if (save) {
           this.add(wallet);
         }
@@ -206,142 +129,101 @@ export class WalletService {
   }
 
   scanAddresses(wallet: Wallet, onProgressChanged: EventEmitter<ScanProgressData>): Observable<void> {
-    if (wallet.addresses.length !== 1) {
-      throw new Error(this.translate.instant('service.wallet.invalid-wallet'));
-    }
-
-    const InitialNextSeed = wallet.nextSeed;
-
-    return this.checkWalletAddresses(wallet, 0, onProgressChanged, InitialNextSeed!).pipe(
-      map(lastIndexWithTxs => {
-        const unnecessaryAddresses = wallet.addresses.length - 1 - lastIndexWithTxs;
-        if (unnecessaryAddresses > 0) {
-          wallet.addresses.splice(lastIndexWithTxs + 1, unnecessaryAddresses);
-        }
-        this.saveWallets();
-      }),
-      catchError(error => {
-        if (wallet.addresses.length > 1) {
-          wallet.addresses.splice(1, wallet.addresses.length - 1);
-          wallet.nextSeed = InitialNextSeed;
-        }
-        return throwError(() => error);
-      }));
+    return this.browser.scanAddresses(wallet, onProgressChanged).pipe(map(() => this.saveWallets()));
   }
 
   unlockWallet(wallet: Wallet, seed: string, onProgressChanged: EventEmitter<number>): Observable<void> {
-    seed = this.getCleanSeed(seed);
-    const currentSeed = this.initialSeedState(seed, wallet.walletType);
-
-    return this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).pipe(
-      map((res: boolean) => {
-        if (!res) {
-          throw new Error(this.translate.instant('service.wallet.wrong-seed'));
-        }
-
-        wallet.seed = seed;
-      }));
+    return this.browser.unlockWallet(wallet, this.getCleanSeed(seed), onProgressChanged);
   }
 
   setWalletPassword(wallet: Wallet, password: string): Observable<void> {
-    if (!wallet.seed) {
-      return throwError(() => new Error('Wallet must be unlocked before setting a password'));
-    }
-
-    return new Observable<void>(observer => {
-      Promise.all([
-        this.encryptionService.encrypt(wallet.seed!, password),
-        wallet.nextSeed ? this.encryptionService.encrypt(wallet.nextSeed, password) : Promise.resolve(null),
-      ]).then(([encSeed, encNextSeed]) => {
-        wallet.encryptedSeed = encSeed;
-        if (encNextSeed) {
-          wallet.encryptedNextSeed = encNextSeed;
-        }
-        this.saveWallets();
-        observer.next();
-        observer.complete();
-      }).catch(err => observer.error(err));
-    });
+    return this.browser.setWalletPassword(wallet, password).pipe(map(() => this.saveWallets()));
   }
 
   unlockWalletWithPassword(wallet: Wallet, password: string, onProgressChanged: EventEmitter<number>): Observable<void> {
-    if (!wallet.encryptedSeed) {
-      return throwError(() => new Error('Wallet does not have an encrypted seed'));
-    }
-
-    return new Observable<void>(observer => {
-      const decryptPromises = [
-        this.encryptionService.decrypt(wallet.encryptedSeed!, password),
-        wallet.encryptedNextSeed ? this.encryptionService.decrypt(wallet.encryptedNextSeed, password) : Promise.resolve(null),
-      ];
-
-      Promise.all(decryptPromises).then(([seed, nextSeed]) => {
-        const cleanSeed = this.getCleanSeed(seed!);
-        const currentSeed = this.initialSeedState(cleanSeed, wallet.walletType);
-
-        this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).subscribe(
-          (res: boolean) => {
-            if (!res) {
-              observer.error(new Error(this.translate.instant('service.wallet.wrong-seed')));
-              return;
-            }
-            wallet.seed = cleanSeed;
-            if (nextSeed) {
-              wallet.nextSeed = nextSeed;
-            }
-            observer.next();
-            observer.complete();
-          },
-          err => observer.error(err)
-        );
-      }).catch(() => {
-        observer.error(new Error('Incorrect password'));
-      });
-    });
+    return this.browser.unlockWalletWithPassword(wallet, password, onProgressChanged, seed => this.getCleanSeed(seed));
   }
 
   removeWalletPassword(wallet: Wallet): void {
-    wallet.encryptedSeed = undefined;
-    wallet.encryptedNextSeed = undefined;
+    this.browser.removeWalletPassword(wallet);
     this.saveWallets();
   }
 
   saveWallets() {
     const currentWallets = this.wallets.value || [];
-    // Only persist to localStorage for client-side wallets
-    if (!(this.currentCoin && this.currentCoin.serverWallets)) {
-      const strippedWallets: Wallet[] = [];
-      currentWallets.forEach(wallet => {
-        const strippedAddresses: Address[] = [];
-        wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
-        const stripped: Wallet = {
-          coinId: wallet.coinId,
-          needSeedConfirmation: wallet.needSeedConfirmation,
-          label: wallet.label,
-          addresses: strippedAddresses,
-          isHardware: wallet.isHardware,
-        };
-        if (wallet.encryptedSeed) {
-          stripped.encryptedSeed = wallet.encryptedSeed;
-          if (wallet.encryptedNextSeed) {
-            stripped.encryptedNextSeed = wallet.encryptedNextSeed;
-          }
-        } else if (wallet.seed) {
-          // No password → persist the plaintext seed so the wallet survives a
-          // refresh WITHOUT forcing a seed re-entry. Set a password to encrypt
-          // the seed at rest (then only encryptedSeed is stored). This is the
-          // convenience default for the in-browser client-side wallet.
-          stripped.seed = wallet.seed;
-          if (wallet.nextSeed) {
-            stripped.nextSeed = wallet.nextSeed;
-          }
-        }
-        strippedWallets.push(stripped);
-      });
-      localStorage.setItem('wallets', JSON.stringify(strippedWallets));
+    this.backend.save(currentWallets);
+    this.wallets.next(currentWallets);
+  }
+
+  get hasAppPassword(): boolean {
+    return this.browser.hasAppPassword;
+  }
+
+  /** Decrypts the wallets stored in this browser and loads them. */
+  unlockApp(password: string): Observable<void> {
+    if (!this.browser.hasLockedStore()) {
+      return of(undefined);
     }
 
-    this.wallets.next(currentWallets);
+    return new Observable<void>(observer => {
+      this.browser.unlock(password).then(() => {
+        this.locked.next(false);
+        this.loadWalletsFrom(this.browser);
+        observer.next();
+        observer.complete();
+      }, err => observer.error(err));
+    });
+  }
+
+  /** Stores this browser's wallets under a password, replacing any previous one. */
+  setAppPassword(password: string): Promise<void> {
+    return this.browser.setAppPassword(password);
+  }
+
+  /** Stores this browser's wallets without a password again. */
+  removeAppPassword(currentPassword: string): Promise<void> {
+    return this.browser.removeAppPassword(currentPassword);
+  }
+
+  checkAppPassword(password: string): boolean {
+    return this.browser.checkAppPassword(password);
+  }
+
+  /** Forgets the password and the wallets it guarded. This cannot be undone. */
+  eraseLockedWallets() {
+    this.browser.erase();
+    this.locked.next(false);
+    this.wallets.next([]);
+  }
+
+  /** The wallet's seed, for a backup. password unlocks an encrypted one. */
+  getSeed(wallet: Wallet, password: string | null): Observable<string> {
+    return (this.isServerWallet(wallet) ? this.server : this.browser).getSeed(wallet, password);
+  }
+
+  /** The folder the wallet service keeps the files in, or null for wallets in this browser. */
+  walletFolder(): Observable<string | null> {
+    return this.backend.onServer ? this.server.folder() : of(null);
+  }
+
+  getXPubKey(wallet: Wallet, path: string): Observable<string> {
+    return this.server.getXPubKey(wallet, path);
+  }
+
+  addAccount(wallet: Wallet, name: string, password?: string): Observable<Wallet> {
+    return this.server.addAccount(wallet, name, password).pipe(map(w => {
+      this.saveWallets();
+
+      return w;
+    }));
+  }
+
+  encryptWallet(wallet: Wallet, password: string): Observable<void> {
+    return this.server.encrypt(wallet, password);
+  }
+
+  decryptWallet(wallet: Wallet, password: string): Observable<void> {
+    return this.server.decrypt(wallet, password);
   }
 
   private loadWallets() {
@@ -349,180 +231,35 @@ export class WalletService {
     // This prevents the wallet wizard from opening before the current coin is known.
     this.coinService.coinsLoaded.pipe(first()).subscribe(() => {
       const coin = this.coinService.currentCoin.getValue();
-
-      if (coin && coin.serverWallets) {
-        this.loadWalletsFromServer();
-      } else {
-        this.loadWalletsFromLocalStorage();
-      }
+      this.loadWalletsFrom(coin && coin.serverWallets ? this.server : this.browser);
 
       // Re-fetch wallets when the user switches coins
       this.coinSubscription = this.coinService.currentCoin.pipe(
         filter((c: BaseCoin) => c !== null),
-      ).subscribe((c) => {
-        if (c.serverWallets) {
-          this.loadWalletsFromServer();
-        } else {
-          this.loadWalletsFromLocalStorage();
-        }
-      });
+      ).subscribe((c) => this.loadWalletsFrom(c.serverWallets ? this.server : this.browser));
     });
   }
 
-  private loadWalletsFromLocalStorage() {
-    const storedWallets: string | null = localStorage.getItem('wallets');
-    if (storedWallets) {
-      const wallets: Wallet[] = JSON.parse(storedWallets);
-      wallets.forEach((wallet) => {
-        if (!wallet.coinId) {
-          wallet.coinId = defaultCoinId;
-        }
-        // A persisted plaintext seed means the wallet is usable immediately, so
-        // clear the seed-confirmation gate — the re-entry prompt is only for
-        // wallets whose seed we don't hold (encrypted-and-locked, or a legacy
-        // addresses-only entry created before seeds were persisted).
-        if (wallet.seed) {
-          wallet.needSeedConfirmation = false;
-        }
-      });
-      this.wallets.next(wallets);
-    } else {
-      this.wallets.next([]);
-    }
-  }
-
-  private loadWalletsFromServer() {
-    this.apiService.get('wallets').subscribe(
-      (serverWallets: any[]) => {
-        if (serverWallets && serverWallets.length > 0) {
-          const wallets: Wallet[] = serverWallets.map(w => {
-            const wlt: Wallet = {
-              label: w.meta.label,
-              addresses: (w.entries || []).map((e: any) => ({ address: e.address })),
-              coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
-              encrypted: w.meta.encrypted,
-              walletType: w.meta.type || 'deterministic',
-              filename: w.meta.filename,
-            };
-
-            // Parse BIP44 account structure
-            if (w.meta.type === 'bip44' && w.accounts) {
-              wlt.accounts = w.accounts.map((a: any) => ({
-                name: a.name,
-                index: a.index,
-                externalAddresses: (a.external_entries || []).map((e: any) => ({ address: e.address })),
-                changeAddresses: (a.change_entries || []).map((e: any) => ({ address: e.address })),
-              }));
-            }
-
-            return wlt;
-          });
-          this.wallets.next(wallets);
-        } else {
-          this.wallets.next([]);
-        }
-      },
-      () => this.wallets.next([])
-    );
-  }
-
-  getXPubKey(wallet: Wallet, path: string): Observable<string> {
-    return this.apiService.get('wallet/xpub', {
-      id: wallet.filename,
-      path: path,
-    } as any).pipe(map((response: any) => response.xpub_key));
-  }
-
-  addAccount(wallet: Wallet, name: string): Observable<Wallet> {
-    return this.apiService.post('wallet/newAccount', {
-      id: wallet.filename,
-      name: name,
-    }).pipe(map((response: any) => {
-      // Update wallet with new account structure
-      if (response.accounts) {
-        wallet.accounts = response.accounts.map((a: any) => ({
-          name: a.name,
-          index: a.index,
-          externalAddresses: (a.external_entries || []).map((e: any) => ({ address: e.address })),
-          changeAddresses: (a.change_entries || []).map((e: any) => ({ address: e.address })),
-        }));
+  private loadWalletsFrom(backend: WalletBackend) {
+    backend.load().subscribe(wallets => {
+      if (wallets === null) {
+        this.locked.next(true);
+        return;
       }
-      wallet.addresses = (response.entries || []).map((e: any) => ({ address: e.address }));
-      this.saveWallets();
-      return wallet;
-    }));
-  }
-
-  encryptWallet(wallet: Wallet, password: string): Observable<void> {
-    return this.apiService.post('wallet/encrypt', {
-      id: wallet.filename,
-      password: password,
-    }).pipe(map(() => {}));
-  }
-
-  decryptWallet(wallet: Wallet, password: string): Observable<void> {
-    return this.apiService.post('wallet/decrypt', {
-      id: wallet.filename,
-      password: password,
-    }).pipe(map(() => {}));
+      this.wallets.next(wallets);
+    });
   }
 
   private getCleanSeed(seed: string): string {
     return seed.replace(/(\n|\r\n)$/, '');
   }
+}
 
-  /** The state the first address of a wallet with this seed is derived from. */
-  private initialSeedState(seed: string, walletType?: string): string {
-    const seedHex = convertAsciiToHexa(seed);
-    return walletType === 'pq' ? pqSeedState(seedHex, 0) : seedHex;
-  }
-
-  private checkWalletAddresses(wallet: Wallet, lastIndexWithTxs: number, onProgressChanged: EventEmitter<ScanProgressData>, nextSeed: string): Observable<number> {
-    const minAdrressesToScan = environment.e2eTest ? 2 : 10;
-    const maxAdrressesToScan = environment.e2eTest ? 2 : 100;
-
-    return this.addAddress(wallet, false).pipe(
-      mergeMap(() => this.apiService.get('transactions', { addrs: wallet.addresses[wallet.addresses.length - 1].address } as any)),
-      mergeMap(transactions => {
-        if (transactions && transactions.length > 0) {
-          lastIndexWithTxs = wallet.addresses.length - 1;
-          nextSeed = wallet.nextSeed!;
-        } else {
-          wallet.nextSeed = nextSeed;
-        }
-
-        onProgressChanged.emit({
-          addressesFound: lastIndexWithTxs + 1,
-          progress: (wallet.addresses.length - 1 - lastIndexWithTxs) / minAdrressesToScan * 100
-        });
-
-        if (lastIndexWithTxs + minAdrressesToScan === wallet.addresses.length - 1 || wallet.addresses.length === maxAdrressesToScan) {
-          return of(lastIndexWithTxs);
-        } else {
-          return this.checkWalletAddresses(wallet, lastIndexWithTxs, onProgressChanged, nextSeed);
-        }
-      }));
-  }
-
-  private unlockWalletAddresses(currentSeed: string, wallet: Wallet, index: number, onProgressChanged: EventEmitter<number>): Observable<boolean> {
-    return this.cipherProvider.generateAddress(currentSeed).pipe(
-      mergeMap((response: GenerateAddressResponse) => {
-        if (response.address.address !== wallet.addresses[index].address) {
-          onProgressChanged.emit(0);
-          return of(false);
-        }
-
-        onProgressChanged.emit((index + 1) / wallet.addresses.length * 100);
-        wallet.nextSeed = response.nextSeed;
-        wallet.addresses[index].public_key = response.address.public_key;
-        wallet.addresses[index].secret_key = response.address.secret_key;
-        index++;
-
-        if (index === wallet.addresses.length) {
-          return of(true);
-        }
-
-        return this.unlockWalletAddresses(response.nextSeed, wallet, index, onProgressChanged);
-      }));
-  }
+/**
+ * A wallet's address objects, those of its BIP44 accounts included. The
+ * accounts list their addresses as separate objects, which may repeat.
+ */
+export function walletAddresses(wallet: Wallet): Address[] {
+  const accounts = (wallet.accounts || []).map(a => [...a.externalAddresses, ...a.changeAddresses]);
+  return ([] as Address[]).concat(wallet.addresses, ...accounts);
 }

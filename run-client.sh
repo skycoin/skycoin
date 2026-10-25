@@ -15,7 +15,6 @@ GOLDFLAGS="${GOLDFLAGS} -X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 GORUNFLAGS=${GORUNFLAGS:-}
 
 GO111MODULE=off go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS ./cmd/skycoin/... \
-    -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=true \
     -enable-all-api-sets=true \
     -enable-gui=true \

@@ -12,10 +12,12 @@ import (
 	"github.com/skycoin/skycoin/src/util/iputil"
 )
 
-// ContentSecurityPolicy represents the value of content-security-policy
-// header in http response
+// ContentSecurityPolicy is the content-security-policy header of the wallet GUI.
+// The wallet runs its cipher as wasm, and may talk to another node over https
+// and to the Skywallet daemon on port 9510.
 const ContentSecurityPolicy = "default-src 'self'" +
-	"; connect-src 'self' https://api.coinpaprika.com https://api.coingecko.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510" +
+	"; script-src 'self' 'wasm-unsafe-eval'" +
+	"; connect-src 'self' https: http://127.0.0.1:9510" +
 	"; img-src 'self' 'unsafe-inline' data:" +
 	"; style-src 'self' 'unsafe-inline'" +
 	"; object-src 'none'" +

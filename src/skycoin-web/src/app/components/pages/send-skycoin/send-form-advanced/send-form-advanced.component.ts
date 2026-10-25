@@ -20,6 +20,9 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { PriceService } from '../../../../services/price.service';
 import { SendFormComponent } from '../send-form/send-form.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { BulkSendComponent, BulkDestination } from './bulk-send/bulk-send.component';
+import { OfflineTxComponent, OfflineTxMode } from '../offline-tx/offline-tx.component';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
     selector: 'app-send-form-advanced',
@@ -30,6 +33,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   @ViewChild('button') button!: ButtonComponent;
+  @ViewChild('unsignedButton') unsignedButton!: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
@@ -56,6 +60,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private getOutputsSubscriptions!: Subscription;
   private unlockSubscription!: Subscription;
   private destinationSubscriptions: Subscription[] = [];
+  // An encrypted server wallet's password, held only until the transaction is signed.
+  private password: string | undefined;
 
   constructor(
     public walletService: WalletService,
@@ -168,6 +174,38 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.unlockAndSend();
   }
 
+  /** Builds the transaction without signing it, for a wallet whose keys are elsewhere. */
+  createUnsigned() {
+    if (!this.form.valid || this.unsignedButton.isLoading()) {
+      return;
+    }
+
+    this.msgBarService.hide();
+    this.unsignedButton.setLoading();
+    this.spendingService.createTransaction(
+      this.form.get('wallet')!.value,
+      this.selectedAddresses,
+      this.selectedOutputs,
+      this.destinations,
+      this.hoursSelection,
+      this.form.get('changeAddress')!.value ? this.form.get('changeAddress')!.value : null,
+      undefined,
+      true,
+    ).subscribe(transaction => {
+      this.unsignedButton.resetState();
+      OfflineTxComponent.open(this.dialog, {
+        mode: OfflineTxMode.Show,
+        rawTx: (transaction as PreviewTransaction).encoded,
+        unsigned: true,
+      });
+      this.changeDetectorRef.markForCheck();
+    }, error => {
+      this.unsignedButton.resetState();
+      this.msgBarService.showError(error.message);
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
   changeActiveCurrency(value: any) {
     this.selectedCurrency = value;
     this.updateValues();
@@ -225,7 +263,19 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     const wallet = this.form.value.wallet;
 
-    if (!wallet.seed) {
+    this.password = undefined;
+    if (this.walletService.isServerWallet(wallet) && wallet.encrypted) {
+      this.removeUnlockSubscription();
+      this.unlockSubscription = PasswordDialogComponent.ask(this.dialog, { text: wallet.label }).subscribe(password => {
+        if (password) {
+          this.password = password;
+          this.checkBeforeSending();
+        }
+        this.changeDetectorRef.markForCheck();
+      });
+    } else if (wallet.isHardware || this.walletService.isServerWallet(wallet)) {
+      this.checkBeforeSending();
+    } else if (!wallet.seed) {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance
@@ -269,6 +319,42 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.push(this.createDestinationFormGroup());
     this.updateValues();
+  }
+
+  /** Replaces the destinations with ones typed as text, one per line. */
+  openBulkSend() {
+    const current = this.destControls
+      .map(c => c.value)
+      .filter(v => v.address || v.coins)
+      .map(v => [v.address, v.coins].concat(this.autoHours ? [] : [v.hours]).join(','))
+      .join('\n');
+
+    BulkSendComponent.ask(this.dialog, current).subscribe(destinations => {
+      if (destinations) {
+        this.setDestinations(destinations);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private setDestinations(destinations: BulkDestination[]) {
+    while (this.destControls.length > 0) {
+      this.removeDestination(0);
+    }
+    this.selectedCurrency = DoubleButtonActive.LeftButton;
+    this.autoHours = destinations[0].hours === undefined;
+    if (!this.autoHours) {
+      this.autoOptions = false;
+    }
+
+    destinations.forEach((d, i) => {
+      this.addDestination();
+      const group = this.destControls[i];
+      group.get('address')!.setValue(d.address);
+      group.get('coins')!.setValue(d.coins);
+      group.get('hours')!.setValue(d.hours || '');
+    });
+    this.form.get('destinations')!.updateValueAndValidity();
   }
 
   removeDestination(index: any) {
@@ -450,6 +536,18 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     return group;
   }
 
+  private get selectedAddresses(): string[] | null {
+    const addresses: Address[] | null = this.form.get('addresses')!.value;
+
+    return addresses && addresses.length > 0 ? addresses.map(a => a.address) : null;
+  }
+
+  private get selectedOutputs(): string[] | null {
+    const outputs: UnspentOutput[] | null = this.form.get('outputs')!.value;
+
+    return outputs && outputs.length > 0 ? outputs.map(o => o.hash) : null;
+  }
+
   private createTransaction() {
     if (this.previewTx) {
       this.button.setLoading();
@@ -457,19 +555,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.button.setLoading();
     }
 
-    const selectedAddresses = this.form.get('addresses')!.value && (this.form.get('addresses')!.value as Address[]).length > 0 ?
-      this.form.get('addresses')!.value.map((addr: any) => addr.address) : null;
-
-    const selectedOutputs = this.form.get('outputs')!.value && (this.form.get('outputs')!.value as UnspentOutput[]).length > 0 ?
-      this.form.get('outputs')!.value.map((addr: any) => addr.hash) : null;
+    const password = this.password;
+    this.password = undefined;
 
     this.spendingService.createTransaction(
       this.form.get('wallet')!.value,
-      selectedAddresses,
-      selectedOutputs,
+      this.selectedAddresses,
+      this.selectedOutputs,
       this.destinations,
       this.hoursSelection,
       this.form.get('changeAddress')!.value ? this.form.get('changeAddress')!.value : null,
+      password,
     )
       .toPromise()
       .then(transaction => {

@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+/**
+ * Types for Skywallet communication for Bitcoin
+ */
+
+// Sugar for easier handling in Java
+option java_package = "net.skycoin.skywallet.protobuf";
+option java_outer_classname = "SkywalletType";
+option go_package = "messages";
+
+/**
+* Structure representing Ethereum transaction
+*/
+message EthereumTransactionType {
+    required bytes nonce     = 1;
+    required bytes gasPrice  = 2;
+    required bytes gasLimit  = 3;
+    optional bytes recipient_address = 4;   // If no recipient_address, then it is contract creation
+    required bytes coins     = 5;
+    optional uint32 chain_id = 6;           // To support tokens based on Ethereum 
+}

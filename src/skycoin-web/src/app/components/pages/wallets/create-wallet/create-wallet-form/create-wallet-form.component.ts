@@ -40,6 +40,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   isProduction = environment.production;
   showWalletType = false;
   isBitcoinCoin = false;
+  // Gateway coins hold only bip44 wallets.
+  isGatewayCoin = false;
 
   // Backend connection health of the currently-selected coin, so the create
   // screen can gate the coin choice by whether its node/electrum is actually
@@ -123,13 +125,13 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
    * (HD, multicoin-capable) whenever it is actually honored — Bitcoin (always,
    * segwit/bech32) and any server-managed coin (the node derives real bip44
    * accounts + xpub) — otherwise deterministic, for a pure client-side non-BTC
-   * coin whose in-browser create path makes deterministic or pq wallets only.
+   * coin whose in-browser create path only ever produces deterministic wallets.
    */
   private defaultTypeForCoin(coin: BaseCoin): string {
     if (!coin) {
       return 'deterministic';
     }
-    return (coin.isBitcoin() || coin.serverWallets) ? 'bip44' : 'deterministic';
+    return (coin.isGateway() || coin.serverWallets) ? 'bip44' : 'deterministic';
   }
 
   getData(): FormData {
@@ -148,6 +150,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     create = create !== null ? create : this.create;
 
     this.isBitcoinCoin = defaultCoin ? defaultCoin.isBitcoin() : false;
+    this.isGatewayCoin = defaultCoin ? defaultCoin.isGateway() : false;
     // Show the wallet-TYPE selector (deterministic / bip44 / segwit) whenever a
     // coin is selected. The type is independent of serverWallets (server-side vs
     // browser custody): a browser wallet (serverWallets=false, e.g. the skywire
@@ -189,6 +192,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.form.get('coin')!.valueChanges.subscribe((coin: BaseCoin) => {
       if (coin) {
         this.isBitcoinCoin = coin.isBitcoin();
+        this.isGatewayCoin = coin.isGateway();
         this.showWalletType = true; // type selector is coin-type-gated in the template, not serverWallets-gated
         this.probeCoinHealth(coin);
         this.form.get('wallet_type')!.setValue(this.defaultTypeForCoin(coin));

@@ -1396,6 +1396,27 @@ func (_m *MockGatewayer) UpdateWalletLabel(wltID string, label string) error {
 	return r0
 }
 
+// NewAccount provides a mock function with given fields: wltID, password, name
+func (_m *MockGatewayer) NewAccount(wltID string, password []byte, name string) (wallet.Wallet, error) {
+	ret := _m.Called(wltID, password, name)
+
+	var r0 wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, []byte, string) wallet.Wallet); ok {
+		r0 = rf(wltID, password, name)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(wallet.Wallet)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []byte, string) error); ok {
+		r1 = rf(wltID, password, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // VerifyTxnVerbose provides a mock function with given fields: txn, signed
 func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnSignedFlag) ([]visor.TransactionInput, bool, error) {
 	ret := _m.Called(txn, signed)

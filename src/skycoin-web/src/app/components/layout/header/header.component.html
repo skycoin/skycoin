@@ -1,5 +1,7 @@
 <div class="-container">
-  <div class="large-header" [ngStyle]="{'background-image': currentCoin.imageName ? 'url(assets/skycoin-wallet/img/coins/' + currentCoin.imageName + ')' : 'none'}">
+  <div class="large-header" [ngStyle]="{'background-image': currentCoin.imageName ? 'url(assets/skycoin-wallet/img/coins/' + currentCoin.imageName + ')' : 'none'}"
+    [class.-mobile-art]="!!currentCoin.mobileImageName"
+    [style.--mobile-art]="currentCoin.mobileImageName ? 'url(assets/skycoin-wallet/img/coins/' + currentCoin.mobileImageName + ')' : null">
     <div class="gradient" [style.background-image]="currentCoin.gradientName ?
       'url(assets/skycoin-wallet/img/coins/' + currentCoin.gradientName + ')' :
       (!currentCoin.imageName ? 'url(assets/skycoin-wallet/img/coins/generic.jpg)' : 'none')">
@@ -13,7 +15,7 @@
             <p class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
           }
           @if (!loading) {
-            <p class="coins"><span>{{ coins.decimalPlaces(currentCoin.coinDecimals).toString() | number:('1.0-' + currentCoin.coinDecimals) }}</span> {{ currentCoin.coinSymbol }}</p>
+            <p class="coins"><span>{{ coins.decimalPlaces(currentCoin.displayDecimals).toString() | number:('1.0-' + currentCoin.displayDecimals) }}</span> {{ currentCoin.coinSymbol }}</p>
           }
           @if (!loading && balance) {
             <p class="dollars">{{ balance }}</p>

@@ -94,7 +94,6 @@ benefactor-wallet.json
 masterdata/
 .genv
 
-src/gui/static/dev
 src/mesh/gui/static/dev
 
 npm-debug.log
@@ -181,3 +180,7 @@ CLAUDE.md
 
 # go build output of ./src/skycoin-lite at the repo root
 /skycoin-lite
+
+# TinyGo builds of the node
+/skycoin-tiny
+/skycoin-tiny-precise

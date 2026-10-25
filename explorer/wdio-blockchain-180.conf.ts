@@ -90,6 +90,10 @@ exports.config = {
     // Level of logging verbosity: trace | debug | info | warn | error | silent
     logLevel: 'warn',
     //
+    // The specs take the first element a selector matches, as WebdriverIO 9 did.
+    // Version 10 fails such a selector with StrictSelectorError unless this is off.
+    strictSelectors: false,
+    //
     // Set specific log levels per logger
     // loggers:
     // - webdriver, webdriverio

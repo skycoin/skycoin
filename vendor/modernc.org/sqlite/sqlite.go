@@ -304,6 +304,16 @@ func applyQueryParams(c *conn, query string, defensive bool) error {
 	//
 	// _pragma values are the one exception: they are executed verbatim and
 	// cannot be checked here, so a malformed _pragma can still fail partway.
+	// What can be checked, when StrictPragmas is on, is that each is a single
+	// statement; that check compiles nothing.
+	if strictPragmas.Load() {
+		for _, v := range q["_pragma"] {
+			if !singleStatement(v) {
+				return fmt.Errorf("%w: _pragma=%q", ErrMultiStatementPragma, v)
+			}
+		}
+	}
+
 	busyKey, busyTimeout := dsnPick(q, "_busy_timeout", "_timeout")
 	if busyTimeout != "" {
 		if _, err := strconv.ParseInt(busyTimeout, 10, 64); err != nil {
@@ -696,6 +706,12 @@ type ConnectionHookFn func(
 // invocations: it is valid only for the duration of the call it is passed to
 // and must not be retained past its return.
 type FunctionContext struct {
+	// The type has no methods yet, so a retained *FunctionContext is inert.
+	// Any method added must stay safe when called on a retained one: by
+	// then releaseUDFCall has zeroed it, or the pool has handed it to
+	// another invocation, and ctx is that invocation's sqlite3_context.
+	// Documenting "must not be retained" does not stop a caller from
+	// retaining it.
 	tls *libc.TLS
 	ctx uintptr
 }

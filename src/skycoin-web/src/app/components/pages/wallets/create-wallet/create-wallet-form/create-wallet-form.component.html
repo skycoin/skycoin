@@ -29,18 +29,12 @@
       <label for="wallet_type">{{ 'wallet.new.type-label' | translate}}</label>
       <div class="-select">
         <select formControlName="wallet_type" id="wallet_type">
-          @if (!isBitcoinCoin) {
+          @if (!isGatewayCoin) {
             <option value="deterministic">{{ 'wallet.new.type-deterministic' | translate }}</option>
           }
           <option value="bip44">{{ 'wallet.new.type-bip44' | translate }}</option>
-          @if (!isBitcoinCoin) {
-            <option value="pq">{{ 'wallet.new.type-pq' | translate }}</option>
-          }
         </select>
       </div>
-      @if (form.get('wallet_type')!.value === 'pq') {
-        <p class="-info">{{ 'wallet.new.type-pq-info' | translate }}</p>
-      }
     </div>
     @if (isBitcoinCoin && form.get('wallet_type')!.value === 'bip44') {
       <div class="form-field -segwit-toggle">

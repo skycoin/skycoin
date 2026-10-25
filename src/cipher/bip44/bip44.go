@@ -36,6 +36,8 @@ const (
 	CoinTypeBitcoin CoinType = 0
 	// CoinTypeBitcoinTestnet is the coin_type for Skycoin
 	CoinTypeBitcoinTestnet CoinType = 1
+	// CoinTypeEthereum is the coin_type for Ethereum
+	CoinTypeEthereum CoinType = 60
 	// CoinTypeSkycoin is the coin_type for Skycoin
 	CoinTypeSkycoin CoinType = 8000
 

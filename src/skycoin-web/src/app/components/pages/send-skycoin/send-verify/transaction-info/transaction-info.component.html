@@ -32,16 +32,30 @@
             <span>{{ 'tx.status' | translate }}:</span> <span>{{ $any(transaction).confirmed ? ('tx.confirmed' | translate) : ('tx.pending' | translate) }}</span>
           </div>
         }
-        <div class="-data">
-          <span>{{ 'tx.hours' | translate }}:</span>
-          @if (transaction.hoursSent) {
-            <span>
-              {{ transaction.hoursSent.decimalPlaces(0).toString() | number:'1.0-0' }} {{ hoursText | translate }}
-              |
-              {{ transaction.hoursBurned!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
-            </span>
+        @if (currentCoin.hasHours()) {
+          <div class="-data">
+            <span>{{ 'tx.hours' | translate }}:</span>
+            @if (transaction.hoursSent) {
+              <span>
+                {{ transaction.hoursSent.decimalPlaces(0).toString() | number:'1.0-0' }} {{ hoursText | translate }}
+                |
+                {{ transaction.hoursBurned!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
+              </span>
+            }
+          </div>
+        } @else {
+          @for (address of $any(transaction).addresses || []; track address) {
+            <div class="-data">
+              <span>{{ ($any(transaction).balance.isLessThan(0) ? 'tx.to' : 'tx.from') | translate }}:</span> <span>{{ address }}</span>
+            </div>
           }
-        </div>
+          @if (!currentCoin.isToken() && $any(transaction).fee) {
+            <div class="-data">
+              <span>{{ 'tx.fee' | translate }}:</span>
+              <span>{{ $any(transaction).fee.decimalPlaces(currentCoin.displayDecimals).toString() | number:('1.0-' + currentCoin.displayDecimals) }} {{ currentCoin.coinSymbol }}</span>
+            </div>
+          }
+        }
       </div>
 
       <div class="col-md-3 -tx-price -not-on-small-and-below">
@@ -53,7 +67,7 @@
           <img src="assets/skycoin-wallet/img/send-blue.png">
         </div>
         @if (transaction.balance) {
-          <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin.coinSymbol }}</h4>
+          <h4>{{ transaction.balance.decimalPlaces(currentCoin.displayDecimals).toString() | number:('1.0-' + currentCoin.displayDecimals) }} {{ currentCoin.coinSymbol }}</h4>
         }
         @if (price) {
           <p [matTooltip]="!isPreview ? ('history.price-tooltip' | translate) : ''">
@@ -64,7 +78,7 @@
       }
     </ng-template>
   </div>
-  @if (!showInputsOutputs) {
+  @if (!showInputsOutputs && currentCoin.hasHours()) {
     <div class="-data -more">
       <span (click)="toggleInputsOutputs($event)">
         {{ 'tx.show-more' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>

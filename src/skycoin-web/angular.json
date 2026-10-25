@@ -24,7 +24,8 @@
             "tsConfig": "src/tsconfig.app.json",
             "assets": [
               "src/assets",
-              "src/favicon.ico"
+              "src/favicon.ico",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "node_modules/font-awesome/css/font-awesome.css",
@@ -41,7 +42,8 @@
               ]
             },
             "allowedCommonJsDependencies": [
-              "bip39"
+              "bip39",
+              "jsqr"
             ]
           },
           "configurations": {
@@ -52,7 +54,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "optimization": true,
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
               "outputHashing": "all",
               "sourceMap": false,
               "namedChunks": false,
@@ -67,8 +69,10 @@
                     "scripts/wasm_exec.js"
                   ]
                 },
-                "src/favicon.ico"
-              ]
+                "src/favicon.ico",
+                "src/manifest.webmanifest"
+              ],
+              "serviceWorker": "ngsw-config.json"
             },
             "local": {
               "fileReplacements": [
@@ -85,7 +89,7 @@
                   "with": "src/environments/environment.local.prod.ts"
                 }
               ],
-              "optimization": true,
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
               "outputHashing": "all",
               "sourceMap": false,
               "namedChunks": false,
@@ -100,8 +104,10 @@
                     "scripts/wasm_exec.js"
                   ]
                 },
-                "src/favicon.ico"
-              ]
+                "src/favicon.ico",
+                "src/manifest.webmanifest"
+              ],
+              "serviceWorker": "ngsw-config.json"
             },
             "e2e": {
               "fileReplacements": [
@@ -118,7 +124,7 @@
                   "with": "src/environments/environment.e2e-prod.ts"
                 }
               ],
-              "optimization": true,
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
               "outputHashing": "all",
               "sourceMap": false,
               "namedChunks": false,
@@ -133,8 +139,10 @@
                     "scripts/wasm_exec.js"
                   ]
                 },
-                "src/favicon.ico"
-              ]
+                "src/favicon.ico",
+                "src/manifest.webmanifest"
+              ],
+              "serviceWorker": "ngsw-config.json"
             }
           }
         },

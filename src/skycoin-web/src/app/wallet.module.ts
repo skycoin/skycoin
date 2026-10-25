@@ -43,6 +43,9 @@ import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
+import { NetworkComponent } from './components/pages/settings/network/network.component';
+import { BackupComponent } from './components/pages/settings/backup/backup.component';
+import { CoinsComponent } from './components/pages/settings/coins/coins.component';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { TransactionDetailComponent } from './components/pages/history/transaction-detail/transaction-detail.component';
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
@@ -77,12 +80,17 @@ import { LanguageService } from './services/language.service';
 import { SelectCoinOverlayComponent } from './components/layout/select-coin-overlay/select-coin-overlay.component';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { WalletService } from './services/wallet/wallet.service';
+import { NetworkService } from './services/network.service';
+import { AddressExposureService } from './services/wallet/address-exposure.service';
 import { BalanceService } from './services/wallet/balance.service';
 import { HistoryService } from './services/wallet/history.service';
 import { SpendingService } from './services/wallet/spending.service';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ScanAddressesComponent } from './components/pages/wallets/scan-addresses/scan-addresses.component';
 import { NodesComponent } from './components/pages/settings/nodes/nodes.component';
+import { EthEndpointsComponent } from './components/pages/settings/nodes/eth-endpoints/eth-endpoints.component';
+import { AppPasswordComponent } from './components/pages/settings/app-password/app-password.component';
+import { AppLockComponent } from './components/layout/app-lock/app-lock.component';
 import { ChangeNodeURLComponent } from './components/pages/settings/nodes/change-url/change-node-url.component';
 import { GlobalsService } from './services/globals.service';
 import { WalletOptionsComponent } from './components/pages/wallets/wallet-detail/wallet-options/wallet-options.component';
@@ -90,6 +98,8 @@ import { CustomMatDialogService } from './services/custom-mat-dialog.service';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { BulkSendComponent } from './components/pages/send-skycoin/send-form-advanced/bulk-send/bulk-send.component';
+import { OfflineTxComponent } from './components/pages/send-skycoin/offline-tx/offline-tx.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
@@ -98,7 +108,12 @@ import { EncryptionService } from './services/encryption.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
+import { HardwareWalletComponent } from './components/pages/settings/hardware-wallet/hardware-wallet.component';
+import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
+import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
+import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-scan-dialog.component';
 
 /**
  * The whole wallet as one module: its pages, services and routes under
@@ -126,6 +141,9 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         NavBarComponent,
         NodeStatusBarComponent,
         OutputsComponent,
+        NetworkComponent,
+        BackupComponent,
+        CoinsComponent,
         OnboardingCreateWalletComponent,
         OnboardingEncryptWalletComponent,
         PendingTransactionsComponent,
@@ -149,14 +167,23 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         CreateWalletFormComponent,
         ScanAddressesComponent,
         NodesComponent,
+        EthEndpointsComponent,
+        AppPasswordComponent,
+        AppLockComponent,
         ChangeNodeURLComponent,
         WalletOptionsComponent,
         SendFormAdvancedComponent,
         SelectAddressComponent,
+        BulkSendComponent,
+        OfflineTxComponent,
         MsgBarComponent,
+        PasswordDialogComponent,
+        QrScanDialogComponent,
         HwPinDialogComponent,
         HwMessageComponent,
         HwConfirmTxDialogComponent,
+        HwSeedWordDialogComponent,
+        HardwareWalletComponent,
     ],
     imports: [CommonModule,
         MatButtonModule,
@@ -201,6 +228,8 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         NodeHealthService,
         LanguageService,
         WalletService,
+        NetworkService,
+        AddressExposureService,
         BalanceService,
         HistoryService,
         SpendingService,
@@ -209,6 +238,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         Bip39WordListService,
         MsgBarService,
         HwWalletPinService,
+        HwWalletSeedWordService,
         HwWalletDaemonService,
         HwWalletService,
         EncryptionService,

@@ -47,3 +47,28 @@ func TestBTCHealth(t *testing.T) {
 		require.Contains(t, w.Body.String(), tc.body)
 	}
 }
+
+type feeBackend struct {
+	btc.Backend
+	rates map[int]int64
+}
+
+func (b feeBackend) EstimateFee(blocks int) (int64, error) {
+	r, ok := b.rates[blocks]
+	if !ok {
+		return 0, errors.New("no estimate")
+	}
+	return r, nil
+}
+
+func TestBTCFeePresets(t *testing.T) {
+	w := httptest.NewRecorder()
+	c := newCtx(w, httptest.NewRequest(http.MethodGet, "/coin/1/v1/btc/fee", nil))
+	b := feeBackend{rates: map[int]int64{12: 9, 6: 5, 2: 20}}
+	require.True(t, (&btcHandler{backend: b}).handleBtcAPI(c, "/v1/btc/fee"))
+	require.Equal(t, http.StatusOK, w.Code)
+	require.JSONEq(t, `{"sat_per_byte":5,"blocks":6,"presets":{
+		"slow":{"sat_per_byte":9,"blocks":12},
+		"normal":{"sat_per_byte":9,"blocks":6},
+		"fast":{"sat_per_byte":20,"blocks":2}}}`, w.Body.String())
+}

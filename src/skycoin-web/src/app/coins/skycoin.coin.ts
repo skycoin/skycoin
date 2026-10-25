@@ -1,4 +1,4 @@
-import { BaseCoin } from './basecoin';
+import { BaseCoin, skycoinArt } from './basecoin';
 import { defaultCoinId } from '../constants/coins-id.const';
 
 /**
@@ -8,6 +8,7 @@ export class SkycoinCoin extends BaseCoin {
   constructor() {
     super({
       id: defaultCoinId,
+      // Empty means the node that served the wallet, as with the node's -web-wallet.
       nodeUrl: '',
       coinName: 'Skycoin',
       coinSymbol: 'SKY',
@@ -16,8 +17,7 @@ export class SkycoinCoin extends BaseCoin {
       priceTickerSource: 'coinpaprika',
       coinExplorer: 'https://explorer.skycoin.net',
       coinType: 'skycoin',
-      imageName: 'skycoin-header.jpg',
-      gradientName: 'skycoin-gradient.png',
+      ...skycoinArt,
       iconName: 'skycoin-icon.png',
       bigIconName: 'skycoin-icon-b.png',
     });

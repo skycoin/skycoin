@@ -139,6 +139,7 @@ Available Commands:
   showSeed             Show wallet seed and seed passphrase
   signTransaction      Sign an unsigned transaction with specific wallet
   status               Check the status of current Skycoin node
+  sweep                Move every coin in a wallet to one new address
   transaction          Show detail info of specific transaction
   verifyAddress        Verify a skycoin address
   verifyTransaction    Verify if the specific transaction is spendable
@@ -382,6 +383,18 @@ $ skycoin cli send my-wallet.wlt 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc 10.5
     }
 }
 ```
+
+Change goes to a new address in the wallet unless `--change-address` names one.
+The CLI warns when a destination address has already spent, because its public
+key is then on the blockchain.
+
+**Move a wallet to a new address:**
+```bash
+$ skycoin cli sweep my-wallet.wlt
+```
+
+Every spendable coin moves to one new address in the wallet, whose public key has
+never been revealed. `--to` sends the coins to another address instead.
 
 **Create raw transaction:**
 ```bash

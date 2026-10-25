@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+### Added
+
+- `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
+- `skycoin-cli sweep` moves every coin in a wallet to one new address, whose
+  public key has never been revealed.
+- `send`, `createRawTransaction` and `createRawTransactionV2` warn when a
+  destination address has already spent, since its public key is on the
+  blockchain.
+
 ### Changed
 
 - The node's wallet GUI is now skycoin-web, the wallet `skycoin web` serves.
@@ -15,10 +24,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `src/gui/static` is gone; its features moved into skycoin-web, except the
   exchange page, whose service no longer answers, and firmware updates, which
   the Skywallet tools do.
-
-### Added
-
-- `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
+- Change goes to a new address by default, in the node and in the CLI.
+  Deterministic and xpub wallets generate their next address for it, as bip44
+  wallets already used their change chain, so a spend no longer sends coins
+  back to an address whose public key it has just revealed. Collection wallets
+  keep the old default. An unsigned request from an encrypted deterministic
+  wallet must now name a change address, because generating one needs the
+  password.
 
 ## 0.28.6
 

@@ -54,6 +54,7 @@ type TxOutput struct {
 // SendRequest represents a request to send bitcoin
 type SendRequest struct {
 	WalletID     string        `json:"wallet_id"`
+	Password     string        `json:"password"`
 	Destinations []Destination `json:"destinations"`
 	FeeRate      int64         `json:"fee_rate"` // satoshis per byte
 }

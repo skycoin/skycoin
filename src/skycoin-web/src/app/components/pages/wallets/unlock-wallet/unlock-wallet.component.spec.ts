@@ -7,6 +7,7 @@ import { UnlockWalletComponent } from './unlock-wallet.component';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { MockTranslatePipe, MockWalletService, MockMsgBarService } from '../../../../utils/test-mocks';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 
 describe('UnlockWalletComponent', () => {
   let component: UnlockWalletComponent;
@@ -22,6 +23,7 @@ describe('UnlockWalletComponent', () => {
         { provide: MatDialogRef, useValue: {} },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         { provide: MsgBarService, useClass: MockMsgBarService },
+        { provide: CustomMatDialogService, useValue: {} },
       ]
     })
     .compileComponents();

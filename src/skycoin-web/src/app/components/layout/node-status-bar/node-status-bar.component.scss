@@ -1,3 +1,5 @@
+@use '../../../../theme/_variables.scss' as *;
+
 // Thin always-visible connection strip at the very top of the wallet. The
 // wallet is light-themed ($grey-lightest body), so this uses a light strip with
 // dark text and a colored state dot; the whole strip tints green/red/amber so
@@ -89,5 +91,12 @@
   }
   50% {
     opacity: 1;
+  }
+}
+
+// A phone has no room for the chain key beside the coin and the block height.
+@media (max-width: $max-small-width) {
+  .-pk {
+    display: none;
   }
 }

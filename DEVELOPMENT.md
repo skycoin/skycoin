@@ -339,20 +339,20 @@ The compiled wallet source should be checked in to the repo, so that others do n
 
 Instructions for doing this:
 
-[Wallet GUI Development README](src/gui/static/README.md)
+[Wallet GUI Development README](src/skycoin-web/README.md)
 
 #### Translations
 
-You can find information about how to work with translation files in the [Translations README](./src/gui/static/src/assets/i18n/README.md).
+You can find information about how to work with translation files in the [Translations README](./src/skycoin-web/src/assets/i18n/README.md).
 
 ### Releases
 
 #### Update the version
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
-0. Make sure the translations are up to date. See the [i18n README](./src/gui/static/src/assets/i18n/README.md) for instructions on how to update translations and how to check if they are up to date.
-0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
-0. Update version strings to the new version in the following files: `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
+0. Make sure the translations are up to date. See the [i18n README](./src/skycoin-web/src/assets/i18n/README.md) for instructions on how to update translations and how to check if they are up to date.
+0. Compile the `src/skycoin-web/src/gui/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/skycoin-web/README.md))
+0. Update version strings to the new version in the following files: `src/cli/cli.go`, `src/skycoin-web/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 0. Update the files in https://github.com/skycoin/repo-info by following the [metadata update procedure](https://github.com/skycoin/repo-info/#updating-skycoin-repository-metadate),

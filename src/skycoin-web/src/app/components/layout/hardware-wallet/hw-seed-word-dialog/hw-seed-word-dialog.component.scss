@@ -1,0 +1,6 @@
+@use '../../../../../theme/_variables' as *;
+
+.-error {
+  color: $red;
+  font-size: 13px;
+}

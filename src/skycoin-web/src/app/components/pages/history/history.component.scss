@@ -256,3 +256,23 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
   text-align: center;
   margin: $content-vertical-margin;
 }
+
+.cached-notice {
+  margin: 30px 40px 0;
+  padding: 10px 15px;
+  border-radius: 5px;
+  background-color: rgba(255, 193, 7, 0.15);
+  font-size: 13px;
+
+  @media (max-width: $max-small-width) {
+    & {
+      margin: 30px 10px 0;
+    }
+  }
+
+  @media (max-width: $max-very-small-width) {
+    & {
+      margin: 30px 0 0;
+    }
+  }
+}

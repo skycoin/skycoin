@@ -449,7 +449,6 @@ func TestGetRichlist(t *testing.T) {
 			}
 			handler := newServerMux(muxConfig{
 				host:           configuredHost,
-				appLoc:         ".",
 				disableCSRF:    tc.csrfDisabled,
 				disableCSP:     true,
 				enabledAPISets: allAPISetsEnabled,
@@ -663,7 +662,6 @@ func TestGetAddressCount(t *testing.T) {
 
 			handler := newServerMux(muxConfig{
 				host:           configuredHost,
-				appLoc:         ".",
 				disableCSRF:    tc.csrfDisabled,
 				disableCSP:     true,
 				enabledAPISets: allAPISetsEnabled,

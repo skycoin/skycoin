@@ -2,7 +2,9 @@ import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { SendSkycoinComponent } from './send-skycoin.component';
-import { MockTranslatePipe, MockCoinService, MockNavBarService } from '../../../utils/test-mocks';
+import { MockTranslatePipe, MockCoinService, MockNavBarService, MockCustomMatDialogService, MockMsgBarService } from '../../../utils/test-mocks';
+import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
+import { MsgBarService } from '../../../services/msg-bar.service';
 import { CoinService } from '../../../services/coin.service';
 import { NavBarService } from '../../../services/nav-bar.service';
 
@@ -17,6 +19,8 @@ describe('SendSkycoinComponent', () => {
       providers: [
         { provide: CoinService, useClass: MockCoinService },
         { provide: NavBarService, useClass: MockNavBarService },
+        { provide: CustomMatDialogService, useClass: MockCustomMatDialogService },
+        { provide: MsgBarService, useClass: MockMsgBarService },
       ]
     }).compileComponents();
   }));

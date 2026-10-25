@@ -2,11 +2,9 @@ package api
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,7 +26,6 @@ var allAPISetsEnabled = map[string]struct{}{
 func defaultMuxConfig() muxConfig {
 	return muxConfig{
 		host:           configuredHost,
-		appLoc:         ".",
 		disableCSRF:    true,
 		disableCSP:     true,
 		enabledAPISets: allAPISetsEnabled,
@@ -148,6 +145,9 @@ var endpointsMethods = map[string][]string{
 	"/api/v1/wallet/unload": []string{
 		http.MethodPost,
 	},
+	"/api/v1/wallet/newAccount": []string{
+		http.MethodPost,
+	},
 	"/api/v1/wallet/update": []string{
 		http.MethodPost,
 	},
@@ -192,110 +192,6 @@ func allEndpoints() []string {
 		i++
 	}
 	return endpoints
-}
-
-// TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
-// we can't control the output by mocking the Gateway like other tests. Instead,
-// we create a full webserver for each test case.
-func TestEnableGUI(t *testing.T) {
-	tt := []struct {
-		name       string
-		enableGUI  bool
-		endpoint   string
-		appLoc     string
-		expectCode int
-		expectBody string
-	}{
-		{
-			name:       "disable gui GET /",
-			enableGUI:  false,
-			endpoint:   "/",
-			appLoc:     "",
-			expectCode: http.StatusNotFound,
-			expectBody: "404 page not found\n",
-		},
-		{
-			name:       "disable gui GET /invalid-path",
-			enableGUI:  false,
-			endpoint:   "/invalid-path",
-			appLoc:     "",
-			expectCode: http.StatusNotFound,
-			expectBody: "404 page not found\n",
-		},
-		{
-			name:       "enable gui GET /",
-			enableGUI:  true,
-			endpoint:   "/",
-			appLoc:     "../gui/static",
-			expectCode: http.StatusOK,
-			expectBody: "",
-		},
-		{
-			name:       "enable gui GET /invalid-path",
-			enableGUI:  true,
-			endpoint:   "/invalid-path",
-			appLoc:     "../gui/static",
-			expectCode: http.StatusNotFound,
-			expectBody: "404 page not found\n",
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
-			require.NoError(t, err)
-
-			gateway := &MockGatewayer{}
-
-			rr := httptest.NewRecorder()
-			cfg := defaultMuxConfig()
-			handler := newServerMux(cfg, gateway)
-			handler.ServeHTTP(rr, req)
-
-			c := Config{
-				EnableGUI:   tc.enableGUI,
-				DisableCSRF: true,
-				StaticDir:   tc.appLoc,
-			}
-
-			host := "127.0.0.1:6423"
-			s, err := Create(host, c, gateway)
-			require.NoError(t, err)
-
-			wg := sync.WaitGroup{}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err := s.Serve()
-				if err != nil && err.Error() != fmt.Sprintf("accept tcp %s: use of closed network connection", host) {
-					require.NoError(t, err)
-				}
-			}()
-
-			defer func() {
-				s.listener.Close() //nolint:errcheck,gosec
-				wg.Wait()
-			}()
-
-			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
-			// Every case serves on the same address, and closing the listener leaves
-			// the previous server's keep-alive connection open: a pooled client
-			// would ask the last case's server instead of this one.
-			client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
-			rsp, err := client.Get(url) //nolint:gosec
-			require.NoError(t, err)
-
-			defer rsp.Body.Close() //nolint:errcheck
-			require.Equal(t, tc.expectCode, rsp.StatusCode)
-
-			body, err := io.ReadAll(rr.Body)
-			require.NoError(t, err)
-
-			if rsp.StatusCode != http.StatusOK {
-				require.Equal(t, tc.expectBody, string(body))
-			}
-		})
-	}
 }
 
 func TestAPISetDisabled(t *testing.T) {

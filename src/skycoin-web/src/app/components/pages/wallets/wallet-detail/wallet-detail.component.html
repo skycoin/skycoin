@@ -16,7 +16,8 @@
     }
   </div>
   <div class="flex-fill"></div>
-  @if (isBip44) {
+  <!-- Ethereum wallets use addresses on account 0, as other Ethereum wallets do. -->
+  @if (isBip44 && !currentCoin?.isEthereum()) {
     <div class="-button -not-on-small-and-below" (click)="onAddAccount()">
       <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
     </div>
@@ -42,6 +43,13 @@
     <span class="-img -btn-options -enabled-span">{{ 'wallet.options' | translate }}</span>
   </div>
 </div>
+
+@if (exposedWithCoinsCount > 0) {
+  <div class="-exposure-banner">
+    <mat-icon>warning</mat-icon>
+    <span>{{ 'wallet.exposed-banner' | translate: { count: exposedWithCoinsCount } }}</span>
+  </div>
+}
 
 @if (isBip44 && wallet.accounts) {
   <!-- BIP44 account-structured view -->
@@ -78,9 +86,12 @@
       <div class="-records">
         @for (address of account.externalAddresses; track address; let i = $index) {
           @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
-            <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
+            <div class="-record" #element (click)="onShowQrIfPointer(element, address)" [class.-exposed]="exposed.has(address.address)" [class.-exposed-funded]="exposedWithCoins(address)">
               <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + ($any(address).child_number != null ? $any(address).child_number : i)">{{ $any(address).child_number != null ? $any(address).child_number : i + 1 }}</div>
               <div class="address-column -not-on-small-and-below">
+                @if (exposed.has(address.address)) {
+                  <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+                }
                 <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
                 <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
                   [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
@@ -91,7 +102,7 @@
                 {{ address.address }}
               </div>
               <div class="mobile-label-container">
-                <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+                <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.displayDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.displayDecimals || 6)) }}</div>
               </div>
               @if (currentCoin?.hasHours()) {
                 <div class="mobile-label-container">
@@ -118,6 +129,8 @@
         }
       </div>
 
+      <!-- Ethereum keeps one balance per address and makes no change. -->
+      @if (!currentCoin?.isEthereum()) {
       <!-- Change chain: xpub + derived addresses -->
       <div class="-chain-label -change-label" (click)="onToggleChangeAddresses(account)">
         Change Chain (m/44'/coin'/{{ account.index }}'/1) ({{ account.changeAddresses.length || 0 }})
@@ -139,9 +152,12 @@
           <div class="-records">
             @for (address of account.changeAddresses; track address; let i = $index) {
               @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
-                <div class="-record" #chgElement (click)="onShowQrIfPointer(chgElement, address)">
+                <div class="-record" #chgElement (click)="onShowQrIfPointer(chgElement, address)" [class.-exposed]="exposed.has(address.address)" [class.-exposed-funded]="exposedWithCoins(address)">
                   <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + ($any(address).child_number != null ? $any(address).child_number : i)">{{ $any(address).child_number != null ? $any(address).child_number : i + 1 }}</div>
                   <div class="address-column -not-on-small-and-below">
+                    @if (exposed.has(address.address)) {
+                      <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+                    }
                     <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
                     <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
                       [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
@@ -152,7 +168,7 @@
                     {{ address.address }}
                   </div>
                   <div class="mobile-label-container">
-                    <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+                    <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.displayDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.displayDecimals || 6)) }}</div>
                   </div>
                   @if (currentCoin?.hasHours()) {
                     <div class="mobile-label-container">
@@ -180,6 +196,7 @@
           </div>
         }
       }
+      }
     </div>
   }
 } @else {
@@ -187,9 +204,12 @@
   <div class="-records">
     @for (address of (wallet ? wallet.addresses : []); track address; let i = $index) {
       @if (!wallet.hideEmpty || address.balance!.isGreaterThan(0)) {
-        <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
+        <div class="-record" #element (click)="onShowQrIfPointer(element, address)" [class.-exposed]="exposed.has(address.address)" [class.-exposed-funded]="exposedWithCoins(address)">
           <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
           <div class="address-column -not-on-small-and-below">
+            @if (exposed.has(address.address)) {
+              <mat-icon class="-exposed-icon" [matTooltip]="(exposedWithCoins(address) ? 'wallet.address.exposed-funded' : 'wallet.address.exposed') | translate">warning</mat-icon>
+            }
             <img class="qr-code-button" src="assets/skycoin-wallet/img/qr-code-black.png" (click)="onShowQr(address)" >
             <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
               [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
@@ -200,7 +220,7 @@
             {{ address.address }}
           </div>
           <div class="mobile-label-container">
-            <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+            <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.displayDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.displayDecimals || 6)) }}</div>
           </div>
           @if (currentCoin?.hasHours()) {
             <div class="mobile-label-container">

@@ -11,7 +11,7 @@
             {{ wallet.label }} —
             @if (wallet.balance) {
               <span>
-                {{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.coinDecimals).toString() : 0) | number:('1.0-' + currentCoin.coinDecimals) }} {{ currentCoin.coinSymbol }}
+                {{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.displayDecimals).toString() : 0) | number:('1.0-' + currentCoin.displayDecimals) }} {{ currentCoin.coinSymbol }}
                 @if (currentCoin.hasHours() && wallet.hours) {
                   ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
                 }
@@ -25,7 +25,10 @@
 
   <div class="form-field">
     <label for="address">{{ 'send.to-label' | translate }}</label>
-    <input formControlName="address" id="address" [placeholder]="'send.recipient-address' | translate" >
+    <div class="address-row">
+      <input formControlName="address" id="address" [placeholder]="'send.recipient-address' | translate" >
+      <img class="scan-button" src="assets/skycoin-wallet/img/qr-code-black.png" [matTooltip]="'qr-scan.title' | translate" (click)="scanAddress()">
+    </div>
   </div>
   <div class="form-field">
     <label for="amount" class="amount-label">{{ 'send.amount-label' | translate }}</label>
@@ -59,6 +62,19 @@
       </div>
     }
   </div>
+
+  @if (currentCoin.isGateway()) {
+    <div class="form-field">
+      <label for="feeSpeed">{{ 'send.fee-label' | translate }}</label>
+      <div class="-select">
+        <select formControlName="feeSpeed" id="feeSpeed">
+          <option value="slow">{{ 'send.fee-slow' | translate }}</option>
+          <option value="normal">{{ 'send.fee-normal' | translate }}</option>
+          <option value="fast">{{ 'send.fee-fast' | translate }}</option>
+        </select>
+      </div>
+    </div>
+  }
 
   @if (showSlowMobileInfo) {
     <div class="form-field -on-small-and-below-only">

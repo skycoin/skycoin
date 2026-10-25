@@ -4,7 +4,7 @@
       <mat-menu #coinMenu="matMenu" [overlapTrigger]="false">
         @for (coin of availableCoins; track coin.id) {
           <button mat-menu-item (click)="selectCoin(coin)" [class.active-coin]="coin.id === currentCoin.id">
-            <img class="coin-menu-icon" [src]="'assets/skycoin-wallet/img/coins/' + coin.iconName" />
+            <img class="coin-menu-icon" [src]="coin.iconSrc" />
             {{ coin.coinName }} ({{ coin.coinSymbol }})
           </button>
         }
@@ -14,7 +14,7 @@
         color="primary"
         class="round-button"
         [matMenuTriggerFor]="coinMenu">
-        <img class="coin-icon" [src]="'assets/skycoin-wallet/img/coins/' + currentCoin.iconName" />
+        <img class="coin-icon" [src]="currentCoin.iconSrc" />
         <span class="coin-name -not-on-very-small">{{ currentCoin.coinSymbol }}</span>
         <mat-icon>expand_more</mat-icon>
       </button>
@@ -63,7 +63,16 @@
     <button mat-menu-item [routerLink]="'/settings/blockchain' | walletPath"> {{ 'title.blockchain' | translate}} </button>
     <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath"> {{ 'title.outputs' | translate}} </button>
     <button mat-menu-item [routerLink]="'/settings/pending-transactions' | walletPath"> {{ 'title.pending-txs' | translate}} </button>
+    @if (!currentCoin.isGateway()) {
+      <button mat-menu-item [routerLink]="'/settings/network' | walletPath"> {{ 'title.network' | translate}} </button>
+      <button mat-menu-item [routerLink]="'/settings/hardware-wallet' | walletPath"> {{ 'title.hardware-wallet' | translate}} </button>
+    }
     <button mat-menu-item [routerLink]="'/settings/node' | walletPath"> {{ (hasManyCoins ? 'title.nodes' : 'title.node') | translate}} </button>
+    @if (currentCoin.serverWallets) {
+      <button mat-menu-item [routerLink]="'/settings/coins' | walletPath"> {{ 'title.coins' | translate}} </button>
+    }
+    <button mat-menu-item [routerLink]="'/settings/password' | walletPath"> {{ 'title.app-password' | translate}} </button>
+    <button mat-menu-item [routerLink]="'/settings/backup' | walletPath"> {{ 'title.backup' | translate}} </button>
     @if (currentCoin.coinExplorer) {
       <a
         mat-menu-item

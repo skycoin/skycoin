@@ -5,3 +5,25 @@
 .amount-label {
   display: inline-block;
 } 
+
+.address-row {
+  display: flex;
+  align-items: center;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .scan-button {
+    width: 24px;
+    height: 24px;
+    margin-left: 10px;
+    cursor: pointer;
+    opacity: 0.6;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}

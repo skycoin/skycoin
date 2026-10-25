@@ -1,0 +1,42 @@
+.coin-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  object-fit: contain;
+}
+
+.-link {
+  cursor: pointer;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &.disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+.add-form {
+  margin-top: 20px;
+  padding: 20px;
+
+  h4 {
+    margin: 0 0 10px;
+  }
+
+  .icon-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .hint {
+    font-size: 12px;
+  }
+
+  .-buttons {
+    text-align: center;
+  }
+}

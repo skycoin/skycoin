@@ -62,6 +62,7 @@ When `--wallet-dir` is specified, wallets are stored on disk and managed by the 
 - **A malicious node could return false balance or transaction data.** The remote node provides blockchain data that skycoin-web displays. A compromised node could show incorrect balances, hide transactions, or provide manipulated transaction data. However, it cannot steal your coins because it does not have access to your private keys.
 - **Wallet files contain private keys.** The wallet directory contains unencrypted (or password-encrypted) wallet files with private keys. Protect this directory with appropriate filesystem permissions. Anyone with access to these files can spend your coins.
 - **Run skycoin-web locally.** Since skycoin-web reads wallet files from disk, it should be run on the same machine where the wallet files reside. Do not expose skycoin-web's web interface to untrusted networks when `--wallet-dir` is configured.
+- **Other websites cannot use it.** The server sends no CORS headers, so other pages cannot read wallet data, and it refuses requests that change state when the browser reports another origin, so they cannot send coins or edit wallets either.
 
 ### Hardware wallet mode
 
@@ -85,6 +86,22 @@ The operation without any flags was described above in the [history](#history) s
 | `--btc-electrum-url` | | `default` | Electrum server URLs, comma separated and tried in order. `default` is the built-in list and `none` turns Bitcoin off. |
 
 Bitcoin is available by default through the built-in electrum servers. `--btc-node-url` uses a Bitcoin Core node instead, and `--btc-electrum-url none` removes Bitcoin. Servers are contacted only when a Bitcoin call is made, through `--socks5-proxy` when one is set.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--eth-rpc-url` | | `default` | Ethereum JSON-RPC URLs, comma separated and tried in order. `default` is a built-in list of keyless public endpoints and `none` turns Ethereum off. |
+| `--eth-indexer-url` | | `https://eth.blockscout.com` | Etherscan-style API for transaction history. |
+| `--erc20-tokens` | | `USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6` | ERC-20 tokens to offer, comma separated `SYMBOL:contract:decimals`, or `none`. |
+
+With `--wallet-dir`, Ether and each token appear as coins of their own. They share the Ethereum wallets, since tokens are held at the same addresses, and the wallet keeps and signs with the keys like the other server wallets. RPC and indexer calls go through `--socks5-proxy` when one is set.
+
+The RPC and indexer addresses can also be changed in the wallet, under node settings. They are saved as `ethereum-endpoints.json` in the first wallet directory and take precedence over the flags until reset to the defaults.
+
+The send form offers slow, normal and fast fees for Bitcoin and Ethereum coins. For Bitcoin they are the electrum estimates for 12, 6 and 2 blocks. For Ethereum they are the least tip, the node's suggested tip and twice it, each with a cap of twice the base fee plus the tip.
+
+### Adding coins
+
+With `--wallet-dir`, the wallet's Coins settings page adds fiber coins by their node URL and ERC-20 tokens by contract and decimals, each with an optional icon. A fiber coin's node must answer before it is added, and fiber coins share the first coin's wallets. Tokens share the Ethereum wallets and servers. The added coins are kept as `custom-coins.json` in the first wallet directory. A removed coin disappears at once and leaves the other coins where they are until a restart.
 
 ### Hardware Wallet
 

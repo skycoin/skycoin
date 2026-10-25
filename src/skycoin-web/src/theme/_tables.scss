@@ -30,6 +30,12 @@
 
       > div {
         padding: 0 20px;
+
+        @media (max-width: $max-very-small-width) {
+          & {
+            padding: 0 8px;
+          }
+        }
       }
     }
 
@@ -76,6 +82,12 @@
 
         > div {
           padding: 0 20px;
+
+          @media (max-width: $max-very-small-width) {
+            & {
+              padding: 0 8px;
+            }
+          }
         }
       }
     }

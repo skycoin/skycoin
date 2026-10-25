@@ -8,7 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 
-	messages "github.com/skycoin/hardware-wallet-protob/go"
+	"github.com/skycoin/skycoin/src/hardware-wallet/messages"
 )
 
 // MessageCancel prepare Cancel request

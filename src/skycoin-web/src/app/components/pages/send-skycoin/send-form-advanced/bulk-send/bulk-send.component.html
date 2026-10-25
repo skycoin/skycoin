@@ -1,0 +1,15 @@
+<app-modal class="modal" [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
+  <p>{{ 'send.bulk-send.indications' | translate }}</p>
+  <div [formGroup]="form">
+    <div class="form-field">
+      <textarea formControlName="data" id="bulk-data" rows="8" (input)="error = ''"></textarea>
+      @if (error) {
+        <div class="-error">{{ error | translate }}</div>
+      }
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="cancel()">{{ 'send.bulk-send.cancel-button' | translate }}</app-button>
+    <app-button (action)="process()" class="primary">{{ 'send.bulk-send.process-button' | translate }}</app-button>
+  </div>
+</app-modal>

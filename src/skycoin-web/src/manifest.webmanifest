@@ -1,0 +1,14 @@
+{
+  "name": "Skycoin Web Wallet",
+  "short_name": "Skycoin",
+  "description": "A Skycoin wallet that keeps its keys in the browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0072ff",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

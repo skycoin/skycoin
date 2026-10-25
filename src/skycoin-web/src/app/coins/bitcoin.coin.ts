@@ -21,8 +21,8 @@ export class BitcoinCoin extends BaseCoin {
       coinType: 'bitcoin',
       imageName: '',
       gradientName: '',
-      iconName: 'skycoin-icon.png',
-      bigIconName: 'skycoin-icon-b.png',
+      iconName: 'btc-icon.png',
+      bigIconName: 'btc-icon.png',
     });
   }
 }

@@ -3,10 +3,10 @@
 package wasmassets
 
 import (
-	"github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 	wasmtinygo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
+	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 )
 
 func init() {
-	commands.RegisterCipherWasm(wasmtinygo.WasmFileGz, wasmtinygo.WasmExecJS)
+	gui.RegisterCipherWasm(wasmtinygo.WasmFileGz, wasmtinygo.WasmExecJS)
 }

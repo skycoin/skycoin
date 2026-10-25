@@ -1,0 +1,93 @@
+# The only CI this repository has, and deliberately small.
+#
+# Cross-platform building and the test suite run on the modernc.org/builder
+# farm, not here; see HACKING.md. This pipeline exists for two things that
+# need no build of the transpiled code and fail fast:
+#
+# - LICENSE-3RD-PARTY.md, SBOM.md, sbom.cdx.json and sbom.spdx.json are
+#   generated from the module graph and the vendored C, so a dependency bump or
+#   a re-vendoring silently makes all four wrong. licgen -check regenerates them
+#   in memory and fails if what is committed differs.
+# - vendor.json records where lib/ and vec/ came from and a digest of them; see
+#   internal/vendorstamp. It fails when a re-vendoring was not stamped, a
+#   stamp says a sibling checkout was dirty, or generated files were edited by
+#   hand. The test suite runs the same check, so the builders refuse such a
+#   commit as well, and a release is tagged only when they are green.
+#
+# Each job runs only when something that feeds it changes, so ordinary commits
+# cost no CI minutes.
+
+stages:
+  - check
+
+# One pipeline per change: a merge request pipeline, or a branch pipeline when
+# no merge request is open for that branch.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+.generated-docs-inputs: &generated-docs-inputs
+  - go.mod
+  - go.sum
+  - licensegen/**/*
+  - lib/sqlite.go          # holds SQLITE_VERSION
+  - vec/vec.go             # holds m_SQLITE_VEC_VERSION
+  - LICENSE-SQLITE
+  - LICENSE-SQLITE_VEC
+  - LICENSE-3RD-PARTY.md
+  - SBOM.md
+  - sbom.cdx.json
+  - sbom.spdx.json
+  - .gitlab-ci.yml
+
+generated-docs:
+  stage: check
+  # Any Go at least as new as the go directive in go.mod works; the documents
+  # do not depend on the toolchain version.
+  image: golang:1.27
+  interruptible: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *generated-docs-inputs
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *generated-docs-inputs
+  script:
+    - cd licensegen && go build -tags none -o ../licgen .
+    - cd "$CI_PROJECT_DIR"
+    - |
+      if ! ./licgen -check; then
+        echo
+        echo "The generated documents are stale. Run 'make sbom' and commit the result."
+        echo "What differs:"
+        ./licgen
+        git --no-pager diff --stat
+        exit 1
+      fi
+  after_script:
+    - rm -f "$CI_PROJECT_DIR/licgen"
+
+.vendor-stamp-inputs: &vendor-stamp-inputs
+  - vendor.json
+  - go.mod
+  - lib/**/*
+  - vec/**/*
+  - LICENSE-SQLITE_VEC
+  - internal/vendorstamp/**/*
+  - vendor_libs/**/*
+  - Makefile
+  - .gitlab-ci.yml
+
+vendor-stamp:
+  stage: check
+  image: golang:1.27
+  interruptible: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *vendor-stamp-inputs
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *vendor-stamp-inputs
+  script:
+    - go test ./internal/vendorstamp/

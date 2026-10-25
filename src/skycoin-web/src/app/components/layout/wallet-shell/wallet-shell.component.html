@@ -1,3 +1,6 @@
+@if (walletService.locked | async) {
+  <app-app-lock></app-app-lock>
+}
 @if (!browserCompatibleWithWasm || !wasmFileLoaded) {
   <div class="crypto-alert">
     <div>

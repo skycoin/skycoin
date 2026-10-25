@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
 - `skycoin-cli sweep` moves every coin in a wallet to one new address, whose
   public key has never been revealed.
 - `send`, `createRawTransaction` and `createRawTransactionV2` warn when a
@@ -16,6 +17,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- The node's wallet GUI is now skycoin-web, the wallet `skycoin web` serves.
+  `-enable-gui` serves it with the wallets kept in the node, and `-web-wallet`
+  serves it without the `WALLET` API set, with the wallets kept in the browser.
+  `-gui-dir` now takes a skycoin-web build directory. The old GUI in
+  `src/gui/static` is gone; its features moved into skycoin-web, except the
+  exchange page, whose service no longer answers, and firmware updates, which
+  the Skywallet tools do.
 - Change goes to a new address by default, in the node and in the CLI.
   Deterministic and xpub wallets generate their next address for it, as bip44
   wallets already used their change chain, so a spend no longer sends coins

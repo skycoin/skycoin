@@ -106,8 +106,9 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
       // /api/v1/health. Verify it there and skip the skycoin-specific version /
       // csrf / burn-rate checks.
       const coin = this.coinService.coins.find(c => c.id === this.data.coinId);
-      if (coin && coin.isBitcoin()) {
-        this.verificationSubscription = this.http.get(this.newUrl + '/v1/btc/health').subscribe((response: any) => {
+      if (coin && coin.isGateway()) {
+        const healthPath = coin.isEthereum() ? '/api/v1/eth/health' : '/v1/btc/health';
+        this.verificationSubscription = this.http.get(this.newUrl + healthPath).subscribe((response: any) => {
           this.coinName = coin.coinName;
           this.nodeVersion = null;
           this.hoursBurnRate = null;

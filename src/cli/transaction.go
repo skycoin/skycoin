@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -371,14 +370,15 @@ func signTxnCmd() *cobra.Command {
 				EncodedTransaction: rawTxn,
 			}
 
-			// Load wallet to check if the wallet is encrypted
-			w, err := wallet.Load(id)
+			// Ask the node whether the wallet is encrypted. id is the node's wallet ID,
+			// which is what the signing request sends too.
+			w, err := apiClient.Wallet(id)
 			if err != nil {
 				return err
 			}
 
 			// Read wallet password from terminal if it is encrypted
-			if w.IsEncrypted() {
+			if w.Meta.Encrypted {
 				v, err := readPasswordFromTerminal()
 				if err != nil {
 					return err

@@ -337,6 +337,8 @@ func ResolveCoinType(s string) (CoinType, error) {
 		return CoinTypeBitcoin, nil
 	case "bitcoin-segwit":
 		return CoinTypeBitcoinSegwit, nil
+	case "eth", "ethereum":
+		return CoinTypeEthereum, nil
 	default:
 		return CoinType(""), errors.New("invalid coin type")
 	}

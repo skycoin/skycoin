@@ -4,6 +4,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 
 import { HwWalletPinService } from './hw-wallet-pin.service';
+import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getHwErrorMsg } from '../utils/hw-errors';
 
@@ -28,6 +29,7 @@ export class HwWalletDaemonService {
   constructor(
     private http: HttpClient,
     private hwWalletPinService: HwWalletPinService,
+    private hwWalletSeedWordService: HwWalletSeedWordService,
     private ngZone: NgZone,
   ) { }
 
@@ -65,6 +67,19 @@ export class HwWalletDaemonService {
     ));
   }
 
+  /** Cancels the device operation and fails it as refused by the user. */
+  private cancelAsRefused(): Observable<never> {
+    return this.put('/cancel').pipe(mergeMap(() => {
+      const response = new OperationError();
+      response.originalError = null;
+      response.originalServerErrorMsg = '';
+      response.type = HWOperationResults.FailedOrRefused;
+      response.translatableErrorMsg = this.getHardwareWalletErrorMsg(response.type);
+
+      return observableThrowError(response);
+    }));
+  }
+
   private checkResponse(operationResponse: Observable<any>, checkingConnected = false): Observable<any> {
     return operationResponse.pipe(
       timeout(this.timeoutMs),
@@ -84,18 +99,20 @@ export class HwWalletDaemonService {
         if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('PinMatrixRequest') !== -1) {
           return this.hwWalletPinService.requestPin().pipe(mergeMap(pin => {
             if (!pin) {
-              return this.put('/cancel').pipe(mergeMap(() => {
-                const response = new OperationError();
-                response.originalError = null;
-                response.originalServerErrorMsg = '';
-                response.type = HWOperationResults.FailedOrRefused;
-                response.translatableErrorMsg = this.getHardwareWalletErrorMsg(response.type);
-
-                return observableThrowError(response);
-              }));
+              return this.cancelAsRefused();
             }
 
             return this.post('/intermediate/pin_matrix', {pin: pin});
+          }));
+        }
+
+        if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('WordRequest') !== -1) {
+          return this.hwWalletSeedWordService.requestWord().pipe(mergeMap(word => {
+            if (!word) {
+              return this.cancelAsRefused();
+            }
+
+            return this.post('/intermediate/word', {word: word});
           }));
         }
 

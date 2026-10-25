@@ -202,6 +202,24 @@ export class HwWalletService {
     }));
   }
 
+  /**
+   * Enters a seed into a device without one, or with dryRun checks that the seed the
+   * user types matches the device's. The device asks for the words one at a time.
+   */
+  recoverMnemonic(wordCount: number, dryRun: boolean): Observable<OperationResult> {
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
+
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/recovery',
+          {word_count: wordCount, use_passphrase: false, dry_run: dryRun},
+        ),
+        ['Device recovered', 'The seed is valid and matches the one in the device'],
+      );
+    }));
+  }
+
   backup(): Observable<OperationResult> {
     return this.cancelLastAction().pipe(mergeMap(() => {
       this.prepare();

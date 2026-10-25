@@ -1,0 +1,323 @@
+{
+  "headTime": 1754500000,
+  "wallet": {
+    "seed": "skywire wallet fixture seed",
+    "addresses": [
+      "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+      "Nx9W36qj6V3MAW2iKVBYHu3e3EAswZ5XaB",
+      "24qXSq7hPJ5f62DnJ7hekudVDRQEuvtFJhf",
+      "tnJTxYeok679cNgvgyywWYuATZrLg1Jk6W",
+      "2AMq5uAwsH9HCrJhA19uSL3Xb7uCA7xGL1C"
+    ],
+    "secrets": [
+      "bc71cf4bbb6fa1eea46444c45d0a4049f6488913bd9d862393bdf923b76d1f4c",
+      "f6913a174bea8c8427e4c61a74a9357bc82b66419b150d6211f1684bfe5fa914",
+      "719890dd6e0ecd413c7215e31f95d231cf5e0a7a9d4cde0d5dfbdb7476be5f8a",
+      "06d0166942a028028bdbfc69ab3bea4efbb48a3f8494102c64690adb964c5de3",
+      "f0abcf3abc263fd1669a8438706bc908b80faa293bf0c4515ef50b78ae253788"
+    ],
+    "publics": [
+      "02d16aaf5bbd1af2c52626295801ec2a55cfb11bd85ba032af675171210553d8c3",
+      "0347f78370b587c30824f0bd1291fcdf6e1d3d57ce17de1d29f8e4411a01bd6d6f",
+      "023321d44a6f14c0016ecde2714356771dcb6b9b8e12d46ded1823a8ffc970bbd0",
+      "0340c5bc0785bde731131ca592d7d909b770decf61af8dd978b8777d580b5f02ae",
+      "03fca2aace6bb8216da9701f5586b06bec7c1702902afeec03e17d867c61cd3fce"
+    ]
+  },
+  "cases": [
+    {
+      "name": "change",
+      "uxouts": [
+        {
+          "hash": "90f1d22d79bbe90da76553d07eba89c82182f86e8074de4889f92619f7ac3495",
+          "time": 1754492800,
+          "bkSeq": 100,
+          "srcTx": "5c300990065c63305a3eecd07a5e4aa70189d7c755cf419e95844742d5051878",
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 10000000,
+          "hours": 500,
+          "calculatedHours": 520
+        },
+        {
+          "hash": "82e11e4a4c632cae024aac7cd7d2d5099bd32fc9f3000dd6bdf6cd72a5619110",
+          "time": 1754496400,
+          "bkSeq": 200,
+          "srcTx": "b7e8e58c9b3f2dd96214044ee9166aa010860b85afc34393f4cb19319dc35577",
+          "address": "Nx9W36qj6V3MAW2iKVBYHu3e3EAswZ5XaB",
+          "coins": 3000000,
+          "hours": 120,
+          "calculatedHours": 123
+        },
+        {
+          "hash": "9b2757ef5d7aad89633f6e868013c63f2d1e04f14eb111eddefa983a8b789518",
+          "time": 1754500000,
+          "bkSeq": 300,
+          "srcTx": "09844de3ff8aca408d93cb0b2e1b598155b2a47c5f8062652b37e1eafb3b1a42",
+          "address": "24qXSq7hPJ5f62DnJ7hekudVDRQEuvtFJhf",
+          "coins": 1000000,
+          "hours": 30,
+          "calculatedHours": 30
+        }
+      ],
+      "to": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 2500000
+        }
+      ],
+      "changeAddress": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+      "burnFactor": 10,
+      "expectedInputs": [
+        "90f1d22d79bbe90da76553d07eba89c82182f86e8074de4889f92619f7ac3495"
+      ],
+      "expectedOutputs": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 2500000,
+          "hours": 234
+        },
+        {
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 7500000,
+          "hours": 234
+        }
+      ],
+      "expectedInnerHash": "26533b9f64ec9b475462f6853f4553a4ad431b372b64bf0f89984aeea0a46b54",
+      "expectedUnsignedHex": "dc0000000026533b9f64ec9b475462f6853f4553a4ad431b372b64bf0f89984aeea0a46b540100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000090f1d22d79bbe90da76553d07eba89c82182f86e8074de4889f92619f7ac349502000000000717ce16fafb7f8e593d71e6524f6c9ff0c48190a025260000000000ea00000000000000000104c38c26a96e3c92850cfd143abe299e9cea7fe070720000000000ea00000000000000",
+      "expectedLength": 220
+    },
+    {
+      "name": "multi-input",
+      "uxouts": [
+        {
+          "hash": "035064131dbaab5355bee488f8cd85fbfcf64f31c1b2f96000ec63f95a099035",
+          "time": 1754492800,
+          "bkSeq": 101,
+          "srcTx": "564de6b62aeea22fcac51a33a15df65cc8224a650a1bf97d448b62f170563338",
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 5000000,
+          "hours": 400,
+          "calculatedHours": 410
+        },
+        {
+          "hash": "f1239eb0ae48e66cbe3db881a2555d562ecad191b63213c46b427087c55606df",
+          "time": 1754496400,
+          "bkSeq": 102,
+          "srcTx": "b3424baf833d3439b01b82bb63ed78f482586f856524635216749c3fd2a935a0",
+          "address": "Nx9W36qj6V3MAW2iKVBYHu3e3EAswZ5XaB",
+          "coins": 4000000,
+          "hours": 100,
+          "calculatedHours": 104
+        },
+        {
+          "hash": "1f24b433f79bcdba86dc5d1559cec3e03a71c4bc96ffaf37fb18c0666574be3c",
+          "time": 1754498200,
+          "bkSeq": 103,
+          "srcTx": "6d3905c4f5f6033d85e6c1aa1392018a6af1df4792e3ad6a9506449a817fd459",
+          "address": "24qXSq7hPJ5f62DnJ7hekudVDRQEuvtFJhf",
+          "coins": 2000000,
+          "hours": 50,
+          "calculatedHours": 51
+        }
+      ],
+      "to": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 8000000
+        }
+      ],
+      "changeAddress": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+      "burnFactor": 10,
+      "expectedInputs": [
+        "035064131dbaab5355bee488f8cd85fbfcf64f31c1b2f96000ec63f95a099035",
+        "f1239eb0ae48e66cbe3db881a2555d562ecad191b63213c46b427087c55606df"
+      ],
+      "expectedOutputs": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 8000000,
+          "hours": 231
+        },
+        {
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 1000000,
+          "hours": 231
+        }
+      ],
+      "expectedInnerHash": "a1ed6235175c32204dac4db15e87d958211aae18a4e5ef4922e2efab8312de64",
+      "expectedUnsignedHex": "3d01000000a1ed6235175c32204dac4db15e87d958211aae18a4e5ef4922e2efab8312de64020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000035064131dbaab5355bee488f8cd85fbfcf64f31c1b2f96000ec63f95a099035f1239eb0ae48e66cbe3db881a2555d562ecad191b63213c46b427087c55606df02000000000717ce16fafb7f8e593d71e6524f6c9ff0c4819000127a0000000000e700000000000000000104c38c26a96e3c92850cfd143abe299e9cea7f40420f0000000000e700000000000000",
+      "expectedLength": 317
+    },
+    {
+      "name": "send-all",
+      "uxouts": [
+        {
+          "hash": "02a1cc109b0820265a3b2bdd3362e4d8b949361a926bc06479ee28210400ac0e",
+          "time": 1754492800,
+          "bkSeq": 104,
+          "srcTx": "937270f3385e6ebfabd192b97249b00b49e75ef48720214cbf2787c8676350a5",
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 2000000,
+          "hours": 80,
+          "calculatedHours": 84
+        },
+        {
+          "hash": "caed271d92541f8f1ec4c6ee8c572a2ab6ddd618cb3a3b710a19560f160312ca",
+          "time": 1754496400,
+          "bkSeq": 105,
+          "srcTx": "93e3bbddb557af5e243c3fc92cbd71e62b84e6f7bfcc2d56774455abcd225c3f",
+          "address": "Nx9W36qj6V3MAW2iKVBYHu3e3EAswZ5XaB",
+          "coins": 3000000,
+          "hours": 90,
+          "calculatedHours": 93
+        }
+      ],
+      "to": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 5000000
+        }
+      ],
+      "changeAddress": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+      "burnFactor": 10,
+      "expectedInputs": [
+        "caed271d92541f8f1ec4c6ee8c572a2ab6ddd618cb3a3b710a19560f160312ca",
+        "02a1cc109b0820265a3b2bdd3362e4d8b949361a926bc06479ee28210400ac0e"
+      ],
+      "expectedOutputs": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 5000000,
+          "hours": 159
+        }
+      ],
+      "expectedInnerHash": "1b60068143803a93dcc678e58504df432298de7d6a9f52e39fcb5a9dc543abbc",
+      "expectedUnsignedHex": "18010000001b60068143803a93dcc678e58504df432298de7d6a9f52e39fcb5a9dc543abbc020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000caed271d92541f8f1ec4c6ee8c572a2ab6ddd618cb3a3b710a19560f160312ca02a1cc109b0820265a3b2bdd3362e4d8b949361a926bc06479ee28210400ac0e01000000000717ce16fafb7f8e593d71e6524f6c9ff0c48190404b4c00000000009f00000000000000",
+      "expectedLength": 280
+    },
+    {
+      "name": "exact-no-change",
+      "uxouts": [
+        {
+          "hash": "0e10288082f0af56142230cd77f6f84e567882eb1c147b09229fa7c6b5c652d0",
+          "time": 1754492800,
+          "bkSeq": 106,
+          "srcTx": "b5972ea64c0df687dea5a5763a546f6d36a9605e7c1cfb9c0788fe1a6a7aba80",
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 5000000,
+          "hours": 1000,
+          "calculatedHours": 1010
+        },
+        {
+          "hash": "7407fd39780bbb527c5ad580f7c6f7e588388981ec28af022b81950b2ef98867",
+          "time": 1754496400,
+          "bkSeq": 107,
+          "srcTx": "39bba5d910d7969a3293066bec7f0baf43eeda3a79d027c2a7c619c29ce3e5b2",
+          "address": "Nx9W36qj6V3MAW2iKVBYHu3e3EAswZ5XaB",
+          "coins": 1000000,
+          "hours": 3,
+          "calculatedHours": 4
+        },
+        {
+          "hash": "12611ecb83493f70860b7b621787887674c64cda41d5fafdd7eefec868747349",
+          "time": 1754498200,
+          "bkSeq": 108,
+          "srcTx": "e1858e7f00e7be3050bcb704c4095179e2df84feb6833db2549fc3d4de443bf4",
+          "address": "24qXSq7hPJ5f62DnJ7hekudVDRQEuvtFJhf",
+          "coins": 2000000,
+          "hours": 7,
+          "calculatedHours": 8
+        }
+      ],
+      "to": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 5000000
+        }
+      ],
+      "changeAddress": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+      "burnFactor": 10,
+      "expectedInputs": [
+        "0e10288082f0af56142230cd77f6f84e567882eb1c147b09229fa7c6b5c652d0",
+        "7407fd39780bbb527c5ad580f7c6f7e588388981ec28af022b81950b2ef98867"
+      ],
+      "expectedOutputs": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 5000000,
+          "hours": 454
+        },
+        {
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 1000000,
+          "hours": 458
+        }
+      ],
+      "expectedInnerHash": "ab6b4af79f82375b62d3ec114f9c857d1d1a8579e231c40ee5fa589b86a5352f",
+      "expectedUnsignedHex": "3d01000000ab6b4af79f82375b62d3ec114f9c857d1d1a8579e231c40ee5fa589b86a5352f0200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000e10288082f0af56142230cd77f6f84e567882eb1c147b09229fa7c6b5c652d07407fd39780bbb527c5ad580f7c6f7e588388981ec28af022b81950b2ef9886702000000000717ce16fafb7f8e593d71e6524f6c9ff0c48190404b4c0000000000c601000000000000000104c38c26a96e3c92850cfd143abe299e9cea7f40420f0000000000ca01000000000000",
+      "expectedLength": 317
+    },
+    {
+      "name": "zero-hour-mix",
+      "uxouts": [
+        {
+          "hash": "7fd20f19757ef97b934bd46582825aad9a4ab3e843011e666ffd0202c1fb67a9",
+          "time": 1754500000,
+          "bkSeq": 109,
+          "srcTx": "ebf55b864074ffeb15bfce32cf4d8258c9774ceb16500026ed6a2622595cff7e",
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 4000000,
+          "hours": 0,
+          "calculatedHours": 0
+        },
+        {
+          "hash": "b352a11b3f2d4e8900d33bcfd7bb140f50adbe60d0089253f8d96f725fef6612",
+          "time": 1754492800,
+          "bkSeq": 110,
+          "srcTx": "9cad5c886a761d3c63afb5294a8c2732735e076fe6c24131583317b9f768e948",
+          "address": "Nx9W36qj6V3MAW2iKVBYHu3e3EAswZ5XaB",
+          "coins": 3000000,
+          "hours": 200,
+          "calculatedHours": 206
+        },
+        {
+          "hash": "6a52d7a3b67744d4e8835d52e7752d4dae0cbdbf8bfefccb7f9a98b7e4b3094a",
+          "time": 1754500000,
+          "bkSeq": 111,
+          "srcTx": "c9242b09075117baa7707b0cce229354e29f53bd6f43ccaf7eaa18e27cc5d5f4",
+          "address": "24qXSq7hPJ5f62DnJ7hekudVDRQEuvtFJhf",
+          "coins": 2000000,
+          "hours": 0,
+          "calculatedHours": 0
+        }
+      ],
+      "to": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 6000000
+        }
+      ],
+      "changeAddress": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+      "burnFactor": 10,
+      "expectedInputs": [
+        "b352a11b3f2d4e8900d33bcfd7bb140f50adbe60d0089253f8d96f725fef6612",
+        "7fd20f19757ef97b934bd46582825aad9a4ab3e843011e666ffd0202c1fb67a9"
+      ],
+      "expectedOutputs": [
+        {
+          "address": "3rY6KYLUQBgjWMenKiM4UcFYaf6SXPirY7",
+          "coins": 6000000,
+          "hours": 92
+        },
+        {
+          "address": "QmnwkcchkjgduYeeMqHaXhgEFKKYiFpc4",
+          "coins": 1000000,
+          "hours": 93
+        }
+      ],
+      "expectedInnerHash": "c75d2c82c41fb8a5959bd68c555c8449d7b35977bcd9d4056434f4f23a3b4284",
+      "expectedUnsignedHex": "3d01000000c75d2c82c41fb8a5959bd68c555c8449d7b35977bcd9d4056434f4f23a3b4284020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000b352a11b3f2d4e8900d33bcfd7bb140f50adbe60d0089253f8d96f725fef66127fd20f19757ef97b934bd46582825aad9a4ab3e843011e666ffd0202c1fb67a902000000000717ce16fafb7f8e593d71e6524f6c9ff0c48190808d5b00000000005c00000000000000000104c38c26a96e3c92850cfd143abe299e9cea7f40420f00000000005d00000000000000",
+      "expectedLength": 317
+    }
+  ]
+}

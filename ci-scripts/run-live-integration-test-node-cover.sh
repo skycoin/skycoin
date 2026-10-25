@@ -24,7 +24,6 @@ fi
 go test -c -ldflags "-X ${CMDPKG}.Commit=$COMMIT -X ${CMDPKG}.Branch=${BRANCH}" -tags testrunmain -o "${BINARY}" -coverpkg="${COVERPKG}/..." ./cmd/${COIN}/
 
 ./${BINARY} \
-    -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=false \
     -enable-all-api-sets=true \
     -enable-api-sets=INSECURE_WALLET_SEED \

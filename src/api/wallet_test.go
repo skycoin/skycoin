@@ -3274,3 +3274,105 @@ func TestWalletRecover(t *testing.T) {
 		})
 	}
 }
+
+func TestWalletNewAccountHandler(t *testing.T) {
+	wlt, err := wallet.NewWallet("foo", "foolabel", "fooseed", wallet.Options{
+		Type:      wallet.WalletTypeDeterministic,
+		Coin:      wallet.CoinTypeSkycoin,
+		GenerateN: 1,
+	})
+	require.NoError(t, err)
+	wltResponse, err := NewWalletResponse(wlt)
+	require.NoError(t, err)
+
+	tt := []struct {
+		name       string
+		method     string
+		form       url.Values
+		gatewayWlt wallet.Wallet
+		gatewayErr error
+		status     int
+		body       string
+	}{
+		{
+			name:   "405",
+			method: http.MethodGet,
+			status: http.StatusMethodNotAllowed,
+			body:   "405 Method Not Allowed",
+		},
+		{
+			name:   "400 missing id",
+			method: http.MethodPost,
+			form:   url.Values{"name": {"a"}},
+			status: http.StatusBadRequest,
+			body:   "400 Bad Request - missing wallet id",
+		},
+		{
+			name:       "400 missing password",
+			method:     http.MethodPost,
+			form:       url.Values{"id": {"foo"}, "name": {"a"}},
+			gatewayErr: wallet.ErrMissingPassword,
+			status:     http.StatusBadRequest,
+			body:       "400 Bad Request - missing password",
+		},
+		{
+			name:       "400 not a bip44 wallet",
+			method:     http.MethodPost,
+			form:       url.Values{"id": {"foo"}, "name": {"a"}},
+			gatewayErr: wallet.NewError(errors.New("wallet foo is not a bip44 wallet")),
+			status:     http.StatusBadRequest,
+			body:       "400 Bad Request - wallet foo is not a bip44 wallet",
+		},
+		{
+			name:       "403 wallet API disabled",
+			method:     http.MethodPost,
+			form:       url.Values{"id": {"foo"}, "name": {"a"}},
+			gatewayErr: wallet.ErrWalletAPIDisabled,
+			status:     http.StatusForbidden,
+			body:       "403 Forbidden",
+		},
+		{
+			name:       "404 no such wallet",
+			method:     http.MethodPost,
+			form:       url.Values{"id": {"foo"}, "name": {"a"}},
+			gatewayErr: wallet.ErrWalletNotExist,
+			status:     http.StatusNotFound,
+			body:       "404 Not Found",
+		},
+		{
+			name:       "200",
+			method:     http.MethodPost,
+			form:       url.Values{"id": {"foo"}, "name": {"a"}, "password": {"pwd"}},
+			gatewayWlt: wlt,
+			status:     http.StatusOK,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			if tc.form != nil && tc.form.Get("id") != "" {
+				gateway.On("NewAccount", tc.form.Get("id"), []byte(tc.form.Get("password")), tc.form.Get("name")).
+					Return(tc.gatewayWlt, tc.gatewayErr)
+			}
+
+			req, err := http.NewRequest(tc.method, "/api/v1/wallet/newAccount", strings.NewReader(tc.form.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", ContentTypeForm)
+			setCSRFParameters(t, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			newServerMux(defaultMuxConfig(), gateway).ServeHTTP(rr, req)
+
+			require.Equal(t, tc.status, rr.Code, rr.Body.String())
+			if tc.status != http.StatusOK {
+				require.Equal(t, tc.body, strings.TrimSpace(rr.Body.String()))
+				return
+			}
+
+			var got WalletResponse
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &got))
+			require.Equal(t, *wltResponse, got)
+		})
+	}
+}

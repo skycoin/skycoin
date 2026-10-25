@@ -39,6 +39,8 @@
     "wasm-not-downloaded": "There was a problem when trying to download an important component. Please check your internet connection and try again."
   },
   "title": {
+    "coins": "Coins",
+    "hardware-wallet": "Hardware Wallet",
     "change-coin": "Change active coin",
     "language": "Select Language",
     "wallets": "Wallets",
@@ -52,12 +54,13 @@
     "pending-txs": "Pending Transactions",
     "node": "Node",
     "nodes": "Nodes",
-    "backup": "Backup Wallet",
     "explorer": "{{ coin }} Explorer",
     "seed": "Wallet Seed",
     "qrcode": "QR Code",
     "disclaimer": "Disclaimer",
-    "qr-code": "Address"
+    "qr-code": "Address",
+    "app-password": "Password",
+    "backup": "Backup"
   },
   "header": {
     "syncing-blocks": "Syncing blocks",
@@ -88,7 +91,10 @@
     "title": "Enter Password",
     "label": "Password",
     "confirm-label": "Confirm password",
-    "button": "Proceed"
+    "button": "Proceed",
+    "cancel-button": "Cancel",
+    "mismatch": "The passwords do not match",
+    "save-seed-text": "Set a password to unlock this wallet without its seed next time. Leave it empty to skip."
   },
   "buy": {
     "deposit-address": "Choose an address to generate a BTC deposit link for:",
@@ -136,6 +142,7 @@
     "injecting-tx": "It is not possible to change the coin while a transaction is being sent."
   },
   "wallet": {
+    "exposed-banner": "{{ count }} address(es) in this wallet hold coins but have already sent coins, so their public keys are on the blockchain. A future quantum computer could steal these coins. Send them to a new address of this wallet.",
     "new-address": "New Address",
     "add-account": "Add Account",
     "show-empty": "Show Empty",
@@ -219,7 +226,9 @@
       "copy-address": "Copy Address",
       "copied": "Copied!",
       "outputs": "Unspent Outputs",
-      "history": "History"
+      "history": "History",
+      "exposed": "This address has sent coins before, so its public key is on the blockchain. A future quantum computer could use it to steal coins sent to it. Do not receive coins at it again.",
+      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address."
     }
   },
   "qr": {
@@ -235,6 +244,23 @@
     "copied": "The text has been copied to the clipboard."
   },
   "send": {
+    "gateway-confirm-eth": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is at most {{ fee }} ETH.",
+    "gateway-confirm-btc": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is {{ rate }} satoshis per byte.",
+    "gateway-sent": "Sent. Transaction {{ txid }}",
+    "fee-label": "Network fee",
+    "fee-slow": "Slow",
+    "fee-normal": "Normal",
+    "fee-fast": "Fast",
+    "bulk-send-button": "Bulk send",
+    "bulk-send": {
+      "title": "Bulk Send",
+      "indications": "To send to several destinations at once, type each address, coin amount and hour amount (optional) on a line, separated by commas. For example, type \"xyz,10,5\" to send 10 coins and 5 hours to the address \"xyz\", or \"xyz,10\" to have the hours calculated automatically. Use a dot for decimals.",
+      "no-data-error": "There is no text to process.",
+      "invalid-data-error": "Each line must be an address and a coin amount, and optionally an hour amount, separated by commas.",
+      "inconsistent-data-error": "If you set the hours for one destination, you must set them for all of them.",
+      "process-button": "Process",
+      "cancel-button": "Cancel"
+    },
     "synchronizing-warning": "The node is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
@@ -276,6 +302,7 @@
     "sent": "Transaction successfully sent."
   },
   "tx": {
+    "fee": "Fee",
     "transaction": "Transaction",
     "confirm-transaction": "Confirm Transaction",
     "from": "From",
@@ -297,16 +324,6 @@
     "current-rate": "Calculated at the current rate",
     "none": "There are still no transactions to show"
   },
-  "backup": {
-    "wallet-directory": "Wallet Directory:",
-    "seed-warning": "BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.",
-    "desc": "Use the table below to get seeds from your encrypted wallets. <br>To get seeds from unencrypted wallets, open the folder above, open the .wlt files in a text editor and recover the seeds.",
-    "close-button": "Close",
-    "wallet": "Wallet Label",
-    "filename": "Filename",
-    "seed": "Seed",
-    "show-seed": "Show seed"
-  },
   "blockchain": {
     "blocks": "Number of blocks:",
     "time": "Timestamp of last block:",
@@ -319,7 +336,20 @@
   },
   "network": {
     "automatic-peers": "Automatic peers",
-    "default-peers": "Default peers"
+    "default-peers": "Default peers",
+    "no-connections": "The node has no peer connections.",
+    "peer": "Peer",
+    "source": "Source",
+    "block": "Block",
+    "last-seen": "Last seen",
+    "outgoing": "The node connected to this peer.",
+    "incoming": "This peer connected to the node.",
+    "last-sent": "Since the node last sent to this peer",
+    "last-received": "Since the node last heard from this peer",
+    "sources": {
+      "default": "Default peer",
+      "exchange": "Peer exchange"
+    }
   },
   "pending-txs": {
     "timestamp": "Timestamp",
@@ -332,6 +362,29 @@
     "delete-button": "Delete pending transaction",
     "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
+  "coins": {
+    "unavailable": "Adding coins needs a wallet service started with --wallet-dir.",
+    "added-coins": "Added coins",
+    "remove": "Remove",
+    "add-title": "Add a coin",
+    "kind": "Kind",
+    "kind-fiber": "Fiber coin (its own node)",
+    "kind-erc20": "ERC-20 token on Ethereum",
+    "name": "Name",
+    "ticker": "Ticker",
+    "from-node": "From the node when empty",
+    "optional": "The ticker when empty",
+    "node-url": "Node URL",
+    "contract": "Contract address",
+    "decimals": "Decimals",
+    "icon": "Icon (optional)",
+    "icon-too-big": "The icon must be under 72 KB.",
+    "fiber-hint": "The node is checked before the coin is added. Fiber coins use the same wallets as the first coin.",
+    "erc20-hint": "Tokens use the Ethereum wallets and servers. The decimals must match the contract, or amounts will be wrong.",
+    "add-button": "Add",
+    "added": "The coin has been added. The wallet is reloading.",
+    "removed": "The coin has been removed. The wallet is reloading."
+  },
   "nodes": {
     "coin": "Coin",
     "url": "Node URL",
@@ -339,6 +392,15 @@
     "change-url": "Change URL",
     "nodes": "Nodes",
     "help": "The node each coin queries for chain data (wallets, keys and signing stay in this browser). Point it at a Skywire mesh node with an http://<name>.<base32-pk>.dmsg URL — it's routed over the mesh, no IP or DNS needed — or a clearnet http(s):// URL. Leave a coin on its default to use the built-in node.",
+    "eth": {
+      "title": "Ethereum servers",
+      "help": "Ether and every token use these. The RPC servers are tried in order, one per line. The indexer is an Etherscan-style API that lists the transaction history.",
+      "rpc-label": "RPC servers",
+      "indexer-label": "History indexer",
+      "save-button": "Save",
+      "defaults-button": "Use defaults",
+      "saved": "The Ethereum servers have been saved."
+    },
     "change": {
       "preset-label": "Known servers",
       "preset-default": "Default (built-in)",
@@ -377,6 +439,7 @@
     "pending": "Pending",
     "price-tooltip": "Calculated at the current rate",
     "no-txs": "You have no transaction history",
+    "cached": "The history could not be refreshed. Showing the copy saved at {{ time }}.",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",
     "filter": "Active filter: ",
@@ -404,6 +467,13 @@
       "dismiss-tooltip": "Dismiss warning"
     }
   },
+  "qr-scan": {
+    "title": "Scan a QR code",
+    "image-label": "Or read it from an image",
+    "no-code": "No QR code was found in that image.",
+    "insecure": "The camera only works on https pages or on 127.0.0.1. You can still read a code from an image.",
+    "no-camera": "The camera could not be opened. You can still read a code from an image."
+  },
   "qr-code": {
     "copy-address": "Copy address to clipboard"
   },
@@ -427,11 +497,59 @@
     }
   },
   "hardware-wallet": {
+    "device": {
+      "checking": "Looking for the Skywallet...",
+      "follow-device": "Follow the instructions on the Skywallet screen.",
+      "disconnected": "No Skywallet is connected. Connect it and make sure the Skywallet daemon is running.",
+      "retry-button": "Check again",
+      "label": "Label",
+      "firmware": "Firmware",
+      "pin": "PIN set",
+      "yes": "Yes",
+      "no": "No",
+      "bootloader-info": "The Skywallet is in bootloader mode. Update its firmware with the Skywallet tools, then restart it normally.",
+      "no-seed-info": "This Skywallet has no seed. Generate a new one, or restore one you already have.",
+      "generate-12": "New 12 word seed",
+      "generate-24": "New 24 word seed",
+      "restore-12": "Restore 12 word seed",
+      "restore-24": "Restore 24 word seed",
+      "backup-warning": "The seed of this Skywallet has not been backed up. Back it up now, or the coins are lost if the device is.",
+      "pin-warning": "This Skywallet has no PIN. Anyone holding it can use it.",
+      "backup-button": "Back up seed",
+      "set-pin-button": "Set PIN",
+      "change-pin-button": "Change PIN",
+      "remove-pin-button": "Remove PIN",
+      "check-12": "Check 12 word seed",
+      "check-24": "Check 24 word seed",
+      "label-button": "Change label",
+      "wipe-button": "Wipe",
+      "wipe-title": "Wipe the Skywallet",
+      "wipe-warning": "Wiping erases the seed from the device. Without a backup of the seed, the coins it holds are lost.",
+      "wipe-check": "I have a backup of the seed, or the device holds no coins",
+      "firmware-info": "To update the firmware, use the Skywallet tools.",
+      "seed-generated": "The Skywallet has a new seed. Back it up now.",
+      "seed-restored": "The seed was restored.",
+      "seed-matches": "The seed you entered matches the one on the Skywallet.",
+      "backed-up": "The seed was backed up.",
+      "pin-changed": "The PIN was changed.",
+      "pin-removed": "The PIN was removed.",
+      "label-changed": "The label was changed.",
+      "wiped": "The Skywallet was wiped."
+    },
+    "seed-word": {
+      "title": "Enter Seed Word",
+      "instructions": "Type the word of your seed that the Skywallet asks for. The order is shown on the device only.",
+      "word-label": "Word",
+      "invalid-word": "That is not a valid seed word.",
+      "continue-button": "Continue",
+      "cancel-button": "Cancel"
+    },
     "add": "Add Hardware Wallet",
     "added": "Hardware wallet added successfully.",
     "already-added": "A hardware wallet with this device is already added.",
     "general-error": "Error communicating with the hardware wallet. Please make sure it is connected and try again.",
     "errors": {
+      "generic-error": "The operation failed. Make sure the Skywallet is connected and try again.",
       "failed-or-refused": "The operation was cancelled or refused on the device.",
       "incorrect-pin": "The PIN you entered is incorrect.",
       "pin-mismatch": "The PINs you entered do not match.",
@@ -470,5 +588,68 @@
       "hours": "coin hours",
       "to": "to"
     }
+  },
+  "app-lock": {
+    "locked": "The wallets in this browser are locked. Enter the password to open them.",
+    "unlock": "Unlock",
+    "wrong-password": "That password is not correct.",
+    "forgot": "Forgot the password?",
+    "erase-warning": "The password cannot be recovered. Erasing removes every wallet stored in this browser, and only their seeds can bring them back. Erase the wallets?",
+    "cancel": "Cancel",
+    "erase": "Erase wallets"
+  },
+  "backup": {
+    "wallet-directory": "Wallet directory:",
+    "seed-warning": "Keep your seed somewhere safe and offline. Anyone who has it controls the wallet's coins.",
+    "no-wallets": "There are no wallets to back up.",
+    "wallet": "Wallet",
+    "save-addresses": "Save addresses",
+    "show-seed": "Show seed",
+    "hide-seed": "Hide seed",
+    "hw-wallet-info": "A hardware wallet keeps its seed on the device. Back it up from the device.",
+    "unencrypted-info": "The wallet service shows the seed only of an encrypted wallet. Encrypt the wallet first.",
+    "no-seed-info": "This browser does not hold the seed of this wallet."
+  },
+  "app-password": {
+    "help-none": "Set a password to store the wallets in this browser encrypted. The wallet will ask for it each time it opens. The password stays in this browser and cannot be recovered.",
+    "help-set": "The wallets in this browser are stored under a password. You can change it, remove it, or lock the wallet now.",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Confirm the new password",
+    "set": "Set password",
+    "change": "Change password",
+    "remove": "Remove password",
+    "lock": "Lock now",
+    "wrong-current": "The current password is not correct.",
+    "empty": "Enter a new password.",
+    "mismatch": "The two passwords do not match.",
+    "was-set": "The wallets in this browser are now stored under the password.",
+    "changed": "The password was changed.",
+    "removed": "The password was removed."
+  },
+  "offline-tx": {
+    "unsigned-button": "Unsigned",
+    "show-raw-button": "Raw transaction",
+    "sign-link": "Sign a transaction",
+    "broadcast-link": "Broadcast a transaction",
+    "unsigned-title": "Unsigned Transaction",
+    "unsigned-text": "Copy this transaction to the computer that holds the wallet, sign it there, and broadcast the signed transaction from any online wallet.",
+    "signed-title": "Signed Transaction",
+    "signed-text": "This transaction is signed and has not been sent. Broadcast it from any online wallet.",
+    "sign-title": "Sign Transaction",
+    "sign-text": "Paste an unsigned transaction. The wallet must own every input.",
+    "broadcast-title": "Broadcast Transaction",
+    "broadcast-text": "Paste a signed transaction to send it to the network.",
+    "wallet-label": "Wallet",
+    "select-wallet": "Select a wallet",
+    "tx-label": "Transaction",
+    "copy-button": "Copy",
+    "copied": "Copied",
+    "sign-button": "Sign",
+    "broadcast-button": "Broadcast",
+    "close-button": "Close",
+    "broadcast-done": "The transaction was sent.",
+    "not-in-wallet": "This wallet does not hold the keys of every input of the transaction.",
+    "node-too-old": "This node is too old to create unsigned transactions."
   }
 }

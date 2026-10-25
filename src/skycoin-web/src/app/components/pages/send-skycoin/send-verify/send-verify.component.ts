@@ -6,6 +6,8 @@ import { SpendingService } from '../../../../services/wallet/spending.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { parseResponseMessage } from './../../../../utils/errors';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
+import { OfflineTxComponent, OfflineTxMode } from '../offline-tx/offline-tx.component';
 
 @Component({
     selector: 'app-send-verify',
@@ -24,6 +26,7 @@ export class SendVerifyComponent implements OnDestroy {
     private balanceService: BalanceService,
     private spendingService: SpendingService,
     private msgBarService: MsgBarService,
+    private dialog: CustomMatDialogService,
     private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
@@ -48,6 +51,15 @@ export class SendVerifyComponent implements OnDestroy {
           this.changeDetectorRef.markForCheck();
         }
       );
+  }
+
+  get rawTx(): string | undefined {
+    return this.transaction ? this.transaction.encoded : undefined;
+  }
+
+  /** Shows the signed transaction to broadcast elsewhere, without sending it. */
+  showRaw() {
+    OfflineTxComponent.open(this.dialog, { mode: OfflineTxMode.Show, rawTx: this.rawTx, unsigned: false });
   }
 
   back() {

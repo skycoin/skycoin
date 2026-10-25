@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators, ValidatorFn } from '@angular/forms';
 import { Subscription, of } from 'rxjs';
-import { delay, first } from 'rxjs';
+import { delay, first, map, mergeMap } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
 import { WalletService } from '../../../../services/wallet/wallet.service';
@@ -18,6 +19,10 @@ import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../services/price.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { QrScanDialogComponent } from '../../../layout/qr-scan-dialog/qr-scan-dialog.component';
+import { parseScannedPayment } from '../../../../utils/qr';
+import { BalanceService } from '../../../../services/wallet/balance.service';
 
 @Component({
     selector: 'app-send-form',
@@ -47,6 +52,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
   private processSubscription!: Subscription;
   private subscriptionsGroup: Subscription[] = [];
   private slowInfoSubscription!: Subscription;
+  // An encrypted server wallet's password, held only until the transaction is signed.
+  private password: string | undefined;
 
   constructor(
     public blockchainService: BlockchainService,
@@ -57,6 +64,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
     private coinService: CoinService,
     private navbarService: NavBarService,
     private msgBarService: MsgBarService,
+    private translate: TranslateService,
+    private balanceService: BalanceService,
     priceService: PriceService,
     private changeDetectorRef: ChangeDetectorRef,
   ) {
@@ -83,6 +92,12 @@ export class SendFormComponent implements OnInit, OnDestroy {
       .subscribe((coin: BaseCoin) => {
         this.resetForm();
         this.currentCoin = coin;
+        // The advanced form works with Skycoin outputs and hours; gateway coins have neither.
+        if (coin && coin.isGateway()) {
+          this.navbarService.hideSwitch();
+        } else {
+          this.navbarService.showSwitch('send.simple', 'send.advanced');
+        }
         this.changeDetectorRef.markForCheck();
       })
     );
@@ -121,7 +136,17 @@ export class SendFormComponent implements OnInit, OnDestroy {
     const wallet = this.form.value.wallet;
 
     // Hardware wallets and server-managed wallets don't need seed unlocking
-    if (wallet.isHardware || wallet.filename) {
+    this.password = undefined;
+    if (this.walletService.isServerWallet(wallet) && wallet.encrypted) {
+      this.removeProcessSubscription();
+      this.processSubscription = PasswordDialogComponent.ask(this.dialog, { text: wallet.label }).subscribe(password => {
+        if (password) {
+          this.password = password;
+          this.checkBeforeSending();
+        }
+        this.changeDetectorRef.markForCheck();
+      });
+    } else if (wallet.isHardware || this.walletService.isServerWallet(wallet)) {
       this.checkBeforeSending();
     } else if (!wallet.seed) {
       // In-memory wallet needs seed entry for client-side signing
@@ -172,6 +197,20 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Fills the address, and the amount when the code carries one, from a scanned QR code. */
+  scanAddress() {
+    QrScanDialogComponent.scan(this.dialog).subscribe(text => {
+      if (text) {
+        const scanned = parseScannedPayment(text);
+        this.form.get('address')!.setValue(scanned.address);
+        if (scanned.amount && this.selectedCurrency === DoubleButtonActive.LeftButton && !this.form.get('amount')!.value) {
+          this.form.get('amount')!.setValue(scanned.amount);
+        }
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
   private resetForm() {
     this.form.get('wallet')!.setValue('', { emitEvent: false });
     this.form.get('address')!.setValue('');
@@ -215,6 +254,16 @@ export class SendFormComponent implements OnInit, OnDestroy {
         this.changeDetectorRef.markForCheck();
       });
 
+    if (this.currentCoin && this.currentCoin.isGateway()) {
+      const gatewayPassword = this.password;
+      this.password = undefined;
+      this.confirmGatewaySend(wallet, gatewayPassword);
+
+      return;
+    }
+
+    const password = this.password;
+    this.password = undefined;
     this.removeProcessSubscription();
     this.processSubscription = this.spendingService.createTransaction(
       wallet,
@@ -228,7 +277,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
         type: HoursSelectionTypes.Auto,
         ShareFactor: new BigNumber(0.5),
       },
-      null
+      null,
+      password,
     ).subscribe(
         transaction => {
           this.onTransactionCreated(transaction);
@@ -239,6 +289,52 @@ export class SendFormComponent implements OnInit, OnDestroy {
           this.changeDetectorRef.markForCheck();
         }
       );
+  }
+
+  /**
+   * Gateway coins are signed and sent by the wallet service in one step, so
+   * the fee is shown here for confirmation instead of in a preview.
+   */
+  private confirmGatewaySend(wallet: Wallet, password: string | undefined) {
+    const coin = this.currentCoin;
+    const to = this.form.value.address.replace(/\s/g, '');
+    const amount = this.selectedCurrency === DoubleButtonActive.LeftButton ?
+      new BigNumber(this.form.value.amount) : new BigNumber(this.value.toString());
+
+    this.removeProcessSubscription();
+    this.processSubscription = this.spendingService.gatewayFee().pipe(
+      mergeMap((estimate: any) => {
+        const fee = (estimate.presets && estimate.presets[this.form.value.feeSpeed]) || estimate;
+        const params = { amount: amount.toFixed(), symbol: coin.coinSymbol, to: to };
+        const text = coin.isEthereum() ?
+          this.translate.instant('send.gateway-confirm-eth', { ...params, fee: new BigNumber(fee.max_fee).dividedBy(1e18).toFixed() }) :
+          this.translate.instant('send.gateway-confirm-btc', { ...params, rate: fee.sat_per_byte });
+        const data: ConfirmationData = {
+          text: text,
+          headerText: 'confirmation.header-text',
+          confirmButtonText: 'send.send-button',
+          cancelButtonText: 'confirmation.cancel-button',
+        };
+
+        return showConfirmationModal(this.dialog, data).afterClosed().pipe(
+          mergeMap(confirmed => confirmed ?
+            this.spendingService.sendGateway(wallet, to, amount, password, fee) : of(null)),
+        );
+      }),
+    ).subscribe(txid => {
+      this.showSlowMobileInfo = false;
+      this.removeSlowInfoSubscription();
+      this.button.resetState();
+      if (txid) {
+        this.msgBarService.showDone(this.translate.instant('send.gateway-sent', { txid: txid }));
+        this.resetForm();
+        this.balanceService.startGettingBalances();
+      }
+      this.changeDetectorRef.markForCheck();
+    }, error => {
+      this.onError(error);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private onTransactionCreated(transaction: any) {
@@ -268,7 +364,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
       address: ['', Validators.required],
-      amount: ['', [Validators.required]]
+      amount: ['', [Validators.required]],
+      feeSpeed: ['normal'],
     });
 
     this.subscriptionsGroup.push(this.form.controls.wallet.valueChanges.subscribe(value => {

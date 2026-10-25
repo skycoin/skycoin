@@ -1,1 +1,3 @@
 .claude/
+/.vendor-preflight.json
+/vendor

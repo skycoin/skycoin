@@ -6,7 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gogo/protobuf/proto"
-	messages "github.com/skycoin/hardware-wallet-protob/go"
+
+	"github.com/skycoin/skycoin/src/hardware-wallet/messages"
 
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 	"github.com/skycoin/skycoin/src/hardware-wallet/skywallet/wire"

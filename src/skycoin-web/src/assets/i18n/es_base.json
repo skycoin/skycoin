@@ -20,6 +20,8 @@
   },
 
   "title": {
+    "coins": "Coins",
+    "hardware-wallet": "Hardware Wallet",
     "change-coin": "Change active coin",
     "language": "Select Language",
     "wallets": "Wallets",
@@ -72,7 +74,10 @@
     "title": "Enter Password",
     "label": "Password",
     "confirm-label": "Confirm password",
-    "button": "Proceed"
+    "button": "Proceed",
+    "cancel-button": "Cancel",
+    "mismatch": "The passwords do not match",
+    "save-seed-text": "Set a password to unlock this wallet without its seed next time. Leave it empty to skip."
   },
 
   "buy": {
@@ -207,6 +212,23 @@
   },
 
   "send": {
+    "gateway-confirm-eth": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is at most {{ fee }} ETH.",
+    "gateway-confirm-btc": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is {{ rate }} satoshis per byte.",
+    "gateway-sent": "Sent. Transaction {{ txid }}",
+    "fee-label": "Network fee",
+    "fee-slow": "Slow",
+    "fee-normal": "Normal",
+    "fee-fast": "Fast",
+    "bulk-send-button": "Bulk send",
+    "bulk-send": {
+      "title": "Bulk Send",
+      "indications": "To send to several destinations at once, type each address, coin amount and hour amount (optional) on a line, separated by commas. For example, type \"xyz,10,5\" to send 10 coins and 5 hours to the address \"xyz\", or \"xyz,10\" to have the hours calculated automatically. Use a dot for decimals.",
+      "no-data-error": "There is no text to process.",
+      "invalid-data-error": "Each line must be an address and a coin amount, and optionally an hour amount, separated by commas.",
+      "inconsistent-data-error": "If you set the hours for one destination, you must set them for all of them.",
+      "process-button": "Process",
+      "cancel-button": "Cancel"
+    },
     "synchronizing-warning": "The node is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
@@ -247,6 +269,7 @@
   },
 
   "tx": {
+    "fee": "Fee",
     "transaction": "Transaction",
     "confirm-transaction": "Confirm Transaction",
     "from": "From",
@@ -309,7 +332,39 @@
     "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
 
+  "coins": {
+    "unavailable": "Adding coins needs a wallet service started with --wallet-dir.",
+    "added-coins": "Added coins",
+    "remove": "Remove",
+    "add-title": "Add a coin",
+    "kind": "Kind",
+    "kind-fiber": "Fiber coin (its own node)",
+    "kind-erc20": "ERC-20 token on Ethereum",
+    "name": "Name",
+    "ticker": "Ticker",
+    "from-node": "From the node when empty",
+    "optional": "The ticker when empty",
+    "node-url": "Node URL",
+    "contract": "Contract address",
+    "decimals": "Decimals",
+    "icon": "Icon (optional)",
+    "icon-too-big": "The icon must be under 72 KB.",
+    "fiber-hint": "The node is checked before the coin is added. Fiber coins use the same wallets as the first coin.",
+    "erc20-hint": "Tokens use the Ethereum wallets and servers. The decimals must match the contract, or amounts will be wrong.",
+    "add-button": "Add",
+    "added": "The coin has been added. The wallet is reloading.",
+    "removed": "The coin has been removed. The wallet is reloading."
+  },
   "nodes" : {
+    "eth": {
+      "title": "Ethereum servers",
+      "help": "Ether and every token use these. The RPC servers are tried in order, one per line. The indexer is an Etherscan-style API that lists the transaction history.",
+      "rpc-label": "RPC servers",
+      "indexer-label": "History indexer",
+      "save-button": "Save",
+      "defaults-button": "Use defaults",
+      "saved": "The Ethereum servers have been saved."
+    },
     "coin": "Coin",
     "url": "Node URL",
     "custom-label": "Custom URL",
@@ -344,6 +399,7 @@
     "pending": "Pending",
     "price-tooltip": "Calculated at the current rate",
     "no-txs": "You have no transaction history",
+    "cached": "The history could not be refreshed. Showing the copy saved at {{ time }}.",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",
     "filter": "Active filter: ",
@@ -375,6 +431,13 @@
     }
   },
 
+  "qr-scan": {
+    "title": "Scan a QR code",
+    "image-label": "Or read it from an image",
+    "no-code": "No QR code was found in that image.",
+    "insecure": "The camera only works on https pages or on 127.0.0.1. You can still read a code from an image.",
+    "no-camera": "The camera could not be opened. You can still read a code from an image."
+  },
   "qr-code" : {
     "copy-address": "Copy address to clipboard"
   },
@@ -398,5 +461,30 @@
       "wrong-seed": "Wrong seed",
       "invalid-wallet": "Invalid wallet"
     }
+  },
+  "offline-tx": {
+    "unsigned-button": "Unsigned",
+    "show-raw-button": "Raw transaction",
+    "sign-link": "Sign a transaction",
+    "broadcast-link": "Broadcast a transaction",
+    "unsigned-title": "Unsigned Transaction",
+    "unsigned-text": "Copy this transaction to the computer that holds the wallet, sign it there, and broadcast the signed transaction from any online wallet.",
+    "signed-title": "Signed Transaction",
+    "signed-text": "This transaction is signed and has not been sent. Broadcast it from any online wallet.",
+    "sign-title": "Sign Transaction",
+    "sign-text": "Paste an unsigned transaction. The wallet must own every input.",
+    "broadcast-title": "Broadcast Transaction",
+    "broadcast-text": "Paste a signed transaction to send it to the network.",
+    "wallet-label": "Wallet",
+    "select-wallet": "Select a wallet",
+    "tx-label": "Transaction",
+    "copy-button": "Copy",
+    "copied": "Copied",
+    "sign-button": "Sign",
+    "broadcast-button": "Broadcast",
+    "close-button": "Close",
+    "broadcast-done": "The transaction was sent.",
+    "not-in-wallet": "This wallet does not hold the keys of every input of the transaction.",
+    "node-too-old": "This node is too old to create unsigned transactions."
   }
 }

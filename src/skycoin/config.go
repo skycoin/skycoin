@@ -55,6 +55,8 @@ type NodeConfig struct {
 	DisableNetworking bool
 	// Allow connections from legacy peers that don't send blockchain pubkey in introduction
 	LegacyPeerCompat bool
+	// Serve the skycoin web wallet at the site root, in place of the GUI
+	WebWallet bool
 	// Enable GUI
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
@@ -295,8 +297,8 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		LaunchBrowser: false,
 		// Data directory holds app data
 		DataDirectory: node.DataDirectory,
-		// Web GUI static resources - now embedded
-		GUIDirectory: "", //"./src/gui/static/",
+		// A skycoin-web build to serve in place of the embedded one
+		GUIDirectory: "",
 		// Logging
 		ColorLog:        true,
 		LogLevel:        "INFO",
@@ -445,7 +447,7 @@ func (c *Config) initDirectories() error {
 		}
 	}
 
-	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
+	if (c.Node.EnableGUI || c.Node.WebWallet) && c.Node.GUIDirectory != "" {
 		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
 
@@ -682,7 +684,8 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	cmd.Flags().BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	cmd.Flags().BoolVar(&c.LegacyPeerCompat, "legacy-peer-compat", c.LegacyPeerCompat, "Allow connections from legacy peers that don't send blockchain pubkey")
-	cmd.Flags().BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	cmd.Flags().BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "serve the wallet GUI, with the wallets kept in the node (needs the WALLET API set)")
+	cmd.Flags().BoolVar(&c.WebWallet, "web-wallet", c.WebWallet, "serve the wallet GUI even without the WALLET API set, with the wallets kept in the browser")
 	cmd.Flags().BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	cmd.Flags().BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
 	cmd.Flags().BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable Content Security Policy in http response")
@@ -727,7 +730,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
 	cmd.Flags().BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
 	cmd.Flags().BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
-	cmd.Flags().StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the HTML interface")
+	cmd.Flags().StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "serve the wallet GUI from this skycoin-web build directory instead of the embedded one")
 
 	cmd.Flags().BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
 	cmd.Flags().BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")

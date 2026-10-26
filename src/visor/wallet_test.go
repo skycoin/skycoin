@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
 )
 
 func TestCreateTransaction(t *testing.T) {
@@ -1651,4 +1652,69 @@ func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, er
 		active[i] = mb[addr]
 	}
 	return active, nil
+}
+
+func TestNewChangeAddress(t *testing.T) {
+	const seed = "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	newWallet := func(typ string, password []byte) wallet.Wallet {
+		w, err := wallet.NewWallet("w.wlt", "label", seed, wallet.Options{
+			Type:       typ,
+			GenerateN:  1,
+			Encrypt:    len(password) != 0,
+			Password:   password,
+			CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
+		})
+		require.NoError(t, err)
+		return w
+	}
+	v := &Visor{tf: mockTxnsFinder{}}
+
+	t.Run("deterministic", func(t *testing.T) {
+		w := newWallet(wallet.WalletTypeDeterministic, nil)
+		first, err := w.GetEntryAt(0)
+		require.NoError(t, err)
+
+		addr, err := v.newChangeAddress(w)
+		require.NoError(t, err)
+		require.NotEqual(t, first.Address, *addr)
+		has, err := w.HasEntry(*addr)
+		require.NoError(t, err)
+		require.True(t, has)
+		n, err := w.EntriesLen()
+		require.NoError(t, err)
+		require.Equal(t, 2, n)
+	})
+
+	t.Run("encrypted deterministic without password", func(t *testing.T) {
+		w := newWallet(wallet.WalletTypeDeterministic, []byte("pwd"))
+		_, err := v.newChangeAddress(w)
+		require.Equal(t, ErrChangeAddressRequired, err)
+	})
+
+	t.Run("encrypted deterministic unlocked", func(t *testing.T) {
+		w := newWallet(wallet.WalletTypeDeterministic, []byte("pwd"))
+		var addr *cipher.Address
+		err := wallet.GuardUpdate(w, []byte("pwd"), func(w wallet.Wallet) error {
+			var err error
+			addr, err = v.newChangeAddress(w)
+			return err
+		})
+		require.NoError(t, err)
+		has, err := w.HasEntry(*addr)
+		require.NoError(t, err)
+		require.True(t, has)
+		n, err := w.EntriesLen()
+		require.NoError(t, err)
+		require.Equal(t, 2, n)
+	})
+
+	t.Run("bip44 takes the change chain", func(t *testing.T) {
+		w := newWallet(wallet.WalletTypeBip44, nil)
+		addr, err := v.newChangeAddress(w)
+		require.NoError(t, err)
+		change, err := w.GetEntries(wallet.OptionChange())
+		require.NoError(t, err)
+		require.Len(t, change, 1)
+		require.Equal(t, change[0].Address, *addr)
+	})
 }

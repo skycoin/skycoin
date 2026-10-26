@@ -99,7 +99,9 @@ export class SpendingService {
     password?: string,
     unsigned = false): Observable<Transaction> {
 
-    return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
+    const keysReady = unsigned ? of(undefined) : this.walletService.ensureKeys(wallet);
+
+    return keysReady.pipe(mergeMap(() => this.globalsService.getValidNodeVersion()), mergeMap(version => {
       if (unsigned && !isEqualOrSuperiorVersion(version, '0.26.0')) {
         return throwError(() => new Error(this.translate.instant('offline-tx.node-too-old')));
       }

@@ -136,6 +136,18 @@ export class WalletService {
     return this.browser.unlockWallet(wallet, this.getCleanSeed(seed), onProgressChanged);
   }
 
+  /**
+   * Derives the keys of a browser wallet whose seed is stored but whose keys
+   * are not: they are never saved, so a reload drops them.
+   */
+  ensureKeys(wallet: Wallet): Observable<void> {
+    if (wallet.isHardware || this.isServerWallet(wallet) || !wallet.seed || wallet.addresses.every(a => a.secret_key)) {
+      return of(undefined);
+    }
+
+    return this.browser.unlockWallet(wallet, this.getCleanSeed(wallet.seed), new EventEmitter<number>());
+  }
+
   setWalletPassword(wallet: Wallet, password: string): Observable<void> {
     return this.browser.setWalletPassword(wallet, password).pipe(map(() => this.saveWallets()));
   }

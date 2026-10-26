@@ -146,6 +146,25 @@ describe('WalletService', () => {
         );
     }));
   });
+
+  describe('ensureKeys', () => {
+    it('derives the keys a reload dropped from the stored seed', fakeAsync(() => {
+      const wallet: Wallet = createWallet();
+      wallet.addresses = [{ address: 'address' }];
+
+      spyCipherProvider.generateAddress.and.returnValue(of({ address: createAddress(), nextSeed: 'next seed' }));
+      walletService.ensureKeys(wallet).subscribe();
+
+      expect(spyCipherProvider.generateAddress).toHaveBeenCalled();
+      expect(wallet.addresses[0].secret_key).toBe('secret key');
+    }));
+
+    it('leaves a wallet that has its keys alone', fakeAsync(() => {
+      walletService.ensureKeys(createWallet()).subscribe();
+
+      expect(spyCipherProvider.generateAddress).not.toHaveBeenCalled();
+    }));
+  });
 });
 
 export function createWallet(label: string = 'label', seed: string = 'seed', balance: BigNumber = new BigNumber(0), nextSeed = 'next seed'): Wallet {

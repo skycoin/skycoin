@@ -129,6 +129,10 @@ export class MockWalletService {
   scanAddresses(wallet: Wallet, onProgressChanged: EventEmitter<any>): Observable<void> {
     return of();
   }
+
+  ensureKeys(wallet: Wallet): Observable<void> {
+    return of(undefined);
+  }
 }
 
 export class MockHistoryService {

@@ -19,21 +19,26 @@ type BlockchainMetadata struct {
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
-	BlockchainMetadata   BlockchainMetadata   `json:"blockchain"`
-	Version              readable.BuildInfo   `json:"version"`
-	CoinName             string               `json:"coin"`
-	DaemonUserAgent      string               `json:"user_agent"`
-	OpenConnections      int                  `json:"open_connections"`
-	OutgoingConnections  int                  `json:"outgoing_connections"`
-	IncomingConnections  int                  `json:"incoming_connections"`
-	Uptime               wh.Duration          `json:"uptime"`
-	CSRFEnabled          bool                 `json:"csrf_enabled"`
-	HeaderCheckEnabled   bool                 `json:"header_check_enabled"`
-	CSPEnabled           bool                 `json:"csp_enabled"`
-	WalletAPIEnabled     bool                 `json:"wallet_api_enabled"`
-	GUIEnabled           bool                 `json:"gui_enabled"`
-	BlockPublisher       bool                 `json:"block_publisher"`
-	BlockchainPubkey     string               `json:"blockchain_pubkey"`
+	BlockchainMetadata  BlockchainMetadata `json:"blockchain"`
+	Version             readable.BuildInfo `json:"version"`
+	CoinName            string             `json:"coin"`
+	DaemonUserAgent     string             `json:"user_agent"`
+	OpenConnections     int                `json:"open_connections"`
+	OutgoingConnections int                `json:"outgoing_connections"`
+	IncomingConnections int                `json:"incoming_connections"`
+	Uptime              wh.Duration        `json:"uptime"`
+	CSRFEnabled         bool               `json:"csrf_enabled"`
+	HeaderCheckEnabled  bool               `json:"header_check_enabled"`
+	CSPEnabled          bool               `json:"csp_enabled"`
+	WalletAPIEnabled    bool               `json:"wallet_api_enabled"`
+	GUIEnabled          bool               `json:"gui_enabled"`
+	BlockPublisher      bool               `json:"block_publisher"`
+	BlockchainPubkey    string             `json:"blockchain_pubkey"`
+	// BlockchainPQPubkey and PQForkSeq describe the post-quantum block signature rule.
+	// An empty key means blocks need only the secp256k1 signature.
+	BlockchainPQPubkey   string               `json:"blockchain_pq_pubkey,omitempty"`
+	PQForkSeq            uint64               `json:"pq_fork_seq,omitempty"`
+	PQAddressForkSeq     uint64               `json:"pq_address_fork_seq,omitempty"`
 	UserVerifyTxn        readable.VerifyTxn   `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn readable.VerifyTxn   `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64                `json:"started_at"`
@@ -91,6 +96,9 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		GUIEnabled:           c.webWallet != nil,
 		BlockPublisher:       c.health.BlockPublisher,
 		BlockchainPubkey:     c.health.BlockchainPubkey.Hex(),
+		BlockchainPQPubkey:   c.health.PQBlocks.Pubkey.Hex(),
+		PQForkSeq:            c.health.PQBlocks.ForkSeq,
+		PQAddressForkSeq:     c.health.PQAddressForkSeq,
 		WalletAPIEnabled:     walletAPIEnabled,
 		UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 		UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),

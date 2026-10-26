@@ -103,6 +103,8 @@ type BlockTransactionVerbose struct {
 	Sigs []string            `json:"sigs"`
 	In   []TransactionInput  `json:"inputs"`
 	Out  []TransactionOutput `json:"outputs"`
+	// PQ is the witness of a type 1 transaction
+	PQ []PQInputSig `json:"pq,omitempty"`
 }
 
 // NewBlockTransactionVerbose creates BlockTransactionVerbose
@@ -186,6 +188,7 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 		Sigs: sigs,
 		In:   txnInputs,
 		Out:  out,
+		PQ:   NewPQInputSigs(txn.PQ),
 	}, nil
 }
 

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/transaction"
@@ -71,8 +72,10 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 	}
 
 	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey:      c.BlockchainPubkey,
-		Arbitrating: c.Arbitrating,
+		Pubkey:           c.BlockchainPubkey,
+		PQBlocks:         c.PQBlocks,
+		PQAddressForkSeq: c.PQAddressForkSeq,
+		Arbitrating:      c.Arbitrating,
 	})
 	if err != nil {
 		return nil, err
@@ -451,6 +454,9 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
 	}
+	if err := vs.Config.PQBlocks.Verify(b); err != nil {
+		return err
+	}
 
 	return vs.executeSignedBlockUnsafe(tx, b)
 }
@@ -482,12 +488,21 @@ func (vs *Visor) signBlock(b coin.Block) coin.SignedBlock {
 		logger.Panic("Only a block publisher node can sign blocks")
 	}
 
-	sig := cipher.MustSignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
-
-	return coin.SignedBlock{
+	sb := coin.SignedBlock{
 		Block: b,
-		Sig:   sig,
+		Sig:   cipher.MustSignHash(b.HashHeader(), vs.Config.BlockchainSeckey),
 	}
+
+	if vs.Config.PQBlocks.Applies(b.Seq()) {
+		h := b.HashHeader()
+		pqSig, err := pqsig.SignBlock(vs.Config.BlockchainPQSeckey, h[:])
+		if err != nil {
+			logger.WithError(err).Panic("post-quantum block signing failed")
+		}
+		sb.PQSig = pqSig
+	}
+
+	return sb
 }
 
 /*

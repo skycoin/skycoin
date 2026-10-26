@@ -200,3 +200,31 @@ func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 		Body: body,
 	}, sec
 }
+
+func TestTransactionPQWitness(t *testing.T) {
+	db, td := prepareDB(t)
+	defer td()
+
+	txn := makeTransaction(t)
+	txn.Txn.PQ = []coin.PQInputSig{{PubKey: testutil.RandBytes(t, 1312), Sig: testutil.RandBytes(t, 2420)}}
+	txn.Txn.Type = coin.TxnTypePQ
+	hash := txn.Hash()
+
+	txsBkt := &transactions{}
+	require.NoError(t, db.Update("", func(tx *dbutil.Tx) error {
+		return txsBkt.put(tx, &txn)
+	}))
+	require.Empty(t, txn.PQWitness)
+
+	require.NoError(t, db.View("", func(tx *dbutil.Tx) error {
+		got, err := txsBkt.get(tx, hash)
+		require.NoError(t, err)
+		require.Equal(t, txn.Txn.PQ, got.Txn.PQ)
+		require.Empty(t, got.PQWitness)
+
+		return txsBkt.forEach(tx, func(_ cipher.SHA256, got *Transaction) error {
+			require.Equal(t, txn.Txn.PQ, got.Txn.PQ)
+			return nil
+		})
+	}))
+}

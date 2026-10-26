@@ -160,7 +160,7 @@ func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn 
 }
 
 func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, distParams params.Distribution, verifyParams params.VerifyTxn) error {
-	txnSize, err := txn.Size()
+	txnSize, err := txn.SizeWithPQ()
 	if err != nil {
 		return ErrTxnExceedsMaxBlockSize
 	}

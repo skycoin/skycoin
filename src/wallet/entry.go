@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
 )
 
 // Entry represents the wallet entry
@@ -30,6 +31,17 @@ func (we Entry) BitcoinAddress() cipher.BitcoinAddress {
 // Verify checks that the public key is derivable from the secret key,
 // and that the public key is associated with the address
 func (we *Entry) Verify() error {
+	if we.IsPQ() {
+		pk, err := pqsig.SecKey(we.Secret[:]).PubKey()
+		if err != nil {
+			return err
+		}
+		if cipher.AddressFromPQPubKey(pk) != we.Address {
+			return errors.New("invalid post-quantum secret key for address")
+		}
+		return nil
+	}
+
 	pk, err := cipher.PubKeyFromSecKey(we.Secret)
 	if err != nil {
 		return err
@@ -42,8 +54,19 @@ func (we *Entry) Verify() error {
 	return we.VerifyPublic()
 }
 
-// VerifyPublic checks that the public key is associated with the address
+// IsPQ reports whether the entry holds a post-quantum key. Its Secret is the
+// 32-byte ML-DSA-44 seed and Public is empty, as the key does not fit a cipher.PubKey.
+func (we *Entry) IsPQ() bool {
+	a, ok := we.Address.(cipher.Address)
+	return ok && a.Version == cipher.AddressVersionPQ
+}
+
+// VerifyPublic checks that the public key is associated with the address.
+// A post-quantum entry stores no public key, so there is nothing to check.
 func (we *Entry) VerifyPublic() error {
+	if we.IsPQ() {
+		return nil
+	}
 	if err := we.Public.Verify(); err != nil {
 		return err
 	}

@@ -73,7 +73,7 @@ func createRawTxnCmd() *cobra.Command {
 				return err
 			}
 
-			rawTxn, err := txn.SerializeHex()
+			rawTxn, err := txn.SerializeHexWithPQ()
 			if err != nil {
 				return err
 			}
@@ -914,12 +914,12 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chg
 	}
 
 	f := func(w wallet.Wallet) (*coin.Transaction, error) {
-		keys, err := getKeys(w, spendOutputs)
+		entries, err := getEntries(w, spendOutputs)
 		if err != nil {
 			return nil, err
 		}
 
-		return NewTransaction(spendOutputs, keys, txOuts)
+		return NewTransaction(spendOutputs, entries, txOuts)
 	}
 
 	makeTxn := func() (*coin.Transaction, error) {
@@ -1050,8 +1050,8 @@ func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput
 	return uo
 }
 
-func getKeys(wlt wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, error) {
-	keys := make([]cipher.SecKey, len(outs))
+func getEntries(wlt wallet.Wallet, outs []transaction.UxBalance) ([]wallet.Entry, error) {
+	entries := make([]wallet.Entry, len(outs))
 	for i, o := range outs {
 		entry, err := wlt.GetEntry(o.Address)
 		if err != nil {
@@ -1060,13 +1060,14 @@ func getKeys(wlt wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, 
 			}
 			return nil, err
 		}
-		keys[i] = entry.Secret
+		entries[i] = entry
 	}
-	return keys, nil
+	return entries, nil
 }
 
-// NewTransaction creates a transaction. The transaction should be validated against hard and soft constraints before transmission.
-func NewTransaction(utxos []transaction.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+// NewTransaction creates a transaction signed by the wallet entries that own utxos.
+// The transaction should be validated against hard and soft constraints before transmission.
+func NewTransaction(utxos []transaction.UxBalance, entries []wallet.Entry, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	txn := coin.Transaction{}
 	for _, u := range utxos {
 		if err := txn.PushInput(u.Hash); err != nil {
@@ -1080,7 +1081,17 @@ func NewTransaction(utxos []transaction.UxBalance, keys []cipher.SecKey, outs []
 		}
 	}
 
-	txn.SignInputs(keys)
+	txn.Sigs = make([]cipher.Sig, len(txn.In))
+	if err := wallet.CheckSignedSize(&txn, utxos, params.UserVerifyTxn.MaxTransactionSize); err != nil {
+		return nil, err
+	}
+
+	txn.InnerHash = txn.HashInner()
+	for i, e := range entries {
+		if err := wallet.SignInput(&txn, e, i); err != nil {
+			return nil, err
+		}
+	}
 
 	err := txn.UpdateHeader()
 	if err != nil {

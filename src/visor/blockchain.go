@@ -74,6 +74,7 @@ type chainStore interface {
 	UnspentPool() blockdb.UnspentPooler
 	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
+	GetBlockPQ(*dbutil.Tx, *coin.Block) ([]byte, error)
 	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
 }
 
@@ -110,6 +111,11 @@ type BlockchainConfig struct {
 	// node will throw the error and return.
 	Arbitrating bool
 	Pubkey      cipher.PubKey
+	// PQBlocks is the post-quantum signature rule, see visor.Config
+	PQBlocks coin.PQBlockRule
+	// PQAddressForkSeq is the first block that may hold post-quantum spends and
+	// payments to post-quantum addresses. Zero means never.
+	PQAddressForkSeq uint64
 }
 
 // Blockchain maintains blockchain and provides apis for accessing the chain.
@@ -353,6 +359,9 @@ func (bc Blockchain) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transacti
 }
 
 func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+	if err := bc.verifyPQAddresses(txn, head.Seq()+1); err != nil {
+		return err
+	}
 	if err := transaction.VerifyBlockTxnConstraints(txn, head.Head, uxIn); err != nil {
 		return err
 	}
@@ -430,6 +439,9 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 }
 
 func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray, signed transaction.TxnSignedFlag) error {
+	if err := bc.verifyPQAddresses(txn, head.Seq()+1); err != nil {
+		return err
+	}
 	if err := transaction.VerifySingleTxnHardConstraints(txn, head.Head, uxIn, signed); err != nil {
 		return err
 	}
@@ -699,6 +711,9 @@ func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalc
 // and that all signatures are valid.
 func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
 	err := block.VerifySignature(bc.cfg.Pubkey)
+	if err == nil {
+		err = bc.cfg.PQBlocks.Verify(*block)
+	}
 	if err != nil {
 		logger.Errorf("Blockchain signature verification failed for block %d: %v", block.Head.BkSeq, err)
 	}
@@ -775,8 +790,14 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 					return blockdb.NewErrMissingSignature(block)
 				}
 
+				pqSig, err := bc.store.GetBlockPQ(tx, block)
+				if err != nil {
+					return err
+				}
+
 				signedBlock := &coin.SignedBlock{
 					Sig:   sig,
+					PQSig: pqSig,
 					Block: *block,
 				}
 
@@ -845,6 +866,23 @@ func (bc Blockchain) verifyBlockHeader(tx *dbutil.Tx, b coin.Block) error {
 
 	if b.Body.Hash() != b.Head.BodyHash {
 		return errors.New("Computed body hash does not match")
+	}
+	return nil
+}
+
+// verifyPQAddresses rejects post-quantum spends, and payments to post-quantum
+// addresses, in a block before the post-quantum address fork.
+func (bc Blockchain) verifyPQAddresses(txn coin.Transaction, seq uint64) error {
+	if bc.cfg.PQAddressForkSeq != 0 && seq >= bc.cfg.PQAddressForkSeq {
+		return nil
+	}
+	if txn.Type == coin.TxnTypePQ {
+		return transaction.NewErrTxnViolatesHardConstraint(errors.New("post-quantum spends are not allowed before the post-quantum address fork"))
+	}
+	for _, o := range txn.Out {
+		if o.Address.Version == cipher.AddressVersionPQ {
+			return transaction.NewErrTxnViolatesHardConstraint(errors.New("post-quantum addresses cannot receive coins before the post-quantum address fork"))
+		}
 	}
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -35,7 +36,7 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs []visor.Transact
 		return nil, err
 	}
 
-	txnHex, err := txn.SerializeHex()
+	txnHex, err := txn.SerializeHexWithPQ()
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +58,8 @@ type CreatedTransaction struct {
 	Sigs []string                   `json:"sigs"`
 	In   []CreatedTransactionInput  `json:"inputs"`
 	Out  []CreatedTransactionOutput `json:"outputs"`
+	// PQ is the witness of a type 1 transaction
+	PQ []readable.PQInputSig `json:"pq,omitempty"`
 }
 
 // NewCreatedTransaction returns a CreatedTransaction
@@ -123,6 +126,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInpu
 		Sigs: sigs,
 		In:   in,
 		Out:  out,
+		PQ:   readable.NewPQInputSigs(txn.PQ),
 	}, nil
 }
 
@@ -184,6 +188,10 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 	}
 
 	t.Out = out
+
+	if t.PQ, err = readable.PQInputSigsToCoin(r.PQ); err != nil {
+		return nil, err
+	}
 
 	hash, err := cipher.SHA256FromHex(r.TxID)
 	if err != nil {

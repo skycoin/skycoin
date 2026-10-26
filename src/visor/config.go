@@ -1,10 +1,13 @@
 package visor
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 )
 
@@ -18,6 +21,14 @@ type Config struct {
 
 	// Secret key of the blockchain (required if block publisher)
 	BlockchainSeckey cipher.SecKey
+
+	// PQBlocks makes blocks from a fork height carry an ML-DSA-44 signature as well
+	PQBlocks coin.PQBlockRule
+	// BlockchainPQSeckey signs those blocks (required if block publisher and PQBlocks is set)
+	BlockchainPQSeckey pqsig.SecKey
+	// PQAddressForkSeq is the first block that may hold post-quantum spends and
+	// payments to post-quantum (version 1) addresses. Zero means never.
+	PQAddressForkSeq uint64
 
 	// Transaction verification parameters used for unconfirmed transactions
 	UnconfirmedVerifyTxn params.VerifyTxn
@@ -76,6 +87,21 @@ func (c Config) Verify() error {
 		pk, err := cipher.PubKeyFromSecKey(c.BlockchainSeckey)
 		if err != nil || c.BlockchainPubkey != pk {
 			return errors.New("Cannot run as block publisher: invalid seckey for pubkey")
+		}
+		if len(c.PQBlocks.Pubkey) != 0 {
+			if len(c.BlockchainPQSeckey) == 0 {
+				return errors.New("Cannot run as block publisher: the post-quantum secret key is not set, use -blockchain-pq-secret-key or blockchain_pq_seckey_str")
+			}
+			pk, err := c.BlockchainPQSeckey.PubKey()
+			if err != nil || !bytes.Equal(pk, c.PQBlocks.Pubkey) {
+				return errors.New("Cannot run as block publisher: invalid post-quantum seckey for pubkey")
+			}
+		}
+	}
+
+	if len(c.PQBlocks.Pubkey) != 0 {
+		if err := c.PQBlocks.Pubkey.Verify(); err != nil {
+			return fmt.Errorf("invalid post-quantum blockchain pubkey: %v", err)
 		}
 	}
 

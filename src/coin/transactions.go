@@ -60,6 +60,18 @@ type Transaction struct {
 	Sigs []cipher.Sig        `enc:",maxlen=65535"` // list of signatures, 64+1 bytes each
 	In   []cipher.SHA256     `enc:",maxlen=65535"` // ouputs being spent
 	Out  []TransactionOutput `enc:",maxlen=65535"` // ouputs being created
+
+	// PQ is the witness of a TxnTypePQ transaction: the ML-DSA-44 key and signature
+	// of each input, empty for inputs signed in Sigs. It is not part of the encoding
+	// or the hash, so it travels and is stored beside the transaction.
+	PQ []PQInputSig `enc:"-"`
+}
+
+// PQInputSig is the post-quantum public key and signature that spend one input
+// owned by a post-quantum (version 1) address.
+type PQInputSig struct {
+	PubKey []byte `enc:",maxlen=1312"`
+	Sig    []byte `enc:",maxlen=2420"`
 }
 
 // TransactionOutput hash output/name is function of Hash
@@ -117,7 +129,13 @@ func (txn *Transaction) verify(signed bool) error {
 		return errors.New("Duplicate spend")
 	}
 
-	if txn.Type != 0 {
+	switch txn.Type {
+	case TxnTypeStandard:
+		if len(txn.PQ) != 0 {
+			return errors.New("Standard transaction has a post-quantum witness")
+		}
+	case TxnTypePQ:
+	default:
 		return errors.New("transaction type invalid")
 	}
 
@@ -175,9 +193,18 @@ func (txn *Transaction) verify(signed bool) error {
 		return errors.New("InnerHash does not match computed hash")
 	}
 
+	if txn.Type == TxnTypePQ {
+		if err := txn.verifyPQ(signed); err != nil {
+			return err
+		}
+	}
+
 	// Validate signatures
 	for i, sig := range txn.Sigs {
 		if sig.Null() {
+			if txn.pqSigned(i) {
+				continue
+			}
 			// Check that signed transactions do not have any null signatures
 			if signed {
 				return errors.New("Unsigned input in transaction")
@@ -231,13 +258,10 @@ func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i := range txn.In {
-		if txn.Sigs[i].Null() {
+		if !txn.InputSigned(i) {
 			return errors.New("Unsigned input in transaction")
 		}
-
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])                             // use inner hash, not outer hash
-		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash) //nolint:gosec // verifyInputSignaturesPrelude checks len(txn.In) against len(uxIn) and len(txn.Sigs)
-		if err != nil {
+		if err := txn.verifyInputSignature(uxIn[i].Body.Address, i); err != nil { //nolint:gosec // verifyInputSignaturesPrelude checks len(txn.In) against len(uxIn)
 			return errors.New("Signature not valid for output being spent")
 		}
 	}
@@ -256,12 +280,10 @@ func (txn Transaction) VerifyPartialInputSignatures(uxIn UxArray) error {
 
 	// Check signatures against unspent address for signatures that are not null
 	for i := range txn.In {
-		if txn.Sigs[i].Null() {
+		if !txn.InputSigned(i) {
 			continue
 		}
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
-		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
-		if err != nil {
+		if err := txn.verifyInputSignature(uxIn[i].Body.Address, i); err != nil {
 			return errors.New("Signature not valid for output being spent")
 		}
 	}
@@ -364,8 +386,8 @@ func (txn *Transaction) Size() (uint32, error) {
 // Unsigned transactions have a full signature array, but the signatures are null.
 // Returns true if the signatures array is empty.
 func (txn *Transaction) IsFullyUnsigned() bool {
-	for _, s := range txn.Sigs {
-		if !s.Null() {
+	for i := range txn.Sigs {
+		if txn.InputSigned(i) {
 			return false
 		}
 	}
@@ -380,8 +402,8 @@ func (txn *Transaction) IsFullySigned() bool {
 		return false
 	}
 
-	for _, s := range txn.Sigs {
-		if s.Null() {
+	for i := range txn.Sigs {
+		if !txn.InputSigned(i) {
 			return false
 		}
 	}
@@ -391,8 +413,8 @@ func (txn *Transaction) IsFullySigned() bool {
 
 // hasNonNullSignature returns true if the transaction has at least one non-null signature
 func (txn *Transaction) hasNonNullSignature() bool {
-	for _, s := range txn.Sigs {
-		if !s.Null() {
+	for i := range txn.Sigs {
+		if txn.InputSigned(i) {
 			return true
 		}
 	}
@@ -402,8 +424,8 @@ func (txn *Transaction) hasNonNullSignature() bool {
 
 // hasNullSignature returns true if the transaction has at least one null signature
 func (txn *Transaction) hasNullSignature() bool {
-	for _, s := range txn.Sigs {
-		if s.Null() {
+	for i := range txn.Sigs {
+		if !txn.InputSigned(i) {
 			return true
 		}
 	}
@@ -440,7 +462,10 @@ func (txn *Transaction) UpdateHeader() error {
 		return err
 	}
 	txn.Length = s
-	txn.Type = byte(0x00)
+	txn.Type = TxnTypeStandard
+	if len(txn.PQ) != 0 {
+		txn.Type = TxnTypePQ
+	}
 	txn.InnerHash = txn.HashInner()
 	return nil
 }
@@ -593,7 +618,7 @@ func (txns Transactions) Hashes() []cipher.SHA256 {
 func (txns Transactions) Size() (uint32, error) {
 	var size uint32
 	for i := range txns {
-		s, err := txns[i].Size()
+		s, err := txns[i].SizeWithPQ()
 		if err != nil {
 			return 0, err
 		}
@@ -611,7 +636,7 @@ func (txns Transactions) Size() (uint32, error) {
 func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 	var total uint32
 	for i := range txns {
-		pending, err := txns[i].Size()
+		pending, err := txns[i].SizeWithPQ()
 		if err != nil {
 			return nil, err
 		}

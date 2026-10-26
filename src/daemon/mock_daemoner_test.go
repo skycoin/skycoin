@@ -351,3 +351,60 @@ func (_m *mockDaemoner) sendRandomPeers(addr string) error {
 
 	return r0
 }
+
+// addPQSigs provides a mock function with given fields: sigs
+func (_m *mockDaemoner) addPQSigs(sigs []BlockPQSig) {
+	_m.Called(sigs)
+}
+
+// pqSigFor provides a mock function with given fields: hash
+func (_m *mockDaemoner) pqSigFor(hash cipher.SHA256) []byte {
+	ret := _m.Called(hash)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) []byte); ok {
+		r0 = rf(hash)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]byte)
+	}
+
+	return r0
+}
+
+// sendPQSigs provides a mock function with given fields: addr, blocks
+func (_m *mockDaemoner) sendPQSigs(addr string, blocks []coin.SignedBlock) error {
+	ret := _m.Called(addr, blocks)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []coin.SignedBlock) error); ok {
+		r0 = rf(addr, blocks)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// addPQWitnesses provides a mock function with given fields: ws
+func (_m *mockDaemoner) addPQWitnesses(ws []TxnPQWitness) {
+	_m.Called(ws)
+}
+
+// attachPQWitness provides a mock function with given fields: txn
+func (_m *mockDaemoner) attachPQWitness(txn *coin.Transaction) {
+	_m.Called(txn)
+}
+
+// sendPQWitnesses provides a mock function with given fields: addr, txns
+func (_m *mockDaemoner) sendPQWitnesses(addr string, txns []coin.Transaction) error {
+	ret := _m.Called(addr, txns)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []coin.Transaction) error); ok {
+		r0 = rf(addr, txns)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

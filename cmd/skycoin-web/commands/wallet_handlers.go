@@ -17,6 +17,9 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
+
+	// Registers the pq wallet type for server wallets
+	_ "github.com/skycoin/skycoin/src/wallet/pqwallet"
 )
 
 // newWalletResponse creates a wallet response using the shared readable.NewWalletResponse.
@@ -810,7 +813,7 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 	}
 
 	// Deserialize the unsigned transaction
-	txn, err := coin.DeserializeTransactionHex(req.EncodedTransaction)
+	txn, err := coin.DeserializeTransactionHexWithPQ(req.EncodedTransaction)
 	if err != nil {
 		errBadRequest(c, fmt.Sprintf("failed to deserialize transaction: %v", err))
 		return
@@ -834,7 +837,7 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 
 	// Sign the transaction using wallet entries matched by address
 	signFunc := func(w wallet.Wallet) error {
-		seckeys := make([]cipher.SecKey, len(txn.In))
+		txn.InnerHash = txn.HashInner()
 		for i, addrStr := range req.InputAddresses {
 			addr, err := cipher.DecodeBase58Address(addrStr)
 			if err != nil {
@@ -846,10 +849,11 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 				return fmt.Errorf("address %s not found in wallet: %v", addrStr, err)
 			}
 
-			seckeys[i] = entry.Secret
+			if err := wallet.SignInput(&txn, entry, i); err != nil {
+				return err
+			}
 		}
 
-		txn.SignInputs(seckeys)
 		return txn.UpdateHeader()
 	}
 
@@ -867,7 +871,7 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 		}
 	}
 
-	signedHex, err := txn.SerializeHex()
+	signedHex, err := txn.SerializeHexWithPQ()
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to serialize signed transaction: %v", err))
 		return

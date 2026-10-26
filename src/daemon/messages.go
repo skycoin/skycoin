@@ -67,6 +67,8 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("PONG", PongMessage{}),
 		NewMessageConfig("GETB", GetBlocksMessage{}),
 		NewMessageConfig("GIVB", GiveBlocksMessage{}),
+		NewMessageConfig("GIVQ", GivePQSigsMessage{}),
+		NewMessageConfig("GIVW", GivePQWitnessesMessage{}),
 		NewMessageConfig("ANNB", AnnounceBlocksMessage{}),
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
@@ -795,6 +797,14 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		logger.WithField("startBlockSeq", blocks[0].Head.BkSeq).WithFields(fields).Warningf("NewGiveBlocksMessage truncated %d blocks to %d blocks", len(blocks), len(m.Blocks))
 	}
 
+	if err := d.sendPQWitnesses(gbm.c.Addr, blockTxns(m.Blocks)); err != nil {
+		logger.WithFields(fields).WithError(err).Error("Send GivePQWitnessesMessage failed")
+	}
+
+	if err := d.sendPQSigs(gbm.c.Addr, m.Blocks); err != nil {
+		logger.WithFields(fields).WithError(err).Error("Send GivePQSigsMessage failed")
+	}
+
 	if err := d.sendMessage(gbm.c.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send GiveBlocksMessage failed")
 	}
@@ -908,6 +918,13 @@ func (m *GiveBlocksMessage) process(d daemoner) {
 		// even though we could process it at the time.
 		if b.Seq() <= maxSeq {
 			continue
+		}
+
+		if len(b.PQSig) == 0 {
+			b.PQSig = d.pqSigFor(b.HashHeader())
+		}
+		for j := range b.Body.Transactions {
+			d.attachPQWitness(&b.Body.Transactions[j])
 		}
 
 		err := d.executeSignedBlock(b)
@@ -1260,6 +1277,10 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 		logger.Warningf("NewGiveTxnsMessage truncated %d hashes to %d hashes", len(known), len(m.Transactions))
 	}
 
+	if err := d.sendPQWitnesses(gtm.c.Addr, m.Transactions); err != nil {
+		logger.WithError(err).WithFields(fields).Error("Send GivePQWitnessesMessage")
+	}
+
 	if err := d.sendMessage(gtm.c.Addr, m); err != nil {
 		logger.WithError(err).WithFields(fields).Error("Send GiveTxnsMessage")
 	}
@@ -1361,6 +1382,7 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 		// Only announce transactions that are new to us, so that peers can't spam relays
 		// It is not necessary to inject all of the transactions inside a database transaction,
 		// since each is independent
+		d.attachPQWitness(&txn)
 		known, softErr, err := d.injectTransaction(txn)
 		if err != nil {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")

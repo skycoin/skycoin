@@ -61,7 +61,7 @@ func decodeRawTxnCmd() *cobra.Command {
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			txn, err := coin.DeserializeTransactionHex(args[0])
+			txn, err := coin.DeserializeTransactionHexWithPQ(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)
 			}
@@ -128,7 +128,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rawTxn, err := txn.SerializeHex()
+			rawTxn, err := txn.SerializeHexWithPQ()
 			if err != nil {
 				return err
 			}
@@ -173,6 +173,7 @@ func readableToCreatedTransaction(rTxn *readable.Transaction) *api.CreatedTransa
 		Sigs:      rTxn.Sigs[:],
 		In:        inputs,
 		Out:       outputs,
+		PQ:        rTxn.PQ,
 	}
 	return &cTxn
 }
@@ -354,13 +355,12 @@ func signTxnCmd() *cobra.Command {
 			rawTxn := args[1]
 
 			// Decode the raw transaction to see if the transaction already signed
-			txn, err := coin.DeserializeTransactionHex(rawTxn)
+			txn, err := coin.DeserializeTransactionHexWithPQ(rawTxn)
 			if err != nil {
 				return err
 			}
 
-			emptySig := cipher.Sig{}
-			if len(txn.Sigs) > 0 && txn.Sigs[0] != emptySig {
+			if len(txn.Sigs) > 0 && txn.InputSigned(0) {
 				return fmt.Errorf("Transaction already signed")
 			}
 

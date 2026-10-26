@@ -877,7 +877,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
 	}
 
 	switch w.Type() {
-	case WalletTypeBip44, WalletTypeDeterministic:
+	case WalletTypeBip44, WalletTypeDeterministic, WalletTypePQ:
 	default:
 		return nil, ErrWalletTypeNotRecoverable
 	}

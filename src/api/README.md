@@ -848,7 +848,7 @@ Method: POST
 Args:
     seed: wallet seed [required]
     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
-    type: wallet type [required, one of "deterministic", "bip44" or "xpub"]
+    type: wallet type [required, one of "deterministic", "bip44", "xpub" or "pq"]
     bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
     xpub: xpub key [required for xpub wallets]
     label: wallet label [required]

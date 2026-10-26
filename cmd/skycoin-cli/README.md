@@ -139,6 +139,9 @@ Available Commands:
   showSeed             Show wallet seed and seed passphrase
   signTransaction      Sign an unsigned transaction with specific wallet
   status               Check the status of current Skycoin node
+  pqAddressGen         Generate post-quantum (ML-DSA-44) addresses from a seed
+  pqKeyGen             Generate a post-quantum block publisher key pair
+  pqSend               Send coins from a post-quantum address
   sweep                Move every coin in a wallet to one new address
   transaction          Show detail info of specific transaction
   verifyAddress        Verify a skycoin address

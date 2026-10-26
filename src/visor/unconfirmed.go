@@ -45,6 +45,9 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 	if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 		return nil, err
 	}
+	if err := txn.loadPQ(); err != nil {
+		return nil, err
+	}
 
 	txnHash := txn.Transaction.Hash()
 	if hash != txnHash {
@@ -56,6 +59,10 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
 	h := v.Transaction.Hash()
+	v.PQWitness = nil
+	if v.Transaction.Type == coin.TxnTypePQ {
+		v.PQWitness = coin.EncodePQWitness(v.Transaction.PQ)
+	}
 	buf, err := encodeUnconfirmedTransaction(v)
 	if err != nil {
 		return err
@@ -93,6 +100,9 @@ func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTransaction, err
 		if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 			return err
 		}
+		if err := txn.loadPQ(); err != nil {
+			return err
+		}
 
 		txns = append(txns, txn)
 		return nil
@@ -116,6 +126,9 @@ func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx
 
 		var txn UnconfirmedTransaction
 		if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
+			return err
+		}
+		if err := txn.loadPQ(); err != nil {
 			return err
 		}
 

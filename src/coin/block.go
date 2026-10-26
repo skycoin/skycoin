@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/pqsig"
 )
 
 //go:generate skyencoder -struct BlockHeader -unexported
@@ -53,11 +54,20 @@ type BlockBody struct {
 type SignedBlock struct {
 	Block
 	Sig cipher.Sig
+	// PQSig is the ML-DSA-44 signature by the post-quantum block publisher key.
+	// It travels and is stored apart from the block, so encodings ignore it.
+	PQSig []byte `enc:"-"`
 }
 
 // VerifySignature verifies that the block is signed by pubkey
 func (b SignedBlock) VerifySignature(pubkey cipher.PubKey) error {
 	return cipher.VerifyPubKeySignedHash(pubkey, b.Sig, b.HashHeader())
+}
+
+// VerifyPQSignature verifies that the block carries an ML-DSA-44 signature by pubkey
+func (b SignedBlock) VerifyPQSignature(pubkey pqsig.PubKey) error {
+	h := b.HashHeader()
+	return pqsig.VerifyBlock(pubkey, h[:], b.PQSig)
 }
 
 // NewBlock creates new block.

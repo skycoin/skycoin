@@ -1177,7 +1177,7 @@ func (c *Client) GetTransactionsNum() (uint64, error) {
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
-	rawTxn, err := txn.SerializeHex()
+	rawTxn, err := txn.SerializeHexWithPQ()
 	if err != nil {
 		return "", err
 	}
@@ -1187,7 +1187,7 @@ func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 // InjectTransactionNoBroadcast makes a request to POST /api/v1/injectTransaction
 // but does not broadcast the transaction.
 func (c *Client) InjectTransactionNoBroadcast(txn *coin.Transaction) (string, error) {
-	rawTxn, err := txn.SerializeHex()
+	rawTxn, err := txn.SerializeHexWithPQ()
 	if err != nil {
 		return "", err
 	}

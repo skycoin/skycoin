@@ -14,6 +14,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `send`, `createRawTransaction` and `createRawTransactionV2` warn when a
   destination address has already spent, since its public key is on the
   blockchain.
+- Post-quantum block signatures. With `blockchain_pq_pubkey_str` and
+  `pq_fork_seq` set, every block from that height must also carry an ML-DSA-44
+  signature by the post-quantum publisher key. Peers on protocol version 3 pass
+  the signatures to each other ahead of the blocks, and older peers keep
+  following the chain on the secp256k1 signature alone. `skycoin cli pqKeyGen`
+  makes the key pair, and `/health` reports the rule. Off by default.
+- Post-quantum addresses. From `pq_address_fork_seq`, coins can go to version 1
+  addresses, which hash an ML-DSA-44 public key, and type 1 transactions spend
+  them with a witness carried beside the transaction. Peers on protocol version
+  4 pass the witnesses to each other. Older nodes stop at the first block with a
+  type 1 transaction. `skycoin cli pqAddressGen` and `skycoin cli pqSend` make
+  and spend these addresses. Off by default.
+- A `pq` wallet type. It derives ML-DSA-44 keys from its seed and holds version
+  1 addresses, and it can be encrypted, recovered and used to send coins like a
+  deterministic wallet. `skycoin cli walletCreate -t pq` creates one.
+  A send that needs more post-quantum inputs than fit the transaction size
+  limit fails at once and says so. The skycoin-lite cipher derives and signs
+  for pq wallets.
+- The startup database check, and `cli checkdb`, verify the post-quantum block
+  signatures as well. With `FIBER_TOML` set, `cli checkdb` takes the publisher
+  keys from that coin's config, so it now works for fibercoins; before, it
+  checked every database against skycoin's key.
 
 ### Changed
 
@@ -31,6 +53,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   keep the old default. An unsigned request from an encrypted deterministic
   wallet must now name a change address, because generating one needs the
   password.
+- The module needs Go 1.27, for `crypto/mldsa`.
+- The TinyGo build of the skycoin-lite cipher is built with the 0magnet TinyGo
+  fork at 0.43.0. TinyGo 0.41 does not support Go 1.27, and the 0.42 fork
+  crashes in LLVM on `crypto/mldsa`.
 
 ## 0.28.6
 

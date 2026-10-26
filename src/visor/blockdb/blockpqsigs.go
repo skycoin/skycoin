@@ -18,8 +18,12 @@ var (
 // so the block_sigs encoding and the nodes that read it are unchanged.
 type blockPQSigs struct{}
 
-// Get returns the post-quantum signature of a block, if it has one.
+// Get returns the post-quantum signature of a block, if it has one. A database
+// from before the post-quantum code, opened read-only, has no bucket yet.
 func (bs *blockPQSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) ([]byte, error) {
+	if !dbutil.Exists(tx, BlockPQSigsBkt) {
+		return nil, nil
+	}
 	return dbutil.GetBucketValue(tx, BlockPQSigsBkt, hash[:])
 }
 
@@ -75,13 +79,9 @@ func (tw *txnPQWitnesses) load(tx *dbutil.Tx, b *coin.Block) error {
 // GetBlockPQ returns the post-quantum signature of b, nil if it has none, and puts
 // the stored PQ witnesses back onto its transactions.
 func (bc *Blockchain) GetBlockPQ(tx *dbutil.Tx, b *coin.Block) ([]byte, error) {
-	// A database from before the post-quantum fork code has no bucket yet.
-	var sig []byte
-	if dbutil.Exists(tx, BlockPQSigsBkt) {
-		var err error
-		if sig, err = bc.pqSigs.Get(tx, b.HashHeader()); err != nil {
-			return nil, err
-		}
+	sig, err := bc.pqSigs.Get(tx, b.HashHeader())
+	if err != nil {
+		return nil, err
 	}
 	if err := bc.pqWits.load(tx, b); err != nil {
 		return nil, err

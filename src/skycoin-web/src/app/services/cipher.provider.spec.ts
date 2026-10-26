@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
-import { CipherProvider, InitializationResults } from './cipher.provider';
+import { CipherProvider, InitializationResults, pqSeedState } from './cipher.provider';
 import { Address, TransactionInput, TransactionOutput } from '../app.datatypes';
 import { convertAsciiToHexa } from '../utils/converters';
 import { loadCipherWasm } from '../utils/wasm-test-utils';
@@ -59,6 +59,22 @@ describe('CipherProvider', () => {
       expect(addr.address).toEqual(expectedAddress);
 
       done();
+    });
+  });
+
+  it('should generate post-quantum addresses from a pq seed state', done => {
+    const seed = convertAsciiToHexa('abcdefg');
+
+    cipherProvider.generateAddress(pqSeedState(seed, 0)).subscribe(first => {
+      expect(first.address.address).toEqual('3rqVbVSdzuWuciwp66RrkjJ51e4vuipzbY');
+      expect(first.nextSeed).toEqual(pqSeedState(seed, 1));
+
+      cipherProvider.generateAddress(first.nextSeed).subscribe(second => {
+        expect(second.address.address).toEqual('2UxmE95vcSNuxengyEQBp12mbndgncgRs6a');
+        expect(second.nextSeed).toEqual(pqSeedState(seed, 2));
+
+        done();
+      });
     });
   });
 

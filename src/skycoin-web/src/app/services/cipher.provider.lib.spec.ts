@@ -147,6 +147,42 @@ describe('CipherProvider Lib', () => {
     });
   });
 
+  // The expected values come from liteclient.GeneratePQAddresses in Go, which a
+  // node's pq wallet made from the same seed matches.
+  describe('post-quantum addresses', () => {
+    const seed = convertAsciiToHexa('abcdefg');
+
+    it('derives the address at an index', () => {
+      const first = (window.SkycoinCipher as any).generatePQAddress(seed, 0);
+      expect(first.error).toBeUndefined();
+      expect(first.address).toEqual('3rqVbVSdzuWuciwp66RrkjJ51e4vuipzbY');
+      expect(first.secret).toEqual('286b6cc43ae58cebaba794ee446b1b5b6c723def3f01cdccf33d914977134190');
+
+      const second = (window.SkycoinCipher as any).generatePQAddress(seed, 1);
+      expect(second.address).toEqual('2UxmE95vcSNuxengyEQBp12mbndgncgRs6a');
+    });
+
+    it('rejects an index that is not a number', () => {
+      expect((window.SkycoinCipher as any).generatePQAddress(seed, '1').error).toBeTruthy();
+    });
+
+    it('signs an input owned by a post-quantum address', () => {
+      const pq = (window.SkycoinCipher as any).generatePQAddress(seed, 0);
+      const inputs = [{
+        hash: 'ab1c4a7fb5d7e3d8ef5f1d6cb22fc0bbd5d0b0c4d64e60a0e0f6e30ca1c0f2d4',
+        secret: pq.secret,
+        address: pq.address,
+      }];
+      const outputs = [{ address: pq.address, coins: 1000000, hours: 1 }];
+      const raw = (window.SkycoinCipher as any).prepareTransaction(JSON.stringify(inputs), JSON.stringify(outputs));
+
+      expect(raw.error).toBeUndefined();
+      // The ML-DSA-44 witness adds a 1312-byte key and a 2420-byte signature to
+      // the transaction.
+      expect(raw.length / 2).toBeGreaterThan(1312 + 2420);
+    });
+  });
+
   describe('generate address', () => {
     const addressFixtureFile = readFixture(fixturesPath + addressesFileName);
     const expectedAddresses = addressFixtureFile.keys.slice(0, testSettings.addressCount);

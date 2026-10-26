@@ -33,8 +33,14 @@
             <option value="deterministic">{{ 'wallet.new.type-deterministic' | translate }}</option>
           }
           <option value="bip44">{{ 'wallet.new.type-bip44' | translate }}</option>
+          @if (!isBitcoinCoin) {
+            <option value="pq">{{ 'wallet.new.type-pq' | translate }}</option>
+          }
         </select>
       </div>
+      @if (form.get('wallet_type')!.value === 'pq') {
+        <p class="-info">{{ 'wallet.new.type-pq-info' | translate }}</p>
+      }
     </div>
     @if (isBitcoinCoin && form.get('wallet_type')!.value === 'bip44') {
       <div class="form-field -segwit-toggle">

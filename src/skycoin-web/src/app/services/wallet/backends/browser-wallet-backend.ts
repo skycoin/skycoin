@@ -8,7 +8,7 @@ import { Address, Wallet } from '../../../app.datatypes';
 import { defaultCoinId } from '../../../constants/coins-id.const';
 import { convertAsciiToHexa } from '../../../utils/converters';
 import { environment } from '../../../../environments/environment';
-import { CipherProvider, GenerateAddressResponse } from '../../cipher.provider';
+import { CipherProvider, GenerateAddressResponse, pqSeedState } from '../../cipher.provider';
 import { ApiService } from '../../api.service';
 import { EncryptionService } from '../../encryption.service';
 import { WalletBackend } from './wallet-backend';
@@ -65,8 +65,10 @@ export class BrowserWalletBackend implements WalletBackend {
     return of(wallets);
   }
 
-  create(label: string, seed: string, coinId: number, existing: Wallet[]): Observable<Wallet> {
-    return this.cipherProvider.generateAddress(convertAsciiToHexa(seed)).pipe(
+  create(label: string, seed: string, coinId: number, existing: Wallet[], walletType = 'deterministic'): Observable<Wallet> {
+    const isPQ = walletType === 'pq';
+
+    return this.cipherProvider.generateAddress(this.initialSeedState(seed, walletType)).pipe(
       map((response: GenerateAddressResponse) => {
         const wallet: Wallet = {
           label: label,
@@ -77,7 +79,7 @@ export class BrowserWalletBackend implements WalletBackend {
           addresses: [response.address],
           nextSeed: response.nextSeed,
           coinId: coinId,
-          walletType: 'deterministic',
+          walletType: isPQ ? 'pq' : 'deterministic',
         };
         if (existing.some((wlt: Wallet) =>
             wlt.addresses[0].address === wallet.addresses[0].address &&
@@ -113,6 +115,9 @@ export class BrowserWalletBackend implements WalletBackend {
         addresses: strippedAddresses,
         isHardware: wallet.isHardware,
       };
+      if (wallet.walletType === 'pq') {
+        stripped.walletType = wallet.walletType;
+      }
       if (wallet.encryptedSeed) {
         stripped.encryptedSeed = wallet.encryptedSeed;
         if (wallet.encryptedNextSeed) {
@@ -244,7 +249,7 @@ export class BrowserWalletBackend implements WalletBackend {
   }
 
   unlockWallet(wallet: Wallet, seed: string, onProgressChanged: EventEmitter<number>): Observable<void> {
-    const currentSeed = convertAsciiToHexa(seed);
+    const currentSeed = this.initialSeedState(seed, wallet.walletType);
 
     return this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).pipe(
       map((res: boolean) => {
@@ -290,7 +295,7 @@ export class BrowserWalletBackend implements WalletBackend {
 
       Promise.all(decryptPromises).then(([seed, nextSeed]) => {
         const clean = cleanSeed(seed!);
-        const currentSeed = convertAsciiToHexa(clean);
+        const currentSeed = this.initialSeedState(clean, wallet.walletType);
 
         this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).subscribe(
           (res: boolean) => {
@@ -316,6 +321,12 @@ export class BrowserWalletBackend implements WalletBackend {
   removeWalletPassword(wallet: Wallet): void {
     wallet.encryptedSeed = undefined;
     wallet.encryptedNextSeed = undefined;
+  }
+
+  /** The state the first address of a wallet with this seed is derived from. */
+  private initialSeedState(seed: string, walletType?: string): string {
+    const seedHex = convertAsciiToHexa(seed);
+    return walletType === 'pq' ? pqSeedState(seedHex, 0) : seedHex;
   }
 
   private checkWalletAddresses(wallet: Wallet, lastIndexWithTxs: number, onProgressChanged: EventEmitter<ScanProgressData>, nextSeed: string): Observable<number> {

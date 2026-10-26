@@ -192,6 +192,8 @@
       "type-label": "Wallet type",
       "type-deterministic": "Deterministic",
       "type-bip44": "BIP44 (HD Wallet)",
+      "type-pq": "Post-quantum (ML-DSA-44)",
+      "type-pq-info": "Its addresses are signed with ML-DSA-44, so they stay safe against quantum computers after a spend. They only receive coins on chains that have reached the post-quantum address fork.",
       "seed-passphrase-label": "Seed passphrase (optional)",
       "seed-passphrase-placeholder": "Enter an optional passphrase",
       "seed-passphrase-info": "An optional passphrase adds an extra layer of security. You will need both the seed and the passphrase to recover the wallet.",

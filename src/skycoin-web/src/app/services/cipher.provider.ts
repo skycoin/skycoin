@@ -12,6 +12,11 @@ export interface GenerateAddressResponse {
   nextSeed: string;
 }
 
+/** The address generation state of a post-quantum wallet at index. */
+export function pqSeedState(seedHex: string, index: number): string {
+  return 'pq:' + seedHex + ':' + index;
+}
+
 /** What the wasm cipher reports about its own build. */
 export interface CipherBuildInfo {
   version: string;
@@ -133,7 +138,22 @@ export class CipherProvider {
     return of(result);
   }
 
+  /**
+   * Derives the address after seed. A post-quantum wallet's state reads
+   * pq:<seed hex>:<index> (see pqSeedState) and moves on by one index.
+   */
   generateAddress(seed: any): Observable<GenerateAddressResponse> {
+    const pq = /^pq:([0-9a-f]*):(\d+)$/.exec(seed);
+    if (pq) {
+      const index = parseInt(pq[2], 10);
+      const pqAddress = (window as any)['SkycoinCipher'].generatePQAddress(pq[1], index);
+
+      return this.resultOrError<any>(pqAddress, 'generate a post-quantum address').pipe(map(result => ({
+        nextSeed: pqSeedState(pq[1], index + 1),
+        address: { secret_key: result.secret, address: result.address },
+      })));
+    }
+
     const address = (window as any)['SkycoinCipher'].generateAddress(seed);
 
     return this.resultOrError<any>(address, 'generate an address')

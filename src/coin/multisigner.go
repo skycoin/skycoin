@@ -50,6 +50,26 @@ func DefaultBlockSignerThreshold(n int) int {
 	return 2*n/3 + 1
 }
 
+// NewMultiSignerRule parses hex signer keys into a rule and checks it. A zero
+// threshold takes the default. No signers gives the rule that is off.
+func NewMultiSignerRule(signers []string, threshold int, forkSeq uint64) (MultiSignerRule, error) {
+	if len(signers) == 0 {
+		return MultiSignerRule{}, nil
+	}
+	r := MultiSignerRule{Signers: make([]cipher.PubKey, len(signers)), Threshold: threshold, ForkSeq: forkSeq}
+	for i, s := range signers {
+		pk, err := cipher.PubKeyFromHex(s)
+		if err != nil {
+			return MultiSignerRule{}, fmt.Errorf("invalid block signer %q: %v", s, err)
+		}
+		r.Signers[i] = pk
+	}
+	if r.Threshold == 0 {
+		r.Threshold = DefaultBlockSignerThreshold(len(signers))
+	}
+	return r, r.Validate()
+}
+
 // Enabled reports whether the chain has a signer list
 func (r MultiSignerRule) Enabled() bool {
 	return len(r.Signers) != 0

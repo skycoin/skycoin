@@ -2,6 +2,7 @@ package fiber
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -60,4 +61,23 @@ func TestNewConfig(t *testing.T) {
 			UserMaxDropletPrecision: 2,
 		},
 	}, coinConfig)
+}
+
+func TestNewConfigMultiSigner(t *testing.T) {
+	c, err := NewConfig("multisigner.fiber.toml", "./testdata")
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		"0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a",
+		"02c9a0d5bb0e1d0f7b5ed9d06d3b0e1c5cf4e5b7e1d6de73f3a5f63b8a0a0b1c2d",
+	}, c.Node.BlockSigners)
+	require.Equal(t, 2, c.Node.BlockSignerThreshold)
+	require.Equal(t, uint64(1), c.Node.MultiSignerForkSeq)
+	require.Equal(t, 15*time.Second, c.Node.BlockRoundTimeout)
+
+	// A chain without the fields keeps the single publisher
+	c, err = NewConfig("test.fiber.toml", "./testdata")
+	require.NoError(t, err)
+	require.Empty(t, c.Node.BlockSigners)
+	require.Zero(t, c.Node.BlockSignerThreshold)
+	require.Zero(t, c.Node.BlockRoundTimeout)
 }

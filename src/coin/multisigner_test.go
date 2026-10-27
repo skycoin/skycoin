@@ -70,6 +70,26 @@ func TestMultiSignerRuleValidate(t *testing.T) {
 	require.Error(t, MultiSignerRule{Signers: bad, Threshold: 3}.Validate(), "invalid key")
 }
 
+func TestNewMultiSignerRule(t *testing.T) {
+	r, err := NewMultiSignerRule(nil, 0, 0)
+	require.NoError(t, err)
+	require.False(t, r.Enabled())
+
+	pks, _ := fourSigners()
+	hexes := make([]string, len(pks))
+	for i, pk := range pks {
+		hexes[i] = pk.Hex()
+	}
+	r, err = NewMultiSignerRule(hexes, 0, 1)
+	require.NoError(t, err)
+	require.Equal(t, MultiSignerRule{Signers: pks, Threshold: 3, ForkSeq: 1}, r)
+
+	_, err = NewMultiSignerRule(hexes, 2, 1)
+	require.Error(t, err)
+	_, err = NewMultiSignerRule(append(hexes, "zz"), 0, 1)
+	require.Error(t, err)
+}
+
 func TestMultiSignerRuleProposer(t *testing.T) {
 	pks, _ := fourSigners()
 	r := MultiSignerRule{Signers: pks, Threshold: 3}

@@ -182,6 +182,7 @@ func (c *Coin) Run() error {
 	dv := dbVerify{
 		blockchainPubkey: c.config.Node.blockchainPubkey,
 		pqBlocks:         coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq},
+		multiSigner:      c.config.Node.multiSigner,
 		logger:           c.logger,
 		quit:             quit,
 	}
@@ -387,6 +388,7 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.PQBlocks = coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq}
 	vc.BlockchainPQSeckey = c.config.Node.blockchainPQSeckey
 	vc.PQAddressForkSeq = c.config.Node.PQAddressForkSeq
+	vc.MultiSigner = c.config.Node.multiSigner
 
 	vc.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 	vc.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn

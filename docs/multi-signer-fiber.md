@@ -1,6 +1,6 @@
 # Multi-signer blocks for fiber chains
 
-Status: design, not implemented.
+Status: stage 1 implemented, see Stages.
 
 A fibercoin today has one block publisher. A node accepts a block only when it
 is signed by the single `blockchain_pubkey_str` in its `fiber.toml`
@@ -164,3 +164,26 @@ signatures stored with each block already record who took part.
 3. Signer-set changes by transaction, post-quantum signer keys, explorer
    support.
 4. Optional per-chain signer rewards.
+
+## Stage 1 notes
+
+Choices the first stage made where this note left room.
+
+- Round 0 for height h starts at the time of block h − 1, not when a node
+  learned of it, so nodes count the same rounds without exchanging anything.
+  After a stall the rounds keep counting from that block.
+- A signer accepts a proposal from the proposer of any round up to one past
+  its own, so a proposal that arrives late, or a little early by another
+  clock, can still be signed.
+- On each new round a signer resends the proposal it signed and the
+  signatures it holds for it. That is what lets a stalled height finish when a
+  stopped signer returns.
+- A signature that is invalid, repeated or by a key outside the list is
+  dropped, not counted against the block, so a peer cannot spoil a final
+  block by attaching junk to it. Nodes store only the valid ones.
+- On a multi-signer chain a node no longer arbitrates the transactions of a
+  block it executes. Arbitration could drop one and store a body that no
+  longer matches the signed header. Building a block still arbitrates.
+- A block signer is a node run with `--block-publisher` and its own key in
+  `blockchain_seckey_str`. The post-quantum block rule cannot be combined with
+  `block_signers` until signers have post-quantum keys.

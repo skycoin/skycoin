@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   signatures as well. With `FIBER_TOML` set, `cli checkdb` takes the publisher
   keys from that coin's config, so it now works for fibercoins; before, it
   checked every database against skycoin's key.
+- Multi-signer blocks for fiber chains, stage 1 of
+  `docs/multi-signer-fiber.md`. With `block_signers` set, blocks from
+  `multi_signer_fork_seq` are proposed in turn by the listed signers and are
+  final once `block_signer_threshold` of them have signed. A signer signs at
+  most one block per height. Peers on protocol version 5 pass the proposals and
+  signatures to each other, and the block endpoints and `/health` show the
+  signers. Off by default.
 
 ### Changed
 

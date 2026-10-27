@@ -102,6 +102,24 @@ block that holds one. `skycoin cli pqAddressGen` derives post-quantum addresses
 from a seed, and `skycoin cli pqSend` spends from one. Reusing a post-quantum
 address is safe, because its public key does not give away its secret key.
 
+### Multi-signer blocks
+
+With `block_signers` set, blocks from `multi_signer_fork_seq` need signatures
+from `block_signer_threshold` of the listed keys instead of the one
+`blockchain_pubkey_str` signature. The threshold defaults to floor(2N/3)+1 and
+must be more than 2N/3. A signer runs with `--block-publisher` and its own key
+as `blockchain_seckey_str`. Signers take turns to propose, and the next one
+takes over after `block_round_timeout`, three block intervals by default.
+Rounds are counted from the time of the last block. The genesis block is still
+signed by `blockchain_pubkey_str`. See `docs/multi-signer-fiber.md`.
+
+```toml
+block_signers = ["02...", "03...", "02...", "03..."]
+block_signer_threshold = 3
+multi_signer_fork_seq = 1
+block_round_timeout = "30s"
+```
+
 ## Example: Creating a Test Coin
 
 ```toml

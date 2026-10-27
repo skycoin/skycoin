@@ -2,6 +2,7 @@ package secp256k1go
 
 import (
 	"math/big"
+	bitsPkg "math/bits"
 )
 
 var (
@@ -35,6 +36,17 @@ func (num *Number) SetHex(s string) {
 }
 
 func (num *Number) maskBits(bits uint) {
+	if num.Sign() >= 0 {
+		// Truncating the words in place gives the same value as the And.
+		w := num.Bits()
+		n := bits / bitsPkg.UintSize
+		if int(n) < len(w) {
+			w = w[:n+1]
+			w[n] &= big.Word(1)<<(bits%bitsPkg.UintSize) - 1
+			num.SetBits(w)
+		}
+		return
+	}
 	mask := new(big.Int).Lsh(BigInt1, bits)
 	mask.Sub(mask, BigInt1)
 	num.Int.And(&num.Int, mask)
@@ -77,8 +89,23 @@ func (num *Number) inc() {
 	num.Add(&num.Int, BigInt1)
 }
 
+// rshX returns the low bits of num, taken in two's complement as big.Int.And
+// takes them, and shifts num right by bits.
 func (num *Number) rshX(bits uint) (res int) {
-	res = int(new(big.Int).And(&num.Int, new(big.Int).SetUint64((1<<bits)-1)).Uint64()) //nolint:gosec
+	if bits >= 32 {
+		res = int(new(big.Int).And(&num.Int, new(big.Int).SetUint64((1<<bits)-1)).Uint64()) //nolint:gosec
+		num.Rsh(&num.Int, bits)
+		return
+	}
+	// The low bits of -a in two's complement are those of -(low word of a).
+	var low uint
+	if w := num.Bits(); len(w) > 0 {
+		low = uint(w[0])
+	}
+	if num.Sign() < 0 {
+		low = -low
+	}
+	res = int(low & (1<<bits - 1)) //nolint:gosec
 	num.Rsh(&num.Int, bits)
 	return
 }

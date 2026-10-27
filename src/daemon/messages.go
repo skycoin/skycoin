@@ -69,6 +69,8 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("GIVB", GiveBlocksMessage{}),
 		NewMessageConfig("GIVQ", GivePQSigsMessage{}),
 		NewMessageConfig("GIVW", GivePQWitnessesMessage{}),
+		NewMessageConfig("PRPB", ProposeBlockMessage{}),
+		NewMessageConfig("GIVC", GiveBlockCosigsMessage{}),
 		NewMessageConfig("ANNB", AnnounceBlocksMessage{}),
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
@@ -805,6 +807,10 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		logger.WithFields(fields).WithError(err).Error("Send GivePQSigsMessage failed")
 	}
 
+	if err := d.sendBlockCosigs(gbm.c.Addr, m.Blocks); err != nil {
+		logger.WithFields(fields).WithError(err).Error("Send GiveBlockCosigsMessage failed")
+	}
+
 	if err := d.sendMessage(gbm.c.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send GiveBlocksMessage failed")
 	}
@@ -923,6 +929,9 @@ func (m *GiveBlocksMessage) process(d daemoner) {
 		if len(b.PQSig) == 0 {
 			b.PQSig = d.pqSigFor(b.HashHeader())
 		}
+		if len(b.Cosigs) == 0 {
+			b.Cosigs = d.cosigsFor(b.HashHeader())
+		}
 		for j := range b.Body.Transactions {
 			d.attachPQWitness(&b.Body.Transactions[j])
 		}
@@ -933,6 +942,10 @@ func (m *GiveBlocksMessage) process(d daemoner) {
 			processed++
 		} else {
 			logger.Critical().WithError(err).WithField("seq", b.Block.Head.BkSeq).Error("Failed to execute received block")
+			var few coin.ErrNotEnoughBlockSigners
+			if errors.As(err, &few) {
+				d.holdBlock(b)
+			}
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break

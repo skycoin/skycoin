@@ -477,6 +477,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.GenesisHash = c.config.Node.genesisHash
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
+	dc.Daemon.BlockRoundTimeout = c.config.Node.BlockRoundTimeout
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond

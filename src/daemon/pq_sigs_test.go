@@ -86,6 +86,7 @@ func TestGiveBlocksMessageAttachesPQSig(t *testing.T) {
 	d.On("DaemonConfig").Return(DaemonConfig{})
 	d.On("headBkSeq").Return(uint64(7), true, nil)
 	d.On("pqSigFor", b.HashHeader()).Return(sig)
+	d.On("cosigsFor", b.HashHeader()).Return(nil)
 	d.On("executeSignedBlock", mock.MatchedBy(func(got coin.SignedBlock) bool {
 		return string(got.PQSig) == string(sig)
 	})).Return(nil)

@@ -57,6 +57,9 @@ type SignedBlock struct {
 	// PQSig is the ML-DSA-44 signature by the post-quantum block publisher key.
 	// It travels and is stored apart from the block, so encodings ignore it.
 	PQSig []byte `enc:"-"`
+	// Cosigs are the signatures of the other block signers of a multi-signer
+	// chain. Like PQSig they travel and are stored apart from the block.
+	Cosigs []BlockCosig `enc:"-"`
 }
 
 // VerifySignature verifies that the block is signed by pubkey

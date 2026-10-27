@@ -36,7 +36,7 @@ type ErrCorruptDB struct {
 
 // CheckDatabase checks the database for corruption, rebuild history if corrupted.
 // Blocks covered by pq must also carry a valid post-quantum signature.
-func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, pq coin.PQBlockRule, quit chan struct{}) error {
+func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, pq coin.PQBlockRule, ms coin.MultiSignerRule, quit chan struct{}) error {
 	elapser := elapse.NewElapser(time.Second*30, logger)
 	elapser.Register("CheckDatabase")
 	defer elapser.CheckForDone()
@@ -54,7 +54,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, pq coin.PQBlockRule, qui
 		return nil
 	}
 
-	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey, PQBlocks: pq})
+	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey, PQBlocks: pq, MultiSigner: ms})
 	if err != nil {
 		return err
 	}
@@ -170,8 +170,8 @@ func backupDB(db *dbutil.DB) (*dbutil.DB, error) { //nolint:unused
 // - encoder.ErrMaxLenExceeded
 // If the database is deemed to be corrupted then it is erased and the db starts over.
 // A copy of the corrupted database is saved.
-func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, pq coin.PQBlockRule, quit chan struct{}) (*dbutil.DB, error) {
-	err := CheckDatabase(db, pubkey, pq, quit)
+func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, pq coin.PQBlockRule, ms coin.MultiSignerRule, quit chan struct{}) (*dbutil.DB, error) {
+	err := CheckDatabase(db, pubkey, pq, ms, quit)
 
 	// Check if an encoder error has been reported.
 	// These are not types like the errors below so cannot be included in the

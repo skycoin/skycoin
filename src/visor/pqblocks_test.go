@@ -110,12 +110,12 @@ func TestVisorPQBlocks(t *testing.T) {
 	require.NoError(t, execute(later, missing))
 
 	// The startup check verifies stored post-quantum signatures too.
-	require.NoError(t, CheckDatabase(pub.db, genPublic, rule, nil))
+	require.NoError(t, CheckDatabase(pub.db, genPublic, rule, coin.MultiSignerRule{}, nil))
 	otherSeckey, err := pqsig.NewSecKey()
 	require.NoError(t, err)
 	otherPubkey, err := otherSeckey.PubKey()
 	require.NoError(t, err)
-	require.Equal(t, pqsig.ErrInvalidSig, CheckDatabase(pub.db, genPublic, coin.PQBlockRule{Pubkey: otherPubkey, ForkSeq: 1}, nil))
+	require.Equal(t, pqsig.ErrInvalidSig, CheckDatabase(pub.db, genPublic, coin.PQBlockRule{Pubkey: otherPubkey, ForkSeq: 1}, coin.MultiSignerRule{}, nil))
 
 	hash := sb.HashHeader()
 	setPQSig := func(sig []byte) {
@@ -127,11 +127,11 @@ func TestVisorPQBlocks(t *testing.T) {
 		}))
 	}
 	setPQSig(bad.PQSig)
-	require.Equal(t, pqsig.ErrInvalidSig, CheckDatabase(pub.db, genPublic, rule, nil))
+	require.Equal(t, pqsig.ErrInvalidSig, CheckDatabase(pub.db, genPublic, rule, coin.MultiSignerRule{}, nil))
 	setPQSig(nil)
-	require.Equal(t, pqsig.ErrMissingSig, CheckDatabase(pub.db, genPublic, rule, nil))
+	require.Equal(t, pqsig.ErrMissingSig, CheckDatabase(pub.db, genPublic, rule, coin.MultiSignerRule{}, nil))
 	setPQSig(sb.PQSig)
-	require.NoError(t, CheckDatabase(pub.db, genPublic, rule, nil))
+	require.NoError(t, CheckDatabase(pub.db, genPublic, rule, coin.MultiSignerRule{}, nil))
 }
 
 func TestConfigVerifyPQ(t *testing.T) {

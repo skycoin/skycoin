@@ -109,7 +109,7 @@ func checkDB(c *cobra.Command, args []string) error {
 		apputil.CatchInterrupt(quitChan)
 	}()
 
-	if err := visor.CheckDatabase(wrapDB(db), pubkey, pq, quitChan); err != nil {
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, pq, coin.MultiSignerRule{}, quitChan); err != nil {
 		if err == visor.ErrVerifyStopped {
 			return nil
 		}

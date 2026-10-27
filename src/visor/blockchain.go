@@ -75,6 +75,7 @@ type chainStore interface {
 	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
 	GetBlockPQ(*dbutil.Tx, *coin.Block) ([]byte, error)
+	GetBlockCosigs(*dbutil.Tx, cipher.SHA256) ([]coin.BlockCosig, error)
 	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
 }
 
@@ -100,6 +101,7 @@ func CreateBuckets(db *dbutil.DB) error {
 		return dbutil.CreateBuckets(tx, [][]byte{
 			UnconfirmedTxnsBkt,
 			UnconfirmedUnspentsBkt,
+			SignerVotesBkt,
 		})
 	})
 }
@@ -113,6 +115,8 @@ type BlockchainConfig struct {
 	Pubkey      cipher.PubKey
 	// PQBlocks is the post-quantum signature rule, see visor.Config
 	PQBlocks coin.PQBlockRule
+	// MultiSigner is the multi-signer block rule, see visor.Config
+	MultiSigner coin.MultiSignerRule
 	// PQAddressForkSeq is the first block that may hold post-quantum spends and
 	// payments to post-quantum addresses. Zero means never.
 	PQAddressForkSeq uint64
@@ -257,7 +261,9 @@ func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Sign
 			return coin.SignedBlock{}, err
 		}
 
-		txns, err := bc.processTransactions(tx, b.Body.Transactions)
+		// A signer of a multi-signer chain checks other signers' blocks, so it
+		// must not arbitrate them into a body that no longer matches the header.
+		txns, err := bc.processTransactionsMode(tx, b.Body.Transactions, bc.cfg.Arbitrating && !bc.cfg.MultiSigner.Enabled())
 		if err != nil {
 			return coin.SignedBlock{}, err
 		}
@@ -546,6 +552,10 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 //   - move arbitration to visor
 //   - blockchain should have strict checking
 func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (coin.Transactions, error) {
+	return bc.processTransactionsMode(tx, txs, bc.cfg.Arbitrating)
+}
+
+func (bc Blockchain) processTransactionsMode(tx *dbutil.Tx, txs coin.Transactions, arbitrating bool) (coin.Transactions, error) {
 	// copy txs so that the following code won't modify the original txns
 	txns := make(coin.Transactions, len(txs))
 	copy(txns, txs)
@@ -556,7 +566,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 	}
 
 	// Transactions need to be sorted by fee and hash before arbitrating
-	if bc.cfg.Arbitrating {
+	if arbitrating {
 		txns, err = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
 		if err != nil {
 			logger.Critical().WithError(err).Error("processTransactions: coin.SortTransactions failed")
@@ -566,7 +576,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 
 	//TODO: audit
 	if len(txns) == 0 {
-		if bc.cfg.Arbitrating {
+		if arbitrating {
 			return txns, nil
 		}
 
@@ -584,7 +594,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 			case transaction.ErrTxnViolatesSoftConstraint:
 				logger.Critical().WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
 			case transaction.ErrTxnViolatesHardConstraint:
-				if bc.cfg.Arbitrating {
+				if arbitrating {
 					skip[i] = struct{}{}
 					continue
 				}
@@ -606,7 +616,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 			h := uxb.Hash()
 			_, exists := uxHashes[h]
 			if exists {
-				if bc.cfg.Arbitrating {
+				if arbitrating {
 					skip[i] = struct{}{}
 					continue
 				}
@@ -619,7 +629,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 				if contains, err := bc.Unspent().Contains(tx, h); err != nil {
 					return nil, err
 				} else if contains {
-					if bc.cfg.Arbitrating {
+					if arbitrating {
 						skip[i] = struct{}{}
 						continue
 					}
@@ -666,7 +676,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 			for a := range s.In {
 				for b := range t.In {
 					if s.In[a] == t.In[b] {
-						if bc.cfg.Arbitrating {
+						if arbitrating {
 							// The txn with the highest fee and lowest hash
 							// is chosen when attempting a double spend.
 							// Since the txns are sorted, we skip the 2nd
@@ -710,10 +720,7 @@ func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalc
 // VerifySignature checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
 func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
-	err := block.VerifySignature(bc.cfg.Pubkey)
-	if err == nil {
-		err = bc.cfg.PQBlocks.Verify(*block)
-	}
+	err := verifyBlockSignatures(*block, bc.cfg.Pubkey, bc.cfg.PQBlocks, bc.cfg.MultiSigner)
 	if err != nil {
 		logger.Errorf("Blockchain signature verification failed for block %d: %v", block.Head.BkSeq, err)
 	}
@@ -795,10 +802,16 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 					return err
 				}
 
+				cosigs, err := bc.store.GetBlockCosigs(tx, block.HashHeader())
+				if err != nil {
+					return err
+				}
+
 				signedBlock := &coin.SignedBlock{
-					Sig:   sig,
-					PQSig: pqSig,
-					Block: *block,
+					Sig:    sig,
+					PQSig:  pqSig,
+					Cosigs: cosigs,
+					Block:  *block,
 				}
 
 				select {

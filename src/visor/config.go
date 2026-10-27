@@ -30,6 +30,11 @@ type Config struct {
 	// payments to post-quantum (version 1) addresses. Zero means never.
 	PQAddressForkSeq uint64
 
+	// MultiSigner makes blocks from a fork height need k of N signer signatures
+	// instead of the one BlockchainPubkey signature. A block publisher is then a
+	// signer, with BlockchainSeckey its own key in the list.
+	MultiSigner coin.MultiSignerRule
+
 	// Transaction verification parameters used for unconfirmed transactions
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Transaction verification parameters used when creating a block
@@ -85,7 +90,14 @@ func (c Config) Verify() error {
 			return errors.New("Cannot run as block publisher: the blockchain secret key is not set, use -blockchain-secret-key or blockchain_seckey_str in a fiber.toml loaded with FIBER_TOML")
 		}
 		pk, err := cipher.PubKeyFromSecKey(c.BlockchainSeckey)
-		if err != nil || c.BlockchainPubkey != pk {
+		switch {
+		case err != nil:
+			return errors.New("Cannot run as block publisher: invalid seckey for pubkey")
+		case c.MultiSigner.Enabled():
+			if c.MultiSigner.SignerIndex(pk) < 0 {
+				return errors.New("Cannot run as block signer: the blockchain seckey is not one of block_signers")
+			}
+		case c.BlockchainPubkey != pk:
 			return errors.New("Cannot run as block publisher: invalid seckey for pubkey")
 		}
 		if len(c.PQBlocks.Pubkey) != 0 {
@@ -103,6 +115,13 @@ func (c Config) Verify() error {
 		if err := c.PQBlocks.Pubkey.Verify(); err != nil {
 			return fmt.Errorf("invalid post-quantum blockchain pubkey: %v", err)
 		}
+	}
+
+	if err := c.MultiSigner.Validate(); err != nil {
+		return err
+	}
+	if c.MultiSigner.Enabled() && len(c.PQBlocks.Pubkey) != 0 {
+		return errors.New("block_signers cannot be combined with post-quantum block signatures yet")
 	}
 
 	if err := c.UnconfirmedVerifyTxn.Validate(); err != nil {

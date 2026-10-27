@@ -22,6 +22,8 @@ type BlockVerbose struct {
 	Head BlockHeader      `json:"header"`
 	Body BlockBodyVerbose `json:"body"`
 	Size uint32           `json:"size"`
+	// Signers are the keys that signed a multi-signer block, the proposer first
+	Signers []string `json:"signers,omitempty"`
 }
 
 // NewBlockBodyVerbose creates a verbose readable block body

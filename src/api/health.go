@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
@@ -39,6 +40,9 @@ type HealthResponse struct {
 	BlockchainPQPubkey   string               `json:"blockchain_pq_pubkey,omitempty"`
 	PQForkSeq            uint64               `json:"pq_fork_seq,omitempty"`
 	PQAddressForkSeq     uint64               `json:"pq_address_fork_seq,omitempty"`
+	BlockSigners         []string             `json:"block_signers,omitempty"`
+	BlockSignerThreshold int                  `json:"block_signer_threshold,omitempty"`
+	MultiSignerForkSeq   uint64               `json:"multi_signer_fork_seq,omitempty"`
 	UserVerifyTxn        readable.VerifyTxn   `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn readable.VerifyTxn   `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64                `json:"started_at"`
@@ -99,6 +103,9 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		BlockchainPQPubkey:   c.health.PQBlocks.Pubkey.Hex(),
 		PQForkSeq:            c.health.PQBlocks.ForkSeq,
 		PQAddressForkSeq:     c.health.PQAddressForkSeq,
+		BlockSigners:         hexPubKeys(c.health.MultiSigner.Signers),
+		BlockSignerThreshold: c.health.MultiSigner.Threshold,
+		MultiSignerForkSeq:   c.health.MultiSigner.ForkSeq,
 		WalletAPIEnabled:     walletAPIEnabled,
 		UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 		UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),
@@ -125,4 +132,15 @@ func healthHandler(c muxConfig, gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, health)
 	}
+}
+
+func hexPubKeys(pks []cipher.PubKey) []string {
+	if len(pks) == 0 {
+		return nil
+	}
+	s := make([]string, len(pks))
+	for i, pk := range pks {
+		s[i] = pk.Hex()
+	}
+	return s
 }

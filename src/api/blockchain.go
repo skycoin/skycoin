@@ -92,7 +92,7 @@ func parseBoolFlag(v string) (bool, error) {
 //		hash [transaction hash string]
 //	 seq [int]
 //		Note: only one of hash or seq is allowed
-func blockHandler(gateway Gatewayer) http.HandlerFunc {
+func blockHandler(gateway Gatewayer, rule coin.MultiSignerRule) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -164,6 +164,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
+			rb.Signers = blockSigners(rule, *b)
 			wh.SendJSONOr500(logger, w, rb)
 			return
 		}
@@ -192,6 +193,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		rb.Signers = blockSigners(rule, *b)
 		wh.SendJSONOr500(logger, w, rb)
 	}
 }
@@ -208,7 +210,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //		end [int]
 //	 seqs [comma separated list of ints]
 //	 verbose [bool]
-func blocksHandler(gateway Gatewayer) http.HandlerFunc {
+func blocksHandler(gateway Gatewayer, rule coin.MultiSignerRule) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -320,6 +322,9 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
+			for i := range rb.Blocks {
+				rb.Blocks[i].Signers = blockSigners(rule, blocks[i])
+			}
 			wh.SendJSONOr500(logger, w, rb)
 		} else {
 			var blocks []coin.SignedBlock
@@ -347,6 +352,9 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
+			for i := range rb.Blocks {
+				rb.Blocks[i].Signers = blockSigners(rule, blocks[i])
+			}
 			wh.SendJSONOr500(logger, w, rb)
 		}
 	}
@@ -359,7 +367,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 //
 //		num [int]
 //	 verbose [bool]
-func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
+func lastBlocksHandler(gateway Gatewayer, rule coin.MultiSignerRule) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -398,6 +406,9 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
+			for i := range rb.Blocks {
+				rb.Blocks[i].Signers = blockSigners(rule, blocks[i])
+			}
 			wh.SendJSONOr500(logger, w, rb)
 			return
 		}
@@ -414,6 +425,15 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		for i := range rb.Blocks {
+			rb.Blocks[i].Signers = blockSigners(rule, blocks[i])
+		}
 		wh.SendJSONOr500(logger, w, rb)
 	}
+}
+
+// blockSigners lists the keys that signed a multi-signer block, the proposer
+// first. It is nil for a block the multi-signer rule does not cover.
+func blockSigners(rule coin.MultiSignerRule, b coin.SignedBlock) []string {
+	return hexPubKeys(rule.BlockSigners(b))
 }

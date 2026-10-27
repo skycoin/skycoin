@@ -509,6 +509,7 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 			BlockchainPubkey: c.config.Node.blockchainPubkey,
 			PQBlocks:         coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq},
 			PQAddressForkSeq: c.config.Node.PQAddressForkSeq,
+			MultiSigner:      c.config.Node.multiSigner,
 		},
 		Username:     c.config.Node.WebInterfaceUsername,
 		Password:     c.config.Node.WebInterfacePassword,

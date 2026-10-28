@@ -103,6 +103,8 @@ type Block struct {
 	Head BlockHeader `json:"header"`
 	Body BlockBody   `json:"body"`
 	Size uint32      `json:"size"`
+	// Signers are the keys that signed a multi-signer block, the proposer first
+	Signers []string `json:"signers,omitempty"`
 }
 
 // NewBlock creates a readable block

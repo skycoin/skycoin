@@ -62,6 +62,7 @@ func CreateBuckets(tx *dbutil.Tx) error {
 	return dbutil.CreateBuckets(tx, [][]byte{
 		BlockSigsBkt,
 		BlockPQSigsBkt,
+		BlockCosigsBkt,
 		TxnPQWitnessesBkt,
 		BlocksBkt,
 		TreeBkt,
@@ -118,6 +119,7 @@ type Blockchain struct {
 	tree    BlockTree
 	sigs    BlockSigs
 	pqSigs  *blockPQSigs
+	cosigs  *blockCosigs
 	pqWits  *txnPQWitnesses
 	walker  Walker
 }
@@ -139,6 +141,7 @@ func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
 		tree:    &blockTree{},
 		sigs:    &blockSigs{},
 		pqSigs:  &blockPQSigs{},
+		cosigs:  &blockCosigs{},
 		pqWits:  &txnPQWitnesses{},
 		walker:  walker,
 	}, nil
@@ -158,6 +161,12 @@ func (bc *Blockchain) AddBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 	if len(sb.PQSig) != 0 {
 		if err := bc.pqSigs.Add(tx, sb.HashHeader(), sb.PQSig); err != nil {
 			return fmt.Errorf("save post-quantum signature failed: %v", err)
+		}
+	}
+
+	if len(sb.Cosigs) != 0 {
+		if err := bc.cosigs.Add(tx, sb.HashHeader(), sb.Cosigs); err != nil {
+			return fmt.Errorf("save block cosignatures failed: %v", err)
 		}
 	}
 
@@ -264,14 +273,20 @@ func (bc *Blockchain) GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*
 		return nil, fmt.Errorf("find post-quantum signature of block: %v failed: %v", b.Head.BkSeq, err)
 	}
 
+	cosigs, err := bc.cosigs.Get(tx, b.HashHeader())
+	if err != nil {
+		return nil, fmt.Errorf("find cosignatures of block: %v failed: %v", b.Head.BkSeq, err)
+	}
+
 	if err := bc.pqWits.load(tx, b); err != nil {
 		return nil, err
 	}
 
 	return &coin.SignedBlock{
-		Block: *b,
-		Sig:   sig,
-		PQSig: pqSig,
+		Block:  *b,
+		Sig:    sig,
+		PQSig:  pqSig,
+		Cosigs: cosigs,
 	}, nil
 }
 
@@ -299,14 +314,20 @@ func (bc *Blockchain) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.Sign
 		return nil, fmt.Errorf("find post-quantum signature of block: %v failed: %v", b.Head.BkSeq, err)
 	}
 
+	cosigs, err := bc.cosigs.Get(tx, b.HashHeader())
+	if err != nil {
+		return nil, fmt.Errorf("find cosignatures of block: %v failed: %v", b.Head.BkSeq, err)
+	}
+
 	if err := bc.pqWits.load(tx, b); err != nil {
 		return nil, err
 	}
 
 	return &coin.SignedBlock{
-		Block: *b,
-		Sig:   sig,
-		PQSig: pqSig,
+		Block:  *b,
+		Sig:    sig,
+		PQSig:  pqSig,
+		Cosigs: cosigs,
 	}, nil
 }
 

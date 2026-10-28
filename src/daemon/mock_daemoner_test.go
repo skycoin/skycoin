@@ -408,3 +408,46 @@ func (_m *mockDaemoner) sendPQWitnesses(addr string, txns []coin.Transaction) er
 
 	return r0
 }
+
+// cosigsFor provides a mock function with given fields: hash
+func (_m *mockDaemoner) cosigsFor(hash cipher.SHA256) []coin.BlockCosig {
+	ret := _m.Called(hash)
+
+	var r0 []coin.BlockCosig
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) []coin.BlockCosig); ok {
+		r0 = rf(hash)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]coin.BlockCosig)
+	}
+
+	return r0
+}
+
+// sendBlockCosigs provides a mock function with given fields: addr, blocks
+func (_m *mockDaemoner) sendBlockCosigs(addr string, blocks []coin.SignedBlock) error {
+	ret := _m.Called(addr, blocks)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []coin.SignedBlock) error); ok {
+		r0 = rf(addr, blocks)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// holdBlock provides a mock function with given fields: b
+func (_m *mockDaemoner) holdBlock(b coin.SignedBlock) {
+	_m.Called(b)
+}
+
+// onBlockProposal provides a mock function with given fields: addr, m
+func (_m *mockDaemoner) onBlockProposal(addr string, m *ProposeBlockMessage) {
+	_m.Called(addr, m)
+}
+
+// onBlockCosigs provides a mock function with given fields: addr, cs
+func (_m *mockDaemoner) onBlockCosigs(addr string, cs []BlockCosigEntry) {
+	_m.Called(addr, cs)
+}

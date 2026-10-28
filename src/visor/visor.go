@@ -74,6 +74,7 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 	bc, err := NewBlockchain(db, BlockchainConfig{
 		Pubkey:           c.BlockchainPubkey,
 		PQBlocks:         c.PQBlocks,
+		MultiSigner:      c.MultiSigner,
 		PQAddressForkSeq: c.PQAddressForkSeq,
 		Arbitrating:      c.Arbitrating,
 	})
@@ -225,7 +226,15 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 	}
 
 	logger.Info("Create genesis block")
-	vs.GenesisPreconditions()
+	signsGenesis := vs.Config.IsBlockPublisher
+	if vs.Config.MultiSigner.Enabled() {
+		// The genesis block is still signed by blockchain_pubkey_str, which a signer
+		// may or may not hold (docs/multi-signer-fiber.md, Configuration).
+		pk, err := cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey)
+		signsGenesis = signsGenesis && err == nil && pk == vs.Config.BlockchainPubkey
+	} else {
+		vs.GenesisPreconditions()
+	}
 	b, err := coin.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
 	if err != nil {
 		return err
@@ -233,7 +242,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 
 	var sb coin.SignedBlock
 	// record the signature of genesis block
-	if vs.Config.IsBlockPublisher {
+	if signsGenesis {
 		sb = vs.signBlock(*b)
 		logger.Infof("Genesis block signature=%s", sb.Sig.Hex())
 	} else {
@@ -451,11 +460,29 @@ func (vs *Visor) ExecuteSignedBlockUnsafe(b coin.SignedBlock) error {
 // executeSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by a block publisher node.
 func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
-	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
-		return err
-	}
-	if err := vs.Config.PQBlocks.Verify(b); err != nil {
-		return err
+	if ms := vs.Config.MultiSigner; ms.Applies(b.Seq()) {
+		// Keep only the valid cosignatures, so the stored ones all count
+		cosigs, err := ms.Verify(b)
+		if err != nil {
+			return err
+		}
+		b.Cosigs = cosigs
+		// ExecuteBlock rewrites PrevHash, which would void the signatures over the header
+		head, err := vs.blockchain.Head(tx)
+		if err != nil {
+			return err
+		}
+		if b.Head.PrevHash != head.HashHeader() {
+			return errors.New("PrevHash does not match current head")
+		}
+	} else {
+		if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
+			return err
+		}
+		if err := vs.Config.PQBlocks.Verify(b); err != nil {
+			return err
+		}
+		b.Cosigs = nil
 	}
 
 	return vs.executeSignedBlockUnsafe(tx, b)

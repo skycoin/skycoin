@@ -1081,6 +1081,7 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 	d.On("getSignedBlocksSince", uint64(7), uint64(20)).Return(blocks, nil)
 	d.On("sendPQWitnesses", "127.0.0.1:1234", mock.Anything).Return(nil)
 	d.On("sendPQSigs", "127.0.0.1:1234", gbm.Blocks).Return(nil)
+	d.On("sendBlockCosigs", "127.0.0.1:1234", gbm.Blocks).Return(nil)
 	d.On("sendMessage", "127.0.0.1:1234", gbm).Return(nil)
 
 	m.process(d)

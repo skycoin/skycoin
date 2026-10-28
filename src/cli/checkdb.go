@@ -105,11 +105,16 @@ func checkDB(c *cobra.Command, args []string) error {
 		pq.ForkSeq = pqForkSeq
 	}
 
+	ms, err := coin.NewMultiSignerRule(node.BlockSigners, node.BlockSignerThreshold, node.MultiSignerForkSeq)
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		apputil.CatchInterrupt(quitChan)
 	}()
 
-	if err := visor.CheckDatabase(wrapDB(db), pubkey, pq, quitChan); err != nil {
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, pq, ms, quitChan); err != nil {
 		if err == visor.ErrVerifyStopped {
 			return nil
 		}

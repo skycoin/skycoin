@@ -182,6 +182,7 @@ func (c *Coin) Run() error {
 	dv := dbVerify{
 		blockchainPubkey: c.config.Node.blockchainPubkey,
 		pqBlocks:         coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq},
+		multiSigner:      c.config.Node.multiSigner,
 		logger:           c.logger,
 		quit:             quit,
 	}
@@ -387,6 +388,7 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.PQBlocks = coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq}
 	vc.BlockchainPQSeckey = c.config.Node.blockchainPQSeckey
 	vc.PQAddressForkSeq = c.config.Node.PQAddressForkSeq
+	vc.MultiSigner = c.config.Node.multiSigner
 
 	vc.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 	vc.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
@@ -475,6 +477,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.GenesisHash = c.config.Node.genesisHash
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
+	dc.Daemon.BlockRoundTimeout = c.config.Node.BlockRoundTimeout
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
@@ -506,6 +509,7 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 			BlockchainPubkey: c.config.Node.blockchainPubkey,
 			PQBlocks:         coin.PQBlockRule{Pubkey: c.config.Node.blockchainPQPubkey, ForkSeq: c.config.Node.PQForkSeq},
 			PQAddressForkSeq: c.config.Node.PQAddressForkSeq,
+			MultiSigner:      c.config.Node.multiSigner,
 		},
 		Username:     c.config.Node.WebInterfaceUsername,
 		Password:     c.config.Node.WebInterfacePassword,

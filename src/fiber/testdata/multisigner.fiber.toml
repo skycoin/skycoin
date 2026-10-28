@@ -1,0 +1,9 @@
+[node]
+blockchain_pubkey_str = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+block_signers = [
+    "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a",
+    "02c9a0d5bb0e1d0f7b5ed9d06d3b0e1c5cf4e5b7e1d6de73f3a5f63b8a0a0b1c2d",
+]
+block_signer_threshold = 2
+multi_signer_fork_seq = 1
+block_round_timeout = "15s"

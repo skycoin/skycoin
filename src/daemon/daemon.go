@@ -206,6 +206,9 @@ type DaemonConfig struct { //nolint:revive
 	MaxTxnAnnounceNum int
 	// How often new blocks are created by the signing node, in seconds
 	BlockCreationInterval uint64
+	// How long block signers of a multi-signer chain wait for a proposal before the
+	// next proposer takes over. Zero means three block intervals.
+	BlockRoundTimeout time.Duration
 	// How often to check the unconfirmed pool for transactions that become valid
 	UnconfirmedRefreshRate time.Duration
 	// How often to remove transactions that become permanently invalid from the unconfirmed pool
@@ -232,7 +235,7 @@ type DaemonConfig struct { //nolint:revive
 // NewDaemonConfig creates daemon config
 func NewDaemonConfig() DaemonConfig {
 	return DaemonConfig{
-		ProtocolVersion:              pqWitnessProtocolVersion,
+		ProtocolVersion:              multiSignerProtocolVersion,
 		MinProtocolVersion:           2,
 		Address:                      "",
 		Port:                         6677,
@@ -295,6 +298,18 @@ type daemoner interface {
 	addPQWitnesses(ws []TxnPQWitness)
 	attachPQWitness(txn *coin.Transaction)
 	sendPQWitnesses(addr string, txns []coin.Transaction) error
+	cosigsFor(hash cipher.SHA256) []coin.BlockCosig
+	sendBlockCosigs(addr string, blocks []coin.SignedBlock) error
+	holdBlock(b coin.SignedBlock)
+	onBlockProposal(addr string, m *ProposeBlockMessage)
+	onBlockCosigs(addr string, cs []BlockCosigEntry)
+}
+
+// messageSender sends messages to peers. It is the gnet connection pool,
+// which tests replace to record or route messages.
+type messageSender interface {
+	SendMessage(addr string, msg gnet.Message) error
+	BroadcastMessage(msg gnet.Message, addrs []string) ([]uint64, error)
 }
 
 // Daemon stateful properties of the daemon
@@ -307,6 +322,8 @@ type Daemon struct {
 	pool     *Pool
 	pex      *pex.Pex
 	visor    *visor.Visor
+	// out sends messages to peers, through pool.Pool
+	out messageSender
 
 	// Cache of announced transactions that are flushed to the database periodically
 	announcedTxns *announcedTxnsCache
@@ -314,6 +331,8 @@ type Daemon struct {
 	pqSigs *pqSigCache
 	// PQ witnesses of transactions received ahead of the transactions
 	pqWitnesses *pqSigCache
+	// Proposals and cosignatures of a multi-signer chain
+	multiSigner *multiSignerState
 	// Cache of connection metadata
 	connections *Connections
 	// connect, disconnect, message, error events channel
@@ -348,6 +367,7 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 		announcedTxns: newAnnouncedTxnsCache(),
 		pqSigs:        newPQSigCache(),
 		pqWitnesses:   newPQSigCache(),
+		multiSigner:   newMultiSignerState(),
 		connections:   NewConnections(),
 		events:        make(chan interface{}, config.Pool.EventChannelSize),
 		quit:          make(chan struct{}),
@@ -358,6 +378,7 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
+	d.out = d.pool.Pool
 
 	return d, nil
 }
@@ -430,6 +451,13 @@ func (dm *Daemon) Run() error {
 		blockCreationTicker.Stop()
 	}
 
+	// A signer of a multi-signer chain makes blocks in rounds instead
+	signerTicker := time.NewTicker(signerTickInterval)
+	if dm.visor.SignerIndex() < 0 {
+		signerTicker.Stop()
+	}
+	defer signerTicker.Stop()
+
 	blocksRequestTicker := time.NewTicker(dm.config.BlocksRequestRate)
 	defer blocksRequestTicker.Stop()
 	blocksAnnounceTicker := time.NewTicker(dm.config.BlocksAnnounceRate)
@@ -482,7 +510,7 @@ loop:
 		case <-blockCreationTicker.C:
 			// Create blocks, if block publisher
 			elapser.Register("blockCreationTicker.C")
-			if dm.visor.Config.IsBlockPublisher {
+			if dm.visor.Config.IsBlockPublisher && dm.publishesNextBlock() {
 				sb, err := dm.createAndPublishBlock()
 				if err != nil {
 					logger.WithError(err).Error("Failed to create and publish block")
@@ -497,6 +525,10 @@ loop:
 					"time":    head.Time,
 				}).Info("Created and published a new block")
 			}
+
+		case <-signerTicker.C:
+			elapser.Register("signerTicker")
+			dm.signerTick()
 
 		case <-blocksRequestTicker.C:
 			elapser.Register("blocksRequestTicker")
@@ -1366,6 +1398,7 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 	if err := dm.broadcastPQSigs(m.Blocks); err != nil {
 		logger.WithError(err).Error("broadcast GivePQSigsMessage failed")
 	}
+	dm.relayBlockCosigs(blockCosigEntries(m.Blocks), "")
 	if err := dm.broadcastPQWitnesses(blockTxns(m.Blocks)); err != nil {
 		logger.WithError(err).Error("broadcast GivePQWitnessesMessage failed")
 	}
@@ -1500,7 +1533,7 @@ func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
 
 // sendMessage sends a Message to a Connection and pushes the result onto the SendResults channel.
 func (dm *Daemon) sendMessage(addr string, msg gnet.Message) error {
-	return dm.pool.Pool.SendMessage(addr, msg)
+	return dm.out.SendMessage(addr, msg)
 }
 
 // broadcastMessage sends a Message to all introduced connections in the Pool.
@@ -1520,7 +1553,7 @@ func (dm *Daemon) broadcastMessage(msg gnet.Message) ([]uint64, error) {
 		}
 	}
 
-	return dm.pool.Pool.BroadcastMessage(msg, addrs)
+	return dm.out.BroadcastMessage(msg, addrs)
 }
 
 // disconnectNow disconnects from a peer immediately without sending a DisconnectMessage. Any pending messages

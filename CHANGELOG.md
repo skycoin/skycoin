@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `encoder.DeserializeRawNoCopy` and `encoder.DeserializeRawToValueNoCopy`
+  decode without copying the input first, for callers that own it.
 - `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
 - `skycoin-cli sweep` moves every coin in a wallet to one new address, whose
   public key has never been revealed.

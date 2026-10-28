@@ -242,6 +242,27 @@ func DeserializeRaw(in []byte, data interface{}) (uint64, error) {
 	return uint64(inlen - len(d1.Buffer)), nil //nolint:gosec
 }
 
+// DeserializeRawNoCopy is DeserializeRaw without first copying `in`.
+// Decoded []byte fields share memory with `in`, so the caller must own
+// `in` and leave it unmodified while the decoded value is in use.
+func DeserializeRawNoCopy(in []byte, data interface{}) (uint64, error) {
+	v := reflect.ValueOf(data)
+	switch v.Kind() {
+	case reflect.Ptr:
+		v = v.Elem()
+	case reflect.Map:
+	default:
+		return 0, fmt.Errorf("DeserializeRawNoCopy value must be a ptr, is %s", v.Kind().String())
+	}
+
+	d1 := &Decoder{Buffer: in}
+	if err := d1.value(v, 0); err != nil {
+		return 0, err
+	}
+
+	return uint64(len(in) - len(d1.Buffer)), nil //nolint:gosec
+}
+
 // DeserializeRawExact deserializes `in` buffer into return
 // parameter. If `data` is not a Pointer or Map type an error
 // is returned. If `in` buffer can't be deserialized,
@@ -286,6 +307,25 @@ func DeserializeRawToValue(in []byte, v reflect.Value) (uint64, error) {
 	}
 
 	return uint64(inlen - len(d1.Buffer)), nil //nolint:gosec
+}
+
+// DeserializeRawToValueNoCopy is DeserializeRawToValue without first copying
+// `in`, with the same ownership rule as DeserializeRawNoCopy.
+func DeserializeRawToValueNoCopy(in []byte, v reflect.Value) (uint64, error) {
+	switch v.Kind() {
+	case reflect.Ptr:
+		v = v.Elem()
+	case reflect.Map:
+	default:
+		return 0, fmt.Errorf("DeserializeRawToValueNoCopy value must be a ptr, is %s", v.Kind().String())
+	}
+
+	d1 := &Decoder{Buffer: in}
+	if err := d1.value(v, 0); err != nil {
+		return 0, err
+	}
+
+	return uint64(len(in) - len(d1.Buffer)), nil //nolint:gosec
 }
 
 // Serialize returns serialized basic type-based `data`

@@ -467,6 +467,14 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 			return err
 		}
 		b.Cosigs = cosigs
+		// ExecuteBlock rewrites PrevHash, which would void the signatures over the header
+		head, err := vs.blockchain.Head(tx)
+		if err != nil {
+			return err
+		}
+		if b.Head.PrevHash != head.HashHeader() {
+			return errors.New("PrevHash does not match current head")
+		}
 	} else {
 		if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 			return err

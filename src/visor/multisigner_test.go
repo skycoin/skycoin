@@ -116,6 +116,17 @@ func TestVisorMultiSigner(t *testing.T) {
 	single.Cosigs = []coin.BlockCosig{c2, c3}
 	require.Equal(t, coin.ErrBlockProposerNotSigner, execute(follower, single))
 
+	// k signatures over a header that does not extend the head are refused
+	orphan := sb
+	orphan.Head.PrevHash = cipher.SumSHA256([]byte("other"))
+	orphan.Sig = cipher.MustSignHash(orphan.HashHeader(), sks[1])
+	for _, i := range []int{2, 3} {
+		c, err := coin.SignBlockCosig(orphan.HashHeader(), i, sks[i])
+		require.NoError(t, err)
+		orphan.Cosigs = append(orphan.Cosigs, c)
+	}
+	require.EqualError(t, execute(follower, orphan), "PrevHash does not match current head")
+
 	// k signatures make it final. Junk cosignatures are dropped before storing.
 	final := sb
 	_, outSK := cipher.GenerateKeyPair()

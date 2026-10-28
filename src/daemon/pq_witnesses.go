@@ -204,7 +204,7 @@ func (dm *Daemon) broadcastPQWitnesses(txns []coin.Transaction) error {
 		return nil
 	}
 	for _, m := range msgs {
-		if _, err := dm.pool.Pool.BroadcastMessage(m, addrs); err != nil {
+		if _, err := dm.out.BroadcastMessage(m, addrs); err != nil {
 			return err
 		}
 	}

@@ -305,6 +305,13 @@ type daemoner interface {
 	onBlockCosigs(addr string, cs []BlockCosigEntry)
 }
 
+// messageSender sends messages to peers. It is the gnet connection pool,
+// which tests replace to record or route messages.
+type messageSender interface {
+	SendMessage(addr string, msg gnet.Message) error
+	BroadcastMessage(msg gnet.Message, addrs []string) ([]uint64, error)
+}
+
 // Daemon stateful properties of the daemon
 type Daemon struct {
 	// Daemon configuration
@@ -315,6 +322,8 @@ type Daemon struct {
 	pool     *Pool
 	pex      *pex.Pex
 	visor    *visor.Visor
+	// out sends messages to peers, through pool.Pool
+	out messageSender
 
 	// Cache of announced transactions that are flushed to the database periodically
 	announcedTxns *announcedTxnsCache
@@ -369,6 +378,7 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
+	d.out = d.pool.Pool
 
 	return d, nil
 }
@@ -1523,7 +1533,7 @@ func divideHashes(hashes []cipher.SHA256, n int) [][]cipher.SHA256 {
 
 // sendMessage sends a Message to a Connection and pushes the result onto the SendResults channel.
 func (dm *Daemon) sendMessage(addr string, msg gnet.Message) error {
-	return dm.pool.Pool.SendMessage(addr, msg)
+	return dm.out.SendMessage(addr, msg)
 }
 
 // broadcastMessage sends a Message to all introduced connections in the Pool.
@@ -1543,7 +1553,7 @@ func (dm *Daemon) broadcastMessage(msg gnet.Message) ([]uint64, error) {
 		}
 	}
 
-	return dm.pool.Pool.BroadcastMessage(msg, addrs)
+	return dm.out.BroadcastMessage(msg, addrs)
 }
 
 // disconnectNow disconnects from a peer immediately without sending a DisconnectMessage. Any pending messages

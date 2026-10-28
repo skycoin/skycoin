@@ -645,7 +645,7 @@ func (dm *Daemon) relayBlockCosigs(entries []BlockCosigEntry, skip string) {
 		return
 	}
 	for _, m := range newGiveBlockCosigsMessages(entries) {
-		if _, err := dm.pool.Pool.BroadcastMessage(m, addrs); err != nil {
+		if _, err := dm.out.BroadcastMessage(m, addrs); err != nil {
 			logger.WithError(err).Warning("Broadcast GiveBlockCosigsMessage failed")
 			return
 		}
@@ -660,11 +660,11 @@ func (dm *Daemon) relayProposal(m *ProposeBlockMessage, skip string) {
 		return
 	}
 	for _, w := range newGivePQWitnessesMessages(m.Block.Body.Transactions) {
-		if _, err := dm.pool.Pool.BroadcastMessage(w, addrs); err != nil {
+		if _, err := dm.out.BroadcastMessage(w, addrs); err != nil {
 			logger.WithError(err).Warning("Broadcast GivePQWitnessesMessage failed")
 		}
 	}
-	if _, err := dm.pool.Pool.BroadcastMessage(m, addrs); err != nil {
+	if _, err := dm.out.BroadcastMessage(m, addrs); err != nil {
 		logger.WithError(err).Warning("Broadcast ProposeBlockMessage failed")
 	}
 }

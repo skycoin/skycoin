@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build arm && !gccgo && !appengine && !nacl
-// +build arm,!gccgo,!appengine,!nacl
+//go:build arm && !gccgo && !appengine && !nacl && !tinygo
+// +build arm,!gccgo,!appengine,!nacl,!tinygo
 
 package poly1305
 

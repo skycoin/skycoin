@@ -75,6 +75,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   The onboarding form ignored the password and wrote the seed in plain text.
 - A wallet created in skycoin-web shows its accounts, xpub keys and encrypt
   option without a page reload.
+- skycoin-web adds a change address when asked for one. It ignored the `chain`
+  parameter and always added an external address.
 
 ## 0.28.6
 

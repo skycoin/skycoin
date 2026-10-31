@@ -210,7 +210,8 @@ export class WalletDetailComponent implements OnDestroy {
     // Fetch all three xpub levels
     this.walletService.getXPubKey(this.wallet, `${account.index}`).subscribe(
       (xpub) => {
-        account.accountXpubKey = xpub;
+        account.accountXpubKey = xpub.key;
+        account.accountXpubAddresses = xpub.addresses;
         account.showXpub = true;
         this.changeDetectorRef.markForCheck();
       },
@@ -221,7 +222,8 @@ export class WalletDetailComponent implements OnDestroy {
     );
     this.walletService.getXPubKey(this.wallet, `${account.index}/0`).subscribe(
       (xpub) => {
-        account.externalXpubKey = xpub;
+        account.externalXpubKey = xpub.key;
+        account.externalXpubAddresses = xpub.addresses;
         this.changeDetectorRef.markForCheck();
       },
       (error) => {
@@ -231,7 +233,8 @@ export class WalletDetailComponent implements OnDestroy {
     );
     this.walletService.getXPubKey(this.wallet, `${account.index}/1`).subscribe(
       (xpub) => {
-        account.changeXpubKey = xpub;
+        account.changeXpubKey = xpub.key;
+        account.changeXpubAddresses = xpub.addresses;
         this.changeDetectorRef.markForCheck();
       },
       (error) => {

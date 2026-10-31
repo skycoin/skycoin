@@ -10,6 +10,7 @@ import { CoinService } from '../coin.service';
 import { ApiService } from '../api.service';
 import { EncryptionService } from '../encryption.service';
 import { WalletBackend } from './backends/wallet-backend';
+import { XPubKey } from './backends/server-wallet-backend';
 import { ServerWalletBackend } from './backends/server-wallet-backend';
 import { BrowserWalletBackend, ScanProgressData } from './backends/browser-wallet-backend';
 
@@ -101,10 +102,19 @@ export class WalletService {
     }));
   }
 
-  create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string, segwit?: boolean): Observable<Wallet> {
+  /**
+   * Makes a wallet. A non-empty password encrypts it before it is first stored:
+   * the wallet service encrypts on create, the browser before saving.
+   */
+  create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string,
+    segwit?: boolean, password?: string): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
+    const backend = this.backend;
 
-    return this.backend.create(label, seed, coinId, this.wallets.value || [], walletType, seedPassphrase, segwit).pipe(
+    return backend.create(label, seed, coinId, this.wallets.value || [], walletType, seedPassphrase, segwit, password).pipe(
+      mergeMap(wallet => password && !backend.onServer
+        ? this.browser.setWalletPassword(wallet, password).pipe(map(() => wallet))
+        : of(wallet)),
       map(wallet => {
         if (save) {
           this.add(wallet);
@@ -218,7 +228,7 @@ export class WalletService {
     return this.backend.onServer ? this.server.folder() : of(null);
   }
 
-  getXPubKey(wallet: Wallet, path: string): Observable<string> {
+  getXPubKey(wallet: Wallet, path: string): Observable<XPubKey> {
     return this.server.getXPubKey(wallet, path);
   }
 

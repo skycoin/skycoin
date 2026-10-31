@@ -853,6 +853,39 @@ func (w *Wallet) GetXPubKey(path string) (string, error) {
 	return w.accountManager.getXPubKey(uint32(indices[0]), uint32(indices[1])) //nolint:gosec
 }
 
+// XPubAddresses returns the first n addresses derived from the xpub at path.
+// For an account path these are the external chain addresses m/44'/coin'/account'/0/0..n-1.
+func (w *Wallet) XPubAddresses(path string, n uint32) ([]cipher.Addresser, error) {
+	xpub, err := w.GetXPubKey(path)
+	if err != nil {
+		return nil, err
+	}
+	pk, err := bip32.DeserializeEncodedPublicKey(xpub)
+	if err != nil {
+		return nil, err
+	}
+	if !strings.Contains(path, "/") {
+		if pk, err = pk.NewPublicChildKey(bip44.ExternalChainIndex); err != nil {
+			return nil, err
+		}
+	}
+
+	ad := wallet.ResolveAddressDecoder(w.Coin())
+	addrs := make([]cipher.Addresser, 0, n)
+	for i := uint32(0); i < n; i++ {
+		child, err := pk.NewPublicChildKey(i)
+		if err != nil {
+			return nil, err
+		}
+		cpk, err := cipher.NewPubKey(child.Key)
+		if err != nil {
+			return nil, err
+		}
+		addrs = append(addrs, ad.AddressFromPubKey(cpk))
+	}
+	return addrs, nil
+}
+
 // ParseXPubPath parses xpub paths.
 // Accepts 1 element (account index) or 2 elements (account/chain index).
 func ParseXPubPath(path string) ([]uint64, error) {

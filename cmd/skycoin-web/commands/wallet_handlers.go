@@ -688,7 +688,17 @@ func handleWalletXPub(c *webCtx, s *wallet.Service) {
 		return
 	}
 
-	c.JSON(http.StatusOK, H{"xpub_key": xpubKey})
+	addrs, err := bip44Wlt.XPubAddresses(path, 5)
+	if err != nil {
+		errBadRequest(c, err.Error())
+		return
+	}
+	addresses := make([]string, len(addrs))
+	for i, a := range addrs {
+		addresses[i] = a.String()
+	}
+
+	c.JSON(http.StatusOK, H{"xpub_key": xpubKey, "addresses": addresses})
 }
 
 // GET /api/v1/wallet/balance (hybrid: local wallet addresses -> remote balance query)

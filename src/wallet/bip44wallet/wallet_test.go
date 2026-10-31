@@ -1081,3 +1081,38 @@ func TestWalletGetAccountXPubKeyEncrypted(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "decrypted once")
 }
+
+func TestWalletXPubAddresses(t *testing.T) {
+	w, err := NewWallet(
+		"test.wlt",
+		"test",
+		testSeed,
+		testSeedPassphrase,
+		wallet.OptionCoinType(wallet.CoinTypeSkycoin))
+	require.NoError(t, err)
+
+	_, err = w.newExternalAddresses(0, 5)
+	require.NoError(t, err)
+	_, err = w.newChangeAddresses(0, 5)
+	require.NoError(t, err)
+
+	addrs := func(chain uint32) []cipher.Addresser {
+		es, err := w.entries(0, chain)
+		require.NoError(t, err)
+		var as []cipher.Addresser
+		for _, e := range es[:5] {
+			as = append(as, e.Address)
+		}
+		return as
+	}
+	ext, chg := addrs(0), addrs(1)
+
+	for path, want := range map[string][]cipher.Addresser{"0": ext, "0/0": ext, "0/1": chg} {
+		got, err := w.XPubAddresses(path, 5)
+		require.NoError(t, err)
+		require.Equal(t, want, got, path)
+	}
+
+	_, err = w.XPubAddresses("10", 5)
+	require.EqualError(t, err, "account index out of bounds")
+}

@@ -65,6 +65,14 @@
           <p class="click-to-copy -xpub-key" [clipboard]="account.accountXpubKey" (copyEvent)="onCopySuccess({address: account.accountXpubKey, isCopying: false})">
             {{ account.accountXpubKey }}
           </p>
+          @if (account.accountXpubAddresses?.length) {
+            <span class="-xpub-label">First addresses (m/44'/coin'/{{ account.index }}'/0/0-4):</span>
+            <ol class="-xpub-addresses" start="0">
+              @for (a of account.accountXpubAddresses; track $index) {
+                <li>{{ a }}</li>
+              }
+            </ol>
+          }
         </div>
       }
 
@@ -81,6 +89,14 @@
           <p class="click-to-copy -xpub-key" [clipboard]="account.externalXpubKey" (copyEvent)="onCopySuccess({address: account.externalXpubKey, isCopying: false})">
             {{ account.externalXpubKey }}
           </p>
+          @if (account.externalXpubAddresses?.length) {
+            <span class="-xpub-label">First addresses (/0-4):</span>
+            <ol class="-xpub-addresses" start="0">
+              @for (a of account.externalXpubAddresses; track $index) {
+                <li>{{ a }}</li>
+              }
+            </ol>
+          }
         </div>
       }
       <div class="-records">
@@ -145,6 +161,14 @@
           <p class="click-to-copy -xpub-key" [clipboard]="account.changeXpubKey" (copyEvent)="onCopySuccess({address: account.changeXpubKey, isCopying: false})">
             {{ account.changeXpubKey }}
           </p>
+          @if (account.changeXpubAddresses?.length) {
+            <span class="-xpub-label">First addresses (/0-4):</span>
+            <ol class="-xpub-addresses" start="0">
+              @for (a of account.changeXpubAddresses; track $index) {
+                <li>{{ a }}</li>
+              }
+            </ol>
+          }
         </div>
       }
       @if (account.changeAddresses.length > 0) {

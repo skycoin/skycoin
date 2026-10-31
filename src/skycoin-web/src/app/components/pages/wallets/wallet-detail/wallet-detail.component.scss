@@ -363,6 +363,15 @@ mat-spinner {
   }
 }
 
+.-xpub-addresses {
+  font-family: monospace;
+  font-size: 11px;
+  color: $grey;
+  margin: 2px 0 6px;
+  padding-left: 28px;
+  word-break: break-all;
+}
+
 .-chain-label {
   padding: 6px 20px;
   font-size: 11px;

@@ -15,26 +15,12 @@ export class ServerWalletBackend implements WalletBackend {
 
   load(): Observable<Wallet[]> {
     return this.apiService.get('wallets').pipe(
-      map((serverWallets: any[]) => (serverWallets || []).map(w => {
-        const wlt: Wallet = {
-          label: w.meta.label,
-          addresses: (w.entries || []).map((e: any) => ({ address: e.address })),
-          coinId: this.currentCoinId() ?? defaultCoinId,
-          encrypted: w.meta.encrypted,
-          walletType: w.meta.type || 'deterministic',
-          filename: w.meta.filename,
-        };
-        if (w.meta.type === 'bip44' && w.accounts) {
-          wlt.accounts = parseAccounts(w.accounts);
-        }
-
-        return wlt;
-      })),
+      map((serverWallets: any[]) => (serverWallets || []).map(w => toWallet(w, this.currentCoinId() ?? defaultCoinId))),
       catchError(() => of([])));
   }
 
   create(label: string, seed: string, coinId: number, _existing: Wallet[], walletType: string,
-    seedPassphrase?: string, segwit?: boolean): Observable<Wallet> {
+    seedPassphrase?: string, segwit?: boolean, password?: string): Observable<Wallet> {
     const params: any = {
       label: label || 'undefined',
       seed: seed,
@@ -50,15 +36,16 @@ export class ServerWalletBackend implements WalletBackend {
     if (segwit !== undefined) {
       params.segwit = segwit;
     }
+    if (password) {
+      params.encrypt = true;
+      params.password = password;
+    }
 
     return this.apiService.post('wallet/create', params).pipe(
       map((response: any) => ({
-        label: response.meta.label,
+        ...toWallet(response, coinId),
         balance: new BigNumber('0'),
         hours: new BigNumber('0'),
-        addresses: (response.entries || []).map((e: any) => ({ address: e.address })),
-        coinId: coinId,
-        walletType: response.meta.type || walletType,
       })));
   }
 
@@ -97,11 +84,11 @@ export class ServerWalletBackend implements WalletBackend {
     return this.apiService.get('wallets/folderName').pipe(map((response: any) => response.address));
   }
 
-  getXPubKey(wallet: Wallet, path: string): Observable<string> {
+  getXPubKey(wallet: Wallet, path: string): Observable<XPubKey> {
     return this.apiService.get('wallet/xpub', {
       id: wallet.filename,
       path: path,
-    } as any).pipe(map((response: any) => response.xpub_key));
+    } as any).pipe(map((response: any) => ({ key: response.xpub_key, addresses: response.addresses || [] })));
   }
 
   /** Adds a BIP44 account. An encrypted wallet needs its password, as the keys come from the seed. */
@@ -134,6 +121,28 @@ export class ServerWalletBackend implements WalletBackend {
       password: password,
     }).pipe(map(() => {}));
   }
+}
+
+/** An xpub and the first addresses it derives. */
+export interface XPubKey {
+  key: string;
+  addresses: string[];
+}
+
+function toWallet(w: any, coinId: number): Wallet {
+  const wlt: Wallet = {
+    label: w.meta.label,
+    addresses: (w.entries || []).map((e: any) => ({ address: e.address })),
+    coinId: coinId,
+    encrypted: w.meta.encrypted,
+    walletType: w.meta.type || 'deterministic',
+    filename: w.meta.filename,
+  };
+  if (w.meta.type === 'bip44' && w.accounts) {
+    wlt.accounts = parseAccounts(w.accounts);
+  }
+
+  return wlt;
 }
 
 function parseAccounts(accounts: any[]): Bip44Account[] {

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `encoder.DeserializeRawNoCopy` and `encoder.DeserializeRawToValueNoCopy`
   decode without copying the input first, for callers that own it.
 - `POST /api/v1/wallet/newAccount` adds an account to a bip44 wallet.
+- `GET /api/v1/wallet/xpub` also returns the first 5 addresses the key
+  derives, and skycoin-web lists them under each xpub.
 - `skycoin-cli sweep` moves every coin in a wallet to one new address, whose
   public key has never been revealed.
 - `send`, `createRawTransaction` and `createRawTransactionV2` warn when a
@@ -66,6 +68,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - The TinyGo build of the skycoin-lite cipher is built with the 0magnet TinyGo
   fork at 0.43.0. TinyGo 0.41 does not support Go 1.27, and the 0.42 fork
   crashes in LLVM on `crypto/mldsa`.
+
+### Fixed
+
+- skycoin-web encrypts a wallet created with a password in the wallet service.
+  The onboarding form ignored the password and wrote the seed in plain text.
+- A wallet created in skycoin-web shows its accounts, xpub keys and encrypt
+  option without a page reload.
 
 ## 0.28.6
 

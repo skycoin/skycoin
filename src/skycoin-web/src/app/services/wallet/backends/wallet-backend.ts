@@ -18,9 +18,12 @@ export interface WalletBackend {
    */
   load(): Observable<Wallet[] | null>;
 
-  /** Makes a wallet. existing is the current list, for a duplicate check. */
+  /**
+   * Makes a wallet. existing is the current list, for a duplicate check. The server
+   * backend encrypts it with password; the caller encrypts a browser wallet.
+   */
   create(label: string, seed: string, coinId: number, existing: Wallet[], walletType: string,
-    seedPassphrase?: string, segwit?: boolean): Observable<Wallet>;
+    seedPassphrase?: string, segwit?: boolean, password?: string): Observable<Wallet>;
 
   /** Adds the next address to wallet, on the given BIP44 account and chain if any. */
   addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void>;

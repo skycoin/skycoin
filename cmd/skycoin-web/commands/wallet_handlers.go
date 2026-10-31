@@ -324,6 +324,17 @@ func handleNewAddresses(c *webCtx, s *wallet.Service) {
 		opts = append(opts, wallet.OptionAccount(uint32(a))) //nolint:gosec
 	}
 
+	switch c.Request.FormValue("chain") {
+	case "":
+	case "external", "0":
+		opts = append(opts, wallet.OptionExternal())
+	case "change", "1":
+		opts = append(opts, wallet.OptionChange())
+	default:
+		errBadRequest(c, "invalid chain value, must be external, change, 0, or 1")
+		return
+	}
+
 	password := c.Request.FormValue("password")
 	defer func() { password = "" }()
 

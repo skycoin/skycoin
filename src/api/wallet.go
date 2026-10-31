@@ -1237,7 +1237,8 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 //	id: wallet id
 //	path: bip44 xpub path, e.g: 0/0, or 0/1
 //
-// Gets xpub key of a given bip44 wallet in specific path
+// Gets xpub key of a given bip44 wallet in specific path, and the first 5
+// addresses it derives (the external chain for an account path)
 func walletXPubKeyHandler(gateway Gatewayer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -1294,10 +1295,22 @@ func walletXPubKeyHandler(gateway Gatewayer) http.Handler {
 			return
 		}
 
+		addrs, err := bip44Wlt.XPubAddresses(path, 5)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+		addresses := make([]string, len(addrs))
+		for i, a := range addrs {
+			addresses[i] = a.String()
+		}
+
 		var rsp = struct {
-			XpubKey string `json:"xpub_key"`
+			XpubKey   string   `json:"xpub_key"`
+			Addresses []string `json:"addresses"`
 		}{
 			xpubKey,
+			addresses,
 		}
 
 		wh.SendJSONOr500(logger, w, rsp)

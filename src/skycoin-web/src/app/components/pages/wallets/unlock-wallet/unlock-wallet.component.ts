@@ -55,7 +55,9 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
       this.showConfirmSeedWarning = false;
       this.wallet = data;
     }
-    this.hasEncryptedSeed = !!this.wallet.encryptedSeed;
+    // Confirming the backup of a new wallet asks for the seed even when the
+    // wallet was given a password, since the seed is what is being confirmed.
+    this.hasEncryptedSeed = !!this.wallet.encryptedSeed && !(this.showConfirmSeedWarning && this.wallet.seed);
   }
 
   ngOnInit() {
@@ -140,7 +142,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
     this.unlockButton.setSuccess();
 
     // After seed-based unlock, offer to set a password for future convenience
-    if (!this.hasEncryptedSeed && this.wallet.seed) {
+    if (!this.wallet.encryptedSeed && this.wallet.seed) {
       const wallet = this.wallet;
       PasswordDialogComponent.ask(this.dialog, { text: 'password.save-seed-text', confirm: true, allowEmpty: true })
         .subscribe(password => {

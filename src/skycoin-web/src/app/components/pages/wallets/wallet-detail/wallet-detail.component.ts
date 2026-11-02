@@ -196,6 +196,11 @@ export class WalletDetailComponent implements OnDestroy {
     return this.wallet.walletType === 'bip44';
   }
 
+  /** True for a bip44 wallet kept in this browser, which has account 0 only. */
+  get isBrowserBip44(): boolean {
+    return this.walletService.isBrowserBip44(this.wallet);
+  }
+
   onToggleXpub(account: Bip44Account) {
     if (account.showXpub) {
       account.showXpub = false;
@@ -204,6 +209,12 @@ export class WalletDetailComponent implements OnDestroy {
 
     if (account.accountXpubKey) {
       account.showXpub = true;
+      if (this.walletService.isBrowserBip44(this.wallet) && !account.accountXpubAddresses) {
+        this.walletService.xpubAddresses(this.wallet, 5).subscribe(addresses => {
+          account.accountXpubAddresses = addresses;
+          this.changeDetectorRef.markForCheck();
+        }, () => this.changeDetectorRef.markForCheck());
+      }
       return;
     }
 
@@ -364,8 +375,9 @@ export class WalletDetailComponent implements OnDestroy {
   private verifyBeforeAddingNewAddress(accountIndex?: number) {
     if (this.wallet.isHardware) {
       this.addHwAddress();
-    } else if (this.walletService.isServerWallet(this.wallet)) {
-      // Server-managed wallets don't need seed entry
+    } else if (this.walletService.isServerWallet(this.wallet) || this.walletService.isBrowserBip44(this.wallet)) {
+      // Server-managed wallets don't need seed entry, and a browser bip44
+      // wallet derives new addresses from its xpub.
       this.addNewAddress(accountIndex);
     } else if (!this.wallet.seed || !this.wallet.nextSeed) {
       this.removeUnlockSubscription();

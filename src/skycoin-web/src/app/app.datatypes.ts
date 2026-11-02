@@ -19,6 +19,9 @@ export interface Wallet {
   isHardware?: boolean;
   encryptedSeed?: string;
   encryptedNextSeed?: string;
+  // A browser bip44 wallet's bip39 seed passphrase, kept like the seed.
+  seedPassphrase?: string;
+  encryptedSeedPassphrase?: string;
 }
 
 export interface Bip44Account {

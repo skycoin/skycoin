@@ -133,6 +133,10 @@ export class MockWalletService {
   ensureKeys(wallet: Wallet): Observable<void> {
     return of(undefined);
   }
+
+  changeAddressFor(wallet: Wallet): Observable<string | null> {
+    return of(null);
+  }
 }
 
 export class MockHistoryService {

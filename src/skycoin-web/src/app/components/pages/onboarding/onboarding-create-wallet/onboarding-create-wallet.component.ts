@@ -161,8 +161,12 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
   }
 
   // isSkywireEmbedded reports whether the wallet is running inside a Skywire
-  // visor, which mounts it at <base href="/wallet/"> (standalone is "/").
+  // visor. The hypervisor dashboard mounts it at #/wallet under its own base
+  // href, and an older visor served it at <base href="/wallet/">.
   private isSkywireEmbedded(): boolean {
+    if (this.walletBase !== '/') {
+      return true;
+    }
     try {
       const base = document.getElementsByTagName('base')[0];
       return !!base && /\/wallet\/?$/.test(base.getAttribute('href') || '');

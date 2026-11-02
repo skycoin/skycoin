@@ -12,7 +12,8 @@
 		return err;
 	};
 
-	if (!globalThis.fs) {
+	const fsStub = !globalThis.fs;
+	if (fsStub) {
 		let outputBuf = "";
 		globalThis.fs = {
 			constants: { O_WRONLY: -1, O_RDWR: -1, O_CREAT: -1, O_TRUNC: -1, O_APPEND: -1, O_EXCL: -1, O_DIRECTORY: -1 }, // unused
@@ -69,7 +70,7 @@
 			pid: -1,
 			ppid: -1,
 			umask() { throw enosys(); },
-			cwd() { throw enosys(); },
+			cwd() { return "/"; },
 			chdir() { throw enosys(); },
 		}
 	}
@@ -132,8 +133,44 @@
 		return { sync, stdio: { stdin }, getCwd: () => process.cwd() };
 	};
 
-	// jsfsWasi serves the WASI filesystem imports from bottle's jsfs.sync, so os
-	// works on one in-memory tree shared with the page. The only preopen is "/".
+	// __tinygo_fsSync answers a file call from syscall/fs_js.go at once when
+	// the host can: bottle's jsfs.sync, or Node's *Sync calls. It returns {v}
+	// or {e: code}, or undefined to send the call through globalThis.fs's
+	// callback API, which parks the goroutine. Under asyncify a park unwinds
+	// and rewinds the whole stack, so it is kept for what cannot answer now:
+	// jsfs refuses a mounted path with ENOTSUP and an empty pipe with EAGAIN.
+	// The fallback fs above answers its callbacks synchronously, which would
+	// re-enter Go, so without a host fs only stdout and stderr work.
+	if (!globalThis.__tinygo_fsSync) {
+		let nodeSync;
+		globalThis.__tinygo_fsSync = (name, args) => {
+			let sync = globalThis.jsfs && globalThis.jsfs.sync;
+			if (!sync && !fsStub) {
+				if (nodeSync === undefined) nodeSync = (nodeJsfs() || {}).sync || null;
+				sync = nodeSync;
+				// Node's readSync on a terminal blocks the whole process.
+				if (name === "read" && args[0] === 0) return undefined;
+			}
+			if (!sync) {
+				if (!fsStub) return undefined;
+				if (name === "write" && (args[0] === 1 || args[0] === 2)) {
+					return { v: globalThis.fs.writeSync(args[0], args[1].subarray(args[2], args[2] + args[3])) };
+				}
+				return { e: "ENOSYS" };
+			}
+			const f = sync[name];
+			if (typeof f !== "function") return undefined;
+			try {
+				return { v: f(...args) };
+			} catch (e) {
+				if (e && (e.code === "ENOTSUP" || e.code === "EAGAIN")) return undefined;
+				return { e: (e && e.code) || "EIO" };
+			}
+		};
+	}
+
+	// jsfsWasi serves the WASI filesystem imports from bottle's jsfs.sync, so C
+	// code works on the tree os sees through globalThis.fs. The only preopen is "/".
 	const jsfsWasi = (jsfs, buffer) => {
 		const sync = jsfs.sync;
 		const C = sync.constants;
@@ -532,6 +569,20 @@
 				mem().setBigUint64(addr, v_ref, true);
 			}
 
+			// tryStore stores f's result and true at addr, or what f threw and false.
+			const tryStore = (addr, f) => {
+				let ok = 1;
+				let v;
+				try {
+					v = f();
+				} catch (err) {
+					v = err;
+					ok = 0;
+				}
+				storeValue(addr, v);
+				mem().setUint8(addr + 8, ok);
+			}
+
 			// writeStrings copies list, joined by NUL, into memory when it fits in n
 			// bytes, and returns its length so the caller can size a buffer.
 			const writeStrings = (list, buf, n) => {
@@ -725,6 +776,46 @@
 						Reflect.set(unboxValue(v_ref), i, unboxValue(x_ref));
 					},
 
+					// The checked accessors report a throw (a getter, a Proxy, a
+					// cross-origin object) to Go, which panics with a js.Error, rather
+					// than let it unwind through the wasm and strand the scheduler.
+
+					// func valueGet(v ref, p string) (ref, bool)
+					"syscall/js.valueTryGet": (ret_addr, v_ref, p_ptr, p_len) => {
+						ret_addr >>>= 0;
+						p_ptr >>>= 0;
+						p_len >>>= 0;
+						tryStore(ret_addr, () => Reflect.get(unboxValue(v_ref), loadString(p_ptr, p_len)));
+					},
+
+					// func valueSet(v ref, p string, x ref) (ref, bool)
+					"syscall/js.valueTrySet": (ret_addr, v_ref, p_ptr, p_len, x_ref) => {
+						ret_addr >>>= 0;
+						p_ptr >>>= 0;
+						p_len >>>= 0;
+						tryStore(ret_addr, () => { Reflect.set(unboxValue(v_ref), loadString(p_ptr, p_len), unboxValue(x_ref)); });
+					},
+
+					// func valueDelete(v ref, p string) (ref, bool)
+					"syscall/js.valueTryDelete": (ret_addr, v_ref, p_ptr, p_len) => {
+						ret_addr >>>= 0;
+						p_ptr >>>= 0;
+						p_len >>>= 0;
+						tryStore(ret_addr, () => { Reflect.deleteProperty(unboxValue(v_ref), loadString(p_ptr, p_len)); });
+					},
+
+					// func valueIndex(v ref, i int) (ref, bool)
+					"syscall/js.valueTryIndex": (ret_addr, v_ref, i) => {
+						ret_addr >>>= 0;
+						tryStore(ret_addr, () => Reflect.get(unboxValue(v_ref), i));
+					},
+
+					// func valueSetIndex(v ref, i int, x ref) (ref, bool)
+					"syscall/js.valueTrySetIndex": (ret_addr, v_ref, i, x_ref) => {
+						ret_addr >>>= 0;
+						tryStore(ret_addr, () => { Reflect.set(unboxValue(v_ref), i, unboxValue(x_ref)); });
+					},
+
 					// func valueCall(v ref, m string, args []ref) (ref, bool)
 					"syscall/js.valueCall": (ret_addr, v_ref, m_ptr, m_len, args_ptr, args_len, args_cap) => {
 						ret_addr >>>= 0;
@@ -852,10 +943,10 @@
 			// For compatibility, we use both as long as Go 1.20 is supported.
 			this.importObject.env = this.importObject.gojs;
 
-			// With bottle's jsfs on the page, os reaches its filesystem through the
-			// WASI imports. Under Node, Node's fs serves the same imports, as Go's
-			// own js target reaches it. Otherwise there are no preopens and every
-			// open fails.
+			// Go's os reaches globalThis.fs through its callback API (see
+			// src/syscall/fs_js.go). C code linked against wasi-libc reaches the
+			// same tree through the WASI imports, served from bottle's jsfs.sync on
+			// the page or Node's fs under Node; otherwise every open there fails.
 			const wasi = this.importObject.wasi_snapshot_preview1;
 			this._jsfs = globalThis.jsfs && globalThis.jsfs.sync ? globalThis.jsfs : nodeJsfs();
 			if (this._jsfs) {
@@ -923,14 +1014,7 @@
 				this._scheduledWakeup = undefined;
 			}
 			this.exitCode = 0;
-			// syscall/js.handleEvent reads _pendingEvent and returns early only when
-			// it IsNull(). Leaving it `undefined` is not null, so handleEvent falls
-			// through to cb.Get("id") and panics with "call of Value.Get on
-			// undefined", which surfaces as RuntimeError: unreachable. Upstream Go's
-			// wasm_exec.js initializes this in its constructor; this line restores
-			// parity. Any resume() that runs without a pending event -- and resume()
-			// always spawns a handleEvent goroutine -- depends on it.
-			this._pendingEvent = null; // event awaiting dispatch by syscall/js.handleEvent
+			this._events = []; // events awaiting dispatch by syscall/js.handleEvent, oldest first
 			// os starts in $PWD. Unless the caller chose one, that is the jsfs
 			// working directory, which proc.js sets for each process it spawns.
 			if (this._jsfs && !("PWD" in (this.env || {}))) {
@@ -947,7 +1031,7 @@
 				try {
 					this._inst.exports._start();
 				} catch (e) {
-					if (e !== wasmExit) throw e;
+					if (e !== wasmExit) throw this._crash(e);
 				}
 
 				await exitPromise;
@@ -964,7 +1048,7 @@
 			try {
 				this._inst.exports.go_scheduler();
 			} catch (e) {
-				if (e !== wasmExit) throw e;
+				if (e !== wasmExit) throw this._crash(e);
 			}
 		}
 
@@ -975,10 +1059,44 @@
 			try {
 				this._inst.exports.resume();
 			} catch (e) {
-				if (e !== wasmExit) throw e;
+				if (e !== wasmExit) throw this._crash(e);
 			}
 			if (this.exited) {
 				this._resolveExitPromise();
+			}
+		}
+
+		// _crash ends the program after a trap, or a JS exception, unwound out
+		// of the instance, and returns e for the caller to rethrow. The unwind
+		// skipped the rest of the scheduler, so the next event must not enter
+		// the instance again.
+		_crash(e) {
+			if (!this.exited) {
+				this.exited = true;
+				this.exitCode = 2;
+				if (typeof this.exit === "function") {
+					this.exit(2);
+				}
+				if (this._resolveExitPromise) {
+					this._resolveExitPromise();
+				}
+			}
+			return e;
+		}
+
+		// syscall/js.handleEvent takes the event at the head of the queue and
+		// then clears it. Every resume() starts one handleEvent goroutine, but at
+		// the back of the run queue, so a goroutine that runs first can call into
+		// JS and queue another event before it.
+		get _pendingEvent() {
+			return this._events && this._events.length ? this._events[0] : null;
+		}
+
+		set _pendingEvent(event) {
+			if (event === null) {
+				this._events.shift();
+			} else {
+				this._events.push(event);
 			}
 		}
 

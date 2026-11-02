@@ -25,3 +25,20 @@
   font-family: monospace;
   resize: none;
 }
+
+.-paper .-row.-passphrase {
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  gap: 6px;
+
+  label {
+    font-size: 13px;
+  }
+
+  .-warning {
+    margin: 0;
+    color: $red;
+    font-size: 13px;
+  }
+}

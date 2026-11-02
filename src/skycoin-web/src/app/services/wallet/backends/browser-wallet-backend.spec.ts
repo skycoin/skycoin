@@ -20,13 +20,23 @@ describe('BrowserWalletBackend getSeed', () => {
   }
 
   it('returns a seed it holds without a password', async () => {
-    expect(await firstValueFrom(backend.getSeed(wallet({ seed: 'one two three' }), null))).toBe('one two three');
+    expect(await firstValueFrom(backend.getSeed(wallet({ seed: 'one two three' }), null))).toEqual({ seed: 'one two three', passphrase: undefined });
+    expect(await firstValueFrom(backend.getSeed(wallet({ seed: 'one two three', seedPassphrase: 'pp' }), null)))
+      .toEqual({ seed: 'one two three', passphrase: 'pp' });
   });
 
-  it('decrypts a seed kept under the wallet password', async () => {
+  it('decrypts a seed and passphrase kept under the wallet password', async () => {
     const encryptedSeed = await encryption.encrypt('one two three', 'hunter2');
-    expect(await firstValueFrom(backend.getSeed(wallet({ encryptedSeed }), 'hunter2'))).toBe('one two three');
+    const encryptedSeedPassphrase = await encryption.encrypt('pp', 'hunter2');
+    expect(await firstValueFrom(backend.getSeed(wallet({ encryptedSeed, encryptedSeedPassphrase }), 'hunter2')))
+      .toEqual({ seed: 'one two three', passphrase: 'pp' });
     await expectAsync(firstValueFrom(backend.getSeed(wallet({ encryptedSeed }), 'wrong'))).toBeRejectedWithError('Incorrect password');
+  });
+
+  it('asks for the password of an encrypted wallet even while its seed is in memory', async () => {
+    const encryptedSeed = await encryption.encrypt('one two three', 'hunter2');
+    await expectAsync(firstValueFrom(backend.getSeed(wallet({ seed: 'one two three', encryptedSeed }), null)))
+      .toBeRejectedWithError('Incorrect password');
   });
 
   it('fails for a wallet whose seed it does not hold', async () => {
@@ -233,5 +243,124 @@ describe('BrowserWalletBackend bip44 wallets', () => {
     expect(wallet.accounts![0].externalAddresses.map(a => a.address)).toEqual(external.slice(0, 25));
     expect(wallet.accounts![0].changeAddresses.map(a => a.address)).toEqual(change.slice(0, 3));
     expect(wallet.addresses.length).toBe(28);
+  });
+});
+
+describe('BrowserWalletBackend removeWalletPassword', () => {
+  const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+  const translate = { instant: (key: string) => key };
+  const encryption = new EncryptionService();
+  let backend: BrowserWalletBackend;
+
+  beforeAll(async () => {
+    await loadCipherWasm();
+  }, 60000);
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [CipherProvider, provideHttpClient(withXhr(), withInterceptorsFromDi())],
+    });
+    backend = new BrowserWalletBackend(TestBed.inject(CipherProvider), translate as any, { get: () => of([]) } as any, encryption);
+  });
+
+  afterEach(() => localStorage.clear());
+
+  /** Saves wallet and loads it back, as a reload would: no secret is left in memory. */
+  async function reload(wallet: Wallet): Promise<Wallet> {
+    backend.save([wallet]);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    return (await firstValueFrom(backend.load()))![0];
+  }
+
+  function encryptedFields(w: Wallet) {
+    return [w.seed, w.seedPassphrase, w.nextSeed, w.encryptedSeed, w.encryptedNextSeed, w.encryptedSeedPassphrase];
+  }
+
+  async function lockedDeterministic(): Promise<Wallet> {
+    const wallet = await firstValueFrom(backend.create('d', 'abcdefg', 1, [], 'deterministic'));
+    await firstValueFrom(backend.addAddress(wallet));
+    await firstValueFrom(backend.setWalletPassword(wallet, 'hunter2'));
+
+    return reload(wallet);
+  }
+
+  async function lockedBip44(): Promise<Wallet> {
+    const wallet = await firstValueFrom(backend.create('b', mnemonic, 1, [], 'bip44', 'a seed passphrase'));
+    await firstValueFrom(backend.setWalletPassword(wallet, 'hunter2'));
+
+    return reload(wallet);
+  }
+
+  it('decrypts a deterministic wallet whose seed is not in memory and stores it unencrypted', async () => {
+    const locked = await lockedDeterministic();
+    expect(locked.seed).toBeUndefined();
+    expect(locked.encryptedNextSeed).toBeTruthy();
+
+    await firstValueFrom(backend.removeWalletPassword(locked, 'hunter2'));
+    expect(locked.seed).toBe('abcdefg');
+    expect(locked.nextSeed).toBeTruthy();
+    expect(locked.encryptedSeed).toBeUndefined();
+    expect(locked.encryptedNextSeed).toBeUndefined();
+
+    const stored = await reload(locked);
+    expect(stored.seed).toBe('abcdefg');
+    expect(stored.nextSeed).toBe(locked.nextSeed);
+    await firstValueFrom(backend.addAddress(stored));
+    expect(stored.addresses.length).toBe(3);
+  });
+
+  it('decrypts a bip44 wallet whose seed and passphrase are not in memory', async () => {
+    const locked = await lockedBip44();
+    expect(locked.seed).toBeUndefined();
+    expect(locked.encryptedSeedPassphrase).toBeTruthy();
+
+    await firstValueFrom(backend.removeWalletPassword(locked, 'hunter2'));
+    const stored = await reload(locked);
+    expect(stored.seed).toBe(mnemonic);
+    expect(stored.seedPassphrase).toBe('a seed passphrase');
+    expect(stored.encryptedSeed).toBeUndefined();
+    expect(stored.encryptedSeedPassphrase).toBeUndefined();
+  });
+
+  it('changes nothing for a wrong password', async () => {
+    for (const locked of [await lockedDeterministic(), await lockedBip44()]) {
+      const before = encryptedFields(locked);
+      await expectAsync(firstValueFrom(backend.removeWalletPassword(locked, 'wrong'))).toBeRejectedWithError('Incorrect password');
+      expect(encryptedFields(locked)).toEqual(before);
+    }
+  });
+
+  it('changes nothing when the encrypted seed is not the wallet\'s', async () => {
+    const locked = await lockedBip44();
+    locked.encryptedSeed = await encryption.encrypt(mnemonic.replace('about', 'abandon') , 'hunter2');
+    const before = encryptedFields(locked);
+    await expectAsync(firstValueFrom(backend.removeWalletPassword(locked, 'hunter2'))).toBeRejected();
+    expect(encryptedFields(locked)).toEqual(before);
+  });
+
+  it('changes nothing when a secret is missing or one ciphertext does not decrypt', async () => {
+    const plain: Wallet = { label: 'p', addresses: [{ address: 'x' }] };
+    await expectAsync(firstValueFrom(backend.removeWalletPassword(plain, 'hunter2'))).toBeRejected();
+    expect(plain.encryptedSeed).toBeUndefined();
+
+    const locked = await lockedBip44();
+    locked.encryptedSeedPassphrase = await encryption.encrypt('a seed passphrase', 'other');
+    const before = encryptedFields(locked);
+    await expectAsync(firstValueFrom(backend.removeWalletPassword(locked, 'hunter2'))).toBeRejectedWithError('Incorrect password');
+    expect(encryptedFields(locked)).toEqual(before);
+  });
+
+  it('will not encrypt again under a new password without every secret in memory', async () => {
+    const locked = await lockedBip44();
+    locked.seed = mnemonic;
+    const before = encryptedFields(locked);
+    await expectAsync(firstValueFrom(backend.setWalletPassword(locked, 'new'))).toBeRejected();
+    expect(encryptedFields(locked)).toEqual(before);
+
+    const det = await lockedDeterministic();
+    det.seed = 'abcdefg';
+    await expectAsync(firstValueFrom(backend.setWalletPassword(det, 'new'))).toBeRejected();
   });
 });

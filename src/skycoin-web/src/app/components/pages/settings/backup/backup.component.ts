@@ -4,6 +4,7 @@ import { mergeMap } from 'rxjs';
 
 import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet/wallet.service';
+import { SeedBackup } from '../../../../services/wallet/backends/wallet-backend';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
@@ -22,8 +23,8 @@ export class BackupComponent implements OnInit, OnDestroy {
   wallets: Wallet[] | null = null;
   // Where a wallet service keeps the files, or null for wallets in this browser.
   folder: string | null = null;
-  // The seed shown for each wallet, by label, while it is open.
-  shownSeeds = new Map<Wallet, string>();
+  // The seed and seed passphrase shown for each wallet while it is open.
+  shownSeeds = new Map<Wallet, SeedBackup>();
 
   private walletsSubscription!: Subscription;
   private folderSubscription!: Subscription;
@@ -78,7 +79,7 @@ export class BackupComponent implements OnInit, OnDestroy {
 
   /** Asks for the password where the seed is encrypted, then shows it. */
   showSeed(wallet: Wallet) {
-    const encrypted = this.walletService.isServerWallet(wallet) ? !!wallet.encrypted : !wallet.seed;
+    const encrypted = this.walletService.isServerWallet(wallet) ? !!wallet.encrypted : !!wallet.encryptedSeed;
     const password: Observable<string | null | undefined> = encrypted ?
       PasswordDialogComponent.ask(this.dialog, { text: wallet.label }) : of(null);
     this.msgBarService.hide();

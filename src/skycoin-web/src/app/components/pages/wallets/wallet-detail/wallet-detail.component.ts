@@ -322,11 +322,7 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onDecryptWallet() {
-    if (!this.walletService.isServerWallet(this.wallet)) {
-      this.decryptWith('');
-      return;
-    }
-    PasswordDialogComponent.ask(this.dialog).subscribe(password => {
+    PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
       if (password) {
         this.decryptWith(password);
       }
@@ -349,9 +345,16 @@ export class WalletDetailComponent implements OnDestroy {
         }
       );
     } else {
-      // Browser-only wallet: remove encrypted seed from localStorage
-      this.walletService.removeWalletPassword(this.wallet);
-      this.msgBarService.showDone('Wallet password removed');
+      this.walletService.removeWalletPassword(this.wallet, password).subscribe(
+        () => {
+          this.msgBarService.showDone('Wallet password removed');
+          this.changeDetectorRef.markForCheck();
+        },
+        (error) => {
+          this.msgBarService.showError(error.message || error);
+          this.changeDetectorRef.markForCheck();
+        }
+      );
     }
   }
 

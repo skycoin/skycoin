@@ -41,8 +41,15 @@
             </div>
             @if (shownSeeds.has(wallet)) {
               <div class="-row -seed">
-                <textarea readonly rows="2">{{ shownSeeds.get(wallet) }}</textarea>
+                <textarea readonly rows="2" class="-seed-text">{{ shownSeeds.get(wallet)!.seed }}</textarea>
               </div>
+              @if (shownSeeds.get(wallet)!.passphrase) {
+                <div class="-row -seed -passphrase">
+                  <label>{{ 'backup.passphrase' | translate }}</label>
+                  <textarea readonly rows="1" class="-passphrase-text">{{ shownSeeds.get(wallet)!.passphrase }}</textarea>
+                  <p class="-warning">{{ 'backup.passphrase-info' | translate }}</p>
+                </div>
+              }
             }
           }
         </div>

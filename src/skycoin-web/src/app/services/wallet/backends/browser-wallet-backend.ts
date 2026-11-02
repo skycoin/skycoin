@@ -11,7 +11,7 @@ import { environment } from '../../../../environments/environment';
 import { Bip44Address, CipherProvider, GenerateAddressResponse, pqSeedState } from '../../cipher.provider';
 import { ApiService } from '../../api.service';
 import { EncryptionService } from '../../encryption.service';
-import { WalletBackend } from './wallet-backend';
+import { SeedBackup, WalletBackend } from './wallet-backend';
 
 /** Unused addresses in a row that end a bip44 chain scan, the BIP44 gap limit. */
 export const bip44GapLimit = 20;
@@ -217,16 +217,35 @@ export class BrowserWalletBackend implements WalletBackend {
     this.storeWallets(JSON.stringify(strippedWallets));
   }
 
-  getSeed(wallet: Wallet, password: string | null): Observable<string> {
-    if (wallet.seed) {
-      return of(wallet.seed);
+  /**
+   * The seed and seed passphrase. An encrypted wallet always needs its password,
+   * even while its seed is in memory.
+   */
+  getSeed(wallet: Wallet, password: string | null): Observable<SeedBackup> {
+    if (wallet.encryptedSeed) {
+      return from(this.decryptSecrets(wallet, password || '')).pipe(
+        map(secrets => ({ seed: secrets.seed, passphrase: secrets.passphrase || undefined })));
     }
-    if (!wallet.encryptedSeed) {
+    if (!wallet.seed) {
       return throwError(() => new Error(this.translate.instant('service.wallet.address-without-seed')));
     }
 
-    return from(this.encryptionService.decrypt(wallet.encryptedSeed, password || '')).pipe(
-      catchError(() => throwError(() => new Error('Incorrect password'))));
+    return of({ seed: wallet.seed, passphrase: wallet.seedPassphrase || undefined });
+  }
+
+  /** Decrypts every encrypted secret of a wallet, or fails with 'Incorrect password'. */
+  private async decryptSecrets(wallet: Wallet, password: string): Promise<{ seed: string, nextSeed?: string, passphrase?: string }> {
+    try {
+      const [seed, nextSeed, passphrase] = await Promise.all([
+        this.encryptionService.decrypt(wallet.encryptedSeed!, password),
+        wallet.encryptedNextSeed ? this.encryptionService.decrypt(wallet.encryptedNextSeed, password) : Promise.resolve(undefined),
+        wallet.encryptedSeedPassphrase ? this.encryptionService.decrypt(wallet.encryptedSeedPassphrase, password) : Promise.resolve(undefined),
+      ]);
+
+      return { seed, nextSeed, passphrase };
+    } catch {
+      throw new Error('Incorrect password');
+    }
   }
 
   get hasAppPassword(): boolean {
@@ -351,7 +370,11 @@ export class BrowserWalletBackend implements WalletBackend {
   }
 
   setWalletPassword(wallet: Wallet, password: string): Observable<void> {
-    if (!wallet.seed) {
+    // Every secret is encrypted again under the new password, so each one must
+    // be in memory; otherwise its old ciphertext would be dropped or left under
+    // a password nobody uses anymore.
+    if (!wallet.seed || (wallet.encryptedNextSeed && !wallet.nextSeed) ||
+      (wallet.encryptedSeedPassphrase && wallet.seedPassphrase === undefined)) {
       return throwError(() => new Error('Wallet must be unlocked before setting a password'));
     }
 
@@ -362,9 +385,7 @@ export class BrowserWalletBackend implements WalletBackend {
         wallet.seedPassphrase ? this.encryptionService.encrypt(wallet.seedPassphrase, password) : Promise.resolve(null),
       ]).then(([encSeed, encNextSeed, encPassphrase]) => {
         wallet.encryptedSeed = encSeed;
-        if (encNextSeed) {
-          wallet.encryptedNextSeed = encNextSeed;
-        }
+        wallet.encryptedNextSeed = encNextSeed || undefined;
         wallet.encryptedSeedPassphrase = encPassphrase || undefined;
         observer.next();
         observer.complete();
@@ -418,10 +439,61 @@ export class BrowserWalletBackend implements WalletBackend {
     });
   }
 
-  removeWalletPassword(wallet: Wallet): void {
-    wallet.encryptedSeed = undefined;
-    wallet.encryptedNextSeed = undefined;
-    wallet.encryptedSeedPassphrase = undefined;
+  /**
+   * Stores the wallet unencrypted again. Its secrets are decrypted with password
+   * and checked against its addresses first, and nothing changes unless all of
+   * that succeeds, so a locked wallet cannot lose the seed it only has encrypted.
+   */
+  removeWalletPassword(wallet: Wallet, password: string): Observable<void> {
+    if (!wallet.encryptedSeed) {
+      return throwError(() => new Error('Wallet does not have an encrypted seed'));
+    }
+
+    return from(this.decryptSecrets(wallet, password)).pipe(
+      mergeMap(secrets => this.checkSecrets(wallet, secrets.seed, secrets.passphrase || '').pipe(map(derivedNextSeed => {
+        wallet.seed = secrets.seed;
+        if (secrets.passphrase !== undefined) {
+          wallet.seedPassphrase = secrets.passphrase;
+        }
+        if (!isBip44(wallet)) {
+          wallet.nextSeed = secrets.nextSeed || derivedNextSeed;
+        }
+        wallet.encryptedSeed = undefined;
+        wallet.encryptedNextSeed = undefined;
+        wallet.encryptedSeedPassphrase = undefined;
+      }))));
+  }
+
+  /**
+   * Fails unless seed and passphrase give the wallet's stored xpub or addresses.
+   * Emits the next seed after the last address of a deterministic or pq wallet,
+   * and leaves the wallet as it was.
+   */
+  private checkSecrets(wallet: Wallet, seed: string, passphrase: string): Observable<string | undefined> {
+    const wrongSeed = () => new Error(this.translate.instant('service.wallet.wrong-seed'));
+    if (isBip44(wallet)) {
+      return this.cipherProvider.bip44AccountXPub(seed, passphrase).pipe(map(xpub => {
+        if (xpub !== wallet.accounts![0].accountXpubKey) {
+          throw wrongSeed();
+        }
+
+        return undefined;
+      }));
+    }
+
+    const copy: Wallet = { label: wallet.label, walletType: wallet.walletType, addresses: wallet.addresses.map(a => ({ address: a.address })) };
+    if (copy.addresses.length === 0) {
+      return throwError(wrongSeed);
+    }
+
+    return this.unlockWalletAddresses(this.initialSeedState(seed, wallet.walletType), copy, 0, new EventEmitter<number>()).pipe(
+      map(ok => {
+        if (!ok) {
+          throw wrongSeed();
+        }
+
+        return copy.nextSeed;
+      }));
   }
 
   /**

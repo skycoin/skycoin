@@ -610,7 +610,9 @@
     "hide-seed": "Hide seed",
     "hw-wallet-info": "A hardware wallet keeps its seed on the device. Back it up from the device.",
     "unencrypted-info": "The wallet service shows the seed only of an encrypted wallet. Encrypt the wallet first.",
-    "no-seed-info": "This browser does not hold the seed of this wallet."
+    "no-seed-info": "This browser does not hold the seed of this wallet.",
+    "passphrase": "Seed passphrase",
+    "passphrase-info": "This wallet has a seed passphrase. You need both the seed and this passphrase to recover it. The seed alone opens a different, empty wallet."
   },
   "app-password": {
     "help-none": "Set a password to store the wallets in this browser encrypted. The wallet will ask for it each time it opens. The password stays in this browser and cannot be recovered.",

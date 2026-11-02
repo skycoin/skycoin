@@ -9,7 +9,7 @@ import { BaseCoin } from '../../coins/basecoin';
 import { CoinService } from '../coin.service';
 import { ApiService } from '../api.service';
 import { EncryptionService } from '../encryption.service';
-import { WalletBackend } from './backends/wallet-backend';
+import { SeedBackup, WalletBackend } from './backends/wallet-backend';
 import { XPubKey } from './backends/server-wallet-backend';
 import { ServerWalletBackend } from './backends/server-wallet-backend';
 import { BrowserWalletBackend, ScanProgressData, isBip44 } from './backends/browser-wallet-backend';
@@ -173,9 +173,9 @@ export class WalletService {
     return this.browser.unlockWalletWithPassword(wallet, password, onProgressChanged, seed => this.getCleanSeed(seed));
   }
 
-  removeWalletPassword(wallet: Wallet): void {
-    this.browser.removeWalletPassword(wallet);
-    this.saveWallets();
+  /** Stores a browser wallet unencrypted again, once password has decrypted it. */
+  removeWalletPassword(wallet: Wallet, password: string): Observable<void> {
+    return this.browser.removeWalletPassword(wallet, password).pipe(map(() => this.saveWallets()));
   }
 
   saveWallets() {
@@ -225,8 +225,8 @@ export class WalletService {
     this.wallets.next([]);
   }
 
-  /** The wallet's seed, for a backup. password unlocks an encrypted one. */
-  getSeed(wallet: Wallet, password: string | null): Observable<string> {
+  /** The wallet's seed and seed passphrase, for a backup. password unlocks an encrypted one. */
+  getSeed(wallet: Wallet, password: string | null): Observable<SeedBackup> {
     return (this.isServerWallet(wallet) ? this.server : this.browser).getSeed(wallet, password);
   }
 

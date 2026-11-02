@@ -5,7 +5,7 @@ import { BigNumber } from 'bignumber.js';
 import { Bip44Account, Wallet } from '../../../app.datatypes';
 import { defaultCoinId } from '../../../constants/coins-id.const';
 import { ApiService } from '../../api.service';
-import { WalletBackend } from './wallet-backend';
+import { SeedBackup, WalletBackend } from './wallet-backend';
 
 /** Wallets kept by a skycoin wallet service, through its wallet API. */
 export class ServerWalletBackend implements WalletBackend {
@@ -74,9 +74,9 @@ export class ServerWalletBackend implements WalletBackend {
 
   save(_wallets: Wallet[]): void { }
 
-  getSeed(wallet: Wallet, password: string | null): Observable<string> {
+  getSeed(wallet: Wallet, password: string | null): Observable<SeedBackup> {
     return this.apiService.post('wallet/seed', { id: wallet.filename, password: password || '' }).pipe(
-      map((response: any) => response.seed));
+      map((response: any) => ({ seed: response.seed, passphrase: response.seed_passphrase || undefined })));
   }
 
   /** The folder the wallet service keeps its wallet files in. */

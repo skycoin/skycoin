@@ -32,8 +32,14 @@ export interface WalletBackend {
   save(wallets: Wallet[]): void;
 
   /**
-   * The wallet's seed, for a backup. password unlocks it where the backend keeps it
-   * encrypted; null when it is not.
+   * The wallet's seed and seed passphrase, for a backup. password unlocks them
+   * where the backend keeps them encrypted; null when it does not.
    */
-  getSeed(wallet: Wallet, password: string | null): Observable<string>;
+  getSeed(wallet: Wallet, password: string | null): Observable<SeedBackup>;
+}
+
+/** What restores a wallet: the seed, and the bip39 seed passphrase when it has one. */
+export interface SeedBackup {
+  seed: string;
+  passphrase?: string;
 }

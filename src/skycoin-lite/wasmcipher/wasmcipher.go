@@ -135,6 +135,32 @@ func arity(n int, name string, fn func(args []js.Value) (interface{}, error)) js
 	})
 }
 
+// bip44Window reads the chain, start index and count arguments.
+func bip44Window(args []js.Value) (chain, start, num int, err error) {
+	for _, a := range args {
+		if a.Type() != js.TypeNumber {
+			return 0, 0, 0, errors.New("bip44: chain, start and count must be numbers")
+		}
+	}
+	return args[0].Int(), args[1].Int(), args[2].Int(), nil
+}
+
+func bip44Result(addresses []liteclient.Bip44Address) []interface{} {
+	result := make([]interface{}, len(addresses))
+	for i, a := range addresses {
+		entry := map[string]interface{}{
+			"index":   int(a.Index),
+			"public":  a.Public,
+			"address": a.Address,
+		}
+		if a.Secret != "" {
+			entry["secret"] = a.Secret
+		}
+		result[i] = entry
+	}
+	return result
+}
+
 // Register publishes SkycoinCipher and SkycoinCipherExtras on the JavaScript
 // global object. It returns once they are in place.
 func Register() {
@@ -169,6 +195,36 @@ func Register() {
 			"secret":  addresses[0].Secret,
 			"address": addresses[0].Address,
 		}, nil
+	}))
+
+	// The bip44 entry points derive account 0 of coin type 8000, as the node's
+	// bip44 wallets do. They take the bip39 mnemonic and its seed passphrase.
+	skycoinCipher.Set("bip44AccountXPub", arity(2, "bip44AccountXPub", func(args []js.Value) (interface{}, error) {
+		return liteclient.Bip44AccountXPub(args[0].String(), args[1].String())
+	}))
+
+	skycoinCipher.Set("bip44Addresses", arity(5, "bip44Addresses", func(args []js.Value) (interface{}, error) {
+		chain, start, num, err := bip44Window(args[2:5])
+		if err != nil {
+			return nil, err
+		}
+		addresses, err := liteclient.Bip44Addresses(args[0].String(), args[1].String(), chain, start, num)
+		if err != nil {
+			return nil, err
+		}
+		return bip44Result(addresses), nil
+	}))
+
+	skycoinCipher.Set("bip44XPubAddresses", arity(4, "bip44XPubAddresses", func(args []js.Value) (interface{}, error) {
+		chain, start, num, err := bip44Window(args[1:4])
+		if err != nil {
+			return nil, err
+		}
+		addresses, err := liteclient.Bip44XPubAddresses(args[0].String(), chain, start, num)
+		if err != nil {
+			return nil, err
+		}
+		return bip44Result(addresses), nil
 	}))
 
 	skycoinCipher.Set("prepareTransaction", arity(2, "prepareTransaction", func(args []js.Value) (interface{}, error) {

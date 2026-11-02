@@ -133,7 +133,7 @@ func TestBip44RejectsBadInput(t *testing.T) {
 	if _, err := Bip44XPubAddresses("xpub-not", 0, 0, 1); err == nil {
 		t.Error("expected an error for an invalid xpub")
 	}
-	if _, err := Bip44XPubAddresses("", 0, 1<<31, 1); err != ErrBip44Range {
+	if _, err := Bip44XPubAddresses("", 0, 1<<30, 1<<30+1); err != ErrBip44Range {
 		t.Errorf("hardened index: err = %v", err)
 	}
 }

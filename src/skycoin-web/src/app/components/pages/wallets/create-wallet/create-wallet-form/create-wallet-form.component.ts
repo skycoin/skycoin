@@ -113,7 +113,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   get isValid(): boolean {
-    return this.form.valid && (this.normalSeed || this.customSeedAccepted);
+    // The form is built once the coins load, after the first render.
+    return !!this.form && this.form.valid && (this.normalSeed || this.customSeedAccepted);
   }
 
   onCustomSeedAcceptance(event: any) {
@@ -121,17 +122,12 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * The wallet type new wallets should default to for the given coin. bip44
-   * (HD, multicoin-capable) whenever it is actually honored — Bitcoin (always,
-   * segwit/bech32) and any server-managed coin (the node derives real bip44
-   * accounts + xpub) — otherwise deterministic, for a pure client-side non-BTC
-   * coin whose in-browser create path makes deterministic or pq wallets only.
+   * The wallet type new wallets default to. bip44 gives the account xpub the
+   * skywire reward system asks for, and both a wallet service and this browser
+   * derive it.
    */
   private defaultTypeForCoin(coin: BaseCoin): string {
-    if (!coin) {
-      return 'deterministic';
-    }
-    return (coin.isGateway() || coin.serverWallets) ? 'bip44' : 'deterministic';
+    return coin ? 'bip44' : 'deterministic';
   }
 
   getData(): FormData {
@@ -151,22 +147,11 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
     this.isBitcoinCoin = defaultCoin ? defaultCoin.isBitcoin() : false;
     this.isGatewayCoin = defaultCoin ? defaultCoin.isGateway() : false;
-    // Show the wallet-TYPE selector (deterministic / bip44 / segwit) whenever a
-    // coin is selected. The type is independent of serverWallets (server-side vs
-    // browser custody): a browser wallet (serverWallets=false, e.g. the skywire
-    // embedded wallet) still creates deterministic OR bip44 (and Bitcoin bip44
-    // can be segwit). Gating on serverWallets wrongly hid every type option for
-    // client-side wallets. The individual options are already coin-gated in the
-    // template (deterministic only for non-BTC; segwit only for BTC bip44).
+    // The type selector shows for wallets kept by a wallet service and for those
+    // kept in this browser alike. The template gates each option by coin.
     this.showWalletType = !!defaultCoin;
     this.probeCoinHealth(defaultCoin);
 
-    // Default new wallets to bip44 (HD) wherever bip44 is actually honored:
-    // Bitcoin (always bip44 — segwit/bech32 by default) and any server-managed
-    // coin, whose node performs real bip44 derivation (HD accounts + xpub). Fall
-    // back to deterministic only for a pure client-side non-BTC coin, where the
-    // in-browser create path always produces a deterministic wallet regardless
-    // of the selected type — so a bip44 default there would mislead.
     const defaultWalletType = this.defaultTypeForCoin(defaultCoin);
 
     this.form = this.formBuilder.group({

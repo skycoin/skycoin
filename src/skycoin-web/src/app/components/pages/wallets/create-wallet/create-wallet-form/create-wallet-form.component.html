@@ -1,121 +1,123 @@
-<div [formGroup]="form">
-  <div class="form-field">
-    <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
-    <input formControlName="label" id="label">
-  </div>
-  @if (hasManyCoins) {
+@if (form) {
+  <div [formGroup]="form">
     <div class="form-field">
-      <label for="coin">{{ 'wallet.new.select-coin' | translate}}</label>
-      <div class="-select">
-        <app-select-coin formControlName="coin" id="coin"></app-select-coin>
-      </div>
+      <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
+      <input formControlName="label" id="label">
     </div>
-  }
-  <div class="coin-health"
-       [class.ok]="selectedCoinHealth?.available"
-       [class.bad]="selectedCoinUnavailable"
-       [class.checking]="checkingCoinHealth">
-    <span class="dot"></span>
-    @if (checkingCoinHealth) {
-      <span>{{ 'nodeStatus.checking' | translate }}</span>
-    } @else if (selectedCoinHealth?.available) {
-      <span>{{ (selectedCoinHealth!.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (selectedCoinHealth!.height | number) } }}</span>
-    } @else if (selectedCoinUnavailable) {
-      <span>{{ (selectedCoinHealth!.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }} — {{ 'wallet.new.backend-unavailable-info' | translate }}</span>
-    }
-  </div>
-  @if (showWalletType) {
-    <div class="form-field">
-      <label for="wallet_type">{{ 'wallet.new.type-label' | translate}}</label>
-      <div class="-select">
-        <select formControlName="wallet_type" id="wallet_type">
-          @if (!isGatewayCoin) {
-            <option value="deterministic">{{ 'wallet.new.type-deterministic' | translate }}</option>
-          }
-          <option value="bip44">{{ 'wallet.new.type-bip44' | translate }}</option>
-          @if (!isBitcoinCoin) {
-            <option value="pq">{{ 'wallet.new.type-pq' | translate }}</option>
-          }
-        </select>
+    @if (hasManyCoins) {
+      <div class="form-field">
+        <label for="coin">{{ 'wallet.new.select-coin' | translate}}</label>
+        <div class="-select">
+          <app-select-coin formControlName="coin" id="coin"></app-select-coin>
+        </div>
       </div>
-      @if (form.get('wallet_type')!.value === 'pq') {
-        <p class="-info">{{ 'wallet.new.type-pq-info' | translate }}</p>
+    }
+    <div class="coin-health"
+         [class.ok]="selectedCoinHealth?.available"
+         [class.bad]="selectedCoinUnavailable"
+         [class.checking]="checkingCoinHealth">
+      <span class="dot"></span>
+      @if (checkingCoinHealth) {
+        <span>{{ 'nodeStatus.checking' | translate }}</span>
+      } @else if (selectedCoinHealth?.available) {
+        <span>{{ (selectedCoinHealth!.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (selectedCoinHealth!.height | number) } }}</span>
+      } @else if (selectedCoinUnavailable) {
+        <span>{{ (selectedCoinHealth!.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }} — {{ 'wallet.new.backend-unavailable-info' | translate }}</span>
       }
     </div>
-    @if (isBitcoinCoin && form.get('wallet_type')!.value === 'bip44') {
-      <div class="form-field -segwit-toggle">
-        <mat-checkbox formControlName="segwit">
-          {{ 'wallet.new.segwit-label' | translate }}
-        </mat-checkbox>
-        <p class="-info">{{ 'wallet.new.segwit-info' | translate }}</p>
+    @if (showWalletType) {
+      <div class="form-field">
+        <label for="wallet_type">{{ 'wallet.new.type-label' | translate}}</label>
+        <div class="-select">
+          <select formControlName="wallet_type" id="wallet_type">
+            @if (!isGatewayCoin) {
+              <option value="deterministic">{{ 'wallet.new.type-deterministic' | translate }}</option>
+            }
+            <option value="bip44">{{ 'wallet.new.type-bip44' | translate }}</option>
+            @if (!isBitcoinCoin) {
+              <option value="pq">{{ 'wallet.new.type-pq' | translate }}</option>
+            }
+          </select>
+        </div>
+        @if (form.get('wallet_type')!.value === 'pq') {
+          <p class="-info">{{ 'wallet.new.type-pq-info' | translate }}</p>
+        }
       </div>
+      @if (isBitcoinCoin && form.get('wallet_type')!.value === 'bip44') {
+        <div class="form-field -segwit-toggle">
+          <mat-checkbox formControlName="segwit">
+            {{ 'wallet.new.segwit-label' | translate }}
+          </mat-checkbox>
+          <p class="-info">{{ 'wallet.new.segwit-info' | translate }}</p>
+        </div>
+      }
     }
-  }
-  <div class="form-field -valid-seed-container" [ngClass]="{'-expand':form.get('seed')!.valid && !create}">
-    <label for="seed">
-      <span>{{ 'wallet.new.seed-label' | translate }}</span>
+    <div class="form-field -valid-seed-container" [ngClass]="{'-expand':form.get('seed')!.valid && !create}">
+      <label for="seed">
+        <span>{{ 'wallet.new.seed-label' | translate }}</span>
+        @if (create) {
+          <span class="generators" [ngClass]="{'-white-text': whiteText}">
+            <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">{{ 'wallet.new.12-words' | translate }}</span>
+            <span class="divider">|</span>
+            <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">{{ 'wallet.new.24-words' | translate }}</span>
+          </span>
+        }
+      </label>
+      <div class="-valid-box">
+        <textarea formControlName="seed" id="seed" row="2"></textarea>
+        @if (!create) {
+          <img class="-valid" src="assets/skycoin-wallet/img/valid.png">
+        }
+      </div>
       @if (create) {
-        <span class="generators" [ngClass]="{'-white-text': whiteText}">
-          <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">{{ 'wallet.new.12-words' | translate }}</span>
-          <span class="divider">|</span>
-          <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">{{ 'wallet.new.24-words' | translate }}</span>
-        </span>
-      }
-    </label>
-    <div class="-valid-box">
-      <textarea formControlName="seed" id="seed" row="2"></textarea>
-      @if (!create) {
-        <img class="-valid" src="assets/skycoin-wallet/img/valid.png">
+        <p [ngClass]="{'red-disclaimer-box': !whiteText, 'white-disclaimer-box': whiteText}">
+          {{ 'wallet.new.seed-warning' | translate}}
+        </p>
       }
     </div>
     @if (create) {
-      <p [ngClass]="{'red-disclaimer-box': !whiteText, 'white-disclaimer-box': whiteText}">
-        {{ 'wallet.new.seed-warning' | translate}}
-      </p>
+      <div
+        class="form-field -valid-seed-container"
+        [ngClass]="{ '-expand':form.get('confirm_seed')!.value === form.get('seed')!.value }">
+        <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
+        <div class="-valid-box">
+          <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
+          <img class="-valid" src="assets/skycoin-wallet/img/valid.png">
+        </div>
+      </div>
+    }
+    @if (create) {
+      <div class="form-field">
+        <label for="wallet_password">{{ 'wallet.new.password-label' | translate }}</label>
+        <input formControlName="password" id="wallet_password" type="password" autocomplete="new-password">
+        <p class="-info">{{ 'wallet.new.password-info' | translate }}</p>
+      </div>
+    }
+    @if (showWalletType && form.get('wallet_type')!.value === 'bip44') {
+      <div class="form-field">
+        <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
+        <input formControlName="seed_passphrase" id="seed_passphrase" type="password" [placeholder]="'wallet.new.seed-passphrase-placeholder' | translate">
+        <p class="-info">{{ 'wallet.new.seed-passphrase-info' | translate }}</p>
+      </div>
     }
   </div>
-  @if (create) {
-    <div
-      class="form-field -valid-seed-container"
-      [ngClass]="{ '-expand':form.get('confirm_seed')!.value === form.get('seed')!.value }">
-      <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
-      <div class="-valid-box">
-        <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
-        <img class="-valid" src="assets/skycoin-wallet/img/valid.png">
+  @if (form.valid && !normalSeed) {
+    <div class="red-disclaimer-box -alert-box" [ngClass]="{'-very-small-screen-alert-box': !whiteText}">
+      <mat-icon class="-not-on-very-small">error</mat-icon>
+      <div>
+        <div class="title"><mat-icon class="-on-very-small-only">error</mat-icon><span>{{ 'wallet.new.unconventional-seed-title' | translate}}</span></div>
+        <div>{{ 'wallet.new.unconventional-seed-text' | translate}}</div>
+        <mat-checkbox #seedCheck
+          type="checkbox" class="-check"
+          [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)">
+          {{ 'wallet.new.unconventional-seed-check' | translate}}
+        </mat-checkbox>
       </div>
     </div>
   }
-  @if (create) {
-    <div class="form-field">
-      <label for="wallet_password">{{ 'wallet.new.password-label' | translate }}</label>
-      <input formControlName="password" id="wallet_password" type="password" autocomplete="new-password">
-      <p class="-info">{{ 'wallet.new.password-info' | translate }}</p>
+  @if (showSlowMobileInfo) {
+    <div class="form-field -on-small-and-below-only">
+      <label class="slow-mobile-info">{{ 'common.slow-on-mobile' | translate}}</label>
     </div>
   }
-  @if (showWalletType && form.get('wallet_type')!.value === 'bip44') {
-    <div class="form-field">
-      <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
-      <input formControlName="seed_passphrase" id="seed_passphrase" type="password" [placeholder]="'wallet.new.seed-passphrase-placeholder' | translate">
-      <p class="-info">{{ 'wallet.new.seed-passphrase-info' | translate }}</p>
-    </div>
-  }
-</div>
-@if (form.valid && !normalSeed) {
-  <div class="red-disclaimer-box -alert-box" [ngClass]="{'-very-small-screen-alert-box': !whiteText}">
-    <mat-icon class="-not-on-very-small">error</mat-icon>
-    <div>
-      <div class="title"><mat-icon class="-on-very-small-only">error</mat-icon><span>{{ 'wallet.new.unconventional-seed-title' | translate}}</span></div>
-      <div>{{ 'wallet.new.unconventional-seed-text' | translate}}</div>
-      <mat-checkbox #seedCheck
-        type="checkbox" class="-check"
-        [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)">
-        {{ 'wallet.new.unconventional-seed-check' | translate}}
-      </mat-checkbox>
-    </div>
-  </div>
-}
-@if (showSlowMobileInfo) {
-  <div class="form-field -on-small-and-below-only">
-    <label class="slow-mobile-info">{{ 'common.slow-on-mobile' | translate}}</label>
-  </div>
 }

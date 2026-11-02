@@ -12,6 +12,11 @@ export interface GenerateAddressResponse {
   nextSeed: string;
 }
 
+/** An address on a bip44 chain, with child_number its index on the chain. */
+export interface Bip44Address extends Address {
+  child_number: number;
+}
+
 /** The address generation state of a post-quantum wallet at index. */
 export function pqSeedState(seedHex: string, index: number): string {
   return 'pq:' + seedHex + ':' + index;
@@ -158,6 +163,41 @@ export class CipherProvider {
 
     return this.resultOrError<any>(address, 'generate an address')
       .pipe(map(result => this.convertToAddress(result)));
+  }
+
+  /** The account xpub (m/44'/8000'/0') of a bip39 mnemonic and its seed passphrase. */
+  bip44AccountXPub(mnemonic: string, passphrase: string): Observable<string> {
+    return this.bip44Call('bip44AccountXPub', [mnemonic, passphrase], 'derive the bip44 account');
+  }
+
+  /** num addresses of account 0 from index start of chain 0 (external) or 1 (change), with their keys. */
+  bip44Addresses(mnemonic: string, passphrase: string, chain: number, start: number, num: number): Observable<Bip44Address[]> {
+    return this.bip44Call<any[]>('bip44Addresses', [mnemonic, passphrase, chain, start, num], 'derive bip44 addresses')
+      .pipe(map(list => list.map(a => this.convertBip44Address(a))));
+  }
+
+  /** num addresses from index start of a chain of the account an xpub belongs to, without keys. */
+  bip44XPubAddresses(xpub: string, chain: number, start: number, num: number): Observable<Bip44Address[]> {
+    return this.bip44Call<any[]>('bip44XPubAddresses', [xpub, chain, start, num], 'derive bip44 addresses')
+      .pipe(map(list => list.map(a => this.convertBip44Address(a))));
+  }
+
+  private bip44Call<T>(name: string, args: any[], operation: string): Observable<T> {
+    const cipher = (window as any)['SkycoinCipher'];
+    if (!cipher || typeof cipher[name] !== 'function') {
+      return throwError(() => new Error('this cipher build cannot make bip44 wallets'));
+    }
+
+    return this.resultOrError<T>(cipher[name](...args), operation);
+  }
+
+  private convertBip44Address(a: any): Bip44Address {
+    const address: Bip44Address = { address: a.address, public_key: a.public, child_number: a.index };
+    if (a.secret) {
+      address.secret_key = a.secret;
+    }
+
+    return address;
   }
 
   prepareTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Observable<string> {

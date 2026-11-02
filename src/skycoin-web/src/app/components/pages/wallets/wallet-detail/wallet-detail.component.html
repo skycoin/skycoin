@@ -17,7 +17,7 @@
   </div>
   <div class="flex-fill"></div>
   <!-- Ethereum wallets use addresses on account 0, as other Ethereum wallets do. -->
-  @if (isBip44 && !currentCoin?.isEthereum()) {
+  @if (isBip44 && !isBrowserBip44 && !currentCoin?.isEthereum()) {
     <div class="-button -not-on-small-and-below" (click)="onAddAccount()">
       <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
     </div>

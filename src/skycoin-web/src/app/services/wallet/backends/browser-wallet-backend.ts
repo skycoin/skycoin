@@ -1,17 +1,36 @@
 import { EventEmitter } from '@angular/core';
-import { Observable, from, of, throwError } from 'rxjs';
+import { Observable, forkJoin, from, of, throwError } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
-import { Address, Wallet } from '../../../app.datatypes';
+import { Address, Bip44Account, Wallet } from '../../../app.datatypes';
 import { defaultCoinId } from '../../../constants/coins-id.const';
 import { convertAsciiToHexa } from '../../../utils/converters';
 import { environment } from '../../../../environments/environment';
-import { CipherProvider, GenerateAddressResponse, pqSeedState } from '../../cipher.provider';
+import { Bip44Address, CipherProvider, GenerateAddressResponse, pqSeedState } from '../../cipher.provider';
 import { ApiService } from '../../api.service';
 import { EncryptionService } from '../../encryption.service';
 import { WalletBackend } from './wallet-backend';
+
+/** Unused addresses in a row that end a bip44 chain scan, the BIP44 gap limit. */
+export const bip44GapLimit = 20;
+
+/** True for a bip44 wallet kept in this browser. */
+export function isBip44(wallet: Wallet): boolean {
+  return wallet.walletType === 'bip44' && !wallet.filename && !!wallet.accounts && wallet.accounts.length > 0;
+}
+
+/**
+ * Lists a browser bip44 wallet's addresses, external then change, as the
+ * same objects its account holds, so keys and balances set on one show on both.
+ */
+function linkBip44Addresses(wallet: Wallet) {
+  const account: Bip44Account = wallet.accounts![0];
+  account.externalAddresses.forEach((a, i) => (a as Bip44Address).child_number = i);
+  account.changeAddresses.forEach((a, i) => (a as Bip44Address).child_number = i);
+  wallet.addresses = [...account.externalAddresses, ...account.changeAddresses];
+}
 
 export class ScanProgressData {
   addressesFound = 1;
@@ -60,12 +79,20 @@ export class BrowserWalletBackend implements WalletBackend {
       if (wallet.seed) {
         wallet.needSeedConfirmation = false;
       }
+      if (isBip44(wallet)) {
+        linkBip44Addresses(wallet);
+      }
     });
 
     return of(wallets);
   }
 
-  create(label: string, seed: string, coinId: number, existing: Wallet[], walletType = 'deterministic'): Observable<Wallet> {
+  create(label: string, seed: string, coinId: number, existing: Wallet[], walletType = 'deterministic',
+    seedPassphrase = ''): Observable<Wallet> {
+    if (walletType === 'bip44') {
+      return this.createBip44(label, seed, seedPassphrase, coinId, existing);
+    }
+
     const isPQ = walletType === 'pq';
 
     return this.cipherProvider.generateAddress(this.initialSeedState(seed, walletType)).pipe(
@@ -91,7 +118,41 @@ export class BrowserWalletBackend implements WalletBackend {
       }));
   }
 
-  addAddress(wallet: Wallet): Observable<void> {
+  /**
+   * Makes a bip44 wallet: account 0 of coin type 8000, derived from a bip39
+   * mnemonic and its seed passphrase the way the node's bip44 wallets are.
+   */
+  private createBip44(label: string, seed: string, seedPassphrase: string, coinId: number, existing: Wallet[]): Observable<Wallet> {
+    return forkJoin([
+      this.cipherProvider.bip44AccountXPub(seed, seedPassphrase),
+      this.cipherProvider.bip44Addresses(seed, seedPassphrase, 0, 0, 1),
+    ]).pipe(map(([xpub, external]) => {
+      const wallet: Wallet = {
+        label: label,
+        seed: seed,
+        seedPassphrase: seedPassphrase,
+        needSeedConfirmation: true,
+        balance: new BigNumber('0'),
+        hours: new BigNumber('0'),
+        addresses: [],
+        coinId: coinId,
+        walletType: 'bip44',
+        accounts: [{ name: 'Account 0', index: 0, accountXpubKey: xpub, externalAddresses: external, changeAddresses: [] }],
+      };
+      linkBip44Addresses(wallet);
+      if (existing.some(wlt => wlt.addresses[0] && wlt.addresses[0].address === wallet.addresses[0].address && wlt.coinId === coinId)) {
+        throw new Error(this.translate.instant('service.wallet.wallet-exists'));
+      }
+
+      return wallet;
+    }));
+  }
+
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
+    if (isBip44(wallet)) {
+      return this.addBip44Addresses(wallet, chainIndex === 1 ? 1 : 0, 1).pipe(map(() => undefined));
+    }
+
     if (!wallet.seed || !wallet.nextSeed) {
       throw new Error(this.translate.instant('service.wallet.address-without-seed'));
     }
@@ -118,12 +179,30 @@ export class BrowserWalletBackend implements WalletBackend {
       if (wallet.walletType === 'pq') {
         stripped.walletType = wallet.walletType;
       }
+      if (isBip44(wallet)) {
+        // The xpub is public and stays readable, so addresses can be derived
+        // and scanned without the password.
+        stripped.walletType = wallet.walletType;
+        stripped.accounts = wallet.accounts!.map(a => ({
+          name: a.name,
+          index: a.index,
+          accountXpubKey: a.accountXpubKey,
+          externalAddresses: a.externalAddresses.map(e => ({ address: e.address })),
+          changeAddresses: a.changeAddresses.map(e => ({ address: e.address })),
+        }));
+      }
       if (wallet.encryptedSeed) {
         stripped.encryptedSeed = wallet.encryptedSeed;
         if (wallet.encryptedNextSeed) {
           stripped.encryptedNextSeed = wallet.encryptedNextSeed;
         }
+        if (wallet.encryptedSeedPassphrase) {
+          stripped.encryptedSeedPassphrase = wallet.encryptedSeedPassphrase;
+        }
       } else if (wallet.seed) {
+        if (wallet.seedPassphrase) {
+          stripped.seedPassphrase = wallet.seedPassphrase;
+        }
         // No password → persist the plaintext seed so the wallet survives a
         // refresh WITHOUT forcing a seed re-entry. Set a password to encrypt
         // the seed at rest (then only encryptedSeed is stored). This is the
@@ -226,6 +305,12 @@ export class BrowserWalletBackend implements WalletBackend {
 
   /** Finds how many of the wallet's addresses have been used, keeping those. */
   scanAddresses(wallet: Wallet, onProgressChanged: EventEmitter<ScanProgressData>): Observable<void> {
+    if (isBip44(wallet)) {
+      return this.discoverBip44Addresses(wallet).pipe(map(() => {
+        onProgressChanged.emit({ addressesFound: wallet.addresses.length, progress: 100 });
+      }));
+    }
+
     if (wallet.addresses.length !== 1) {
       throw new Error(this.translate.instant('service.wallet.invalid-wallet'));
     }
@@ -249,6 +334,10 @@ export class BrowserWalletBackend implements WalletBackend {
   }
 
   unlockWallet(wallet: Wallet, seed: string, onProgressChanged: EventEmitter<number>): Observable<void> {
+    if (isBip44(wallet)) {
+      return this.unlockBip44(wallet, seed, wallet.seedPassphrase || '', onProgressChanged);
+    }
+
     const currentSeed = this.initialSeedState(seed, wallet.walletType);
 
     return this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).pipe(
@@ -270,11 +359,13 @@ export class BrowserWalletBackend implements WalletBackend {
       Promise.all([
         this.encryptionService.encrypt(wallet.seed!, password),
         wallet.nextSeed ? this.encryptionService.encrypt(wallet.nextSeed, password) : Promise.resolve(null),
-      ]).then(([encSeed, encNextSeed]) => {
+        wallet.seedPassphrase ? this.encryptionService.encrypt(wallet.seedPassphrase, password) : Promise.resolve(null),
+      ]).then(([encSeed, encNextSeed, encPassphrase]) => {
         wallet.encryptedSeed = encSeed;
         if (encNextSeed) {
           wallet.encryptedNextSeed = encNextSeed;
         }
+        wallet.encryptedSeedPassphrase = encPassphrase || undefined;
         observer.next();
         observer.complete();
       }).catch(err => observer.error(err));
@@ -291,10 +382,19 @@ export class BrowserWalletBackend implements WalletBackend {
       const decryptPromises = [
         this.encryptionService.decrypt(wallet.encryptedSeed!, password),
         wallet.encryptedNextSeed ? this.encryptionService.decrypt(wallet.encryptedNextSeed, password) : Promise.resolve(null),
+        wallet.encryptedSeedPassphrase ? this.encryptionService.decrypt(wallet.encryptedSeedPassphrase, password) : Promise.resolve(''),
       ];
 
-      Promise.all(decryptPromises).then(([seed, nextSeed]) => {
+      Promise.all(decryptPromises).then(([seed, nextSeed, passphrase]) => {
         const clean = cleanSeed(seed!);
+        if (isBip44(wallet)) {
+          this.unlockBip44(wallet, clean, passphrase || '', onProgressChanged).subscribe(() => {
+            observer.next();
+            observer.complete();
+          }, err => observer.error(err));
+
+          return;
+        }
         const currentSeed = this.initialSeedState(clean, wallet.walletType);
 
         this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).subscribe(
@@ -321,6 +421,96 @@ export class BrowserWalletBackend implements WalletBackend {
   removeWalletPassword(wallet: Wallet): void {
     wallet.encryptedSeed = undefined;
     wallet.encryptedNextSeed = undefined;
+    wallet.encryptedSeedPassphrase = undefined;
+  }
+
+  /**
+   * Derives the keys of every address of a bip44 wallet from its mnemonic,
+   * failing when they do not give the stored xpub and addresses.
+   */
+  private unlockBip44(wallet: Wallet, seed: string, passphrase: string, onProgressChanged: EventEmitter<number>): Observable<void> {
+    const account = wallet.accounts![0];
+
+    return forkJoin([
+      this.cipherProvider.bip44AccountXPub(seed, passphrase),
+      this.cipherProvider.bip44Addresses(seed, passphrase, 0, 0, account.externalAddresses.length),
+      this.cipherProvider.bip44Addresses(seed, passphrase, 1, 0, account.changeAddresses.length),
+    ]).pipe(map(([xpub, external, change]) => {
+      const matches = (stored: Address[], derived: Bip44Address[]) => stored.every((a, i) => a.address === derived[i].address);
+      if (xpub !== account.accountXpubKey || !matches(account.externalAddresses, external) || !matches(account.changeAddresses, change)) {
+        onProgressChanged.emit(0);
+        throw new Error(this.translate.instant('service.wallet.wrong-seed'));
+      }
+
+      const setKeys = (stored: Address[], derived: Bip44Address[]) => stored.forEach((a, i) => {
+        a.secret_key = derived[i].secret_key;
+        a.public_key = derived[i].public_key;
+      });
+      setKeys(account.externalAddresses, external);
+      setKeys(account.changeAddresses, change);
+      wallet.seed = seed;
+      wallet.seedPassphrase = passphrase;
+      onProgressChanged.emit(100);
+    }));
+  }
+
+  /** Appends num addresses to a chain of a bip44 wallet, derived from its xpub. */
+  private addBip44Addresses(wallet: Wallet, chain: number, num: number): Observable<Address[]> {
+    const account = wallet.accounts![0];
+    const list = chain === 1 ? account.changeAddresses : account.externalAddresses;
+
+    return this.cipherProvider.bip44XPubAddresses(account.accountXpubKey!, chain, list.length, num).pipe(map(derived => {
+      list.push(...derived);
+      linkBip44Addresses(wallet);
+
+      return derived;
+    }));
+  }
+
+  /** A fresh change address for a bip44 wallet, added to it. */
+  nextChangeAddress(wallet: Wallet): Observable<string> {
+    return this.addBip44Addresses(wallet, 1, 1).pipe(map(added => added[0].address));
+  }
+
+  /**
+   * Adds the addresses the blockchain shows were used beyond the ones a bip44
+   * wallet already has, on both chains, stopping after bip44GapLimit unused
+   * ones in a row. Coins sent to an address the wallet never showed, as the
+   * reward system does with addresses it derives from the xpub, are found so.
+   * Emits how many addresses were added.
+   */
+  discoverBip44Addresses(wallet: Wallet): Observable<number> {
+    const account = wallet.accounts![0];
+    const scanChain = (chain: number, added: number): Observable<number> => {
+      const list = chain === 1 ? account.changeAddresses : account.externalAddresses;
+      const start = list.length;
+
+      return this.cipherProvider.bip44XPubAddresses(account.accountXpubKey!, chain, start, bip44GapLimit).pipe(
+        mergeMap(window => this.apiService.get('transactions', { addrs: window.map(a => a.address).join(',') } as any).pipe(
+          map((transactions: any[]) => {
+            const used = new Set<string>();
+            (transactions || []).forEach(t => ((t.txn || t).outputs || []).forEach((o: any) => used.add(o.dst)));
+            let last = -1;
+            window.forEach((a, i) => {
+              if (used.has(a.address)) {
+                last = i;
+              }
+            });
+
+            return { window, last };
+          }))),
+        mergeMap(({ window, last }) => {
+          if (last < 0) {
+            return of(added);
+          }
+          list.push(...window.slice(0, last + 1));
+          linkBip44Addresses(wallet);
+
+          return scanChain(chain, added + last + 1);
+        }));
+    };
+
+    return scanChain(0, 0).pipe(mergeMap(added => scanChain(1, added)));
   }
 
   /** The state the first address of a wallet with this seed is derived from. */

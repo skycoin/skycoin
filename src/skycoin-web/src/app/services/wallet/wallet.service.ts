@@ -1,6 +1,6 @@
 import { Injectable, EventEmitter } from '@angular/core';
-import { BehaviorSubject, Subscription, Observable, of } from 'rxjs';
-import { mergeMap, map, filter, first } from 'rxjs';
+import { BehaviorSubject, Subscription, Observable, forkJoin, of } from 'rxjs';
+import { catchError, mergeMap, map, filter, first } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { CipherProvider } from '../cipher.provider';
@@ -12,7 +12,7 @@ import { EncryptionService } from '../encryption.service';
 import { WalletBackend } from './backends/wallet-backend';
 import { XPubKey } from './backends/server-wallet-backend';
 import { ServerWalletBackend } from './backends/server-wallet-backend';
-import { BrowserWalletBackend, ScanProgressData } from './backends/browser-wallet-backend';
+import { BrowserWalletBackend, ScanProgressData, isBip44 } from './backends/browser-wallet-backend';
 
 export { ScanProgressData };
 
@@ -31,9 +31,10 @@ export class WalletService {
   private coinSubscription!: Subscription;
   private readonly server: ServerWalletBackend;
   private readonly browser: BrowserWalletBackend;
+  private readonly discovering = new Set<string>();
 
   constructor(
-    cipherProvider: CipherProvider,
+    private cipherProvider: CipherProvider,
     private translate: TranslateService,
     private coinService: CoinService,
     apiService: ApiService,
@@ -95,7 +96,7 @@ export class WalletService {
       return this.server.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => this.saveWallets()));
     }
 
-    return this.browser.addAddress(wallet).pipe(map(() => {
+    return this.browser.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => {
       if (saveWallet) {
         this.saveWallets();
       }
@@ -110,6 +111,12 @@ export class WalletService {
     segwit?: boolean, password?: string): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
     const backend = this.backend;
+    // Gateway coins keep their wallets on a server; this browser derives bip44
+    // only for skycoin-style coins.
+    const coin = this.coinService.coins.find(c => c.id === coinId);
+    if (!backend.onServer && walletType === 'bip44' && coin && coin.isGateway()) {
+      walletType = 'deterministic';
+    }
 
     return backend.create(label, seed, coinId, this.wallets.value || [], walletType, seedPassphrase, segwit, password).pipe(
       mergeMap(wallet => password && !backend.onServer
@@ -232,6 +239,56 @@ export class WalletService {
     return this.server.getXPubKey(wallet, path);
   }
 
+  /** True for a bip44 wallet kept in this browser, whose xpub is stored with it. */
+  isBrowserBip44(wallet: Wallet): boolean {
+    return !this.isServerWallet(wallet) && isBip44(wallet);
+  }
+
+  /** The first n external addresses a browser bip44 wallet's xpub derives. */
+  xpubAddresses(wallet: Wallet, n: number): Observable<string[]> {
+    return this.cipherProvider.bip44XPubAddresses(wallet.accounts![0].accountXpubKey!, 0, 0, n).pipe(
+      map(addresses => addresses.map(a => a.address)));
+  }
+
+  /**
+   * The address change goes to when a send names none: a fresh change chain
+   * address for a browser bip44 wallet, else null for the node's default.
+   */
+  changeAddressFor(wallet: Wallet): Observable<string | null> {
+    if (!this.isBrowserBip44(wallet)) {
+      return of(null);
+    }
+
+    return this.browser.nextChangeAddress(wallet).pipe(map(address => {
+      this.saveWallets();
+
+      return address;
+    }));
+  }
+
+  /** Finds addresses of the browser bip44 wallets used beyond the ones they list. */
+  private discoverBip44(wallets: Wallet[]) {
+    // The list loads again when the coin is set, so skip a wallet already being scanned.
+    const bip44Wallets = wallets.filter(w => isBip44(w) && !this.discovering.has(w.accounts![0].accountXpubKey!));
+    if (bip44Wallets.length === 0) {
+      return;
+    }
+    const xpubs = bip44Wallets.map(w => w.accounts![0].accountXpubKey!);
+    xpubs.forEach(x => this.discovering.add(x));
+
+    this.cipherProvider.initialize().pipe(
+      mergeMap(() => forkJoin(bip44Wallets.map(w => this.browser.discoverBip44Addresses(w).pipe(catchError(() => of(0)))))),
+    ).subscribe(added => {
+      xpubs.forEach(x => this.discovering.delete(x));
+      if (this.wallets.value !== wallets) {
+        // The list was loaded again meanwhile and these objects are gone.
+        this.discoverBip44(this.wallets.value || []);
+      } else if (added.some(n => n > 0)) {
+        this.saveWallets();
+      }
+    }, () => xpubs.forEach(x => this.discovering.delete(x)));
+  }
+
   addAccount(wallet: Wallet, name: string, password?: string): Observable<Wallet> {
     return this.server.addAccount(wallet, name, password).pipe(map(w => {
       this.saveWallets();
@@ -269,6 +326,9 @@ export class WalletService {
         return;
       }
       this.wallets.next(wallets);
+      if (!backend.onServer) {
+        this.discoverBip44(wallets);
+      }
     });
   }
 

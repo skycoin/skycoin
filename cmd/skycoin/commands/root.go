@@ -11,12 +11,12 @@ and then run cmd/newcoin
 */
 
 import (
-	_ "net/http/pprof"
 	"os"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/util/calvin"
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/util/calvin"
 
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
@@ -27,6 +27,7 @@ import (
 	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
 	_ "github.com/skycoin/skycoin/src/wallet/collection"
 	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/pqwallet"
 	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 

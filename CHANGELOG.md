@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.28.7
 
 ### Added
 
@@ -47,6 +47,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   most one block per height. Peers on protocol version 5 pass the proposals and
   signatures to each other, and the block endpoints and `/health` show the
   signers. Off by default.
+- skycoin-web holds and sends Ether, ERC-20 tokens and Bitcoin, adds fiber
+  coins and tokens, and makes bip44 and post-quantum wallets in the browser.
+  It also gains offline signing, bulk send, a QR scanner in the send form, seed
+  backup, a network page and a Skywallet settings page, and installs as a PWA.
 
 ### Changed
 
@@ -68,6 +72,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - The TinyGo build of the skycoin-lite cipher is built with the 0magnet TinyGo
   fork at 0.43.0. TinyGo 0.41 does not support Go 1.27, and the 0.42 fork
   crashes in LLVM on `crypto/mldsa`.
+- The hardware wallet protobuf messages and firmware moved into this module.
+- The repository is licensed AGPL-3.0, and the front end manifests say so.
 
 ### Fixed
 
@@ -77,6 +83,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   option without a page reload.
 - skycoin-web adds a change address when asked for one. It ignored the `chain`
   parameter and always added an external address.
+- The node and the CLI report their real version. Since 0.27.1 every build
+  reported 0.27.1 in `/api/v1/version`, `/health` and the peer user agent. The
+  release workflow now stamps the tag into the version. The node records its
+  version in the database, so an older build refuses a database 0.28.7 opened.
+- skycoin-web refuses cross-origin writes and no longer allows any origin.
 
 ## 0.28.6
 

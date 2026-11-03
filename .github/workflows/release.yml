@@ -16,7 +16,16 @@ permissions:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    outputs:
+      version_x: ${{ steps.version.outputs.version_x }}
     steps:
+      # Stamp the tag, without its leading v, into both version strings.
+      - name: Version ldflags
+        id: version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          echo "version_x=-X ${{ env.MODULE }}/cmd/skycoin/commands.Version=$v -X ${{ env.MODULE }}/src/cli.Version=$v" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,7 +74,7 @@ jobs:
           GOARM: ${{ matrix.goarm }}
         run: |
           mkdir -p bin
-          go build -trimpath -ldflags "-s -w -buildid=" -o bin/skycoin .
+          go build -trimpath -ldflags "-s -w -buildid= ${{ needs.create-release.outputs.version_x }}" -o bin/skycoin .
           if [ "${{ matrix.arch }}" = "amd64" ]; then ./bin/skycoin --help || true; fi
 
       - name: Create archive
@@ -228,6 +237,7 @@ jobs:
           # -opt=z (optimize for size) + --no-debug for the smallest binary.
           "${GITHUB_WORKSPACE}/tinygo-fork/build/tinygo" build \
             -gc=precise -opt=z --no-debug -tags "safe netgo" \
+            -ldflags "${{ needs.create-release.outputs.version_x }}" \
             -o bin/skycoin .
           # non-TTY --help must not panic (colored-help fork renders plainly here)
           ./bin/skycoin --help || true
@@ -277,7 +287,7 @@ jobs:
           CGO_CFLAGS: -I/usr/local/include -I/opt/homebrew/include -I/opt/homebrew/opt/hidapi/include -I/opt/homebrew/opt/libusb/include
           CGO_LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
-          go install -trimpath -ldflags "-s -w" \
+          go install -trimpath -ldflags "-s -w ${{ needs.create-release.outputs.version_x }}" \
             ${{ env.MODULE }}@${{ github.ref_name }}
 
           mkdir -p bin
@@ -344,7 +354,7 @@ jobs:
           CGO_CFLAGS: -I/opt/homebrew/include -I/opt/homebrew/opt/hidapi/include -I/opt/homebrew/opt/libusb/include
           CGO_LDFLAGS: -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
-          go install -trimpath -ldflags "-s -w" \
+          go install -trimpath -ldflags "-s -w ${{ needs.create-release.outputs.version_x }}" \
             ${{ env.MODULE }}@${{ github.ref_name }}
 
           mkdir -p bin
@@ -439,7 +449,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         shell: pwsh
         run: |
-          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}@${{ github.ref_name }}"
+          go install -trimpath -ldflags "-s -w ${{ needs.create-release.outputs.version_x }}" "${{ env.MODULE }}@${{ github.ref_name }}"
 
           New-Item -ItemType Directory -Force -Path "bin"
           $gopath = go env GOPATH

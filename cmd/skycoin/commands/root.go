@@ -11,12 +11,12 @@ and then run cmd/newcoin
 */
 
 import (
+	_ "net/http/pprof"
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-
 	"github.com/skycoin/skycoin/src/util/calvin"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
@@ -27,14 +27,13 @@ import (
 	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
 	_ "github.com/skycoin/skycoin/src/wallet/collection"
 	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
-	_ "github.com/skycoin/skycoin/src/wallet/pqwallet"
 	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 
 var (
 	// DB VERSION - WARNING: CHANGING WILL MAKE THE SYNCED BLOCKCHAIN NOT WORK WITH OLDER SOFTWARE VERSIONS
 	// Version of the node. Can be set by -ldflags
-	Version = "0.27.1"
+	Version = "0.28.7"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags

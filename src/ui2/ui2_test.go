@@ -19,6 +19,7 @@ type fakeNode struct {
 	balances map[string]*api.BalanceResponse
 	txns     []readable.TransactionWithStatusVerbose
 	err      error
+	created  []api.CreateWalletOptions
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {

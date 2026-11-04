@@ -195,3 +195,21 @@ table.list { width: 100%; border-collapse: collapse; }
   .key.txid { max-width: 100%; }
   .pager .btn.sm { height: 40px; min-width: 40px; }
 }
+
+/* create and load, xpub */
+.form { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+.form label { display: flex; flex-direction: column; gap: 4px; }
+.form label.check { flex-direction: row; align-items: flex-start; }
+.form input, .form textarea, .form select { width: 100%; }
+.form input[type="checkbox"] { width: auto; margin-top: 3px; }
+.alert p { margin: 4px 0; }
+ol.seed-words {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 16px;
+  margin: 4px 0; padding: 12px 12px 12px 40px; border: 1px dashed var(--card-border); border-radius: 8px;
+  user-select: all;
+}
+ol.seed-words li { font-size: 1.05em; }
+.xpub { padding: 12px 0; border-top: 1px solid rgba(var(--fg), 0.12); }
+.xpub:first-of-type { border-top: 0; }
+.xpub-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+.xpub-key { padding: 8px 10px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--card-border); cursor: copy; }

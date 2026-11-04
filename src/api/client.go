@@ -906,6 +906,25 @@ func (c *Client) WalletFolderName() (*WalletFolder, error) {
 	return &w, nil
 }
 
+// WalletXPub is the response of GET /api/v1/wallet/xpub
+type WalletXPub struct {
+	XPubKey   string   `json:"xpub_key"`
+	Addresses []string `json:"addresses"`
+}
+
+// WalletXPub makes a request to GET /api/v1/wallet/xpub. path is an account
+// index such as "0", or an account and chain such as "0/1".
+func (c *Client) WalletXPub(id, path string) (*WalletXPub, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("path", path)
+	var x WalletXPub
+	if err := c.Get("/api/v1/wallet/xpub?"+v.Encode(), &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
 // NewSeed makes a request to GET /api/v1/wallet/newSeed
 // entropy must be 128 or 256
 func (c *Client) NewSeed(entropy int) (string, error) {

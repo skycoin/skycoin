@@ -23,6 +23,10 @@ templ WalletsPage(w Wallets) {
 				@WalletAPIOff()
 			} else {
 				@ErrorBox(w.Err)
+				<div class="bar">
+					<a class="btn primary" href="new"><span class="mi">add</span>{ T(ctx, "create.new-title") }</a>
+					<a class="btn" href="load"><span class="mi">download</span>{ T(ctx, "create.load-title") }</a>
+				</div>
 				if w.Err == "" && len(w.Rows) == 0 {
 					<p class="dim">{ T(ctx, "wallets.none") }</p>
 				}

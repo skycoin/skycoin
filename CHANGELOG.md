@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A server rendered wallet at `/ui2/`, beside the Angular wallet, built with
   templ and htmx in the importable `src/ui2` package. It lists the node's
   wallets with their balances, addresses and history, and shows the node and
-  blockchain status. It is read only for now.
+  blockchain status.
+- `/ui2/` creates and loads wallets kept in the node, bip44 by default, with
+  the new seed shown once and typed back before the wallet is made. A bip44
+  wallet shows each account's Account xPub, the depth 3 key the Skywire
+  reward system asks for, apart from its chain xPubs.
+- `api.Client.WalletXPub` reads `GET /api/v1/wallet/xpub`.
 
 ## 0.28.7
 

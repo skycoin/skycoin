@@ -1,0 +1,198 @@
+package ui2
+
+import "net/url"
+
+func walletPart(part, id string) string { return "wallet/" + part + "?id=" + url.QueryEscape(id) }
+
+func walletTitle(w Wallet) string {
+	if w.Meta.Label != "" {
+		return w.Meta.Label
+	}
+	return w.ID
+}
+
+// WalletPage is one wallet: its balance, its addresses and its history.
+templ WalletPage(w Wallet) {
+	@Layout(walletTitle(w), "wallets") {
+		<div class="page-head">
+			<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			<h1>{ walletTitle(w) }</h1>
+			if w.Meta.Type != "" {
+				<span class="badge">{ w.Meta.Type }</span>
+			}
+			if w.Meta.Encrypted {
+				<span class="badge on"><span class="mi small-icon">lock</span>{ T(ctx, "wallet.encrypted") }</span>
+			}
+		</div>
+		if w.Disabled {
+			<section class="card">
+				@WalletAPIOff()
+			</section>
+		} else if w.Meta.Filename == "" {
+			<section class="card">
+				@ErrorBox(w.Err)
+			</section>
+		} else {
+			<section class="card">
+				@ErrorBox(w.Err)
+				<div class="ov">
+					<div class="ov-card">
+						<span class="ov-title">{ T(ctx, "balance.coins") }</span>
+						<span class="ov-big">@Money(w.Balance)</span>
+					</div>
+					<div class="ov-card">
+						<span class="ov-title">{ T(ctx, "balance.hours") }</span>
+						<span class="ov-big">@Hours(w.Balance)</span>
+					</div>
+				</div>
+				<dl class="kv">
+					<dt>{ T(ctx, "wallet.file") }</dt>
+					<dd class="mono">{ w.Meta.Filename }</dd>
+					<dt>{ T(ctx, "wallet.coin") }</dt>
+					<dd>{ string(w.Meta.Coin) }</dd>
+					if w.Meta.Timestamp > 0 {
+						<dt>{ T(ctx, "wallet.created") }</dt>
+						<dd>{ unixTime(uint64(w.Meta.Timestamp)) }</dd>
+					}
+				</dl>
+			</section>
+			<section class="card" id="addr-scope">
+				<form class="bar" hx-get={ walletPart("addresses", w.ID) } hx-target="#addr-list" hx-swap="outerHTML" hx-trigger="submit">
+					<h2>{ T(ctx, "wallet.addresses") }</h2>
+					<input
+						class="filter"
+						type="search"
+						name="q"
+						value={ w.Pager.Q }
+						placeholder={ T(ctx, "wallet.filter-addresses") }
+						aria-label={ T(ctx, "wallet.filter-addresses") }
+						autocomplete="off"
+						hx-get={ walletPart("addresses", w.ID) }
+						hx-trigger="input changed delay:300ms, search"
+						hx-target="#addr-list"
+						hx-swap="outerHTML"
+						hx-include="closest form"
+					/>
+					<label class="check">
+						<input
+							type="checkbox"
+							name="hide"
+							value="1"
+							checked?={ w.Pager.Hide }
+							hx-get={ walletPart("addresses", w.ID) }
+							hx-trigger="change"
+							hx-target="#addr-list"
+							hx-swap="outerHTML"
+							hx-include="closest form"
+						/>
+						{ T(ctx, "wallet.hide-empty") }
+					</label>
+				</form>
+				@AddrList(w)
+			</section>
+			<section class="card">
+				<h2>{ T(ctx, "wallet.history") }</h2>
+				<div id="txns" hx-get={ walletPart("txns", w.ID) } hx-trigger="load" hx-swap="outerHTML">
+					<p class="dim">{ T(ctx, "ui2.loading") }</p>
+				</div>
+			</section>
+		}
+	}
+}
+
+// AddrList is the page of addresses the filter asks for.
+templ AddrList(w Wallet) {
+	<div id="addr-list">
+		@ErrorBox(w.Err)
+		if len(w.Addrs) == 0 {
+			<p class="dim">{ T(ctx, "wallet.no-addresses") }</p>
+		} else {
+			<div class="table-wrap">
+				<table class="list">
+					<thead>
+						<tr>
+							<th>{ T(ctx, "wallet.address") }</th>
+							if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
+								<th>{ T(ctx, "wallet.chain") }</th>
+							}
+							<th class="num">{ T(ctx, "balance.coins") }</th>
+							<th class="num">{ T(ctx, "balance.hours") }</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, a := range w.Addrs {
+							<tr class={ templ.KV("empty", a.Empty) }>
+								<td class="name mono"><span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span></td>
+								if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
+									<td data-label={ T(ctx, "wallet.chain") }>
+										if a.Chain != "" {
+											{ T(ctx, "wallet.chain-" + a.Chain) } <span class="dim">#{ a.Index }</span>
+										}
+									</td>
+								}
+								<td class="num" data-label={ T(ctx, "balance.coins") }>{ a.Coins }</td>
+								<td class="num" data-label={ T(ctx, "balance.hours") }>{ a.Hours }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		@PagerNav(w.Pager, walletPart("addresses", w.ID), "#addr-list", "#addr-scope form")
+	</div>
+}
+
+// TxnList is a page of a wallet's history.
+templ TxnList(t Txns) {
+	<div id="txns">
+		@ErrorBox(t.Err)
+		if t.Err == "" && len(t.Rows) == 0 {
+			<p class="dim">{ T(ctx, "wallet.no-history") }</p>
+		}
+		if len(t.Rows) > 0 {
+			<div class="table-wrap">
+				<table class="list">
+					<thead>
+						<tr>
+							<th>{ T(ctx, "tx.kind") }</th>
+							<th class="num">{ T(ctx, "balance.coins") }</th>
+							<th class="num">{ T(ctx, "balance.hours") }</th>
+							<th>{ T(ctx, "tx.time") }</th>
+							<th>{ T(ctx, "tx.status") }</th>
+							<th>{ T(ctx, "tx.id") }</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, r := range t.Rows {
+							<tr>
+								<td class="name"><span class={ "kind", r.Kind }><span class="mi">{ kindIcon(r.Kind) }</span>{ T(ctx, "tx.kind-" + r.Kind) }</span></td>
+								<td class="num" data-label={ T(ctx, "balance.coins") }>{ r.Coins }</td>
+								<td class="num" data-label={ T(ctx, "balance.hours") }>{ r.Hours }</td>
+								<td class="nowrap" data-label={ T(ctx, "tx.time") }>{ r.Time }</td>
+								<td data-label={ T(ctx, "tx.status") }>
+									if r.Confirmed {
+										<span class="badge on">{ T(ctx, "tx.confirmed") }</span>
+									} else {
+										<span class="badge warn-text">{ T(ctx, "tx.pending") }</span>
+									}
+								</td>
+								<td class="mono small" data-label={ T(ctx, "tx.id") }><span class="key txid" data-copy={ r.Txid } title={ r.Txid }>{ r.Txid }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		@PagerNav(t.Pager, walletPart("txns", t.ID), "#txns", "this")
+	</div>
+}
+
+func kindIcon(kind string) string {
+	switch kind {
+	case "in":
+		return "call_received"
+	case "out":
+		return "call_made"
+	}
+	return "sync_alt"
+}

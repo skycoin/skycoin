@@ -1,0 +1,97 @@
+package ui2
+
+// Layout is the whole document around a page. nav names the menu entry the
+// page belongs to.
+templ Layout(title, nav string) {
+	<!DOCTYPE html>
+	<html lang={ From(ctx).Lang }>
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<base href={ From(ctx).Base }/>
+			<title>{ title } · { T(ctx, "app.name") }</title>
+			<link rel="icon" href={ From(ctx).Classic + "favicon.ico" }/>
+			<script src={ Asset("theme.js") }></script>
+			<link rel="stylesheet" href={ Asset("ui2.css") }/>
+			<script src={ Asset("htmx.min.js") } defer></script>
+			<script src={ Asset("ui2.js") } defer></script>
+		</head>
+		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-csrf={ From(ctx).Classic + "api/v1/csrf" }>
+			<header class="top">
+				<a class="brand" href="./">
+					<img src={ From(ctx).Classic + "assets/icons/icon-192.png" } alt="" width="32" height="32"/>
+					<span>{ T(ctx, "app.name") }</span>
+				</a>
+				<button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="top-menu" aria-label={ T(ctx, "ui2.menu") } data-menu-toggle><span class="mi">menu</span></button>
+				<div class="menu-items" id="top-menu">
+					<nav class="home">
+						<a href="./" class={ templ.KV("active", nav == "wallets") }>{ T(ctx, "nav.wallets") }</a>
+						<a href="status" class={ templ.KV("active", nav == "status") }>{ T(ctx, "nav.status") }</a>
+					</nav>
+					<span class="spacer"></span>
+					<div class="tools">
+						<select class="lang" aria-label={ T(ctx, "ui2.language") } data-lang>
+							for _, l := range Langs {
+								<option value={ l.Code } selected?={ l.Code == From(ctx).Lang }>{ l.Name }</option>
+							}
+						</select>
+						<button class="icon-btn" type="button" data-theme-toggle title={ T(ctx, "ui2.theme") } aria-label={ T(ctx, "ui2.theme") }><span class="mi">brightness_6</span></button>
+						<a class="btn sm" href={ templ.URL(From(ctx).Classic) }>{ T(ctx, "ui2.classic") }</a>
+					</div>
+				</div>
+			</header>
+			<main>
+				{ children... }
+			</main>
+			<div id="toast" role="status"></div>
+		</body>
+	</html>
+}
+
+// ErrorBox shows an error the page could not avoid, such as a node that did
+// not answer.
+templ ErrorBox(msg string) {
+	if msg != "" {
+		<p class="error">{ msg }</p>
+	}
+}
+
+// WalletAPIOff explains why a node shows no wallets when it keeps none.
+templ WalletAPIOff() {
+	<div class="alert warn">
+		<p>{ T(ctx, "wallets.api-off") }</p>
+		<p><a class="btn primary" href={ templ.URL(From(ctx).Classic) }>{ T(ctx, "ui2.classic") }</a></p>
+	</div>
+}
+
+// Money is an amount of coins and hours, with the pending amount beside it
+// when the two differ.
+templ Money(a Amount) {
+	<span class="nowrap">{ a.Coins }</span>
+	if a.Pending {
+		<span class="small warn-text nowrap" title={ T(ctx, "balance.pending-hint") }>({ a.PendingCoins })</span>
+	}
+}
+
+templ Hours(a Amount) {
+	<span class="nowrap">{ a.Hours }</span>
+	if a.Pending {
+		<span class="small warn-text nowrap" title={ T(ctx, "balance.pending-hint") }>({ a.PendingHours })</span>
+	}
+}
+
+// PagerNav shows which rows are on screen and moves between pages. include
+// names the inputs that go along, such as the filter.
+templ PagerNav(p Pager, url, target, include string) {
+	<div class="pager">
+		if p.Total > 0 {
+			<span class="small dim">{ T(ctx, "ui2.list.showing", "from", itoa(p.From()), "to", itoa(p.To()), "total", itoa(p.Total)) }</span>
+		}
+		if p.Pages() > 1 {
+			<span class="spacer"></span>
+			<button class="btn sm" type="button" disabled?={ p.Page <= 1 } hx-get={ url } hx-target={ target } hx-swap="outerHTML" hx-include={ include } hx-vals={ p.pageVals(p.Page - 1) } aria-label={ T(ctx, "ui2.list.prev") }><span class="mi">chevron_left</span></button>
+			<span class="small">{ T(ctx, "ui2.list.page", "n", itoa(p.Page), "of", itoa(p.Pages())) }</span>
+			<button class="btn sm" type="button" disabled?={ p.Page >= p.Pages() } hx-get={ url } hx-target={ target } hx-swap="outerHTML" hx-include={ include } hx-vals={ p.pageVals(p.Page + 1) } aria-label={ T(ctx, "ui2.list.next") }><span class="mi">chevron_right</span></button>
+		}
+	</div>
+}

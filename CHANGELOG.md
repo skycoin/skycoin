@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- A server rendered wallet at `/ui2/`, beside the Angular wallet, built with
+  templ and htmx in the importable `src/ui2` package. It lists the node's
+  wallets with their balances, addresses and history, and shows the node and
+  blockchain status. It is read only for now.
+
 ## 0.28.7
 
 ### Added

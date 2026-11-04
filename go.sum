@@ -2,6 +2,8 @@ github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a h1:xCNydYD8p9zv9DS
 github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a/go.mod h1:CpOPhNXerCJIq3QRpKIhrkJdweQF45+mDJuSpWaGwSc=
 github.com/0magnet/coloredcobra v1.0.3 h1:s/3WW+wAssjMEKgzlXWcQ6PGSoKJIoambL68ytXRr00=
 github.com/0magnet/coloredcobra v1.0.3/go.mod h1:Kn7dmRJcnVybFNKY0FNUjLcsivW4FCbAec8ZfVmz51I=
+github.com/a-h/templ v0.3.1070 h1:3iCOXHXqFXa99OQzgkUOLJbNzv/QjFGLwKZkBAg+ADA=
+github.com/a-h/templ v0.3.1070/go.mod h1:iIqB3g2RHBe/WlnPwa+Bvhh1TKXHWLRnBD9NWHOLm78=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
 github.com/bitfield/script v0.25.2 h1:omEoVNNmEYDFJU9XbI3LJJSq8v+o5tojz8IhqEiSybY=

@@ -293,6 +293,14 @@
     {
       "positive": false,
       "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/ui2$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/ui2\\/.*$"
     }
   ],
   "navigationRequestStrategy": "performance"

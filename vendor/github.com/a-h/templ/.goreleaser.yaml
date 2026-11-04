@@ -1,0 +1,53 @@
+version: 2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    dir: cmd/templ
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    goos:
+      - linux
+      - windows
+      - darwin
+
+checksum:
+  name_template: 'checksums.txt'
+
+signs:
+  - id: checksums
+    cmd: cosign
+    stdin: '{{ .Env.COSIGN_PASSWORD }}'
+    output: true
+    artifacts: checksum
+    signature: '${artifact}.sigstore.json'
+    args:
+      - sign-blob
+      - --yes
+      - --key
+      - env://COSIGN_PRIVATE_KEY
+      - '--bundle=${signature}'
+      - '${artifact}'
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

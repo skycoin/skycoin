@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a
 	github.com/0magnet/coloredcobra v1.0.3
+	github.com/a-h/templ v0.3.1070
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/bitfield/script v0.25.2
 	github.com/blang/semver v3.5.1+incompatible

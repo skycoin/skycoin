@@ -77,7 +77,10 @@ type Config struct {
 	Username           string
 	Password           string
 	// WebWallet, when set, is the wallet GUI, served at the site root.
-	WebWallet    http.Handler
+	WebWallet http.Handler
+	// UI2, when set, builds the server rendered wallet served at /ui2/ around
+	// a client of this API.
+	UI2          func(*Client) http.Handler
 	ShutdownChan chan struct{} // when closed, triggers daemon shutdown
 }
 
@@ -112,6 +115,7 @@ type muxConfig struct {
 	health             HealthConfig
 	shutdownChan       chan struct{}
 	webWallet          http.Handler
+	ui2                func(*Client) http.Handler
 }
 
 // HTTPResponse represents the http response struct
@@ -208,6 +212,7 @@ func create(host string, c Config, gateway Gatewayer) *Server {
 		password:           c.Password,
 		shutdownChan:       c.ShutdownChan,
 		webWallet:          c.WebWallet,
+		ui2:                c.UI2,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -601,6 +606,10 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		http.MethodPost:   {EndpointsStorage},
 		http.MethodDelete: {EndpointsStorage},
 	})
+
+	if c.ui2 != nil {
+		mountUI2(mux, c, c.ui2)
+	}
 
 	return mux
 }

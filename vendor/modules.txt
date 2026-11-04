@@ -7,6 +7,11 @@ github.com/0magnet/bbolt/internal/freelist
 # github.com/0magnet/coloredcobra v1.0.3
 ## explicit; go 1.25.0
 github.com/0magnet/coloredcobra
+# github.com/a-h/templ v0.3.1070
+## explicit; go 1.26.0
+github.com/a-h/templ
+github.com/a-h/templ/runtime
+github.com/a-h/templ/safehtml
 # github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 ## explicit
 github.com/andreyvit/diff

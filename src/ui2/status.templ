@@ -1,0 +1,103 @@
+package ui2
+
+// StatusPage is the node and blockchain status.
+templ StatusPage(s Status) {
+	@Layout(T(ctx, "nav.status"), "status") {
+		<section class="card">
+			<div class="head">
+				<h1>{ T(ctx, "nav.status") }</h1>
+			</div>
+			@StatusLive(s)
+		</section>
+	}
+}
+
+// StatusLive is the part of the status page that refreshes itself.
+templ StatusLive(s Status) {
+	<div id="status-live" hx-get="status/live" hx-trigger="every 10s" hx-swap="outerHTML">
+		@ErrorBox(s.Err)
+		if s.Version != "" {
+			<div class="ov">
+				<div class="ov-card">
+					<span class="ov-title">{ T(ctx, "status.height") }</span>
+					<span class="ov-big">{ utoa(s.Height) }</span>
+					<span class="small dim">{ s.BlockTime }</span>
+				</div>
+				<div class="ov-card">
+					<span class="ov-title">{ T(ctx, "status.sync") }</span>
+					if s.Synced {
+						<span class="ov-big ok">{ T(ctx, "status.synced") }</span>
+					} else {
+						<span class="ov-big wait">{ s.Percent }%</span>
+					}
+					<span class="small dim">{ T(ctx, "status.blocks-of", "current", utoa(s.Current), "highest", utoa(s.Highest)) }</span>
+				</div>
+				<div class="ov-card">
+					<span class="ov-title">{ T(ctx, "status.connections") }</span>
+					<span class={ "ov-big", templ.KV("bad", s.Open == 0) }>{ itoa(s.Open) }</span>
+					<span class="small dim">{ T(ctx, "status.in-out", "in", itoa(s.Incoming), "out", itoa(s.Outgoing)) }</span>
+				</div>
+				<div class="ov-card">
+					<span class="ov-title">{ T(ctx, "status.unconfirmed") }</span>
+					<span class="ov-big">{ utoa(s.Unconfirmed) }</span>
+				</div>
+			</div>
+			<dl class="kv">
+				<dt>{ T(ctx, "status.coin") }</dt>
+				<dd>{ s.Coin }</dd>
+				<dt>{ T(ctx, "status.version") }</dt>
+				<dd>{ s.Version }</dd>
+				<dt>{ T(ctx, "status.uptime") }</dt>
+				<dd>{ s.Uptime }</dd>
+				<dt>{ T(ctx, "status.block-hash") }</dt>
+				<dd class="mono small">{ s.BlockHash }</dd>
+				<dt>{ T(ctx, "status.wallet-api") }</dt>
+				<dd>
+					if s.WalletAPI {
+						<span class="badge on">{ T(ctx, "status.on") }</span>
+					} else {
+						<span class="badge off">{ T(ctx, "status.off") }</span>
+					}
+				</dd>
+			</dl>
+			<h2>{ T(ctx, "status.peers") }</h2>
+			if len(s.Peers) == 0 {
+				<p class="dim">{ T(ctx, "status.no-peers") }</p>
+			} else {
+				<div class="table-wrap">
+					<table class="list">
+						<thead>
+							<tr>
+								<th>{ T(ctx, "status.peer") }</th>
+								<th>{ T(ctx, "status.direction") }</th>
+								<th class="num">{ T(ctx, "status.peer-height") }</th>
+								<th>{ T(ctx, "status.agent") }</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, p := range s.Peers {
+								<tr>
+									<td class="name mono">
+										{ p.Addr }
+										if p.Trusted {
+											<span class="badge on">{ T(ctx, "status.trusted") }</span>
+										}
+									</td>
+									<td data-label={ T(ctx, "status.direction") }>
+										if p.Outgoing {
+											{ T(ctx, "status.outgoing") }
+										} else {
+											{ T(ctx, "status.incoming") }
+										}
+									</td>
+									<td class="num" data-label={ T(ctx, "status.peer-height") }>{ utoa(p.Height) }</td>
+									<td class="small" data-label={ T(ctx, "status.agent") }>{ p.Agent }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		}
+	</div>
+}

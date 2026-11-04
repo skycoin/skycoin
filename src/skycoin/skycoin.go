@@ -27,6 +27,7 @@ import (
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
+	"github.com/skycoin/skycoin/src/ui2"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/certutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -528,6 +529,7 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 			}
 			config.WebWallet = wallet
 		}
+		config.UI2 = func(client *api.Client) http.Handler { return ui2.Handler(client, ui2.Options{}) }
 	}
 
 	var s *api.Server

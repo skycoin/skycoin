@@ -20,6 +20,9 @@ type fakeNode struct {
 	txns     []readable.TransactionWithStatusVerbose
 	err      error
 	created  []api.CreateWalletOptions
+	txReqs   []api.WalletCreateTransactionRequest
+	injected []string
+	newAddrs []string
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {

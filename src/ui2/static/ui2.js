@@ -83,3 +83,21 @@
 		else if (document.documentElement.lang) setLang(document.documentElement.lang);
 	}
 })();
+
+// data-clear="#id" empties a panel. After a send, the form and its password
+// are cleared so the same payment cannot go out twice by accident.
+(function () {
+	'use strict';
+	document.addEventListener('click', function (e) {
+		var c = e.target.closest && e.target.closest('[data-clear]');
+		if (!c) return;
+		var p = document.querySelector(c.getAttribute('data-clear'));
+		if (p) p.innerHTML = '';
+	});
+	document.addEventListener('htmx:afterSwap', function (e) {
+		if (!e.detail.target || e.detail.target.id !== 'review') return;
+		if (!e.detail.target.querySelector('.alert.ok')) return;
+		var f = document.getElementById('send');
+		if (f) f.reset();
+	});
+})();

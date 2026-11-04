@@ -23,6 +23,10 @@ templ WalletPage(w Wallet) {
 			if w.Meta.Encrypted {
 				<span class="badge on"><span class="mi small-icon">lock</span>{ T(ctx, "wallet.encrypted") }</span>
 			}
+			if w.Meta.Filename != "" {
+				<span class="spacer"></span>
+				<a class="btn primary" href={ templ.URL(sendURL(w.ID, "")) }><span class="mi">send</span>{ T(ctx, "send.title") }</a>
+			}
 		</div>
 		if w.Disabled {
 			<section class="card">
@@ -125,7 +129,15 @@ templ AddrList(w Wallet) {
 					<tbody>
 						for _, a := range w.Addrs {
 							<tr class={ templ.KV("empty", a.Empty) }>
-								<td class="name mono"><span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span></td>
+								<td class="name mono">
+									<span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span>
+									if a.Exposed {
+										<span class="exposed">
+											<span class="badge err" title={ T(ctx, "wallet.exposed-help") }><span class="mi small-icon">warning</span>{ T(ctx, "wallet.exposed") }</span>
+											<a class="btn sm" href={ templ.URL(sendURL(w.ID, a.Address)) }>{ T(ctx, "wallet.move-coins") }</a>
+										</span>
+									}
+								</td>
 								if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
 									<td data-label={ T(ctx, "wallet.chain") }>
 										if a.Chain != "" {

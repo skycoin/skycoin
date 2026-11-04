@@ -105,6 +105,20 @@ func Handler(n Node, o Options) http.Handler {
 		w.Header().Set("HX-Redirect", walletURL(wlt.Meta.Filename))
 		return nil
 	}))
+	mux.HandleFunc("/send", page(func(r *http.Request) templ.Component {
+		return SendPage(LoadSend(n, r.FormValue("id"), r.FormValue("from")))
+	}))
+	mux.HandleFunc("/send/review", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		return ReviewView(Prepare(n, ParseSendForm(r.PostFormValue)))
+	}))
+	mux.HandleFunc("/send/inject", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		id := r.PostFormValue("id")
+		txid, err := n.InjectEncodedTransaction(r.PostFormValue("rawtx"))
+		if err != nil {
+			return SentView(id, "", err.Error())
+		}
+		return SentView(id, txid, "")
+	}))
 	return mux
 }
 

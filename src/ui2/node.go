@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // Node is the part of the node's REST API the pages use. *api.Client has
@@ -27,6 +28,9 @@ type Node interface {
 	NewSeed(entropy int) (string, error)
 	VerifySeed(seed string) (bool, error)
 	CreateWallet(api.CreateWalletOptions) (*api.WalletResponse, error)
+	NewWalletAddress(id, password string, options ...wallet.Option) ([]string, error)
+	WalletCreateTransaction(api.WalletCreateTransactionRequest) (*api.CreateTransactionResponse, error)
+	InjectEncodedTransaction(rawtx string) (string, error)
 }
 
 // walletAPIDisabled reports whether err is the node refusing the WALLET API
@@ -134,6 +138,9 @@ type AddressRow struct {
 	Coins   string
 	Hours   string
 	Empty   bool
+	// Exposed is an address that has spent, so its public key is on the
+	// blockchain, and still holds coins.
+	Exposed bool
 }
 
 // Wallet is the page of one wallet.
@@ -163,6 +170,15 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 	}
 	out.Balance = amountOf(b.BalancePair)
 
+	all := make([]string, 0, len(w.Entries))
+	for _, e := range w.Entries {
+		all = append(all, e.Address)
+	}
+	use, err := addressUse(n, all)
+	if err != nil {
+		out.Err = err.Error()
+	}
+
 	rows := make([]AddressRow, 0, len(w.Entries))
 	for _, e := range w.Entries {
 		r := AddressRow{Address: e.Address}
@@ -178,6 +194,7 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 		ab := b.Addresses[e.Address]
 		r.Coins, r.Hours = coins(ab.Confirmed.Coins), utoa(ab.Confirmed.Hours)
 		r.Empty = ab.Confirmed.Coins == 0 && ab.Predicted.Coins == 0
+		r.Exposed = use[e.Address].Spent && !r.Empty
 		if q.Match(r.Address, r.Chain) && !(q.Hide && r.Empty) {
 			rows = append(rows, r)
 		}

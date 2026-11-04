@@ -1,0 +1,126 @@
+package ui2
+
+import (
+	"context"
+	"strings"
+)
+
+// SendPage is the send form of one wallet. With From set it moves every coin
+// of that address to an unused receive address of the same wallet.
+templ SendPage(s Send) {
+	@Layout(T(ctx, "send.title"), "wallets") {
+		<div class="page-head">
+			<a class="icon-btn" href={ templ.URL(walletURL(s.ID)) } aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			<h1>{ sendTitle(ctx, s) }</h1>
+			if s.Label != "" {
+				<span class="badge">{ s.Label }</span>
+			}
+		</div>
+		<section class="card">
+			@ErrorBox(s.Err)
+			if s.Label != "" {
+				<p class="dim">{ T(ctx, "send.available") } <strong>@Money(s.Balance)</strong> { T(ctx, "balance.coins") }</p>
+				<form id="send" class="form" hx-post="send/review" hx-target="#review" hx-swap="innerHTML show:#review:top" hx-disabled-elt="find button" autocomplete="off">
+					<input type="hidden" name="id" value={ s.ID }/>
+					if s.From != "" {
+						<input type="hidden" name="from" value={ s.From }/>
+						<div class="alert warn">
+							<p>{ T(ctx, "send.move-help") }</p>
+							<p class="mono">{ s.From }</p>
+							<p>{ T(ctx, "send.move-amount", "coins", s.FromCoins) }</p>
+						</div>
+					} else {
+						<label>
+							{ T(ctx, "send.to") }
+							<input name="to" class="mono" required spellcheck="false" autocapitalize="off"/>
+						</label>
+						<label>
+							{ T(ctx, "send.coins") }
+							<input name="coins" inputmode="decimal" required/>
+						</label>
+						<details class="fold">
+							<summary>{ T(ctx, "send.advanced") }</summary>
+							<label>
+								{ T(ctx, "send.change") }
+								<input name="change" class="mono" spellcheck="false" autocapitalize="off" placeholder={ T(ctx, "send.change-default") }/>
+							</label>
+							<p class="small dim">{ T(ctx, "send.change-help") }</p>
+						</details>
+					}
+					if s.Encrypted {
+						<label>
+							{ T(ctx, "send.password") }
+							<input type="password" name="password" autocomplete="current-password"/>
+						</label>
+					}
+					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "send.review") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+				</form>
+				<div id="review"></div>
+			}
+		</section>
+	}
+}
+
+func sendTitle(ctx context.Context, s Send) string {
+	if s.From != "" {
+		return T(ctx, "send.move-title")
+	}
+	return T(ctx, "send.title")
+}
+
+// ReviewView shows the signed transaction before it is sent. Its own form
+// carries only the transaction, never the password.
+templ ReviewView(r Review) {
+	if r.Err != "" {
+		if strings.HasPrefix(r.Err, "send.") {
+			@ErrorBox(T(ctx, r.Err))
+		} else {
+			@ErrorBox(r.Err)
+		}
+	} else {
+		<div class="card sub">
+			<h2>{ T(ctx, "send.review-title") }</h2>
+			for _, w := range r.Warnings {
+				<div class="alert warn"><p>{ T(ctx, w) }</p></div>
+			}
+			<dl class="kv">
+				<dt>{ T(ctx, "send.to") }</dt>
+				<dd class="mono">{ r.To }</dd>
+				<dt>{ T(ctx, "send.coins") }</dt>
+				<dd><strong>{ r.Coins }</strong></dd>
+				<dt>{ T(ctx, "send.hours-sent") }</dt>
+				<dd>{ r.Hours }</dd>
+				for _, c := range r.Change {
+					<dt>{ T(ctx, "send.change-output") }</dt>
+					<dd><span class="mono">{ c.Address }</span> <span class="nowrap">{ c.Coins } · { c.Hours } { T(ctx, "balance.hours") }</span></dd>
+				}
+				<dt>{ T(ctx, "send.fee") }</dt>
+				<dd>{ r.Fee } { T(ctx, "balance.hours") }</dd>
+				<dt>{ T(ctx, "tx.id") }</dt>
+				<dd class="mono small">{ r.Txid }</dd>
+			</dl>
+			<form hx-post="send/inject" hx-target="#review" hx-swap="innerHTML show:#review:top" hx-disabled-elt="find button">
+				<input type="hidden" name="id" value={ r.ID }/>
+				<input type="hidden" name="rawtx" value={ r.Raw }/>
+				<div class="bar">
+					<button class="btn primary" type="submit"><span class="mi">send</span>{ T(ctx, "send.send") }</button>
+					<button class="btn" type="button" data-clear="#review">{ T(ctx, "send.cancel") }</button>
+					<span class="busy dim small">{ T(ctx, "ui2.working") }</span>
+				</div>
+			</form>
+		</div>
+	}
+}
+
+// SentView confirms the node took the transaction.
+templ SentView(id, txid, err string) {
+	if err != "" {
+		@ErrorBox(err)
+	} else {
+		<div class="alert ok">
+			<p><strong>{ T(ctx, "send.sent") }</strong></p>
+			<p class="mono small">{ txid }</p>
+			<p><a class="btn primary" href={ templ.URL(walletURL(id)) }>{ T(ctx, "send.back") }</a></p>
+		</div>
+	}
+}

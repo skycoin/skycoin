@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   wallet shows each account's Account xPub, the depth 3 key the Skywire
   reward system asks for, apart from its chain xPubs.
 - `api.Client.WalletXPub` reads `GET /api/v1/wallet/xpub`.
+- `/ui2/` sends coins from wallets kept in the node. The change goes to an
+  unused address of the wallet unless one is named, and the review warns
+  when the destination or the change address has been used, or when the
+  destination has spent and so exposed its key. Addresses of the wallet
+  that have spent and still hold coins are marked, with a way to move
+  their coins to an unused address of the same wallet.
 
 ## 0.28.7
 

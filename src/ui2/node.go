@@ -13,7 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
-// Node is the part of the node's REST API the pages read. *api.Client has
+// Node is the part of the node's REST API the pages use. *api.Client has
 // every method, for the local node or a remote one.
 type Node interface {
 	Health() (*api.HealthResponse, error)
@@ -23,6 +23,10 @@ type Node interface {
 	Wallet(id string) (*api.WalletResponse, error)
 	WalletBalance(id string) (*api.BalanceResponse, error)
 	TransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error)
+	WalletXPub(id, path string) (*api.WalletXPub, error)
+	NewSeed(entropy int) (string, error)
+	VerifySeed(seed string) (bool, error)
+	CreateWallet(api.CreateWalletOptions) (*api.WalletResponse, error)
 }
 
 // walletAPIDisabled reports whether err is the node refusing the WALLET API

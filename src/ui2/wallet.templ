@@ -56,6 +56,9 @@ templ WalletPage(w Wallet) {
 					}
 				</dl>
 			</section>
+			if w.Meta.Type == "bip44" {
+				@XPubSection(w.ID)
+			}
 			<section class="card" id="addr-scope">
 				<form class="bar" hx-get={ walletPart("addresses", w.ID) } hx-target="#addr-list" hx-swap="outerHTML" hx-trigger="submit">
 					<h2>{ T(ctx, "wallet.addresses") }</h2>

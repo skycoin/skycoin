@@ -58,8 +58,57 @@ func Handler(n Node, o Options) http.Handler {
 	mux.HandleFunc("/status/live", page(func(*http.Request) templ.Component {
 		return StatusLive(LoadStatus(n))
 	}))
+	mux.HandleFunc("/wallet/xpub", page(func(r *http.Request) templ.Component {
+		accts, err := LoadXPubs(n, r.FormValue("id"))
+		if err != nil {
+			return XPubCard(nil, err.Error())
+		}
+		return XPubCard(accts, "")
+	}))
+	mux.HandleFunc("/new", page(func(*http.Request) templ.Component { return CreatePage(false) }))
+	mux.HandleFunc("/load", page(func(*http.Request) templ.Component { return CreatePage(true) }))
+
+	// The writes read their fields with PostFormValue, from the body only, so
+	// a seed or password in a URL is ignored.
+	post := func(f func(w http.ResponseWriter, r *http.Request) templ.Component) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+				return
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
+			if c := f(w, r); c != nil {
+				render(w, r, o, c)
+			}
+		}
+	}
+	mux.HandleFunc("/create/seed", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		entropy := 128
+		if r.PostFormValue("words") == "24" {
+			entropy = 256
+		}
+		seed, err := n.NewSeed(entropy)
+		if err != nil {
+			return ErrorBox(err.Error())
+		}
+		return SeedStep(seed)
+	}))
+	mux.HandleFunc("/create", post(func(w http.ResponseWriter, r *http.Request) templ.Component {
+		f := ParseCreateForm(r.PostFormValue)
+		if err := f.Check(n); err != nil {
+			return formError(err)
+		}
+		wlt, err := n.CreateWallet(f.Options())
+		if err != nil {
+			return formError(err)
+		}
+		w.Header().Set("HX-Redirect", walletURL(wlt.Meta.Filename))
+		return nil
+	}))
 	return mux
 }
+
+const maxFormBytes = 64 << 10
 
 func render(w http.ResponseWriter, r *http.Request, o Options, c templ.Component) {
 	lang := ""

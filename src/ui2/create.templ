@@ -1,0 +1,166 @@
+package ui2
+
+import (
+	"context"
+	"strings"
+)
+
+// CreatePage is the new wallet form, or with load set the form that loads a
+// wallet from a seed the user already has.
+templ CreatePage(load bool) {
+	@Layout(createTitle(ctx, load), "wallets") {
+		<div class="page-head">
+			<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			<h1>{ createTitle(ctx, load) }</h1>
+		</div>
+		<section class="card">
+			<form id="create" class="form" hx-post="create" hx-target="#form-error" hx-swap="innerHTML" autocomplete="off">
+				if load {
+					<input type="hidden" name="mode" value="load"/>
+				} else {
+					<input type="hidden" name="mode" value="new"/>
+				}
+				<label>
+					{ T(ctx, "create.label") }
+					<input name="label" required maxlength="100"/>
+				</label>
+				<label>
+					{ T(ctx, "create.type") }
+					<select name="type">
+						<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
+						<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
+					</select>
+				</label>
+				if load {
+					<label>
+						{ T(ctx, "create.seed") }
+						<textarea name="seed" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+					</label>
+					<label class="check">
+						<input type="checkbox" name="nonstandard" value="1"/>
+						{ T(ctx, "create.nonstandard") }
+					</label>
+				}
+				<label>
+					{ T(ctx, "create.password") }
+					<input type="password" name="password" autocomplete="new-password"/>
+				</label>
+				<label>
+					{ T(ctx, "create.password2") }
+					<input type="password" name="password2" autocomplete="new-password"/>
+				</label>
+				<p class="small dim">{ T(ctx, "create.password-help") }</p>
+				if load {
+					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "create.load-button") }</button></div>
+				} else {
+					<label>
+						{ T(ctx, "create.words") }
+						<select name="words">
+							<option value="12" selected>12</option>
+							<option value="24">24</option>
+						</select>
+					</label>
+					<div id="seed-step">
+						<div class="bar">
+							<button class="btn primary" type="button" hx-post="create/seed" hx-target="#seed-step" hx-swap="innerHTML" hx-include="[name=words]">{ T(ctx, "create.generate") }</button>
+						</div>
+					</div>
+				}
+				<div id="form-error" role="alert"></div>
+			</form>
+		</section>
+	}
+}
+
+func createTitle(ctx context.Context, load bool) string {
+	if load {
+		return T(ctx, "create.load-title")
+	}
+	return T(ctx, "create.new-title")
+}
+
+// SeedStep shows a new seed once and asks for it back before the wallet is
+// made. The seed only lives in this form until the create call.
+templ SeedStep(seed string) {
+	<div class="alert warn">
+		<p><strong>{ T(ctx, "create.seed-warning-title") }</strong></p>
+		<p>{ T(ctx, "create.seed-warning") }</p>
+	</div>
+	<ol class="seed-words">
+		for _, w := range strings.Fields(seed) {
+			<li class="mono">{ w }</li>
+		}
+	</ol>
+	<input type="hidden" name="seed" value={ seed }/>
+	<label>
+		{ T(ctx, "create.seed-confirm") }
+		<textarea name="seed_confirm" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+	</label>
+	<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "create.create-button") }</button></div>
+}
+
+// XPubSection loads the extended public keys of a bip44 wallet.
+templ XPubSection(id string) {
+	<section class="card" hx-get={ walletPart("xpub", id) } hx-trigger="load" hx-swap="outerHTML">
+		<h2>{ T(ctx, "xpub.title") }</h2>
+		<p class="dim">{ T(ctx, "ui2.loading") }</p>
+	</section>
+}
+
+// XPubCard shows each account's Account xPub, the depth 3 key the skywire
+// reward system asks for, apart from the chain keys below it.
+templ XPubCard(accts []AccountXPubs, err string) {
+	<section class="card">
+		<h2>{ T(ctx, "xpub.title") }</h2>
+		<p class="small dim">{ T(ctx, "xpub.help") }</p>
+		@ErrorBox(err)
+		for _, a := range accts {
+			<div class="xpub">
+				<div class="xpub-head">
+					<strong>{ T(ctx, "xpub.account") }</strong>
+					<span class="badge">{ a.Path }</span>
+					if a.Name != "" {
+						<span class="dim">{ a.Name }</span>
+					}
+				</div>
+				if a.Account.Err != "" {
+					@ErrorBox(a.Account.Err)
+				} else {
+					<div class="xpub-key mono" data-copy={ a.Account.Key } title={ T(ctx, "ui2.copy") }>{ a.Account.Key }</div>
+					<div class="bar">
+						<button class="btn sm primary" type="button" data-copy={ a.Account.Key }><span class="mi">content_copy</span>{ T(ctx, "xpub.copy") }</button>
+					</div>
+				}
+				<details class="fold">
+					<summary>{ T(ctx, "xpub.chains") }</summary>
+					<p class="small dim">{ T(ctx, "xpub.chains-help") }</p>
+					<dl class="kv">
+						@chainXPub(T(ctx, "xpub.external"), a.Path+"/0", a.External)
+						@chainXPub(T(ctx, "xpub.change"), a.Path+"/1", a.Change)
+					</dl>
+				</details>
+			</div>
+		}
+	</section>
+}
+
+templ chainXPub(name, path string, x XPub) {
+	<dt>{ name } <span class="small dim">{ path }</span></dt>
+	<dd class="mono small">
+		if x.Err != "" {
+			<span class="error">{ x.Err }</span>
+		} else {
+			<span class="key" data-copy={ x.Key } title={ T(ctx, "ui2.copy") }>{ x.Key }</span>
+		}
+	</dd>
+}
+
+// formError shows a form error: a catalog key for the form's own checks, or
+// the node's message.
+templ formError(err error) {
+	if strings.HasPrefix(err.Error(), "create.") {
+		@ErrorBox(T(ctx, err.Error()))
+	} else {
+		@ErrorBox(err.Error())
+	}
+}

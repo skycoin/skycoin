@@ -41,6 +41,9 @@ func Handler(n Node, o Options) http.Handler {
 		}
 	}
 	mux.HandleFunc("/{$}", page(func(*http.Request) templ.Component {
+		if browserMode(n) {
+			return BrowserWalletsPage()
+		}
 		return WalletsPage(LoadWallets(n))
 	}))
 	mux.HandleFunc("/wallet", page(func(r *http.Request) templ.Component {
@@ -119,10 +122,44 @@ func Handler(n Node, o Options) http.Handler {
 		}
 		return SentView(id, txid, "")
 	}))
+
+	mux.HandleFunc("/bw/wallet", page(func(r *http.Request) templ.Component { return BrowserWalletPage(r.FormValue("id")) }))
+	mux.HandleFunc("/bw/new", page(func(*http.Request) templ.Component { return BrowserCreatePage(false) }))
+	mux.HandleFunc("/bw/load", page(func(*http.Request) templ.Component { return BrowserCreatePage(true) }))
+	mux.HandleFunc("/bw/list", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		ws, err := ParseBrowserWallets(r.PostFormValue("wallets"))
+		if err != nil {
+			return ErrorBox(T(r.Context(), err.Error()))
+		}
+		return BrowserList(LoadBrowserWallets(n, ws))
+	}))
+	mux.HandleFunc("/bw/wallet/view", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		w, err := ParseBrowserWallet(r.PostFormValue("wallet"))
+		if err != nil {
+			return bwError(err)
+		}
+		return BrowserWalletView(LoadBrowserWallet(n, w))
+	}))
+	mux.HandleFunc("/bw/txns", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		w, err := ParseBrowserWallet(r.PostFormValue("wallet"))
+		if err != nil {
+			return bwError(err)
+		}
+		return TxnList(LoadBrowserTxns(n, w, ParseListQuery(r.PostFormValue)))
+	}))
 	return mux
 }
 
-const maxFormBytes = 64 << 10
+// maxFormBytes bounds a form, which for a browser wallet carries every
+// address it has.
+const maxFormBytes = 1 << 20
+
+// browserMode is a node that keeps no wallets, as with -web-wallet, so the
+// wallets are kept in the browser.
+func browserMode(n Node) bool {
+	h, err := n.Health()
+	return err == nil && !h.WalletAPIEnabled
+}
 
 func render(w http.ResponseWriter, r *http.Request, o Options, c templ.Component) {
 	lang := ""

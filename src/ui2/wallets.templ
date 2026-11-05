@@ -12,11 +12,7 @@ templ WalletsPage(w Wallets) {
 				<h1>{ T(ctx, "nav.wallets") }</h1>
 				<span class="spacer"></span>
 				if !w.Disabled && w.Err == "" {
-					<div class="total">
-						<span class="dim small">{ T(ctx, "balance.total") }</span>
-						<span class="big">@Money(w.Total) <span class="unit">{ T(ctx, "balance.coins") }</span></span>
-						<span class="small">@Hours(w.Total) <span class="unit">{ T(ctx, "balance.hours") }</span></span>
-					</div>
+					@walletTotal(w)
 				}
 			</div>
 			if w.Disabled {
@@ -25,53 +21,66 @@ templ WalletsPage(w Wallets) {
 				@ErrorBox(w.Err)
 				<div class="bar">
 					<a class="btn primary" href="new"><span class="mi">add</span>{ T(ctx, "create.new-title") }</a>
-					<a class="btn" href="load"><span class="mi">download</span>{ T(ctx, "create.load-title") }</a>
+					<a class="btn" href="load"><span class="mi">file_download</span>{ T(ctx, "create.load-title") }</a>
 				</div>
 				if w.Err == "" && len(w.Rows) == 0 {
 					<p class="dim">{ T(ctx, "wallets.none") }</p>
 				}
-				if len(w.Rows) > 0 {
-					<div class="table-wrap">
-						<table class="list">
-							<thead>
-								<tr>
-									<th>{ T(ctx, "wallets.label") }</th>
-									<th>{ T(ctx, "wallets.type") }</th>
-									<th class="num">{ T(ctx, "wallets.addresses") }</th>
-									<th class="num">{ T(ctx, "balance.coins") }</th>
-									<th class="num">{ T(ctx, "balance.hours") }</th>
-								</tr>
-							</thead>
-							<tbody>
-								for _, r := range w.Rows {
-									<tr>
-										<td class="name">
-											<a href={ templ.URL(walletURL(r.ID)) }>
-												if r.Label != "" {
-													{ r.Label }
-												} else {
-													{ r.ID }
-												}
-											</a>
-											if r.Encrypted {
-												<span class="mi small-icon" title={ T(ctx, "wallet.encrypted") }>lock</span>
-											}
-										</td>
-										<td data-label={ T(ctx, "wallets.type") }><span class="badge">{ r.Type }</span></td>
-										<td class="num" data-label={ T(ctx, "wallets.addresses") }>{ itoa(r.Addresses) }</td>
-										if r.Err != "" {
-											<td class="error" colspan="2">{ r.Err }</td>
-										} else {
-											<td class="num" data-label={ T(ctx, "balance.coins") }>@Money(r.Balance)</td>
-											<td class="num" data-label={ T(ctx, "balance.hours") }>@Hours(r.Balance)</td>
-										}
-									</tr>
-								}
-							</tbody>
-						</table>
-					</div>
-				}
+				@walletsTable(w)
 			}
 		</section>
+	}
+}
+
+templ walletTotal(w Wallets) {
+	<div class="total">
+		<span class="dim small">{ T(ctx, "balance.total") }</span>
+		<span class="big">@Money(w.Total) <span class="unit">{ T(ctx, "balance.coins") }</span></span>
+		<span class="small">@Hours(w.Total) <span class="unit">{ T(ctx, "balance.hours") }</span></span>
+	</div>
+}
+
+// walletsTable lists wallets, each linking to its page.
+templ walletsTable(w Wallets) {
+	if len(w.Rows) > 0 {
+		<div class="table-wrap">
+			<table class="list">
+				<thead>
+					<tr>
+						<th>{ T(ctx, "wallets.label") }</th>
+						<th>{ T(ctx, "wallets.type") }</th>
+						<th class="num">{ T(ctx, "wallets.addresses") }</th>
+						<th class="num">{ T(ctx, "balance.coins") }</th>
+						<th class="num">{ T(ctx, "balance.hours") }</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, r := range w.Rows {
+						<tr>
+							<td class="name">
+								<a href={ templ.URL(r.Href) }>
+									if r.Label != "" {
+										{ r.Label }
+									} else {
+										{ r.ID }
+									}
+								</a>
+								if r.Encrypted {
+									<span class="mi small-icon" title={ T(ctx, "wallet.encrypted") }>lock</span>
+								}
+							</td>
+							<td data-label={ T(ctx, "wallets.type") }><span class="badge">{ r.Type }</span></td>
+							<td class="num" data-label={ T(ctx, "wallets.addresses") }>{ itoa(r.Addresses) }</td>
+							if r.Err != "" {
+								<td class="error" colspan="2">{ r.Err }</td>
+							} else {
+								<td class="num" data-label={ T(ctx, "balance.coins") }>@Money(r.Balance)</td>
+								<td class="num" data-label={ T(ctx, "balance.hours") }>@Hours(r.Balance)</td>
+							}
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
 	}
 }

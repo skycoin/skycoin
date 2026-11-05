@@ -31,6 +31,7 @@ type Node interface {
 	NewWalletAddress(id, password string, options ...wallet.Option) ([]string, error)
 	WalletCreateTransaction(api.WalletCreateTransactionRequest) (*api.CreateTransactionResponse, error)
 	InjectEncodedTransaction(rawtx string) (string, error)
+	Balance(addrs []string) (*api.BalanceResponse, error)
 }
 
 // walletAPIDisabled reports whether err is the node refusing the WALLET API
@@ -86,6 +87,7 @@ type WalletRow struct {
 	Addresses int
 	Balance   Amount
 	Err       string
+	Href      string
 }
 
 // Wallets is the wallet list page.
@@ -111,6 +113,7 @@ func LoadWallets(n Node) Wallets {
 			Type:      w.Meta.Type,
 			Encrypted: w.Meta.Encrypted,
 			Addresses: len(w.Entries),
+			Href:      walletURL(w.Meta.Filename),
 		}
 		if b, err := n.WalletBalance(r.ID); err != nil {
 			r.Err = err.Error()
@@ -139,8 +142,9 @@ type AddressRow struct {
 	Hours   string
 	Empty   bool
 	// Exposed is an address that has spent, so its public key is on the
-	// blockchain, and still holds coins.
-	Exposed bool
+	// blockchain, and still holds coins. MoveHref moves its coins away.
+	Exposed  bool
+	MoveHref string
 }
 
 // Wallet is the page of one wallet.
@@ -169,18 +173,25 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 		b = &api.BalanceResponse{}
 	}
 	out.Balance = amountOf(b.BalancePair)
-
-	all := make([]string, 0, len(w.Entries))
-	for _, e := range w.Entries {
-		all = append(all, e.Address)
-	}
-	use, err := addressUse(n, all)
+	rows, err := addressRows(n, w.Entries, b, q, func(a string) string { return sendURL(id, a) })
 	if err != nil {
 		out.Err = err.Error()
 	}
+	out.Addrs, out.Pager = Paginate(rows, q, ListPageSize)
+	return out
+}
 
-	rows := make([]AddressRow, 0, len(w.Entries))
-	for _, e := range w.Entries {
+// addressRows are the rows of entries that q keeps, with their balances in
+// b. move is the page that moves the coins off an exposed address.
+func addressRows(n Node, entries []readable.WalletEntry, b *api.BalanceResponse, q ListQuery, move func(string) string) ([]AddressRow, error) {
+	all := make([]string, 0, len(entries))
+	for _, e := range entries {
+		all = append(all, e.Address)
+	}
+	use, err := addressUse(n, all)
+
+	rows := make([]AddressRow, 0, len(entries))
+	for _, e := range entries {
 		r := AddressRow{Address: e.Address}
 		if e.Change != nil {
 			r.Chain = "external"
@@ -195,12 +206,14 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 		r.Coins, r.Hours = coins(ab.Confirmed.Coins), utoa(ab.Confirmed.Hours)
 		r.Empty = ab.Confirmed.Coins == 0 && ab.Predicted.Coins == 0
 		r.Exposed = use[e.Address].Spent && !r.Empty
+		if r.Exposed {
+			r.MoveHref = move(e.Address)
+		}
 		if q.Match(r.Address, r.Chain) && !(q.Hide && r.Empty) {
 			rows = append(rows, r)
 		}
 	}
-	out.Addrs, out.Pager = Paginate(rows, q, ListPageSize)
-	return out
+	return rows, err
 }
 
 // TxnRow is one transaction of a wallet, from the wallet's side.
@@ -222,24 +235,37 @@ type Txns struct {
 	Rows  []TxnRow
 	Pager Pager
 	Err   string
+	// URL is where the pager asks for another page. Post sends the request
+	// as a POST carrying the browser wallet's addresses.
+	URL  string
+	Post bool
 }
 
 // LoadTxns reads the history of wallet id, newest first.
 func LoadTxns(n Node, id string, q ListQuery) Txns {
-	out := Txns{ID: id}
 	w, err := n.Wallet(id)
 	if err != nil {
-		out.Err = err.Error()
-		return out
+		return Txns{ID: id, Err: err.Error(), URL: walletPart("txns", id)}
 	}
-	own := make(map[string]bool, len(w.Entries))
 	addrs := make([]string, 0, len(w.Entries))
 	for _, e := range w.Entries {
-		own[e.Address] = true
 		addrs = append(addrs, e.Address)
+	}
+	out := historyOf(n, addrs, q)
+	out.ID, out.URL = id, walletPart("txns", id)
+	return out
+}
+
+// historyOf is a page of the history of the wallet that owns addrs.
+func historyOf(n Node, addrs []string, q ListQuery) Txns {
+	var out Txns
+	own := make(map[string]bool, len(addrs))
+	for _, a := range addrs {
+		own[a] = true
 	}
 	var txns []readable.TransactionWithStatusVerbose
 	if len(addrs) > 0 {
+		var err error
 		if txns, err = n.TransactionsVerbose(addrs); err != nil {
 			out.Err = err.Error()
 			return out

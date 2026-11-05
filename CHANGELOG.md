@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   destination has spent and so exposed its key. Addresses of the wallet
   that have spent and still hold coins are marked, with a way to move
   their coins to an unused address of the same wallet.
+- On a node that keeps no wallets, as with `-web-wallet`, `/ui2/` lists, makes
+  and loads wallets kept in the browser, in the classic wallet's storage format
+  so each UI opens the other's wallets. A new browser wallet always has a
+  password. Seeds, keys and passwords stay in the browser, which sends the
+  server public data only.
 
 ## 0.28.7
 

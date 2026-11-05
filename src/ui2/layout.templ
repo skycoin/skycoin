@@ -15,6 +15,7 @@ templ Layout(title, nav string) {
 			<link rel="stylesheet" href={ Asset("ui2.css") }/>
 			<script src={ Asset("htmx.min.js") } defer></script>
 			<script src={ Asset("ui2.js") } defer></script>
+			<script src={ Asset("bw.js") } defer></script>
 		</head>
 		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-csrf={ From(ctx).Classic + "api/v1/csrf" }>
 			<header class="top">
@@ -92,6 +93,22 @@ templ PagerNav(p Pager, url, target, include string) {
 			<button class="btn sm" type="button" disabled?={ p.Page <= 1 } hx-get={ url } hx-target={ target } hx-swap="outerHTML" hx-include={ include } hx-vals={ p.pageVals(p.Page - 1) } aria-label={ T(ctx, "ui2.list.prev") }><span class="mi">chevron_left</span></button>
 			<span class="small">{ T(ctx, "ui2.list.page", "n", itoa(p.Page), "of", itoa(p.Pages())) }</span>
 			<button class="btn sm" type="button" disabled?={ p.Page >= p.Pages() } hx-get={ url } hx-target={ target } hx-swap="outerHTML" hx-include={ include } hx-vals={ p.pageVals(p.Page + 1) } aria-label={ T(ctx, "ui2.list.next") }><span class="mi">chevron_right</span></button>
+		}
+	</div>
+}
+
+// PagerNavPost is PagerNav for a list whose request is a POST carrying the
+// inputs named by include, such as a browser wallet's addresses.
+templ PagerNavPost(p Pager, url, target, include string) {
+	<div class="pager">
+		if p.Total > 0 {
+			<span class="small dim">{ T(ctx, "ui2.list.showing", "from", itoa(p.From()), "to", itoa(p.To()), "total", itoa(p.Total)) }</span>
+		}
+		if p.Pages() > 1 {
+			<span class="spacer"></span>
+			<button class="btn sm" type="button" disabled?={ p.Page <= 1 } hx-post={ url } hx-target={ target } hx-swap="outerHTML" hx-include={ include } hx-vals={ p.pageVals(p.Page - 1) } aria-label={ T(ctx, "ui2.list.prev") }><span class="mi">chevron_left</span></button>
+			<span class="small">{ T(ctx, "ui2.list.page", "n", itoa(p.Page), "of", itoa(p.Pages())) }</span>
+			<button class="btn sm" type="button" disabled?={ p.Page >= p.Pages() } hx-post={ url } hx-target={ target } hx-swap="outerHTML" hx-include={ include } hx-vals={ p.pageVals(p.Page + 1) } aria-label={ T(ctx, "ui2.list.next") }><span class="mi">chevron_right</span></button>
 		}
 	</div>
 }

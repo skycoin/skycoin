@@ -114,46 +114,53 @@ templ AddrList(w Wallet) {
 		if len(w.Addrs) == 0 {
 			<p class="dim">{ T(ctx, "wallet.no-addresses") }</p>
 		} else {
-			<div class="table-wrap">
-				<table class="list">
-					<thead>
-						<tr>
-							<th>{ T(ctx, "wallet.address") }</th>
-							if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
-								<th>{ T(ctx, "wallet.chain") }</th>
-							}
-							<th class="num">{ T(ctx, "balance.coins") }</th>
-							<th class="num">{ T(ctx, "balance.hours") }</th>
-						</tr>
-					</thead>
-					<tbody>
-						for _, a := range w.Addrs {
-							<tr class={ templ.KV("empty", a.Empty) }>
-								<td class="name mono">
-									<span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span>
-									if a.Exposed {
-										<span class="exposed">
-											<span class="badge err" title={ T(ctx, "wallet.exposed-help") }><span class="mi small-icon">warning</span>{ T(ctx, "wallet.exposed") }</span>
-											<a class="btn sm" href={ templ.URL(sendURL(w.ID, a.Address)) }>{ T(ctx, "wallet.move-coins") }</a>
-										</span>
-									}
-								</td>
-								if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
-									<td data-label={ T(ctx, "wallet.chain") }>
-										if a.Chain != "" {
-											{ T(ctx, "wallet.chain-" + a.Chain) } <span class="dim">#{ a.Index }</span>
-										}
-									</td>
-								}
-								<td class="num" data-label={ T(ctx, "balance.coins") }>{ a.Coins }</td>
-								<td class="num" data-label={ T(ctx, "balance.hours") }>{ a.Hours }</td>
-							</tr>
-						}
-					</tbody>
-				</table>
-			</div>
+			@addrTable(w)
 		}
 		@PagerNav(w.Pager, walletPart("addresses", w.ID), "#addr-list", "#addr-scope form")
+	</div>
+}
+
+// addrTable is the address rows of w.
+templ addrTable(w Wallet) {
+	<div class="table-wrap">
+		<table class="list">
+			<thead>
+				<tr>
+					<th>{ T(ctx, "wallet.address") }</th>
+					if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
+						<th>{ T(ctx, "wallet.chain") }</th>
+					}
+					<th class="num">{ T(ctx, "balance.coins") }</th>
+					<th class="num">{ T(ctx, "balance.hours") }</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, a := range w.Addrs {
+					<tr class={ templ.KV("empty", a.Empty) }>
+						<td class="name mono">
+							<span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span>
+							if a.Exposed {
+								<span class="exposed">
+									<span class="badge err" title={ T(ctx, "wallet.exposed-help") }><span class="mi small-icon">warning</span>{ T(ctx, "wallet.exposed") }</span>
+									if a.MoveHref != "" {
+										<a class="btn sm" href={ templ.URL(a.MoveHref) }>{ T(ctx, "wallet.move-coins") }</a>
+									}
+								</span>
+							}
+						</td>
+						if w.Meta.Type == "bip44" || w.Addrs[0].Chain != "" {
+							<td data-label={ T(ctx, "wallet.chain") }>
+								if a.Chain != "" {
+									{ T(ctx, "wallet.chain-" + a.Chain) } <span class="dim">#{ a.Index }</span>
+								}
+							</td>
+						}
+						<td class="num" data-label={ T(ctx, "balance.coins") }>{ a.Coins }</td>
+						<td class="num" data-label={ T(ctx, "balance.hours") }>{ a.Hours }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
 	</div>
 }
 
@@ -198,7 +205,11 @@ templ TxnList(t Txns) {
 				</table>
 			</div>
 		}
-		@PagerNav(t.Pager, walletPart("txns", t.ID), "#txns", "this")
+		if t.Post {
+			@PagerNavPost(t.Pager, t.URL, "#txns", "#bw-data")
+		} else {
+			@PagerNav(t.Pager, t.URL, "#txns", "this")
+		}
 	</div>
 }
 
@@ -209,5 +220,5 @@ func kindIcon(kind string) string {
 	case "out":
 		return "call_made"
 	}
-	return "sync_alt"
+	return "swap_horiz"
 }

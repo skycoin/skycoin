@@ -23,10 +23,11 @@ type fakeNode struct {
 	txReqs   []api.WalletCreateTransactionRequest
 	injected []string
 	newAddrs []string
+	browser  bool
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {
-	h := &api.HealthResponse{CoinName: "skycoin", OpenConnections: 2, IncomingConnections: 1, OutgoingConnections: 1, WalletAPIEnabled: true}
+	h := &api.HealthResponse{CoinName: "skycoin", OpenConnections: 2, IncomingConnections: 1, OutgoingConnections: 1, WalletAPIEnabled: !f.browser}
 	h.Version.Version = "0.28.7"
 	h.BlockchainMetadata.Head.BkSeq = 123456
 	h.Uptime = wh.FromDuration(3600e9)

@@ -1,0 +1,238 @@
+package ui2
+
+// The browser wallet pages are shells. static/bw.js reads the wallets kept
+// in this browser, puts their public part in #bw-data and fires bw-ready,
+// and htmx then posts that to the server for the parts it renders.
+
+// bwData is where bw.js puts the public wallet data the requests carry.
+templ bwData(name string) {
+	<input type="hidden" id="bw-data" name={ name }/>
+}
+
+// bwUnlock asks for the app password the Angular wallet can lock this
+// browser's wallets with. bw.js uses it in the page and never sends it.
+templ bwUnlock() {
+	<form id="bw-unlock" class="form" hidden>
+		<p>{ T(ctx, "bw.locked") }</p>
+		<label>
+			{ T(ctx, "bw.app-password") }
+			<input type="password" id="bw-app-password" autocomplete="current-password"/>
+		</label>
+		<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "bw.unlock") }</button></div>
+		<p class="error" id="bw-unlock-error" role="alert"></p>
+	</form>
+}
+
+// BrowserWalletsPage lists the wallets kept in this browser.
+templ BrowserWalletsPage() {
+	@Layout(T(ctx, "nav.wallets"), "wallets") {
+		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Classic } data-msg-error={ T(ctx, "bw.err-storage") }>
+			<div class="head">
+				<h1>{ T(ctx, "bw.title") }</h1>
+			</div>
+			<p class="small dim">{ T(ctx, "bw.help") }</p>
+			<div class="bar">
+				<a class="btn primary" href="bw/new"><span class="mi">add</span>{ T(ctx, "create.new-title") }</a>
+				<a class="btn" href="bw/load"><span class="mi">file_download</span>{ T(ctx, "create.load-title") }</a>
+			</div>
+			@bwUnlock()
+			@bwData("wallets")
+			<div id="bw-list" hx-post="bw/list" hx-trigger="bw-ready from:body" hx-include="#bw-data" hx-swap="innerHTML">
+				<p class="dim">{ T(ctx, "ui2.loading") }</p>
+			</div>
+		</section>
+	}
+}
+
+// BrowserList is the browser wallets with their balances.
+templ BrowserList(w Wallets) {
+	@ErrorBox(w.Err)
+	if w.Err == "" && len(w.Rows) == 0 {
+		<p class="dim">{ T(ctx, "bw.none") }</p>
+	}
+	if len(w.Rows) > 0 {
+		<div class="head">
+			<span class="spacer"></span>
+			@walletTotal(w)
+		</div>
+		@walletsTable(w)
+	}
+}
+
+// BrowserWalletPage is one browser wallet. id is its first address.
+templ BrowserWalletPage(id string) {
+	@Layout(T(ctx, "nav.wallets"), "wallets") {
+		<div data-bw-page="wallet" data-bw-root={ From(ctx).Classic } data-bw-id={ id } data-msg-missing={ T(ctx, "bw.missing") } data-msg-error={ T(ctx, "bw.err-storage") }>
+			@bwUnlock()
+			@bwData("wallet")
+			<div id="bw-wallet" hx-post="bw/wallet/view" hx-trigger="bw-ready from:body" hx-include="#bw-data" hx-swap="innerHTML">
+				<p class="dim">{ T(ctx, "ui2.loading") }</p>
+			</div>
+			<p class="error" id="bw-page-error" role="alert"></p>
+		</div>
+	}
+}
+
+// BrowserWalletView is the part of a browser wallet's page the server renders.
+templ BrowserWalletView(w Wallet) {
+	<div class="page-head">
+		<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+		<h1>{ walletTitle(w) }</h1>
+		<span class="badge">{ w.Meta.Type }</span>
+		if w.Meta.Encrypted {
+			<span class="badge on"><span class="mi small-icon">lock</span>{ T(ctx, "wallet.encrypted") }</span>
+		}
+		<span class="badge">{ T(ctx, "bw.in-browser") }</span>
+	</div>
+	<section class="card">
+		@ErrorBox(w.Err)
+		<div class="ov">
+			<div class="ov-card">
+				<span class="ov-title">{ T(ctx, "balance.coins") }</span>
+				<span class="ov-big">@Money(w.Balance)</span>
+			</div>
+			<div class="ov-card">
+				<span class="ov-title">{ T(ctx, "balance.hours") }</span>
+				<span class="ov-big">@Hours(w.Balance)</span>
+			</div>
+		</div>
+	</section>
+	if w.Meta.XPub != "" {
+		<section class="card">
+			<h2>{ T(ctx, "xpub.title") }</h2>
+			<p class="small dim">{ T(ctx, "xpub.help") }</p>
+			<div class="xpub">
+				<div class="xpub-head">
+					<strong>{ T(ctx, "xpub.account") }</strong>
+					<span class="badge">m/44'/8000'/0'</span>
+				</div>
+				<div class="xpub-key mono" data-copy={ w.Meta.XPub } title={ T(ctx, "ui2.copy") }>{ w.Meta.XPub }</div>
+				<div class="bar">
+					<button class="btn sm primary" type="button" data-copy={ w.Meta.XPub }><span class="mi">content_copy</span>{ T(ctx, "xpub.copy") }</button>
+				</div>
+			</div>
+		</section>
+	}
+	<section class="card">
+		<h2>{ T(ctx, "wallet.addresses") }</h2>
+		if len(w.Addrs) > 0 {
+			@addrTable(w)
+		}
+	</section>
+	<section class="card">
+		<h2>{ T(ctx, "wallet.history") }</h2>
+		<div id="txns" hx-post="bw/txns" hx-trigger="load" hx-include="#bw-data" hx-swap="outerHTML">
+			<p class="dim">{ T(ctx, "ui2.loading") }</p>
+		</div>
+	</section>
+}
+
+// BrowserCreatePage makes a wallet kept in this browser, or with load set
+// loads one from a seed. Every field is handled by bw.js in the page: none
+// has a name, so nothing in this form can be sent anywhere.
+templ BrowserCreatePage(load bool) {
+	@Layout(createTitle(ctx, load), "wallets") {
+		<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+		<div class="page-head">
+			<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			<h1>{ createTitle(ctx, load) }</h1>
+			<span class="badge">{ T(ctx, "bw.in-browser") }</span>
+		</div>
+		<section
+			class="card"
+			data-bw-page={ bwCreateMode(load) }
+			data-bw-root={ From(ctx).Classic }
+			data-msg-label={ T(ctx, "create.err-label") }
+			data-msg-seed={ T(ctx, "create.err-seed") }
+			data-msg-seed-confirm={ T(ctx, "create.err-seed-confirm") }
+			data-msg-password={ T(ctx, "bw.err-password") }
+			data-msg-password-confirm={ T(ctx, "create.err-password-confirm") }
+			data-msg-not-bip39={ T(ctx, "create.err-not-bip39") }
+			data-msg-exists={ T(ctx, "bw.err-exists") }
+			data-msg-scanning={ T(ctx, "bw.scanning") }
+			data-msg-error={ T(ctx, "bw.err-storage") }
+		>
+			<p class="small dim">{ T(ctx, "bw.create-help") }</p>
+			@bwUnlock()
+			<form id="bw-create" class="form" autocomplete="off">
+				<label>
+					{ T(ctx, "create.label") }
+					<input id="bw-label" maxlength="100"/>
+				</label>
+				if load {
+					<label>
+						{ T(ctx, "create.type") }
+						<select id="bw-type">
+							<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
+							<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
+						</select>
+					</label>
+					<label>
+						{ T(ctx, "create.seed") }
+						<textarea id="bw-seed" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+					</label>
+					<label>
+						{ T(ctx, "bw.passphrase") }
+						<input type="password" id="bw-passphrase" autocomplete="off"/>
+					</label>
+					<label class="check">
+						<input type="checkbox" id="bw-nonstandard"/>
+						{ T(ctx, "create.nonstandard") }
+					</label>
+				} else {
+					<label>
+						{ T(ctx, "create.words") }
+						<select id="bw-words">
+							<option value="12" selected>12</option>
+							<option value="24">24</option>
+						</select>
+					</label>
+					<div class="bar"><button class="btn" type="button" id="bw-generate">{ T(ctx, "create.generate") }</button></div>
+					<div id="bw-seed-step" hidden>
+						<div class="alert warn">
+							<p><strong>{ T(ctx, "create.seed-warning-title") }</strong></p>
+							<p>{ T(ctx, "create.seed-warning") }</p>
+						</div>
+						<ol class="seed-words" id="bw-seed-words"></ol>
+						<label>
+							{ T(ctx, "create.seed-confirm") }
+							<textarea id="bw-seed-confirm" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+						</label>
+					</div>
+				}
+				<label>
+					{ T(ctx, "bw.password") }
+					<input type="password" id="bw-password" autocomplete="new-password"/>
+				</label>
+				<label>
+					{ T(ctx, "create.password2") }
+					<input type="password" id="bw-password2" autocomplete="new-password"/>
+				</label>
+				<p class="small dim">{ T(ctx, "bw.password-help") }</p>
+				<div class="bar">
+					<button class="btn primary" type="submit" id="bw-submit">
+						if load {
+							{ T(ctx, "create.load-button") }
+						} else {
+							{ T(ctx, "create.create-button") }
+						}
+					</button>
+					<span class="dim small" id="bw-status"></span>
+				</div>
+				<p class="error" id="bw-error" role="alert"></p>
+			</form>
+		</section>
+	}
+}
+
+func bwCreateMode(load bool) string {
+	if load {
+		return "load"
+	}
+	return "new"
+}
+
+// bwError is a browser wallet request the server could not read.
+templ bwError(err error) {
+	@ErrorBox(T(ctx, err.Error()))
+}

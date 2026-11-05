@@ -83,6 +83,8 @@ templ BrowserWalletView(w Wallet) {
 			<span class="badge on"><span class="mi small-icon">lock</span>{ T(ctx, "wallet.encrypted") }</span>
 		}
 		<span class="badge">{ T(ctx, "bw.in-browser") }</span>
+		<span class="spacer"></span>
+		<a class="btn primary" href={ templ.URL(bwSendURL(w.ID, "")) }><span class="mi">send</span>{ T(ctx, "send.title") }</a>
 	</div>
 	<section class="card">
 		@ErrorBox(w.Err)

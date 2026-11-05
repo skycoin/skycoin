@@ -32,6 +32,7 @@ type Node interface {
 	WalletCreateTransaction(api.WalletCreateTransactionRequest) (*api.CreateTransactionResponse, error)
 	InjectEncodedTransaction(rawtx string) (string, error)
 	Balance(addrs []string) (*api.BalanceResponse, error)
+	CreateTransaction(api.CreateTransactionRequest) (*api.CreateTransactionResponse, error)
 }
 
 // walletAPIDisabled reports whether err is the node refusing the WALLET API

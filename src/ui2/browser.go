@@ -92,6 +92,14 @@ func (w BrowserWallet) entries() []readable.WalletEntry {
 
 func bwWalletURL(id string) string { return "bw/wallet?id=" + url.QueryEscape(id) }
 
+func bwSendURL(id, from string) string {
+	u := "bw/send?id=" + url.QueryEscape(id)
+	if from != "" {
+		u += "&from=" + url.QueryEscape(from)
+	}
+	return u
+}
+
 // LoadBrowserWallets reads the balance of each browser wallet.
 func LoadBrowserWallets(n Node, ws []BrowserWallet) Wallets {
 	var out Wallets
@@ -132,7 +140,7 @@ func LoadBrowserWallet(n Node, w BrowserWallet) Wallet {
 		b = &api.BalanceResponse{}
 	}
 	out.Balance = amountOf(b.BalancePair)
-	rows, err := addressRows(n, w.entries(), b, ListQuery{}, func(string) string { return "" })
+	rows, err := addressRows(n, w.entries(), b, ListQuery{}, func(a string) string { return bwSendURL(w.ID, a) })
 	if err != nil {
 		out.Err = err.Error()
 	}

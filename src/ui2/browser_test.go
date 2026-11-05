@@ -88,7 +88,7 @@ func TestBrowserPages(t *testing.T) {
 	require.Contains(t, body, `data-copy="xpub-test"`)
 	require.Contains(t, body, "Account xPub")
 	require.Equal(t, 1, strings.Count(body, "Exposed key"))
-	require.NotContains(t, body, "Move coins", "no move until browser send exists")
+	require.Contains(t, body, "Move coins")
 	require.Contains(t, body, `hx-post="bw/txns"`)
 
 	body = postForm(h, "/bw/txns", url.Values{"wallet": {jsonOf(t, w)}}).Body.String()

@@ -118,9 +118,9 @@ func Handler(n Node, o Options) http.Handler {
 		id := r.PostFormValue("id")
 		txid, err := n.InjectEncodedTransaction(r.PostFormValue("rawtx"))
 		if err != nil {
-			return SentView(id, "", err.Error())
+			return SentView(walletURL(id), "", err.Error())
 		}
-		return SentView(id, txid, "")
+		return SentView(walletURL(id), txid, "")
 	}))
 
 	mux.HandleFunc("/bw/wallet", page(func(r *http.Request) templ.Component { return BrowserWalletPage(r.FormValue("id")) }))
@@ -146,6 +146,24 @@ func Handler(n Node, o Options) http.Handler {
 			return bwError(err)
 		}
 		return TxnList(LoadBrowserTxns(n, w, ParseListQuery(r.PostFormValue)))
+	}))
+	mux.HandleFunc("/bw/send", page(func(r *http.Request) templ.Component {
+		return BrowserSendPage(r.FormValue("id"), r.FormValue("from"))
+	}))
+	mux.HandleFunc("/bw/send/review", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		f, err := ParseBrowserSendForm(r.PostFormValue)
+		if err != nil {
+			return bwError(err)
+		}
+		return BrowserReview(PrepareBrowser(n, f))
+	}))
+	mux.HandleFunc("/bw/send/inject", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		back := bwWalletURL(r.PostFormValue("id"))
+		txid, err := n.InjectEncodedTransaction(r.PostFormValue("rawtx"))
+		if err != nil {
+			return SentView(back, "", err.Error())
+		}
+		return SentView(back, txid, "")
 	}))
 	return mux
 }

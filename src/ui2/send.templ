@@ -113,14 +113,14 @@ templ ReviewView(r Review) {
 }
 
 // SentView confirms the node took the transaction.
-templ SentView(id, txid, err string) {
+templ SentView(back, txid, err string) {
 	if err != "" {
 		@ErrorBox(err)
 	} else {
 		<div class="alert ok">
 			<p><strong>{ T(ctx, "send.sent") }</strong></p>
 			<p class="mono small">{ txid }</p>
-			<p><a class="btn primary" href={ templ.URL(walletURL(id)) }>{ T(ctx, "send.back") }</a></p>
+			<p><a class="btn primary" href={ templ.URL(back) }>{ T(ctx, "send.back") }</a></p>
 		</div>
 	}
 }

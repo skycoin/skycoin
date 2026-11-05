@@ -340,6 +340,186 @@
 		});
 	}
 
+	// secretsOf decrypts a wallet's seed, passphrase and next seed with
+	// password, and checks the seed gives the wallet's own xpub or first
+	// address. A wallet the classic wallet stored without a password holds
+	// them in clear.
+	function secretsOf(c, w, password) {
+		var get = function (encField, plainField) {
+			if (w[encField]) return decrypt(w[encField], password);
+			return Promise.resolve(w[plainField] || '');
+		};
+		if (w.encryptedSeed && !password) return Promise.reject(new Error(msg('password')));
+		return Promise.all([get('encryptedSeed', 'seed'), get('encryptedSeedPassphrase', 'seedPassphrase'), get('encryptedNextSeed', 'nextSeed')])
+			.catch(function () { throw new Error(msg('wrong-password')); })
+			.then(function (s) {
+				var sec = { seed: s[0], passphrase: s[1], nextSeed: s[2] };
+				if (!sec.seed) throw new Error(msg('wrong-password'));
+				if (isBip44(w)) {
+					if (call(c, 'bip44AccountXPub', [sec.seed, sec.passphrase]) !== w.accounts[0].accountXpubKey) throw new Error(msg('wrong-password'));
+				} else if (call(c, 'generateAddress', [asciiToHex(sec.seed)]).address !== w.addresses[0].address) {
+					throw new Error(msg('wrong-password'));
+				}
+				return sec;
+			});
+	}
+
+	// deterministicChain is the wallet's addresses with their secret keys,
+	// one more after them, and the seed that comes after that one.
+	function deterministicChain(c, w, sec) {
+		var out = [], next = asciiToHex(sec.seed);
+		for (var i = 0; i <= w.addresses.length; i++) {
+			var a = call(c, 'generateAddress', [next]);
+			out.push({ address: a.address, secret: a.secret });
+			next = a.nextSeed;
+		}
+		return { addrs: out, after: next };
+	}
+
+	// freshOf is the next unused change and receive address of w, neither
+	// stored yet. A deterministic wallet has one chain, so both are the same.
+	function freshOf(c, w, sec) {
+		if (isBip44(w)) {
+			var a = w.accounts[0];
+			return {
+				change: call(c, 'bip44XPubAddresses', [a.accountXpubKey, 1, a.changeAddresses.length, 1])[0].address,
+				receive: call(c, 'bip44XPubAddresses', [a.accountXpubKey, 0, a.externalAddresses.length, 1])[0].address,
+			};
+		}
+		var ch = deterministicChain(c, w, sec), last = ch.addrs[ch.addrs.length - 1];
+		return { change: last.address, receive: last.address, after: ch.after };
+	}
+
+	// keysOf maps each address in addrs to its secret key.
+	function keysOf(c, w, sec, addrs) {
+		var keys = {};
+		if (isBip44(w)) {
+			var a = w.accounts[0], where = {};
+			a.externalAddresses.forEach(function (e, i) { where[e.address] = [0, i]; });
+			a.changeAddresses.forEach(function (e, i) { where[e.address] = [1, i]; });
+			addrs.forEach(function (addr) {
+				var p = where[addr];
+				if (!p) throw new Error(msg('mismatch'));
+				var d = call(c, 'bip44Addresses', [sec.seed, sec.passphrase, p[0], p[1], 1])[0];
+				if (d.address !== addr) throw new Error(msg('mismatch'));
+				keys[addr] = d.secret;
+			});
+			return keys;
+		}
+		deterministicChain(c, w, sec).addrs.forEach(function (e) { keys[e.address] = e.secret; });
+		addrs.forEach(function (addr) { if (!keys[addr]) throw new Error(msg('mismatch')); });
+		return keys;
+	}
+
+	// checkSign fails unless the outputs pay exactly the reviewed amount to
+	// the reviewed address, and everything else comes back to the wallet.
+	function checkSign(s, w, fresh, to) {
+		var own = {};
+		summary(w).addresses.forEach(function (a) { own[a.address] = true; });
+		own[fresh.change] = true;
+		if (s.to !== to) throw new Error(msg('mismatch'));
+		var paid = 0;
+		s.outputs.forEach(function (o) {
+			if (o.address === to) paid += o.coins;
+			else if (!own[o.address]) throw new Error(msg('mismatch'));
+		});
+		if (paid !== s.coins || !s.inputs.length) throw new Error(msg('mismatch'));
+	}
+
+	// remember stores the fresh addresses the transaction paid, so the next
+	// fresh address is a new one.
+	function remember(id, fresh, s, password) {
+		var paid = {};
+		s.outputs.forEach(function (o) { paid[o.address] = true; });
+		return withList(function (list) {
+			var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+			if (!w) return null;
+			if (isBip44(w)) {
+				var a = w.accounts[0];
+				if (paid[fresh.change]) a.changeAddresses.push({ address: fresh.change });
+				if (paid[fresh.receive] && fresh.receive !== fresh.change) a.externalAddresses.push({ address: fresh.receive });
+				w.addresses = a.externalAddresses.concat(a.changeAddresses);
+				return writeStored(list);
+			}
+			if (!paid[fresh.change]) return null;
+			w.addresses.push({ address: fresh.change });
+			if (w.encryptedSeed) {
+				return encrypt(fresh.after, password).then(function (e) {
+					w.encryptedNextSeed = e;
+					return writeStored(list);
+				});
+			}
+			w.nextSeed = fresh.after;
+			return writeStored(list);
+		});
+	}
+
+	function sendFlow(id) {
+		var form = $('bw-send'), session = null;
+		withList(function (list) {
+			var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+			if (!w) throw new Error(msg('missing'));
+			$('bw-data').value = JSON.stringify(summary(w));
+			form.addEventListener('submit', function (e) {
+				e.preventDefault();
+				setError('');
+				var pw = $('bw-send-password').value;
+				cipher().then(function (c) {
+					return secretsOf(c, w, pw).then(function (sec) {
+						var fresh = freshOf(c, w, sec);
+						$('bw-fresh-change').value = fresh.change;
+						$('bw-fresh-receive').value = fresh.receive;
+						session = { c: c, w: w, sec: sec, fresh: fresh, pw: pw };
+						$('bw-send-password').value = '';
+						htmx.trigger(form, 'bw-review');
+					});
+				}).catch(function (err) { setError(err.message); });
+			});
+		}).catch(function (err) { setError(err && err.message ? err.message : msg('error')); });
+
+		document.addEventListener('click', function (e) {
+			if (!e.target.closest || !e.target.closest('#bw-sign-send')) return;
+			var box = document.querySelector('[data-bw-sign]');
+			if (!box || !session) return;
+			var btn = $('bw-sign-send');
+			btn.disabled = true;
+			try {
+				var s = JSON.parse(box.getAttribute('data-bw-sign'));
+				var to = form.elements.to ? form.elements.to.value.trim() : session.fresh.receive;
+				checkSign(s, session.w, session.fresh, to);
+				var keys = keysOf(session.c, session.w, session.sec, s.inputs.map(function (i) { return i.address; }));
+				var inputs = s.inputs.map(function (i) { return { hash: i.hash, secret: keys[i.address], address: i.address }; });
+				var raw = call(session.c, 'prepareTransaction', [JSON.stringify(inputs), JSON.stringify(s.outputs)]);
+				keys = null;
+				inputs = null;
+				sent = { fresh: session.fresh, s: s, pw: session.pw };
+				htmx.ajax('POST', 'bw/send/inject', { target: '#review', swap: 'innerHTML', values: { id: id, rawtx: raw } });
+			} catch (err) {
+				btn.disabled = false;
+				setError(err.message);
+			}
+		});
+
+		// Once the node took the transaction, the fresh addresses it paid are
+		// stored. The form is done then: a second send from this page would
+		// derive the same fresh address again.
+		var sent = null;
+		document.addEventListener('htmx:afterSwap', function (e) {
+			if (!sent || !e.detail.target || e.detail.target.id !== 'review') return;
+			var done = sent;
+			sent = null;
+			if (!document.querySelector('#review .alert.ok')) return;
+			session = null;
+			form.hidden = true;
+			remember(id, done.fresh, done.s, done.pw).catch(function (err) {
+				var p = document.createElement('p');
+				p.className = 'error';
+				p.textContent = err && err.message ? err.message : msg('error');
+				$('review').appendChild(p);
+			});
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var fail = function (err) {
 			var e = $('bw-page-error') || $('bw-error');
@@ -356,6 +536,8 @@
 			}).catch(fail);
 		} else if (mode === 'new' || mode === 'load') {
 			createFlow(mode === 'load');
+		} else if (mode === 'send') {
+			sendFlow(page.getAttribute('data-bw-id'));
 		}
 	});
 })();

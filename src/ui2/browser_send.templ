@@ -1,0 +1,114 @@
+package ui2
+
+import "strings"
+
+// BrowserSendPage sends from a browser wallet, or with from set moves every
+// coin of that address to a new receive address of the wallet. The password
+// field has no name: bw.js uses it to decrypt the seed in the page, fills
+// the fresh address fields, then asks for the review.
+templ BrowserSendPage(id, from string) {
+	@Layout(T(ctx, "send.title"), "wallets") {
+		<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+		<div class="page-head">
+			<a class="icon-btn" href={ templ.URL(bwWalletURL(id)) } aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			if from != "" {
+				<h1>{ T(ctx, "send.move-title") }</h1>
+			} else {
+				<h1>{ T(ctx, "send.title") }</h1>
+			}
+			<span class="badge">{ T(ctx, "bw.in-browser") }</span>
+		</div>
+		<section
+			class="card"
+			data-bw-page="send"
+			data-bw-root={ From(ctx).Classic }
+			data-bw-id={ id }
+			data-msg-missing={ T(ctx, "bw.missing") }
+			data-msg-error={ T(ctx, "bw.err-storage") }
+			data-msg-password={ T(ctx, "bw.err-send-password") }
+			data-msg-wrong-password={ T(ctx, "bw.err-wrong-password") }
+			data-msg-mismatch={ T(ctx, "bw.err-mismatch") }
+			data-msg-signing={ T(ctx, "bw.signing") }
+		>
+			@bwUnlock()
+			<form id="bw-send" class="form" hx-post="bw/send/review" hx-trigger="bw-review" hx-target="#review" hx-swap="innerHTML show:#review:top" autocomplete="off">
+				<input type="hidden" name="id" value={ id }/>
+				@bwData("wallet")
+				<input type="hidden" name="fresh_change" id="bw-fresh-change"/>
+				<input type="hidden" name="fresh_receive" id="bw-fresh-receive"/>
+				if from != "" {
+					<input type="hidden" name="from" value={ from }/>
+					<div class="alert warn">
+						<p>{ T(ctx, "send.move-help") }</p>
+						<p class="mono">{ from }</p>
+					</div>
+				} else {
+					<label>
+						{ T(ctx, "send.to") }
+						<input name="to" class="mono" required spellcheck="false" autocapitalize="off"/>
+					</label>
+					<label>
+						{ T(ctx, "send.coins") }
+						<input name="coins" inputmode="decimal" required/>
+					</label>
+					<details class="fold">
+						<summary>{ T(ctx, "send.advanced") }</summary>
+						<label>
+							{ T(ctx, "send.change") }
+							<input name="change" class="mono" spellcheck="false" autocapitalize="off" placeholder={ T(ctx, "send.change-default") }/>
+						</label>
+						<p class="small dim">{ T(ctx, "send.change-help") }</p>
+					</details>
+				}
+				<label>
+					{ T(ctx, "send.password") }
+					<input type="password" id="bw-send-password" autocomplete="current-password"/>
+				</label>
+				<div class="bar">
+					<button class="btn primary" type="submit">{ T(ctx, "send.review") }</button>
+					<span class="busy dim small">{ T(ctx, "ui2.working") }</span>
+					<span class="dim small" id="bw-status"></span>
+				</div>
+				<p class="error" id="bw-error" role="alert"></p>
+			</form>
+			<div id="review"></div>
+		</section>
+	}
+}
+
+// BrowserReview shows the unsigned transaction. bw.js checks its outputs
+// against the form, signs it in the page and posts only the signed result.
+templ BrowserReview(r Review, s SignRequest) {
+	if r.Err != "" {
+		if strings.HasPrefix(r.Err, "send.") || strings.HasPrefix(r.Err, "bw.") {
+			@ErrorBox(T(ctx, r.Err))
+		} else {
+			@ErrorBox(r.Err)
+		}
+	} else {
+		<div class="card sub" data-bw-sign={ s.JSON() } data-bw-wallet={ r.ID }>
+			<h2>{ T(ctx, "send.review-title") }</h2>
+			for _, w := range r.Warnings {
+				<div class="alert warn"><p>{ T(ctx, w) }</p></div>
+			}
+			<dl class="kv">
+				<dt>{ T(ctx, "send.to") }</dt>
+				<dd class="mono">{ r.To }</dd>
+				<dt>{ T(ctx, "send.coins") }</dt>
+				<dd><strong>{ r.Coins }</strong></dd>
+				<dt>{ T(ctx, "send.hours-sent") }</dt>
+				<dd>{ r.Hours }</dd>
+				for _, c := range r.Change {
+					<dt>{ T(ctx, "send.change-output") }</dt>
+					<dd><span class="mono">{ c.Address }</span> <span class="nowrap">{ c.Coins } · { c.Hours } { T(ctx, "balance.hours") }</span></dd>
+				}
+				<dt>{ T(ctx, "send.fee") }</dt>
+				<dd>{ r.Fee } { T(ctx, "balance.hours") }</dd>
+			</dl>
+			<div class="bar">
+				<button class="btn primary" type="button" id="bw-sign-send"><span class="mi">send</span>{ T(ctx, "send.send") }</button>
+				<button class="btn" type="button" data-clear="#review">{ T(ctx, "send.cancel") }</button>
+			</div>
+		</div>
+	}
+}

@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   so each UI opens the other's wallets. A new browser wallet always has a
   password. Seeds, keys and passwords stay in the browser, which sends the
   server public data only.
+- `/ui2/` sends from wallets kept in the browser, and moves coins off their
+  exposed addresses. The node builds the unsigned transaction, and the page
+  checks its outputs against the form before it signs with the wasm cipher.
+  The change goes to a new address of the wallet.
 
 ## 0.28.7
 

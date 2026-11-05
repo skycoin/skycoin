@@ -24,6 +24,7 @@ type fakeNode struct {
 	injected []string
 	newAddrs []string
 	browser  bool
+	created2 []api.CreateTransactionRequest
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {

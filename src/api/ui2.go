@@ -9,16 +9,21 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 )
 
+// HandlerClient is a client of the API that h serves, calling h in process
+// instead of over the network. host is the Host its requests carry.
+func HandlerClient(h http.Handler, host string) *Client {
+	return &Client{
+		Addr:       "http://" + host + "/",
+		HTTPClient: &http.Client{Transport: localTransport{h}},
+	}
+}
+
 // mountUI2 serves the page handler that build makes at /ui2/. Its client
 // calls this mux in process, so the pages go through the same API set, auth
 // and CSRF checks as any other client, without a network round trip.
 func mountUI2(mux *http.ServeMux, c muxConfig, build func(*Client) http.Handler) {
-	client := &Client{
-		Addr:       "http://" + c.host + "/",
-		HTTPClient: &http.Client{Transport: localTransport{mux}},
-		Username:   c.username,
-		Password:   c.password,
-	}
+	client := HandlerClient(mux, c.host)
+	client.SetAuth(c.username, c.password)
 	h := http.StripPrefix("/ui2", build(client))
 	if !c.disableCSP {
 		h = CSPHandler(h, ContentSecurityPolicy)

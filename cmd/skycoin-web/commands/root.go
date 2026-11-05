@@ -725,6 +725,8 @@ func serve(ctx context.Context) error {
 		}
 	})
 
+	mountUI2(mux)
+
 	// Serve static files from GUI filesystem. The "/" pattern is the lowest
 	// priority in the ServeMux, so it only matches requests not claimed by the
 	// API/asset routes above — the net/http equivalent of gin's NoRoute.

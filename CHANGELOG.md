@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   exposed addresses. The node builds the unsigned transaction, and the page
   checks its outputs against the form before it signs with the wasm cipher.
   The change goes to a new address of the wallet.
+- `skycoin-web` serves the same `/ui2/` beside its Angular wallet, reading the
+  node through its own `/api` proxy. `api.HandlerClient` is an API client that
+  calls a handler in process.
 
 ## 0.28.7
 

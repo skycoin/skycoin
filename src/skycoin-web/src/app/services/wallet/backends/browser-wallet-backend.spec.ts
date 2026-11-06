@@ -364,3 +364,72 @@ describe('BrowserWalletBackend removeWalletPassword', () => {
     await expectAsync(firstValueFrom(backend.setWalletPassword(det, 'new'))).toBeRejected();
   });
 });
+
+describe('BrowserWalletBackend change addresses', () => {
+  const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+  const translate = { instant: (key: string) => key };
+  const encryption = new EncryptionService();
+  let cipher: CipherProvider;
+  let backend: BrowserWalletBackend;
+
+  beforeAll(async () => {
+    await loadCipherWasm();
+  }, 60000);
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [CipherProvider, provideHttpClient(withXhr(), withInterceptorsFromDi())],
+    });
+    cipher = TestBed.inject(CipherProvider);
+    backend = new BrowserWalletBackend(cipher, translate as any, { get: () => of([]) } as any, encryption);
+  });
+
+  afterEach(() => localStorage.clear());
+
+  it('gives a deterministic wallet\'s next address and adds it only when asked', async () => {
+    const w = await firstValueFrom(backend.create('d', 'abcdefg', 1, []));
+    const next = (await firstValueFrom(cipher.generateAddress(w.nextSeed))).address.address;
+
+    const peeked = await firstValueFrom(backend.peekChangeAddress(w));
+    expect(peeked).toBe(next);
+    expect(peeked).not.toBe(w.addresses[0].address);
+    expect(w.addresses.length).toBe(1);
+
+    expect(await firstValueFrom(backend.addChangeAddress(w, 'not the next one'))).toBeFalse();
+    expect(w.addresses.length).toBe(1);
+    expect(await firstValueFrom(backend.addChangeAddress(w, next))).toBeTrue();
+    expect(w.addresses.map(a => a.address)).toEqual([w.addresses[0].address, next]);
+    expect(await firstValueFrom(backend.peekChangeAddress(w))).not.toBe(next);
+  });
+
+  it('gives none for a wallet whose keys are not in memory, or a hardware or pq one', async () => {
+    const w = await firstValueFrom(backend.create('d', 'abcdefg', 1, []));
+    expect(await firstValueFrom(backend.peekChangeAddress({ ...w, seed: undefined }))).toBeNull();
+    expect(await firstValueFrom(backend.peekChangeAddress({ ...w, isHardware: true }))).toBeNull();
+    expect(await firstValueFrom(backend.peekChangeAddress({ ...w, walletType: 'pq' }))).toBeNull();
+  });
+
+  it('gives a bip44 wallet\'s next change chain address', async () => {
+    const w = await firstValueFrom(backend.create('b', mnemonic, 1, [], 'bip44'));
+    const peeked = await firstValueFrom(backend.peekChangeAddress(w));
+    expect(peeked).toBe('2RKPZ1rhvxjWFX4zWNSbtLW1QLqBTrokP7U');
+    expect(w.accounts![0].changeAddresses.length).toBe(0);
+    expect(await firstValueFrom(backend.addChangeAddress(w, peeked!))).toBeTrue();
+    expect(w.accounts![0].changeAddresses.map(a => a.address)).toEqual([peeked!]);
+  });
+
+  it('unlocks to the next seed after the addresses, not a stored older one', async () => {
+    const w = await firstValueFrom(backend.create('d', 'abcdefg', 1, []));
+    const staleNext = w.nextSeed!;
+    await firstValueFrom(backend.addAddress(w));
+    const currentNext = w.nextSeed!;
+    const locked: Wallet = {
+      label: 'd', coinId: 1, addresses: w.addresses.map(a => ({ address: a.address })),
+      encryptedSeed: await encryption.encrypt('abcdefg', 'pw'),
+      encryptedNextSeed: await encryption.encrypt(staleNext, 'pw'),
+    };
+    await firstValueFrom(backend.unlockWalletWithPassword(locked, 'pw', new EventEmitter<number>(), s => s));
+    expect(locked.nextSeed).toBe(currentNext);
+  });
+});

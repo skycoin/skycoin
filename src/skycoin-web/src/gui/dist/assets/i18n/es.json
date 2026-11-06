@@ -251,7 +251,7 @@
     "available-msg-part4": "se deben usar para la tarifa de transacción).",
     "change-address-label": "Dirección de retorno personalizada",
     "change-address-select": "Seleccionar",
-    "change-address-help": "Dirección para recibir las monedas y horas sobrantes. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras",
+    "change-address-help": "Dirección para recibir las monedas y horas sobrantes. Empieza con una dirección nueva de la billetera seleccionada, para que el cambio no vuelva a una dirección que ya gastó. Puede escribir otra o hacer clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras",
     "destinations-label": "Destinatarios",
     "destinations-help1": "Direcciones de destino y sus monedas",
     "destinations-help2": "Direcciones de destino, sus monedas y horas",

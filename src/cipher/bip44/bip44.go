@@ -45,6 +45,9 @@ const (
 	ExternalChainIndex uint32 = 0
 	// ChangeChainIndex is the index of the change chain
 	ChangeChainIndex uint32 = 1
+
+	// AccountDepth is the bip32 depth of an account key, m/purpose'/coin'/account'
+	AccountDepth byte = 3
 )
 
 // Coin is a bip32 node at the `coin_type` level of a bip44 path

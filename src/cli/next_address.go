@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // NextAddressResult represents the result of finding the next unused address
@@ -22,6 +23,12 @@ func nextAddressCmd() *cobra.Command {
 		Short: "Derive the next unused address from an xpub key",
 		Use:   "nextAddress [xpub key]",
 		Long: `Derive child addresses from a bip32 xpub key and return the first unused one.
+
+Accepts a bip44 account xpub (depth 3, m/44'/8000'/0', as exported by a
+skycoin wallet) or a chain xpub (depth 4, such as m/44'/8000'/0'/0).
+An account xpub is first derived to its external chain, so the addresses
+are m/44'/8000'/0'/0/i, the receive addresses a bip44 wallet scans.
+Keys at any other depth have their direct children scanned.
 
 An unused address has zero balance and no transaction history.
 Derivation starts at child index 0 (or the specified start index) and scans
@@ -44,6 +51,24 @@ Examples:
 	return cmd
 }
 
+// addressChainKey parses an xpub and returns the key whose direct children are
+// the addresses. A bip44 account key (depth 3) is derived to its external chain.
+func addressChainKey(xpubStr string) (*bip32.PublicKey, error) {
+	xpub, err := bip32.DeserializeEncodedPublicKey(xpubStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid xpub key: %w", err)
+	}
+
+	if xpub.Depth == bip44.AccountDepth {
+		xpub, err = xpub.NewPublicChildKey(bip44.ExternalChainIndex)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive the external chain of the account xpub: %w", err)
+		}
+	}
+
+	return xpub, nil
+}
+
 func findNextAddress(c *cobra.Command, args []string) error {
 	xpubStr := args[0]
 
@@ -60,9 +85,9 @@ func findNextAddress(c *cobra.Command, args []string) error {
 		return errors.New("batch-size must be >= 1")
 	}
 
-	xpub, err := bip32.DeserializeEncodedPublicKey(xpubStr)
+	xpub, err := addressChainKey(xpubStr)
 	if err != nil {
-		return fmt.Errorf("invalid xpub key: %w", err)
+		return err
 	}
 
 	childIdx := startIdx

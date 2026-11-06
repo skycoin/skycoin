@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -55,6 +56,19 @@ func (w readableWallet) toWallet() (*Wallet, error) {
 
 	xPub, err := parseXPub(xpubStr)
 	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := w.Meta[wallet.MetaXPubChain]; !ok && xPub.Depth == bip44.AccountDepth {
+		logger.WithField("filename", w.Meta.Filename()).Warn("xpub wallet was created from an account xpub before the external chain fix. Its addresses are m/44'/coin'/account'/i, which other wallets do not scan. Create a new xpub wallet from the same xpub to get the receive addresses.")
+	}
+
+	xPub, err = addressKey(xPub, w.Meta)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkEntries(xPub, entries); err != nil {
 		return nil, err
 	}
 

@@ -36,6 +36,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   node through its own `/api` proxy. `api.HandlerClient` is an API client that
   calls a handler in process.
 
+### Fixed
+
+- `cli nextAddress` and new xpub wallets derive a bip44 account xpub (depth 3)
+  to its external chain, m/44'/8000'/0'/0/i, the addresses other wallets scan.
+  They derived m/44'/8000'/0'/i before. A chain xpub (depth 4) works as before.
+  An existing xpub wallet keeps its stored chain and logs a warning if it was
+  made from an account xpub. Make a new xpub wallet to get the right addresses.
+
 ## 0.28.7
 
 ### Added

@@ -26,6 +26,7 @@ const (
 	MetaAccountsHash   = "accountsHash"   // accounts hash
 	MetaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
 	MetaXPub           = "xpub"           // xpub key [xpub wallets]
+	MetaXPubChain      = "xpubChain"      // chain derived from an account xpub before the addresses [xpub wallets]
 	MetaTemp           = "temp"           // whether the wallet is a temporary wallet
 )
 

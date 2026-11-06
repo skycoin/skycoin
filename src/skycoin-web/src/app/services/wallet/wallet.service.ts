@@ -251,18 +251,29 @@ export class WalletService {
   }
 
   /**
-   * The address change goes to when a send names none: a fresh change chain
-   * address for a browser bip44 wallet, else null for the node's default.
+   * The address change goes to when a send names none: an unused address of a
+   * browser wallet that is not in the wallet yet, the next change chain address
+   * for bip44 or the next address for a deterministic wallet. Null leaves it to
+   * the node, which for a wallet it keeps also picks a new address.
    */
   changeAddressFor(wallet: Wallet): Observable<string | null> {
-    if (!this.isBrowserBip44(wallet)) {
+    if (this.isServerWallet(wallet)) {
       return of(null);
     }
 
-    return this.browser.nextChangeAddress(wallet).pipe(map(address => {
-      this.saveWallets();
+    return this.browser.peekChangeAddress(wallet);
+  }
 
-      return address;
+  /** Adds the change address a sent transaction paid to its browser wallet. */
+  recordChangeAddress(wallet: Wallet, address: string): Observable<void> {
+    if (this.isServerWallet(wallet)) {
+      return of(undefined);
+    }
+
+    return this.browser.addChangeAddress(wallet, address).pipe(map(added => {
+      if (added) {
+        this.saveWallets();
+      }
     }));
   }
 

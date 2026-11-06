@@ -425,7 +425,9 @@ export class BrowserWalletBackend implements WalletBackend {
               return;
             }
             wallet.seed = clean;
-            if (nextSeed) {
+            // The stored next seed is only written with the password, so it can
+            // be older than the addresses. The one derived above follows them.
+            if (nextSeed && !wallet.nextSeed) {
               wallet.nextSeed = nextSeed;
             }
             observer.next();
@@ -542,6 +544,51 @@ export class BrowserWalletBackend implements WalletBackend {
   /** A fresh change address for a bip44 wallet, added to it. */
   nextChangeAddress(wallet: Wallet): Observable<string> {
     return this.addBip44Addresses(wallet, 1, 1).pipe(map(added => added[0].address));
+  }
+
+  /**
+   * The address a send's change goes to unless the user names another, not
+   * added to the wallet yet: the next change chain address of a bip44 wallet,
+   * or the next address of a deterministic one. Null when there is none to
+   * give, as for a hardware or post-quantum wallet or one whose keys are not
+   * in memory, and then the node picks the change address.
+   */
+  peekChangeAddress(wallet: Wallet): Observable<string | null> {
+    if (wallet.isHardware || wallet.walletType === 'pq') {
+      return of(null);
+    }
+    if (isBip44(wallet)) {
+      const account = wallet.accounts![0];
+
+      return this.cipherProvider.bip44XPubAddresses(account.accountXpubKey!, 1, account.changeAddresses.length, 1).pipe(
+        map(derived => derived[0].address));
+    }
+    if (!wallet.seed || !wallet.nextSeed) {
+      return of(null);
+    }
+
+    // A next seed that does not derive leaves the change to the node, as before.
+    return this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
+      map(response => response.address.address),
+      catchError(() => of(null)),
+    );
+  }
+
+  /**
+   * Adds address to the wallet once a sent transaction paid it, if it is still
+   * the one peekChangeAddress gives. Emits whether it was added.
+   */
+  addChangeAddress(wallet: Wallet, address: string): Observable<boolean> {
+    return this.peekChangeAddress(wallet).pipe(mergeMap(next => {
+      if (next !== address) {
+        return of(false);
+      }
+      if (isBip44(wallet)) {
+        return this.nextChangeAddress(wallet).pipe(map(added => added === address));
+      }
+
+      return this.addAddress(wallet).pipe(map(() => true));
+    }));
   }
 
   /**

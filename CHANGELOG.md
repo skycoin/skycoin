@@ -43,6 +43,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   They derived m/44'/8000'/0'/i before. A chain xpub (depth 4) works as before.
   An existing xpub wallet keeps its stored chain and logs a warning if it was
   made from an account xpub. Make a new xpub wallet to get the right addresses.
+- The web wallet sent the change of a deterministic wallet kept in the browser
+  back to the address it spent from. It now goes to the wallet's next
+  address, which is added to the wallet once the transaction is sent. The
+  advanced send form fills that address in as the change address, where it
+  can be changed. A bip44 wallet's new change address is now also added only
+  once the transaction is sent.
+- Unlocking an encrypted deterministic browser wallet uses the next seed
+  after its addresses, not an older stored one.
 
 ## 0.28.7
 

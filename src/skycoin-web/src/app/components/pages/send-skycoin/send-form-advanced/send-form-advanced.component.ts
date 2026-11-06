@@ -62,6 +62,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private destinationSubscriptions: Subscription[] = [];
   // An encrypted server wallet's password, held only until the transaction is signed.
   private password: string | undefined;
+  // The change address filled in for the selected wallet. A different value in
+  // the field is the user's own and is kept when the wallet changes.
+  private defaultChange = '';
+  private defaultChangeSubscription?: Subscription;
 
   constructor(
     public walletService: WalletService,
@@ -116,6 +120,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.addresses = wallet.addresses.filter(addr => addr.balance!.isGreaterThan(0));
       this.form.get('addresses')!.setValue(null);
       this.form.get('outputs')!.setValue(null);
+      this.fillDefaultChange(wallet);
 
       this.updateAvailableBalance();
       this.form.get('destinations')!.updateValueAndValidity();
@@ -162,6 +167,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.navbarService.hideSwitch();
     this.msgBarService.hide();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
+    if (this.defaultChangeSubscription) {
+      this.defaultChangeSubscription.unsubscribe();
+    }
   }
 
   preview() {
@@ -368,6 +376,33 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   setShareValue(value: number) {
     this.autoShareValue = value.toFixed(2);
+  }
+
+  /**
+   * Fills the change address with the selected wallet's next unused address,
+   * unless the field holds an address the user chose. Empty when the wallet
+   * cannot say, as a node wallet, where the node picks a new address itself.
+   */
+  private fillDefaultChange(wallet: Wallet) {
+    const control = this.form.get('changeAddress')!;
+    const usersOwn = () => !!control.value && control.value !== this.defaultChange;
+    if (usersOwn()) {
+      return;
+    }
+    if (this.defaultChangeSubscription) {
+      this.defaultChangeSubscription.unsubscribe();
+    }
+    this.defaultChangeSubscription = this.walletService.changeAddressFor(wallet).subscribe({
+      next: address => {
+        if (usersOwn()) {
+          return;
+        }
+        this.defaultChange = address || '';
+        control.setValue(this.defaultChange);
+        this.changeDetectorRef.markForCheck();
+      },
+      error: () => undefined,
+    });
   }
 
   selectChangeAddress(event: any) {
@@ -617,6 +652,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form.get('addresses')!.setValue(null);
     this.form.get('outputs')!.setValue(null);
     this.form.get('changeAddress')!.setValue('');
+    this.defaultChange = '';
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as UntypedFormArray).removeAt(0);

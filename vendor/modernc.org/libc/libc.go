@@ -732,8 +732,6 @@ func X__builtin_object_size(t *TLS, p uintptr, typ int32) types.Size_t {
 	}
 }
 
-var atomicLoadStore16 sync.Mutex
-
 func AtomicStoreNUint8(ptr uintptr, val uint8, memorder int32) {
 	a_store_8(ptr, val)
 }
@@ -2760,10 +2758,7 @@ func X__builtin_isunordered(t *TLS, a, b float64) int32 {
 }
 
 func AtomicLoadNUint16(ptr uintptr, memorder int32) uint16 {
-	atomicLoadStore16.Lock()
-	r := *(*uint16)(unsafe.Pointer(ptr))
-	atomicLoadStore16.Unlock()
-	return r
+	return uint16(a_load_16(ptr))
 }
 
 func PreIncAtomicInt32P(p uintptr, d int32) int32 {

@@ -59,18 +59,18 @@ embedded in both JSON documents as well.
 
 | Component | Version | License | Package URL |
 | --- | --- | --- | --- |
-| github.com/dustin/go-humanize | v1.0.1 | `MIT` | `pkg:golang/github.com/dustin/go-humanize@v1.0.1` |
+| github.com/dustin/go-humanize | v1.1.0 | `MIT` | `pkg:golang/github.com/dustin/go-humanize@v1.1.0` |
 | github.com/google/uuid | v1.6.0 | `BSD-3-Clause` | `pkg:golang/github.com/google/uuid@v1.6.0` |
 | github.com/remyoudompheng/bigfft | v0.0.0-20230129092748-24d4a6f8daec | `BSD-3-Clause` | `pkg:golang/github.com/remyoudompheng/bigfft@v0.0.0-20230129092748-24d4a6f8daec` |
 | Go | -- | `BSD-3-Clause` | -- |
 | go-netdb | -- | `MIT` | -- |
-| golang.org/x/sys | v0.48.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/sys@v0.48.0` |
-| modernc.org/libc | v1.77.1 | `BSD-3-Clause` | `pkg:golang/modernc.org/libc@v1.77.1` |
+| golang.org/x/sys | v0.49.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/sys@v0.49.0` |
+| modernc.org/libc | v1.80.1 | `BSD-3-Clause` | `pkg:golang/modernc.org/libc@v1.80.1` |
 | modernc.org/mathutil | v1.7.1 | `BSD-3-Clause` | `pkg:golang/modernc.org/mathutil@v1.7.1` |
 | modernc.org/memory | v1.12.1 | `BSD-3-Clause AND LicenseRef-L5` | `pkg:golang/modernc.org/memory@v1.12.1` |
 | musl libc | -- | `MIT` | -- |
 | NixOS/nixpkgs | -- | `MIT` | -- |
-| SQLite | 3.53.4 | `LicenseRef-SQLite-PublicDomain` | `pkg:generic/sqlite@3.53.4` |
+| SQLite | 3.54.1 | `LicenseRef-SQLite-PublicDomain` | `pkg:generic/sqlite@3.54.1` |
 | SQLite `test_demovfs.c` | -- | `LicenseRef-SQLite-PublicDomain` | -- |
 | sqlite-vec | v0.1.9 | `MIT` | `pkg:github/asg017/sqlite-vec@v0.1.9` |
 
@@ -78,7 +78,7 @@ embedded in both JSON documents as well.
 
 | Component | Version | License | Package URL |
 | --- | --- | --- | --- |
-| github.com/google/pprof | v0.0.0-20260802141513-ef3492d7dac3 | `Apache-2.0 AND BSD-3-Clause` | `pkg:golang/github.com/google/pprof@v0.0.0-20260802141513-ef3492d7dac3` |
+| github.com/google/pprof | v0.0.0-20261016150608-1facf8f91b50 | `Apache-2.0 AND BSD-3-Clause` | `pkg:golang/github.com/google/pprof@v0.0.0-20261016150608-1facf8f91b50` |
 | modernc.org/fileutil | v1.4.0 | `BSD-3-Clause` | `pkg:golang/modernc.org/fileutil@v1.4.0` |
 
 ### 3. Components in the module graph, not compiled into anything
@@ -89,14 +89,14 @@ embedded in both JSON documents as well.
 | github.com/hashicorp/golang-lru/v2 | v2.0.7 | `MPL-2.0 AND BSD-3-Clause` | `pkg:golang/github.com/hashicorp/golang-lru/v2@v2.0.7` |
 | github.com/ianlancetaylor/demangle | v0.0.0-20250417193237-f615e6bd150b | `BSD-3-Clause` | `pkg:golang/github.com/ianlancetaylor/demangle@v0.0.0-20250417193237-f615e6bd150b` |
 | github.com/mattn/go-isatty | v0.0.24 | `MIT` | `pkg:golang/github.com/mattn/go-isatty@v0.0.24` |
-| github.com/ncruces/go-strftime | v1.0.0 | `MIT` | `pkg:golang/github.com/ncruces/go-strftime@v1.0.0` |
-| golang.org/x/mod | v0.41.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/mod@v0.41.0` |
-| golang.org/x/sync | v0.23.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/sync@v0.23.0` |
-| golang.org/x/tools | v0.50.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/tools@v0.50.0` |
-| modernc.org/cc/v4 | v4.29.7 | `BSD-3-Clause` | `pkg:golang/modernc.org/cc/v4@v4.29.7` |
-| modernc.org/ccgo/v4 | v4.36.1 | `BSD-3-Clause` | `pkg:golang/modernc.org/ccgo/v4@v4.36.1` |
+| github.com/ncruces/go-strftime | v1.1.0 | `MIT` | `pkg:golang/github.com/ncruces/go-strftime@v1.1.0` |
+| golang.org/x/mod | v0.42.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/mod@v0.42.0` |
+| golang.org/x/sync | v0.24.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/sync@v0.24.0` |
+| golang.org/x/tools | v0.52.0 | `BSD-3-Clause` | `pkg:golang/golang.org/x/tools@v0.52.0` |
+| modernc.org/cc/v4 | v4.30.6-0.20261101114202-1b9d1a076f6b | `BSD-3-Clause` | `pkg:golang/modernc.org/cc/v4@v4.30.6-0.20261101114202-1b9d1a076f6b` |
+| modernc.org/ccgo/v4 | v4.38.1 | `BSD-3-Clause` | `pkg:golang/modernc.org/ccgo/v4@v4.38.1` |
 | modernc.org/gc/v2 | v2.6.5 | `BSD-3-Clause` | `pkg:golang/modernc.org/gc/v2@v2.6.5` |
-| modernc.org/gc/v3 | v3.1.5 | `BSD-3-Clause` | `pkg:golang/modernc.org/gc/v3@v3.1.5` |
+| modernc.org/gc/v3 | v3.2.0 | `BSD-3-Clause` | `pkg:golang/modernc.org/gc/v3@v3.2.0` |
 | modernc.org/goabi0 | v0.2.0 | `BSD-3-Clause` | `pkg:golang/modernc.org/goabi0@v0.2.0` |
 | modernc.org/opt | v0.2.0 | `BSD-3-Clause` | `pkg:golang/modernc.org/opt@v0.2.0` |
 | modernc.org/sortutil | v1.2.1 | `BSD-3-Clause` | `pkg:golang/modernc.org/sortutil@v1.2.1` |

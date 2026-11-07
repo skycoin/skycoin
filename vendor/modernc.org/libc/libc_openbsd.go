@@ -52,6 +52,16 @@ var X__stderrp = Xstderr
 var X__stdinp = Xstdin
 var X__stdoutp = Xstdout
 var X__sF [3]stdio.FILE
+
+// OpenBSD 8.0 <stdio.h> no longer declares __sF. stdin, stdout and stderr are
+// ((struct __sFILE *)__stdin), __stdout and __stderr, arrays of an opaque
+// struct __sFstub, so transpiled code passes their addresses as the FILE *.
+// file.sF maps them to __sF[0], __sF[1] and __sF[2]: code compiled against the
+// old or the new headers, and Xstdin, Xstdout and Xstderr, all share the same
+// three streams.
+var X__stdin stdio.FILE
+var X__stdout stdio.FILE
+var X__stderr stdio.FILE
 var X_tolower_tab_ uintptr
 var X_toupper_tab_ uintptr
 
@@ -105,18 +115,33 @@ func X__runes_for_locale(t *TLS, l locale_t, p uintptr) uintptr {
 
 type file uintptr
 
-func (f file) fd() int32      { return int32((*stdio.FILE)(unsafe.Pointer(f)).F_file) }
-func (f file) setFd(fd int32) { (*stdio.FILE)(unsafe.Pointer(f)).F_file = int16(fd) }
+// sF returns the element of __sF that f stands for if f is __stdin, __stdout
+// or __stderr, and f otherwise.
+func (f file) sF() file {
+	switch uintptr(f) {
+	case uintptr(unsafe.Pointer(&X__stdin)):
+		return file(unsafe.Pointer(&X__sF[0]))
+	case uintptr(unsafe.Pointer(&X__stdout)):
+		return file(unsafe.Pointer(&X__sF[1]))
+	case uintptr(unsafe.Pointer(&X__stderr)):
+		return file(unsafe.Pointer(&X__sF[2]))
+	}
+	return f
+}
+
+func (f file) fd() int32      { return int32((*stdio.FILE)(unsafe.Pointer(f.sF())).F_file) }
+func (f file) setFd(fd int32) { (*stdio.FILE)(unsafe.Pointer(f.sF())).F_file = int16(fd) }
 
 func (f file) err() bool {
-	return (*stdio.FILE)(unsafe.Pointer(f)).F_flags&1 != 0
+	return (*stdio.FILE)(unsafe.Pointer(f.sF())).F_flags&1 != 0
 }
 
 func (f file) setErr() {
-	(*stdio.FILE)(unsafe.Pointer(f)).F_flags |= 1
+	(*stdio.FILE)(unsafe.Pointer(f.sF())).F_flags |= 1
 }
 
 func (f file) close(t *TLS) int32 {
+	f = f.sF()
 	fd := f.fd()
 	r := Xclose(t, fd)
 	switch fd {
@@ -174,7 +199,7 @@ func Xfprintf(t *TLS, stream, format, args uintptr) int32 {
 	if __ccgo_strace {
 		trc("t=%v args=%v, (%v:)", t, args, origin(2))
 	}
-	n, _ := fwrite(int32((*stdio.FILE)(unsafe.Pointer(stream)).F_file), printf(format, args))
+	n, _ := fwrite(file(stream).fd(), printf(format, args))
 	return int32(n)
 }
 
@@ -206,7 +231,7 @@ func Xfgetc(t *TLS, stream uintptr) int32 {
 	if __ccgo_strace {
 		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
 	}
-	fd := int((*stdio.FILE)(unsafe.Pointer(stream)).F_file)
+	fd := int(file(stream).fd())
 	var buf [1]byte
 	if n, _ := unix.Read(fd, buf[:]); n != 0 {
 		return int32(buf[0])
@@ -1010,7 +1035,7 @@ func Xfileno(t *TLS, stream uintptr) int32 {
 		return -1
 	}
 
-	if fd := int32((*stdio.FILE)(unsafe.Pointer(stream)).F_file); fd >= 0 {
+	if fd := file(stream).fd(); fd >= 0 {
 		return fd
 	}
 

@@ -63,6 +63,10 @@ the process is inspectable rather than asserted.
 there are no maintenance branches and never have been. The `retract`
 directives in `go.mod` mark versions that should not be used.
 
+Each release after v1.60.1 has a signed provenance document, linked from its
+[GitLab release](https://gitlab.com/cznic/sqlite/-/releases); [VERIFYING.md](VERIFYING.md)
+says what it proves and how to check it. v1.60.1 and earlier releases have none.
+
 ## Scope
 
 In scope, with a security consequence:
@@ -105,6 +109,9 @@ Out of scope:
   maintainers. Do tell us if a version we ship is affected;
   [SBOM.md](SBOM.md) and [LICENSE-3RD-PARTY.md](LICENSE-3RD-PARTY.md) list
   exactly what this module carries and what is merely in the module graph.
+
+[THREAT-MODEL.md](THREAT-MODEL.md) goes through the driver layer, the page cache
+binding and the VFS bridge row by row, with the status of each.
 
 ### Vulnerabilities in SQLite itself
 

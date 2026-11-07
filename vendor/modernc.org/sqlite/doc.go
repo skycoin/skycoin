@@ -29,6 +29,16 @@
 // environment the process starts with, or call [OFDLocking] from Go. See the
 // [OFDLocking] documentation for the full contract.
 //
+// # Syncing with fdatasync
+//
+// SQLite commits with fsync(2), which on a journaling file system also
+// flushes the file's timestamps through the journal. The library can sync
+// with fdatasync(2) instead, which skips that and keeps a commit just as
+// durable. The switch is process-wide, off by default, and honored on Linux,
+// FreeBSD, illumos and NetBSD: call [Fdatasync] from Go at any time;
+// [FdatasyncEnabled] reports the setting. See the [Fdatasync] documentation
+// for the full contract.
+//
 // # Fragile modernc.org/libc dependency
 //
 // When you import this package you should use in your go.mod file the exact
@@ -53,26 +63,27 @@
 //
 //	OS      Arch    SQLite version
 //	------------------------------
-//	darwin	amd64   3.53.4
-//	darwin	arm64   3.53.4
-//	freebsd	386     3.53.4
-//	freebsd	amd64   3.53.4
-//	freebsd	arm     3.53.4
-//	freebsd	arm64   3.53.4
-//	linux	386     3.53.4
-//	linux	amd64   3.53.4
-//	linux	arm     3.53.4
-//	linux	arm64   3.53.4
-//	linux	loong64 3.53.4
-//	linux	ppc64le 3.53.4
-//	linux	riscv64 3.53.4
-//	linux	s390x   3.53.4
-//	netbsd	amd64   3.53.4
-//	openbsd	amd64   3.53.4
-//	openbsd	arm64   3.53.4
-//	windows	386     3.53.4
-//	windows	amd64   3.53.4
-//	windows	arm64   3.53.4
+//	darwin	amd64   3.54.1
+//	darwin	arm64   3.54.1
+//	freebsd	386     3.54.1
+//	freebsd	amd64   3.54.1
+//	freebsd	arm     3.54.1
+//	freebsd	arm64   3.54.1
+//	illumos	amd64   3.54.1
+//	linux	386     3.54.1
+//	linux	amd64   3.54.1
+//	linux	arm     3.54.1
+//	linux	arm64   3.54.1
+//	linux	loong64 3.54.1
+//	linux	ppc64le 3.54.1
+//	linux	riscv64 3.54.1
+//	linux	s390x   3.54.1
+//	netbsd	amd64   3.54.1
+//	openbsd	amd64   3.54.1
+//	openbsd	arm64   3.54.1
+//	windows	386     3.54.1
+//	windows	amd64   3.54.1
+//	windows	arm64   3.54.1
 //
 // # Benchmarks
 //

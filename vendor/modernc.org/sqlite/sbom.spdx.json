@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "modernc.org/sqlite",
-  "documentNamespace": "https://gitlab.com/cznic/sqlite/-/spdx/497dd4bdb5a8ee638819d3214d604d6a42305e87148de09f214f89128bf21889",
+  "documentNamespace": "https://gitlab.com/cznic/sqlite/-/spdx/188fd644d8916341771bc95027e346cd8afb010a72d78ebd09765a4661bf7966",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -60,9 +60,9 @@
       "comment": "Reached through modernc.org/libc, which carries the upstream notice. That notice does not record the upstream revision, so no version is asserted."
     },
     {
-      "SPDXID": "SPDXRef-Package-SQLite-3.53.4",
+      "SPDXID": "SPDXRef-Package-SQLite-3.54.1",
       "name": "SQLite",
-      "versionInfo": "3.53.4",
+      "versionInfo": "3.54.1",
       "downloadLocation": "https://sqlite.org/",
       "filesAnalyzed": false,
       "homepage": "https://sqlite.org/",
@@ -74,7 +74,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:generic/sqlite@3.53.4"
+          "referenceLocator": "pkg:generic/sqlite@3.54.1"
         }
       ]
     },
@@ -122,10 +122,10 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-github.com-dustin-go-humanize-v1.0.1",
+      "SPDXID": "SPDXRef-Package-github.com-dustin-go-humanize-v1.1.0",
       "name": "github.com/dustin/go-humanize",
-      "versionInfo": "v1.0.1",
-      "downloadLocation": "https://proxy.golang.org/github.com/dustin/go-humanize/@v/v1.0.1.zip",
+      "versionInfo": "v1.1.0",
+      "downloadLocation": "https://proxy.golang.org/github.com/dustin/go-humanize/@v/v1.1.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/github.com/dustin/go-humanize",
       "licenseConcluded": "MIT",
@@ -136,15 +136,15 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/github.com/dustin/go-humanize@v1.0.1"
+          "referenceLocator": "pkg:golang/github.com/dustin/go-humanize@v1.1.0"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-github.com-google-pprof-v0.0.0-20260802141513-ef3492d7dac3",
+      "SPDXID": "SPDXRef-Package-github.com-google-pprof-v0.0.0-20261016150608-1facf8f91b50",
       "name": "github.com/google/pprof",
-      "versionInfo": "v0.0.0-20260802141513-ef3492d7dac3",
-      "downloadLocation": "https://proxy.golang.org/github.com/google/pprof/@v/v0.0.0-20260802141513-ef3492d7dac3.zip",
+      "versionInfo": "v0.0.0-20261016150608-1facf8f91b50",
+      "downloadLocation": "https://proxy.golang.org/github.com/google/pprof/@v/v0.0.0-20261016150608-1facf8f91b50.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/github.com/google/pprof",
       "licenseConcluded": "Apache-2.0 AND BSD-3-Clause",
@@ -155,7 +155,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/github.com/google/pprof@v0.0.0-20260802141513-ef3492d7dac3"
+          "referenceLocator": "pkg:golang/github.com/google/pprof@v0.0.0-20261016150608-1facf8f91b50"
         }
       ]
     },
@@ -236,10 +236,10 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-github.com-ncruces-go-strftime-v1.0.0",
+      "SPDXID": "SPDXRef-Package-github.com-ncruces-go-strftime-v1.1.0",
       "name": "github.com/ncruces/go-strftime",
-      "versionInfo": "v1.0.0",
-      "downloadLocation": "https://proxy.golang.org/github.com/ncruces/go-strftime/@v/v1.0.0.zip",
+      "versionInfo": "v1.1.0",
+      "downloadLocation": "https://proxy.golang.org/github.com/ncruces/go-strftime/@v/v1.1.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/github.com/ncruces/go-strftime",
       "licenseConcluded": "MIT",
@@ -250,7 +250,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/github.com/ncruces/go-strftime@v1.0.0"
+          "referenceLocator": "pkg:golang/github.com/ncruces/go-strftime@v1.1.0"
         }
       ]
     },
@@ -286,10 +286,10 @@
       "comment": "Reached through modernc.org/libc, which carries the upstream notice. That notice does not record the upstream revision, so no version is asserted."
     },
     {
-      "SPDXID": "SPDXRef-Package-golang.org-x-mod-v0.41.0",
+      "SPDXID": "SPDXRef-Package-golang.org-x-mod-v0.42.0",
       "name": "golang.org/x/mod",
-      "versionInfo": "v0.41.0",
-      "downloadLocation": "https://proxy.golang.org/golang.org/x/mod/@v/v0.41.0.zip",
+      "versionInfo": "v0.42.0",
+      "downloadLocation": "https://proxy.golang.org/golang.org/x/mod/@v/v0.42.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/golang.org/x/mod",
       "licenseConcluded": "BSD-3-Clause",
@@ -300,15 +300,15 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/golang.org/x/mod@v0.41.0"
+          "referenceLocator": "pkg:golang/golang.org/x/mod@v0.42.0"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-golang.org-x-sync-v0.23.0",
+      "SPDXID": "SPDXRef-Package-golang.org-x-sync-v0.24.0",
       "name": "golang.org/x/sync",
-      "versionInfo": "v0.23.0",
-      "downloadLocation": "https://proxy.golang.org/golang.org/x/sync/@v/v0.23.0.zip",
+      "versionInfo": "v0.24.0",
+      "downloadLocation": "https://proxy.golang.org/golang.org/x/sync/@v/v0.24.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/golang.org/x/sync",
       "licenseConcluded": "BSD-3-Clause",
@@ -319,15 +319,15 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/golang.org/x/sync@v0.23.0"
+          "referenceLocator": "pkg:golang/golang.org/x/sync@v0.24.0"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-golang.org-x-sys-v0.48.0",
+      "SPDXID": "SPDXRef-Package-golang.org-x-sys-v0.49.0",
       "name": "golang.org/x/sys",
-      "versionInfo": "v0.48.0",
-      "downloadLocation": "https://proxy.golang.org/golang.org/x/sys/@v/v0.48.0.zip",
+      "versionInfo": "v0.49.0",
+      "downloadLocation": "https://proxy.golang.org/golang.org/x/sys/@v/v0.49.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/golang.org/x/sys",
       "licenseConcluded": "BSD-3-Clause",
@@ -338,15 +338,15 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/golang.org/x/sys@v0.48.0"
+          "referenceLocator": "pkg:golang/golang.org/x/sys@v0.49.0"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-golang.org-x-tools-v0.50.0",
+      "SPDXID": "SPDXRef-Package-golang.org-x-tools-v0.52.0",
       "name": "golang.org/x/tools",
-      "versionInfo": "v0.50.0",
-      "downloadLocation": "https://proxy.golang.org/golang.org/x/tools/@v/v0.50.0.zip",
+      "versionInfo": "v0.52.0",
+      "downloadLocation": "https://proxy.golang.org/golang.org/x/tools/@v/v0.52.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/golang.org/x/tools",
       "licenseConcluded": "BSD-3-Clause",
@@ -357,15 +357,15 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/golang.org/x/tools@v0.50.0"
+          "referenceLocator": "pkg:golang/golang.org/x/tools@v0.52.0"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-modernc.org-cc-v4-v4.29.7",
+      "SPDXID": "SPDXRef-Package-modernc.org-cc-v4-v4.30.6-0.20261101114202-1b9d1a076f6b",
       "name": "modernc.org/cc/v4",
-      "versionInfo": "v4.29.7",
-      "downloadLocation": "https://proxy.golang.org/modernc.org/cc/v4/@v/v4.29.7.zip",
+      "versionInfo": "v4.30.6-0.20261101114202-1b9d1a076f6b",
+      "downloadLocation": "https://proxy.golang.org/modernc.org/cc/v4/@v/v4.30.6-0.20261101114202-1b9d1a076f6b.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/modernc.org/cc/v4",
       "licenseConcluded": "BSD-3-Clause",
@@ -376,15 +376,15 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/modernc.org/cc/v4@v4.29.7"
+          "referenceLocator": "pkg:golang/modernc.org/cc/v4@v4.30.6-0.20261101114202-1b9d1a076f6b"
         }
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-modernc.org-ccgo-v4-v4.36.1",
+      "SPDXID": "SPDXRef-Package-modernc.org-ccgo-v4-v4.38.1",
       "name": "modernc.org/ccgo/v4",
-      "versionInfo": "v4.36.1",
-      "downloadLocation": "https://proxy.golang.org/modernc.org/ccgo/v4/@v/v4.36.1.zip",
+      "versionInfo": "v4.38.1",
+      "downloadLocation": "https://proxy.golang.org/modernc.org/ccgo/v4/@v/v4.38.1.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/modernc.org/ccgo/v4",
       "licenseConcluded": "BSD-3-Clause",
@@ -395,7 +395,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/modernc.org/ccgo/v4@v4.36.1"
+          "referenceLocator": "pkg:golang/modernc.org/ccgo/v4@v4.38.1"
         }
       ]
     },
@@ -438,10 +438,10 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-modernc.org-gc-v3-v3.1.5",
+      "SPDXID": "SPDXRef-Package-modernc.org-gc-v3-v3.2.0",
       "name": "modernc.org/gc/v3",
-      "versionInfo": "v3.1.5",
-      "downloadLocation": "https://proxy.golang.org/modernc.org/gc/v3/@v/v3.1.5.zip",
+      "versionInfo": "v3.2.0",
+      "downloadLocation": "https://proxy.golang.org/modernc.org/gc/v3/@v/v3.2.0.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/modernc.org/gc/v3",
       "licenseConcluded": "BSD-3-Clause",
@@ -452,7 +452,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/modernc.org/gc/v3@v3.1.5"
+          "referenceLocator": "pkg:golang/modernc.org/gc/v3@v3.2.0"
         }
       ]
     },
@@ -476,10 +476,10 @@
       ]
     },
     {
-      "SPDXID": "SPDXRef-Package-modernc.org-libc-v1.77.1",
+      "SPDXID": "SPDXRef-Package-modernc.org-libc-v1.80.1",
       "name": "modernc.org/libc",
-      "versionInfo": "v1.77.1",
-      "downloadLocation": "https://proxy.golang.org/modernc.org/libc/@v/v1.77.1.zip",
+      "versionInfo": "v1.80.1",
+      "downloadLocation": "https://proxy.golang.org/modernc.org/libc/@v/v1.80.1.zip",
       "filesAnalyzed": false,
       "homepage": "https://pkg.go.dev/modernc.org/libc",
       "licenseConcluded": "BSD-3-Clause",
@@ -490,7 +490,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/modernc.org/libc@v1.77.1"
+          "referenceLocator": "pkg:golang/modernc.org/libc@v1.80.1"
         }
       ]
     },
@@ -659,19 +659,19 @@
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.77.1",
+      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.80.1",
       "relationshipType": "CONTAINS",
       "relatedSpdxElement": "SPDXRef-Package-Go"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.77.1",
+      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.80.1",
       "relationshipType": "CONTAINS",
       "relatedSpdxElement": "SPDXRef-Package-NixOS-nixpkgs"
     },
     {
       "spdxElementId": "SPDXRef-Package-modernc.org-sqlite",
       "relationshipType": "CONTAINS",
-      "relatedSpdxElement": "SPDXRef-Package-SQLite-3.53.4"
+      "relatedSpdxElement": "SPDXRef-Package-SQLite-3.54.1"
     },
     {
       "spdxElementId": "SPDXRef-Package-modernc.org-sqlite",
@@ -691,10 +691,10 @@
     {
       "spdxElementId": "SPDXRef-Package-modernc.org-sqlite",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-github.com-dustin-go-humanize-v1.0.1"
+      "relatedSpdxElement": "SPDXRef-Package-github.com-dustin-go-humanize-v1.1.0"
     },
     {
-      "spdxElementId": "SPDXRef-Package-github.com-google-pprof-v0.0.0-20260802141513-ef3492d7dac3",
+      "spdxElementId": "SPDXRef-Package-github.com-google-pprof-v0.0.0-20261016150608-1facf8f91b50",
       "relationshipType": "TEST_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
@@ -719,7 +719,7 @@
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-github.com-ncruces-go-strftime-v1.0.0",
+      "spdxElementId": "SPDXRef-Package-github.com-ncruces-go-strftime-v1.1.0",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
@@ -729,37 +729,37 @@
       "relatedSpdxElement": "SPDXRef-Package-github.com-remyoudompheng-bigfft-v0.0.0-20230129092748-24d4a6f8daec"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.77.1",
+      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.80.1",
       "relationshipType": "CONTAINS",
       "relatedSpdxElement": "SPDXRef-Package-go-netdb"
     },
     {
-      "spdxElementId": "SPDXRef-Package-golang.org-x-mod-v0.41.0",
+      "spdxElementId": "SPDXRef-Package-golang.org-x-mod-v0.42.0",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-golang.org-x-sync-v0.23.0",
+      "spdxElementId": "SPDXRef-Package-golang.org-x-sync-v0.24.0",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
       "spdxElementId": "SPDXRef-Package-modernc.org-sqlite",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-golang.org-x-sys-v0.48.0"
+      "relatedSpdxElement": "SPDXRef-Package-golang.org-x-sys-v0.49.0"
     },
     {
-      "spdxElementId": "SPDXRef-Package-golang.org-x-tools-v0.50.0",
+      "spdxElementId": "SPDXRef-Package-golang.org-x-tools-v0.52.0",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-cc-v4-v4.29.7",
+      "spdxElementId": "SPDXRef-Package-modernc.org-cc-v4-v4.30.6-0.20261101114202-1b9d1a076f6b",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-ccgo-v4-v4.36.1",
+      "spdxElementId": "SPDXRef-Package-modernc.org-ccgo-v4-v4.38.1",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
@@ -774,7 +774,7 @@
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-gc-v3-v3.1.5",
+      "spdxElementId": "SPDXRef-Package-modernc.org-gc-v3-v3.2.0",
       "relationshipType": "OPTIONAL_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
@@ -786,7 +786,7 @@
     {
       "spdxElementId": "SPDXRef-Package-modernc.org-sqlite",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-modernc.org-libc-v1.77.1"
+      "relatedSpdxElement": "SPDXRef-Package-modernc.org-libc-v1.80.1"
     },
     {
       "spdxElementId": "SPDXRef-Package-modernc.org-sqlite",
@@ -819,7 +819,7 @@
       "relatedSpdxElement": "SPDXRef-Package-modernc.org-sqlite"
     },
     {
-      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.77.1",
+      "spdxElementId": "SPDXRef-Package-modernc.org-libc-v1.80.1",
       "relationshipType": "CONTAINS",
       "relatedSpdxElement": "SPDXRef-Package-musl-libc"
     },

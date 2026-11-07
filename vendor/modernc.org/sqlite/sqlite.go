@@ -71,6 +71,12 @@ var parseTimeFormats = []string{
 	"2006-01-02",
 }
 
+// cancellationFlags maps a connection handle to its conn's canceled flag, which
+// canceledProgress reads. A connection stores its entry on its first call with
+// a context and Close removes it, so the map is not written per call and the
+// lookups of concurrent connections do not contend.
+var cancellationFlags sync.Map // uintptr -> *atomic.Int32
+
 // interruptOnDone sets up a goroutine to interrupt the provided db when the
 // context is canceled, and returns a function the caller must defer so it
 // doesn't interrupt after the caller finishes.
@@ -83,11 +89,26 @@ func interruptOnDone(
 		var d int32
 		done = &d
 	}
+	// SQLite clears an interrupt delivered before the first active VM starts.
+	// Check every 1000 VM steps; shorter statements may still finish after a
+	// lost interrupt. The driver owns the connection's only progress-handler slot.
+	if !c.canceledRegistered {
+		cancellationFlags.Store(c.db, &c.canceled)
+		c.canceledRegistered = true
+	}
+	c.canceled.Store(0)
+	sqlite3.Xsqlite3_progress_handler(c.tls, c.db, 1000, cFuncPointer(canceledProgress), c.db)
 	// donemu prevents a TOCTOU logical race between checking the done flag and
 	// calling interrupt in the select statement below.
 	var donemu sync.Mutex
 
 	donech := make(chan struct{})
+
+	// A wait for a shared-cache lock during the call ends once ctx is done,
+	// see retry; the outer call's context is restored afterwards
+	prevWaitCtx := c.waitCtx
+	c.waitCtx = ctx
+	c.ensureBusyHandler()
 
 	go func() {
 		select {
@@ -97,6 +118,7 @@ func interruptOnDone(
 			// nothing, or even possibly an unrelated later call to exec.
 			donemu.Lock()
 			if atomic.CompareAndSwapInt32(done, 0, 1) {
+				c.canceled.Store(1)
 				c.interrupt(c.db)
 			}
 			donemu.Unlock()
@@ -112,7 +134,16 @@ func interruptOnDone(
 		atomic.StoreInt32(done, 1)
 		donemu.Unlock()
 		close(donech)
+		sqlite3.Xsqlite3_progress_handler(c.tls, c.db, 0, 0, 0)
+		c.waitCtx = prevWaitCtx
 	}
+}
+
+func canceledProgress(_ *libc.TLS, db uintptr) int32 {
+	if flag, ok := cancellationFlags.Load(db); ok {
+		return flag.(*atomic.Int32).Load()
+	}
+	return 0
 }
 
 func getVFSName(query string) (r string, err error) {
@@ -497,7 +528,7 @@ func applyQueryParams(c *conn, query string, defensive bool) error {
 func unlockNotify(t *libc.TLS, ppArg uintptr, nArg int32) {
 	for i := int32(0); i < nArg; i++ {
 		mu := *(*uintptr)(unsafe.Pointer(ppArg))
-		(*mutex)(unsafe.Pointer(mu)).Unlock()
+		(*mutex)(unsafe.Pointer(mu)).wake()
 		ppArg += ptrSize
 	}
 }
@@ -1336,18 +1367,44 @@ func collationTrampoline(tls *libc.TLS, pApp uintptr, nLeft int32, zLeft uintptr
 // the particular instance of 'c', so getting a new connection only to pass it
 // to Limit is possibly not useful above querying what are the various
 // configured default values.
+//
+// The connection may come from a [driver.Connector] that wraps the
+// connections [NewConnector] opens. Limit reaches the driver's own connection
+// through the wrapper's Unwrap method, unwrapping for as long as the value
+// implements
+//
+//	interface{ Unwrap() driver.Conn }
+//
+// A wrapper without that method, or one whose chain does not end at a
+// connection this driver opened, fails with an error naming its type.
 func Limit(c *sql.Conn, id int, newVal int) (r int, err error) {
 	err = c.Raw(func(driverConn any) error {
-		switch dc := driverConn.(type) {
-		case *conn:
-			r = dc.limit(id, newVal)
-			return nil
-		default:
+		dc := unwrapConn(driverConn)
+		if dc == nil {
 			return fmt.Errorf("unexpected driverConn type: %T", driverConn)
 		}
+
+		r = dc.limit(id, newVal)
+		return nil
 	})
 	return r, err
+}
 
+// unwrapConn returns the connection this driver opened behind v, the value
+// sql.Conn.Raw passes to its function, seeing through every wrapper that
+// implements interface{ Unwrap() driver.Conn }. It returns nil when v is not
+// such a connection and does not wrap one.
+func unwrapConn(v any) *conn {
+	for {
+		switch x := v.(type) {
+		case *conn:
+			return x
+		case interface{ Unwrap() driver.Conn }:
+			v = x.Unwrap()
+		default:
+			return nil
+		}
+	}
 }
 
 // ColumnInfo describes one output column of a prepared SQL statement.

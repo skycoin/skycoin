@@ -822,7 +822,7 @@ func TestCreateRefusesOversizedTransaction(t *testing.T) {
 	sendAll := func(n int) Params {
 		return Params{
 			HoursSelection: HoursSelection{Type: HoursSelectionTypeAuto, Mode: HoursSelectionModeShare, ShareFactor: &share},
-			To:             []coin.TransactionOutput{{Address: testutil.MakeAddress(), Coins: uint64(n) * 1e6}},
+			To:             []coin.TransactionOutput{{Address: testutil.MakeAddress(), Coins: uint64(n) * 1e6}}, //nolint:gosec
 		}
 	}
 

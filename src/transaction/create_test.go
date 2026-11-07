@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strconv"
 	"testing"
 	"time"
 
@@ -800,4 +801,39 @@ func TestDecimalPtrEqual(t *testing.T) {
 	oneDecimalPtr := &oneDecimal
 	oneDecimal2 := decimal.New(1, 0)
 	require.True(t, oneDecimalPtr.Equal(oneDecimal2))
+}
+
+func TestCreateRefusesOversizedTransaction(t *testing.T) {
+	headTime := uint64(time.Now().UTC().Unix()) //nolint:gosec
+	_, secKeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte("seed"), 1)
+	addr := cipher.MustAddressFromSecKey(secKeys[0])
+
+	makeUxOuts := func(n int) coin.AddressUxOuts {
+		uxouts := make([]coin.UxOut, n)
+		for i := range uxouts {
+			uxouts[i] = makeUxOut(t, secKeys[0], 1e6, 10)
+			uxouts[i].Body.SrcTransaction = cipher.SumSHA256([]byte(strconv.Itoa(i)))
+			uxouts[i].Head.BkSeq = uint64(i + 1) //nolint:gosec
+			uxouts[i].Head.Time = headTime
+		}
+		return coin.AddressUxOuts{addr: uxouts}
+	}
+	share := decimal.NewFromFloat(0.5)
+	sendAll := func(n int) Params {
+		return Params{
+			HoursSelection: HoursSelection{Type: HoursSelectionTypeAuto, Mode: HoursSelectionModeShare, ShareFactor: &share},
+			To:             []coin.TransactionOutput{{Address: testutil.MakeAddress(), Coins: uint64(n) * 1e6}}, //nolint:gosec
+		}
+	}
+
+	// 300 outputs make a transaction of about 29 KB, which fits.
+	txn, _, err := Create(sendAll(300), makeUxOuts(300), headTime)
+	require.NoError(t, err)
+	require.Len(t, txn.In, 300)
+
+	// 400 outputs need about 39 KB, more than the 32 KB a transaction may be.
+	_, _, err = Create(sendAll(400), makeUxOuts(400), headTime)
+	require.Error(t, err)
+	require.IsType(t, Error{}, err, "the API reports a transaction.Error to the user")
+	require.Contains(t, err.Error(), "spends 400 outputs")
 }

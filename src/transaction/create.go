@@ -367,6 +367,16 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 		return nil, nil, err
 	}
 
+	// The node refuses a larger transaction only when it is sent, after the
+	// wallet has signed it, so say so here, where the user can spend fewer outputs.
+	size, err := txn.Size()
+	if err != nil {
+		return nil, nil, err
+	}
+	if size > params.UserVerifyTxn.MaxTransactionSize {
+		return nil, nil, NewError(fmt.Errorf("the transaction spends %d outputs and would be %d bytes, more than the %d bytes allowed; send fewer outputs at a time", len(txn.In), size, params.UserVerifyTxn.MaxTransactionSize))
+	}
+
 	inputs := make([]UxBalance, len(txn.In))
 	for i, h := range txn.In {
 		uxBalance, ok := uxbMap[h]

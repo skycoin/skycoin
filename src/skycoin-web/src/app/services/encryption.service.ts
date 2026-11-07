@@ -45,6 +45,11 @@ export class EncryptionService {
   }
 
   private async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+    // Browsers only expose crypto.subtle on secure pages (https or localhost).
+    if (!crypto.subtle) {
+      throw new Error('errors.insecure-context');
+    }
+
     const keyMaterial = await crypto.subtle.importKey(
       'raw',
       this.textEncoder.encode(password) as BufferSource,

@@ -12,12 +12,12 @@
   "errors": {
     "fetch-version": "No ha sido posible verificar la última versión desde Github",
     "incorrect-password": "Contraseña incorrecta",
+    "insecure-context": "La billetera necesita una página segura y esta pestaña del navegador no lo es. Ábrala en http://localhost en la máquina que la sirve, acceda a esa máquina mediante un túnel SSH (por ejemplo ssh -L 8000:localhost:8000 usuario@host y luego http://localhost:8000), use https o agregue la dirección en \"Insecure origins treated as secure\" en chrome://flags.",
     "api-disabled": "API desabilitada",
     "no-wallet": "La billetera no existe",
     "no-outputs": "No hay salidas no gastadas",
     "no-wallets": "Actualmente no hay billeteras",
-    "loading-error": "Error al intentar obtener los datos. Por favor, inténtelo nuevamente más tarde.",
-    "crypto-no-available": "El explorador web que usted está usando no es compatible con esta billetera (la librería crypto no está disponible). Por favor, actualice su navegador o intente con otro."
+    "loading-error": "Error al intentar obtener los datos. Por favor, inténtelo nuevamente más tarde."
   },
 
   "title": {

@@ -32,6 +32,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
   private deleteWalletSubscription!: Subscription;
 
   addingHwWallet = false;
+  insecurePage = !window.isSecureContext;
 
   constructor(
     private walletService: WalletService,

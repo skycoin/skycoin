@@ -30,6 +30,7 @@
     "error": "Error",
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
+    "insecure-context": "The wallet needs a secure page, and this browser tab is not one. Open it at http://localhost on the machine that serves it, reach that machine through an SSH tunnel (for example ssh -L 8000:localhost:8000 user@host, then http://localhost:8000), use https, or add the address under \"Insecure origins treated as secure\" in chrome://flags.",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
     "no-outputs": "No unspent outputs",

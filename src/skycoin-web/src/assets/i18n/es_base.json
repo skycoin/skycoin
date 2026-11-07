@@ -11,12 +11,12 @@
   "errors": {
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
+    "insecure-context": "The wallet needs a secure page, and this browser tab is not one. Open it at http://localhost on the machine that serves it, reach that machine through an SSH tunnel (for example ssh -L 8000:localhost:8000 user@host, then http://localhost:8000), use https, or add the address under \"Insecure origins treated as secure\" in chrome://flags.",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
     "no-outputs": "No unspent outputs",
     "no-wallets": "Currently there are no wallets",
-    "loading-error": "Error trying to get the data. Please try again later.",
-    "crypto-no-available": "The web browser you are using is not compatible with this wallet (the crypto library is not available). Please update your browser or try using another."
+    "loading-error": "Error trying to get the data. Please try again later."
   },
 
   "title": {

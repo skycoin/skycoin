@@ -1,6 +1,9 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.wallets' | translate"></app-header>
   <div class="container">
+    @if (insecurePage) {
+      <div class="-insecure-notice">{{ 'errors.insecure-context' | translate }}</div>
+    }
     @if (!wallets || wallets.length === 0) {
       <app-loading-content [isLoading]="!wallets" [noDataText]="'errors.no-wallets'"></app-loading-content>
     }

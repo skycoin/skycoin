@@ -79,7 +79,7 @@ this order, and none can be skipped or reordered, because each pins the one befo
 2. `modernc.org/libsqlite3`, its `go.mod` bumped to that libc, re-transpiled, tagged.
 3. `modernc.org/libsqlite_vec`, bumped to both, re-transpiled, tagged.
 4. Here: both sibling checkouts at those tags, `go.mod` on the new libc, `make vendor`,
-   the builders green on all 20 targets, then the tag. `make vendor` refuses a dirty
+   the builders green on all 21 targets, then the tag. `make vendor` refuses a dirty
    checkout, two checkouts on different libc versions, and a `libsqlite_vec` that
    requires another `libsqlite3` commit than `../libsqlite3` is at, and records what it
    used in `vendor.json`. The test suite fails when the libc in `go.mod` differs from

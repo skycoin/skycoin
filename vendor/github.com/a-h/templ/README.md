@@ -124,9 +124,22 @@ gotestsum --watch -- -coverprofile=coverage.out
 
 ### test-fuzz
 
+Run each fuzz test for FUZZTIME (default 120s).
+
 ```sh
 ./parser/v2/fuzz.sh
 ./parser/v2/goexpression/fuzz.sh
+./runtime/fuzzing/fuzz.sh
+./internal/jstokenizer/fuzzing/fuzz.sh
+```
+
+### test-fuzz-corpus
+
+Run the runtime and JavaScript tokenizer fuzz tests against their seed and committed corpora, without fuzzing. These fuzz tests are in separate modules, so that their JavaScript engine and parser dependencies are not dependencies of templ, and `go test ./...` in the root module doesn't run them. The parser fuzz tests are in the root module, so `test` and `test-cover` run their corpora.
+
+```sh
+(cd runtime/fuzzing && go test ./...) &&
+	(cd internal/jstokenizer/fuzzing && go test ./...)
 ```
 
 ### benchmark
@@ -135,6 +148,14 @@ Run benchmarks.
 
 ```sh
 go run ./cmd/templ generate -include-version=false && go test ./... -bench=. -benchmem
+```
+
+### benchmark-fmt
+
+Run the templ fmt benchmarks, which include the time taken by prettier.
+
+```sh
+go test ./internal/format -run '^$' -bench BenchmarkTempl -benchtime 3x
 ```
 
 ### fmt
@@ -152,6 +173,14 @@ Run the lint operations that are run as part of the CI.
 
 ```sh
 golangci-lint run --verbose
+```
+
+### vulncheck
+
+Check for known vulnerabilities in dependencies that templ calls.
+
+```sh
+govulncheck ./...
 ```
 
 ### ensure-generated

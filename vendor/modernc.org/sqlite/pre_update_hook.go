@@ -82,6 +82,21 @@ func (c *conn) RegisterRollbackHook(callback RollbackHookFn) {
 	sqlite3.Xsqlite3_rollback_hook(c.tls, c.db, cFuncPointer(rollbackHookTrampoline), c.db)
 }
 
+// unregisterHooks forgets the pre-update, commit and rollback hooks registered
+// for db. Close calls it before the handle is freed: afterwards the same handle
+// value can belong to a newly opened connection.
+func unregisterHooks(db uintptr) {
+	xPreUpdateHandlers.mu.Lock()
+	delete(xPreUpdateHandlers.m, db)
+	xPreUpdateHandlers.mu.Unlock()
+	xCommitHandlers.mu.Lock()
+	delete(xCommitHandlers.m, db)
+	xCommitHandlers.mu.Unlock()
+	xRollbackHandlers.mu.Lock()
+	delete(xRollbackHandlers.m, db)
+	xRollbackHandlers.mu.Unlock()
+}
+
 type SQLitePreUpdateData struct {
 	tls          *libc.TLS
 	pCsr         uintptr

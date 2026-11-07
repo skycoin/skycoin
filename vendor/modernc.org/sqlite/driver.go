@@ -155,9 +155,15 @@ func defaultDriver() *Driver { return d }
 // _time_format: The name of a format to use when writing time values to the database.
 // The currently supported values are (1) "sqlite" for YYYY-MM-DD HH:MM:SS.SSS[+-]HH:MM
 // (format 4 from https://www.sqlite.org/lang_datefunc.html#time_values with sub-second
-// precision and timezone specifier) and (2) "datetime" for YYYY-MM-DD HH:MM:SS
-// (format 3, matching the output of SQLite's datetime() function).
-// If this parameter is not specified, then the default String() format will be used.
+// precision and timezone specifier), (2) "datetime" for YYYY-MM-DD HH:MM:SS
+// (format 3, matching the output of SQLite's datetime() function), and
+// (3) "string_no_monotonic" for t.Round(0).String(), which preserves the default
+// wall-clock layout, timezone and nanosecond precision but omits the process-local
+// monotonic clock reading. This lets a scanned time match its stored text when
+// rebound in SQL. It does not rewrite existing strings containing a monotonic
+// reading; applications must normalize those values separately if needed.
+// If this parameter is not specified, then the default String() format will be
+// used, including any monotonic clock reading.
 //
 // _time_integer_format: The name of a integer format to use when writing time values.
 // By default, the time is stored as string and the format can be set with _time_format
@@ -235,10 +241,14 @@ func defaultDriver() *Driver { return d }
 // Defensive mode is a hardening measure, not a sandbox for hostile database
 // files. It is one of several steps SQLite recommends for that purpose (see
 // https://www.sqlite.org/security.html); this build compiles with neither
-// SQLITE_TRUSTED_SCHEMA=0 nor SQLITE_DQS=0 and the driver exposes no
-// authorizer, so _defensive=1 alone does not make opening an untrusted file
-// safe. It is also a property of the connection, not of the database: another
-// connection to the same file, opened without the parameter, is unrestricted.
+// SQLITE_TRUSTED_SCHEMA=0 nor SQLITE_DQS=0, so _defensive=1 alone does not make
+// opening an untrusted file safe. The driver exposes SQLite's authorizer as an
+// opt-in [AuthorizerRegisterer] capability. For pool-wide enforcement, install
+// the policy on every newly opened physical connection with
+// [RegisterConnectionHook] (or [Driver.RegisterConnectionHook] on a
+// caller-constructed Driver); database/sql's Conn.Raw is the per-connection
+// escape hatch. The policy is a property of the connection, not of the
+// database: another connection to the same file without it is unrestricted.
 // See: https://www.sqlite.org/c3ref/c_dbconfig_defensive.html
 //
 // _error_rc: Opt-in error-string reporting mode for synthesised errors.

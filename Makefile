@@ -31,7 +31,7 @@
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
-.PHONY: test-explorer-e2e build-wasm check-wasm
+.PHONY: test-explorer-e2e test-web-wallet-joint-e2e build-wasm check-wasm
 
 COIN ?= skycoin
 
@@ -261,6 +261,9 @@ test-ui:  ## Run the unit tests of the Angular front-ends that have a working su
 
 test-explorer-e2e:  ## Run the explorer e2e tests against the pinned blockchain database
 	./ci-scripts/explorer-e2e.sh
+
+test-web-wallet-joint-e2e:  ## Create and co-sign a joint transaction in the web wallet in a browser, on a throwaway chain
+	COIN=$(COIN) ./ci-scripts/web-wallet-joint-e2e.sh
 
 build-ui:  ## Build the production bundle of every Angular front-end
 	@set -e; for d in $(ANGULAR_UI_DIRS); do \

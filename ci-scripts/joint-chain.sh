@@ -101,7 +101,12 @@ EOF
     FIBER_TOML="$FIBER_TOML" "$SKY" cli fiberAddressGen --num 100 --overwrite \
         --addrs-file "$DATA_DIR/addrs.txt" --seeds-file "$DATA_DIR/seeds.csv" >/dev/null
 
+    # With JOINT_PEERED a second node joins later, so this one takes a localhost peer
     local net=(--disable-outgoing --disable-incoming)
+    if [[ -n "${JOINT_PEERED:-}" ]]; then
+        P2P_PORT=$(free_port $((PORT + 100)))
+        net=(--disable-outgoing --localhost-only --address 127.0.0.1 --port "$P2P_PORT" --disable-pex --disable-default-peers)
+    fi
     echo "=== start node on $HOST"
     FIBER_TOML="$FIBER_TOML" GENESIS="$genesis" "$NODE" \
         "${net[@]}" --web-interface-port="$PORT" \
@@ -143,3 +148,31 @@ EOF
     pass "carrier $CUX ($CH h), float $VUX ($VH h)"
 }
 
+# Starts a second node that peers with the first, as a wallet's node would, and
+# sets PEER_HOST. Needs JOINT_PEERED set before joint_chain_setup.
+joint_chain_add_peer() {
+    local port p2p dir="$DATA_DIR/peer"
+    port=$(free_port $((PORT + 2)))
+    p2p=$(free_port $((P2P_PORT + 1)))
+    PEER_HOST="http://127.0.0.1:$port"
+    mkdir -p "$dir"
+    echo "127.0.0.1:$P2P_PORT" > "$DATA_DIR/custom-peers.txt"
+    echo "=== start a peer node on $PEER_HOST"
+    FIBER_TOML="$FIBER_TOML" "$NODE" \
+        --disable-incoming --localhost-only --address 127.0.0.1 --port "$p2p" \
+        --disable-pex --disable-default-peers --custom-peers-file "$DATA_DIR/custom-peers.txt" \
+        --web-interface-port="$port" --download-peerlist=false --launch-browser=false \
+        --data-dir="$dir" --enable-all-api-sets=true --disable-csrf \
+        --test.run "^TestRunMain$" > "$DATA_DIR/peer.log" 2>&1 &
+    EXTRA_PIDS+=($!)
+    local seq conns
+    for _ in $(seq 1 60); do
+        conns=$(curl -s "$PEER_HOST/api/v1/network/connections" 2>/dev/null | jq -r '.connections | length' 2>/dev/null || true)
+        seq=$(curl -s "$PEER_HOST/api/v1/blockchain/metadata" 2>/dev/null | jq -r '.head.seq' 2>/dev/null || true)
+        [[ "${conns:-0}" -ge 1 && "$seq" == "$(head_seq)" ]] && break
+        sleep 1
+    done
+    [[ "${conns:-0}" -ge 1 ]] || { tail -20 "$DATA_DIR/peer.log" >&2; fail "the peer node did not connect"; }
+    [[ "$seq" == "$(head_seq)" ]] || fail "the peer node did not sync"
+    pass "peer node connected and synced to block $seq"
+}

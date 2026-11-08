@@ -112,9 +112,10 @@ export class JointTransactionComponent implements OnInit, OnDestroy {
       this.loadOwnOutputs(wallet);
       this.changeDetectorRef.markForCheck();
     }));
-    this.subscriptions.push(this.signForm.get('wallet')!.valueChanges.subscribe(() => {
+    this.subscriptions.push(this.signForm.get('wallet')!.valueChanges.subscribe(wallet => {
+      // The group's value still holds the old wallet while its control reports the new one
       if (this.tx) {
-        this.review();
+        this.review(wallet);
       }
       this.changeDetectorRef.markForCheck();
     }));
@@ -259,9 +260,9 @@ export class JointTransactionComponent implements OnInit, OnDestroy {
     this.review();
   }
 
-  review() {
+  review(wallet: Wallet | null = this.signForm.value.wallet) {
     const raw = (this.signForm.value.rawTx || '').trim();
-    this.run(this.jointService.decode(raw, this.signForm.value.wallet), tx => {
+    this.run(this.jointService.decode(raw, wallet), tx => {
       this.tx = tx;
     }, () => {
       this.tx = undefined;
@@ -270,6 +271,18 @@ export class JointTransactionComponent implements OnInit, OnDestroy {
 
   get unsignedOwnInputs(): number {
     return this.tx ? this.tx.inputs.filter(i => i.mine && !i.signed).length : 0;
+  }
+
+  /** Why Sign my inputs is disabled for the chosen wallet, as a translation key, or ''. */
+  get signNote(): string {
+    if (!this.tx || this.tx.fullySigned || !this.signForm.value.wallet) {
+      return '';
+    }
+    if (!this.tx.inputs.some(i => i.mine)) {
+      return 'joint-tx.owns-none';
+    }
+
+    return this.unsignedOwnInputs === 0 ? 'joint-tx.own-signed' : '';
   }
 
   sign() {

@@ -163,6 +163,34 @@ describe('JointTransactionComponent', () => {
     expect(component.tx).toBeUndefined();
   });
 
+  it('reviews again with the newly chosen wallet', () => {
+    create('pasted-hex');
+    const other: any = { label: 'other', addresses: [] };
+    component.signForm.get('wallet')!.setValue(wallet);
+    joint.decode.and.returnValue(of(decoded([false, false])));
+    component.review();
+    component.signForm.get('wallet')!.setValue(other);
+    expect(joint.decode.calls.mostRecent().args).toEqual(['pasted-hex', other]);
+  });
+
+  it('explains when the wallet has nothing to sign', () => {
+    create('pasted-hex');
+    component.signForm.get('wallet')!.setValue(wallet);
+    const notMine = decoded([false, false]);
+    notMine.inputs.forEach(i => i.mine = false);
+    joint.decode.and.returnValue(of(notMine));
+    component.review();
+    expect(component.signNote).toBe('joint-tx.owns-none');
+
+    joint.decode.and.returnValue(of(decoded([true, false])));
+    component.review();
+    expect(component.signNote).toBe('joint-tx.own-signed');
+
+    joint.decode.and.returnValue(of(decoded([false, false])));
+    component.review();
+    expect(component.signNote).toBe('');
+  });
+
   it('shows why a review failed', () => {
     create('bad');
     joint.decode.and.returnValue(throwError(() => new Error('joint-tx.invalid-tx')));

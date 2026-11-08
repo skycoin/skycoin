@@ -704,6 +704,8 @@
     "ready": "Every input is signed. The transaction can be broadcast.",
     "sign-button": "Sign my inputs",
     "nothing-to-sign": "This wallet owns none of the unsigned inputs.",
+    "owns-none": "This wallet owns none of the inputs, so it has nothing to sign. Choose the wallet that holds your outputs.",
+    "own-signed": "This wallet has already signed its inputs. Send the transaction to the other party to sign theirs.",
     "invalid-tx": "This is not a valid transaction.",
     "invalid-signature": "The cipher returned an invalid signature.",
     "broadcast-done": "The joint transaction was sent."

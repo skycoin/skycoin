@@ -185,6 +185,9 @@
             @if (tx.fullySigned) {
               <div class="-yes">{{ 'joint-tx.ready' | translate }}</div>
             }
+            @if (signNote) {
+              <div class="-note">{{ signNote | translate }}</div>
+            }
           </div>
         }
         @if (error) {

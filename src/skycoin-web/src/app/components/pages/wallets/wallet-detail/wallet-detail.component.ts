@@ -9,12 +9,13 @@ import { CoinService } from '../../../../services/coin.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { AddressExposureService } from '../../../../services/wallet/address-exposure.service';
 import { ChangeNameComponent } from '../change-name/change-name.component';
-import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal } from '../../../../utils/index';
+import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal, whenNodeSynced } from '../../../../utils/index';
 import { WalletOptionsComponent, WalletOptionsResponses } from './wallet-options/wallet-options.component';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { BlockchainService } from '../../../../services/blockchain.service';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
@@ -39,6 +40,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   currentCoin?: BaseCoin;
   creatingAddress = false;
+  scanningAddresses = false;
   showSlowMobileInfo = false;
   spinnerStyle: any;
 
@@ -54,6 +56,7 @@ export class WalletDetailComponent implements OnDestroy {
     private translateService: TranslateService,
     private msgBarService: MsgBarService,
     private hwWalletService: HwWalletService,
+    private blockchainService: BlockchainService,
     coinService: CoinService,
     private changeDetectorRef: ChangeDetectorRef,
   ) {
@@ -144,8 +147,30 @@ export class WalletDetailComponent implements OnDestroy {
           this.onEncryptWallet();
         } else if (response === WalletOptionsResponses.DecryptWallet) {
           this.onDecryptWallet();
+        } else if (response === WalletOptionsResponses.ScanAddresses) {
+          this.onScanAddresses();
         }
       }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  /** Adds the addresses used past the wallet's last ones, as payouts to new xpub indexes are. */
+  onScanAddresses() {
+    if (this.scanningAddresses) {
+      return;
+    }
+    this.scanningAddresses = true;
+    whenNodeSynced(this.blockchainService, this.translateService).pipe(
+      mergeMap(() => this.walletService.findUsedAddresses(this.wallet)),
+    ).subscribe(added => {
+      this.scanningAddresses = false;
+      this.msgBarService.showDone(this.translateService.instant('wallet.scan.done', { count: added }));
+      this.checkExposure();
+      this.changeDetectorRef.markForCheck();
+    }, (error: Error) => {
+      this.scanningAddresses = false;
+      this.msgBarService.showError(error.message);
       this.changeDetectorRef.markForCheck();
     });
   }

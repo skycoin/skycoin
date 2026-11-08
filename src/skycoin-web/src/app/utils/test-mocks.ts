@@ -134,6 +134,16 @@ export class MockWalletService {
     return of(undefined);
   }
 
+  findAllUsedAddresses() {}
+
+  canFindUsedAddresses(wallet: Wallet): boolean {
+    return false;
+  }
+
+  findUsedAddresses(wallet: Wallet): Observable<number> {
+    return of(0);
+  }
+
   changeAddressFor(wallet: Wallet): Observable<string | null> {
     return of(null);
   }

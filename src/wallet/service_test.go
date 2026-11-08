@@ -2970,6 +2970,12 @@ func TestServiceScanAddresses(t *testing.T) {
 	generateTestCasesFunc := func(walletType, seed, xpub string, addrs []cipher.Address) testCases {
 		password := []byte("pwd")
 		var encrypt bool
+		// bip44 and xpub wallets scan until scanN unused addresses in a row,
+		// so with scanN 1 they also find a used address right after another.
+		usedInARow := addrs[1:3]
+		if walletType == wallet.WalletTypeDeterministic {
+			usedInARow = addrs[1:2]
+		}
 		var tt testCases
 		switch walletType {
 		case wallet.WalletTypeXPub, wallet.WalletTypeBip44:
@@ -3086,7 +3092,7 @@ func TestServiceScanAddresses(t *testing.T) {
 				expectErr:   nil,
 			},
 			{
-				name: "have 2 scan 1 get 1 unencrypted",
+				name: "have 2 scan 1 unencrypted",
 				opts: wallet.Options{
 					Type:  walletType,
 					Label: "label",
@@ -3098,11 +3104,11 @@ func TestServiceScanAddresses(t *testing.T) {
 					},
 				},
 				scanN:       1,
-				expectAddrs: addrs[1:2],
+				expectAddrs: usedInARow,
 				expectErr:   nil,
 			},
 			{
-				name: "have 2 scan 1 get 1 encrypted",
+				name: "have 2 scan 1 encrypted",
 				opts: wallet.Options{
 					Type:     walletType,
 					Label:    "label",
@@ -3117,7 +3123,7 @@ func TestServiceScanAddresses(t *testing.T) {
 				},
 				scanN:       1,
 				password:    password,
-				expectAddrs: addrs[1:2],
+				expectAddrs: usedInARow,
 				expectErr:   nil,
 			},
 			{

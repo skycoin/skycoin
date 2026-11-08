@@ -14,6 +14,14 @@
         <span>{{ 'wallet.new-address' | translate }}</span>
       </div>
     </button>
+    @if (showScanOption) {
+      <button mat-button color="accent" (click)="onScanAddresses()">
+        <div class="label">
+          <div class="img -btn-plus"></div>
+          <span>{{ 'wallet.scan-addresses' | translate }}</span>
+        </div>
+      </button>
+    }
     @if (showEncryptOption && !isEncrypted) {
       <button mat-button color="accent" (click)="onEncryptWallet()">
         <div class="label">

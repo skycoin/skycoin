@@ -436,6 +436,16 @@ func TestScanAddresses(t *testing.T) {
 			expectAddrs:    testSkycoinAddresses[:5],
 			expectAllAddrs: testSkycoinAddresses[:5],
 		},
+		{
+			name:  "used addresses past the first window",
+			scanN: 2,
+			txnFinder: mockTxnsFinder{
+				testSkycoinAddresses[1]: true,
+				testSkycoinAddresses[3]: true,
+			},
+			expectAddrs:    testSkycoinAddresses[:4],
+			expectAllAddrs: testSkycoinAddresses[:4],
+		},
 	}
 
 	for _, tc := range tt {

@@ -61,9 +61,26 @@ export class ServerWalletBackend implements WalletBackend {
       params.chain = chainIndex === 1 ? 'change' : 'external';
     }
 
-    return this.apiService.post('wallet/newAddress', params).pipe(
-      // Reload the wallet to get its updated addresses and accounts.
-      mergeMap(() => this.apiService.get('wallet', { id: wallet.filename } as any)),
+    return this.apiService.post('wallet/newAddress', params).pipe(mergeMap(() => this.reload(wallet)));
+  }
+
+  /**
+   * Asks the wallet service to add the addresses used past the wallet's last
+   * ones, on both chains of a bip44 wallet, until gap in a row are unused.
+   * Emits how many it added.
+   */
+  scanAddresses(wallet: Wallet, gap: number): Observable<number> {
+    const before = addressCount(wallet);
+
+    return this.apiService.post('wallet/scan', { id: wallet.filename, num: gap.toString() }).pipe(
+      // The reply lists only external addresses, so count from the wallet.
+      mergeMap(() => this.reload(wallet)),
+      map(() => addressCount(wallet) - before));
+  }
+
+  /** Reads the wallet's addresses and accounts again. */
+  private reload(wallet: Wallet): Observable<void> {
+    return this.apiService.get('wallet', { id: wallet.filename } as any).pipe(
       map((response: any) => {
         wallet.addresses = (response.entries || []).map((e: any) => ({ address: e.address }));
         if (response.meta.type === 'bip44' && response.accounts) {
@@ -143,6 +160,15 @@ function toWallet(w: any, coinId: number): Wallet {
   }
 
   return wlt;
+}
+
+/** The addresses of every account of a bip44 wallet, else the wallet's addresses. */
+function addressCount(wallet: Wallet): number {
+  if (wallet.accounts && wallet.accounts.length > 0) {
+    return wallet.accounts.reduce((n, a) => n + a.externalAddresses.length + a.changeAddresses.length, 0);
+  }
+
+  return wallet.addresses.length;
 }
 
 function parseAccounts(accounts: any[]): Bip44Account[] {

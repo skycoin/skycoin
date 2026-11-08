@@ -294,7 +294,8 @@ func (w *Wallet) GetEntries(_ ...wallet.Option) (wallet.Entries, error) {
 func (w *Wallet) Erase() {
 }
 
-// ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
+// ScanAddresses scans past the last address for addresses with transactions,
+// until scanN in a row have none, the BIP44 address gap limit.
 func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
 	if scanN == 0 {
 		return nil, nil
@@ -304,35 +305,22 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 
 	nExistingAddrs := uint64(len(w2.entries))
 
-	// Generate the addresses to scan
-	addrs, err := w2.GenerateAddresses(wallet.OptionGenerateN(scanN))
+	generate := func(n uint64) ([]cipher.Addresser, error) {
+		return w2.GenerateAddresses(wallet.OptionGenerateN(n))
+	}
+	addrs, err := wallet.ScanGap(scanN, generate, tf)
 	if err != nil {
 		return nil, err
-	}
-
-	// Find if these addresses had any activity
-	active, err := tf.AddressesActivity(addrs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check activity from the last one until we find the address that has activity
-	var keepNum uint64
-	for i := len(active) - 1; i >= 0; i-- {
-		if active[i] {
-			keepNum = uint64(i + 1) //nolint:gosec
-			break
-		}
 	}
 
 	w2.reset()
-	if _, err := w2.GenerateAddresses(wallet.OptionGenerateN(nExistingAddrs + keepNum)); err != nil {
+	if _, err := w2.GenerateAddresses(wallet.OptionGenerateN(nExistingAddrs + uint64(len(addrs)))); err != nil {
 		return nil, err
 	}
 
 	*w = *w2
 
-	return addrs[:keepNum], nil
+	return addrs, nil
 }
 
 // GetAddresses returns all addresses of the wallet

@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
@@ -39,7 +39,8 @@ describe('WalletService', () => {
         {
           provide: ApiService,
           useValue: jasmine.createSpyObj('ApiService', {
-            'get': of([])
+            'get': of([]),
+            'post': of({}),
           })
         },
         { provide: CoinService, useClass: MockCoinService },
@@ -163,6 +164,77 @@ describe('WalletService', () => {
       walletService.ensureKeys(createWallet()).subscribe();
 
       expect(spyCipherProvider.generateAddress).not.toHaveBeenCalled();
+    }));
+  });
+
+  describe('findUsedAddresses', () => {
+    let api: jasmine.SpyObj<ApiService>;
+
+    beforeEach(() => {
+      api = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
+      (TestBed.inject(CoinService) as unknown as MockCoinService).currentCoin.value.serverWallets = true;
+    });
+
+    function nodeWallet(type: string, external: string[], change: string[]) {
+      return {
+        meta: { type: type, filename: 'w.wlt', label: 'w' },
+        entries: external.map(address => ({ address })),
+        accounts: [{
+          name: 'Account 0',
+          index: 0,
+          external_entries: external.map(address => ({ address })),
+          change_entries: change.map(address => ({ address })),
+        }],
+      };
+    }
+
+    function serverWallet(type = 'bip44'): Wallet {
+      return {
+        label: 'w',
+        filename: 'w.wlt',
+        walletType: type,
+        addresses: [{ address: 'e0' }],
+        accounts: [{ name: 'Account 0', index: 0, externalAddresses: [{ address: 'e0' }], changeAddresses: [] }],
+      };
+    }
+
+    it('asks the node to scan with the gap limit and reads both chains back', fakeAsync(() => {
+      const wallet = serverWallet();
+      walletService.wallets.next([wallet]);
+      api.post.and.returnValue(of({ addresses: ['e1'] }));
+      api.get.and.returnValue(of(nodeWallet('bip44', ['e0', 'e1'], ['c0'])));
+
+      let added = -1;
+      walletService.findUsedAddresses(wallet).subscribe(n => added = n);
+      tick();
+
+      expect(api.post).toHaveBeenCalledWith('wallet/scan', { id: 'w.wlt', num: '20' });
+      expect(added).toBe(2);
+      expect(wallet.accounts![0].changeAddresses.map(a => a.address)).toEqual(['c0']);
+    }));
+
+    it('scans each wallet at most once a minute on its own', fakeAsync(() => {
+      walletService.wallets.next([serverWallet()]);
+      api.post.and.returnValue(of({ addresses: [] }));
+      api.get.and.returnValue(of(nodeWallet('bip44', ['e0'], [])));
+
+      walletService.findAllUsedAddresses();
+      walletService.findAllUsedAddresses();
+      expect(api.post).toHaveBeenCalledTimes(1);
+
+      tick(60 * 1000);
+      walletService.findAllUsedAddresses();
+      expect(api.post).toHaveBeenCalledTimes(2);
+    }));
+
+    it('leaves a deterministic node wallet alone', fakeAsync(() => {
+      const wallet = serverWallet('deterministic');
+      walletService.wallets.next([wallet]);
+
+      walletService.findAllUsedAddresses();
+
+      expect(walletService.canFindUsedAddresses(wallet)).toBeFalse();
+      expect(api.post).not.toHaveBeenCalled();
     }));
   });
 });

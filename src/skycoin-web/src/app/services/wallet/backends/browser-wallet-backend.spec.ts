@@ -244,6 +244,26 @@ describe('BrowserWalletBackend bip44 wallets', () => {
     expect(wallet.accounts![0].changeAddresses.map(a => a.address)).toEqual(change.slice(0, 3));
     expect(wallet.addresses.length).toBe(28);
   });
+
+  it('stops after the gap limit of unused addresses, and scans again only past the last one', async () => {
+    const xpub = node[''].xpub;
+    const external = (await firstValueFrom(cipher.bip44XPubAddresses(xpub, 0, 0, 45))).map(a => a.address);
+    // Index 41 comes after 20 unused addresses past index 20, so the scan must not reach it.
+    const used = new Set([external[20], external[41]]);
+    api.get.and.callFake((_url: string, params: any) => of(params.addrs.split(',')
+      .filter((a: string) => used.has(a))
+      .map((a: string) => ({ txn: { outputs: [{ dst: a }] } }))));
+
+    const wallet = await create('');
+    expect(await firstValueFrom(backend.discoverBip44Addresses(wallet))).toBe(20);
+    expect(wallet.accounts![0].externalAddresses.map(a => a.address)).toEqual(external.slice(0, 21));
+
+    api.get.calls.reset();
+    expect(await firstValueFrom(backend.discoverBip44Addresses(wallet))).toBe(0);
+    // One window of bip44GapLimit addresses per chain, the external one starting after the last address.
+    expect(api.get.calls.count()).toBe(2);
+    expect(api.get.calls.first().args[1].addrs.split(',')).toEqual(external.slice(21, 41));
+  });
 });
 
 describe('BrowserWalletBackend removeWalletPassword', () => {

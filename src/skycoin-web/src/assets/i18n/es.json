@@ -139,6 +139,7 @@
     "decrypt": "Desencriptar Billetera",
     "edit": "Editar Billetera",
     "delete" : "Borrar Billetera",
+    "scan-addresses": "Buscar Direcciones",
     "unlock-wallet": "Desbloquear Billetera",
     "options" : "Opciones",
     "add": "Agregar Billetera",
@@ -183,7 +184,8 @@
       "connection-error": "No es posible conectar con el servidor. Por favor, vuelva a intentarlo luego.",
       "unsynchronized-node-error": "No es posible restaurar las direcciones debido a que el servidor no está sincronizado. Por favor, vuelva a intentarlo luego.",
       "title": "Restaurando las direcciones",
-      "message": "Restauradas hasta ahora:"
+      "message": "Restauradas hasta ahora:",
+      "done": "Se encontraron {{ count }} direcciones usadas nuevas."
     },
 
     "unlock": {

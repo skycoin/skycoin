@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/sirupsen/logrus"
+	"github.com/0magnet/logrus"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"

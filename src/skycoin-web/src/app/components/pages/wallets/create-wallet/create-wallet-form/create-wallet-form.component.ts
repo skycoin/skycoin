@@ -112,6 +112,12 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     return !!this.selectedCoinHealth && !this.selectedCoinHealth.available;
   }
 
+  /** The passphrase is used as typed, so a space at either end gives another wallet. */
+  get passphraseHasEdgeSpace(): boolean {
+    const p: string = this.form?.get('seed_passphrase')?.value || '';
+    return p !== p.trim();
+  }
+
   get isValid(): boolean {
     // The form is built once the coins load, after the first render.
     return !!this.form && this.form.valid && (this.normalSeed || this.customSeedAccepted);

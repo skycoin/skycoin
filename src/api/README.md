@@ -1026,7 +1026,7 @@ URI: /api/v1/wallet/scan
 Method: POST
 Args:
     id: wallet file name
-    num: the number you want to scan ahaed [optional(default to 20), must be > 0 if provided]
+    num: the number of addresses to scan ahead. A bip44 or xpub wallet scans until this many in a row are unused, the BIP44 gap limit [optional(default to 20), must be > 0 if provided]
     password: wallet password
 ```
 

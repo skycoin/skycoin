@@ -8,11 +8,14 @@ import { TranslateService } from '@ngx-translate/core';
 import { WalletDetailComponent } from './wallet-detail.component';
 import { AddressExposureService } from '../../../../services/wallet/address-exposure.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
-import { MockTranslatePipe, MockWalletService, MockTranslateService, MockCustomMatDialogService, MockMsgBarService, MockHwWalletService, MockCoinService } from '../../../../utils/test-mocks';
+import {
+  MockTranslatePipe, MockWalletService, MockTranslateService, MockCustomMatDialogService, MockMsgBarService, MockHwWalletService, MockCoinService,
+  MockBlockchainService } from '../../../../utils/test-mocks';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { CoinService } from '../../../../services/coin.service';
+import { BlockchainService } from '../../../../services/blockchain.service';
 
 describe('WalletDetailComponent', () => {
   let component: WalletDetailComponent;
@@ -30,6 +33,7 @@ describe('WalletDetailComponent', () => {
         { provide: CoinService, useClass: MockCoinService },
         { provide: AddressExposureService, useValue: { getExposed: () => of(new Set<string>()) } },
         { provide: HwWalletService, useClass: MockHwWalletService },
+        { provide: BlockchainService, useClass: MockBlockchainService },
         { provide: WalletService, useClass: MockWalletService },
         { provide: TranslateService, useClass: MockTranslateService },
         { provide: CustomMatDialogService, useClass: MockCustomMatDialogService },

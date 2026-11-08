@@ -973,6 +973,18 @@ func TestScanAddresses(t *testing.T) {
 			expectAddrs:          eAddrs[1:5],
 			expectAllChangeAddrs: cAddrs[:5],
 		},
+		{
+			name:  "used addresses past the first window",
+			scanN: 2,
+			txnFinder: mockTxnsFinder{
+				eAddrs[2]: true,
+				eAddrs[4]: true,
+				cAddrs[2]: true,
+				cAddrs[4]: true,
+			},
+			expectAddrs:          eAddrs[1:5],
+			expectAllChangeAddrs: cAddrs[:5],
+		},
 	}
 
 	for _, tc := range tt {

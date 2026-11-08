@@ -3,8 +3,9 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { WalletOptionsComponent } from './wallet-options.component';
-import { MockTranslatePipe, MockCoinService } from '../../../../../utils/test-mocks';
+import { MockTranslatePipe, MockCoinService, MockWalletService } from '../../../../../utils/test-mocks';
 import { CoinService } from '../../../../../services/coin.service';
+import { WalletService } from '../../../../../services/wallet/wallet.service';
 
 describe('WalletOptionsComponent', () => {
   let component: WalletOptionsComponent;
@@ -16,6 +17,7 @@ describe('WalletOptionsComponent', () => {
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
         { provide: CoinService, useClass: MockCoinService },
+        { provide: WalletService, useClass: MockWalletService },
         { provide: MatDialogRef, useValue: {} },
         { provide: MAT_DIALOG_DATA, useValue: {} }
       ]

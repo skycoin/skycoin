@@ -152,6 +152,7 @@
     "decrypt": "Decrypt Wallet",
     "edit": "Edit Wallet",
     "delete": "Delete Wallet",
+    "scan-addresses": "Scan Addresses",
     "unlock-wallet": "Unlock Wallet",
     "options": "Options",
     "add": "Add Wallet",
@@ -206,7 +207,8 @@
       "connection-error": "It is not possible to connect to the server. Please try again later.",
       "unsynchronized-node-error": "It is not possible to restore the addresses because the server is not synchronized. Please try again later.",
       "title": "Restoring addresses",
-      "message": "Restored until now:"
+      "message": "Restored until now:",
+      "done": "Found {{ count }} new used address(es)."
     },
     "unlock": {
       "unlock-title": "Unlock Wallet",

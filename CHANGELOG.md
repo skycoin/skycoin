@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- A bip44 or xpub wallet showed no balance for coins sent to addresses past
+  the ones it listed, as reward payouts to new xpub indexes are. The web wallet
+  looked for used addresses only when a wallet was made. It now looks with each
+  balance refresh while the node is in sync, for wallets kept in the browser
+  and in the node, and each wallet's options have Scan Addresses. The node's
+  bip44 and xpub `ScanAddresses` and `/api/v1/wallet/scan` keep scanning
+  until `num` addresses in a row are unused, the BIP44 gap limit, where they
+  stopped after the first `num` before.
 - `cli nextAddress` and new xpub wallets derive a bip44 account xpub (depth 3)
   to its external chain, m/44'/8000'/0'/0/i, the addresses other wallets scan.
   They derived m/44'/8000'/0'/i before. A chain xpub (depth 4) works as before.

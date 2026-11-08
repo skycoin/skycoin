@@ -608,9 +608,9 @@ func getBip44Options(options ...wallet.Option) *wallet.Bip44EntriesOptions {
 	return v
 }
 
-// ScanAddresses scans both the external and change addresses to find addresses with
-// transactions.
-// Only external addresses will be returned.
+// ScanAddresses scans both the external and change addresses past the last
+// ones in the wallet for addresses with transactions, until scanN in a row
+// have none, the BIP44 address gap limit. Only external addresses are returned.
 func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
 	if scanN == 0 {
 		return nil, nil
@@ -625,28 +625,15 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 			return nil, 0, 0, err
 		}
 
-		// generates the addresses  to scan
-		addrs, err := w2.accountManager.newAddresses(account, chain, uint32(scanN)) //nolint:gosec
+		generate := func(n uint64) ([]cipher.Addresser, error) {
+			return w2.accountManager.newAddresses(account, chain, uint32(n)) //nolint:gosec
+		}
+		addrs, err := wallet.ScanGap(scanN, generate, tf)
 		if err != nil {
 			return nil, 0, 0, err
 		}
 
-		// finds if these addresses had any activity
-		active, err := tf.AddressesActivity(addrs)
-		if err != nil {
-			return nil, 0, 0, err
-		}
-
-		// checks activity from the last one until we find the address that has activity
-		var keepNum uint64
-		for i := len(active) - 1; i >= 0; i-- {
-			if active[i] {
-				keepNum = uint64(i + 1) //nolint:gosec // Address count conversion
-				break
-			}
-		}
-
-		return addrs[:keepNum], int(nExistingAddrs), int(keepNum), nil //nolint:gosec
+		return addrs, int(nExistingAddrs), len(addrs), nil
 	}
 
 	// [accounts][chains] array

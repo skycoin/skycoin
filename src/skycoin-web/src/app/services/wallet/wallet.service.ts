@@ -1,6 +1,6 @@
 import { Injectable, EventEmitter } from '@angular/core';
-import { BehaviorSubject, Subscription, Observable, forkJoin, of } from 'rxjs';
-import { catchError, mergeMap, map, filter, first } from 'rxjs';
+import { BehaviorSubject, Subscription, Observable, of } from 'rxjs';
+import { catchError, mergeMap, map, filter, finalize, first, share } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { CipherProvider } from '../cipher.provider';
@@ -12,7 +12,7 @@ import { EncryptionService } from '../encryption.service';
 import { SeedBackup, WalletBackend } from './backends/wallet-backend';
 import { XPubKey } from './backends/server-wallet-backend';
 import { ServerWalletBackend } from './backends/server-wallet-backend';
-import { BrowserWalletBackend, ScanProgressData, isBip44 } from './backends/browser-wallet-backend';
+import { BrowserWalletBackend, ScanProgressData, bip44GapLimit, isBip44 } from './backends/browser-wallet-backend';
 
 export { ScanProgressData };
 
@@ -31,7 +31,10 @@ export class WalletService {
   private coinSubscription!: Subscription;
   private readonly server: ServerWalletBackend;
   private readonly browser: BrowserWalletBackend;
-  private readonly discovering = new Set<string>();
+  // The scan of each wallet's used addresses under way, and when each last started.
+  private readonly scans = new Map<string, Observable<number>>();
+  private readonly lastScan = new Map<string, number>();
+  private readonly autoScanInterval = 60 * 1000;
 
   constructor(
     private cipherProvider: CipherProvider,
@@ -277,27 +280,73 @@ export class WalletService {
     }));
   }
 
-  /** Finds addresses of the browser bip44 wallets used beyond the ones they list. */
-  private discoverBip44(wallets: Wallet[]) {
-    // The list loads again when the coin is set, so skip a wallet already being scanned.
-    const bip44Wallets = wallets.filter(w => isBip44(w) && !this.discovering.has(w.accounts![0].accountXpubKey!));
-    if (bip44Wallets.length === 0) {
-      return;
+  /** True for a bip44 or xpub wallet, whose used addresses can be found from its public keys. */
+  canFindUsedAddresses(wallet: Wallet): boolean {
+    if (this.currentCoin && this.currentCoin.isGateway()) {
+      return false;
     }
-    const xpubs = bip44Wallets.map(w => w.accounts![0].accountXpubKey!);
-    xpubs.forEach(x => this.discovering.add(x));
+    if (this.isServerWallet(wallet)) {
+      return wallet.walletType === 'bip44' || wallet.walletType === 'xpub';
+    }
 
-    this.cipherProvider.initialize().pipe(
-      mergeMap(() => forkJoin(bip44Wallets.map(w => this.browser.discoverBip44Addresses(w).pipe(catchError(() => of(0)))))),
-    ).subscribe(added => {
-      xpubs.forEach(x => this.discovering.delete(x));
-      if (this.wallets.value !== wallets) {
-        // The list was loaded again meanwhile and these objects are gone.
-        this.discoverBip44(this.wallets.value || []);
-      } else if (added.some(n => n > 0)) {
-        this.saveWallets();
+    return isBip44(wallet);
+  }
+
+  /**
+   * Adds the addresses the blockchain shows were used past the last ones a
+   * bip44 or xpub wallet lists, until bip44GapLimit in a row are unused, as
+   * reward payouts to new xpub indexes are. Emits how many it added.
+   */
+  findUsedAddresses(wallet: Wallet): Observable<number> {
+    if (!this.canFindUsedAddresses(wallet)) {
+      return of(0);
+    }
+    const key = this.scanKey(wallet);
+    let scan = this.scans.get(key);
+    if (!scan) {
+      this.lastScan.set(key, Date.now());
+      const run = this.isServerWallet(wallet)
+        ? this.server.scanAddresses(wallet, bip44GapLimit)
+        : this.cipherProvider.initialize().pipe(mergeMap(() => this.browser.discoverBip44Addresses(wallet)));
+      scan = run.pipe(
+        map(added => {
+          if (!(this.wallets.value || []).includes(wallet)) {
+            // The list was loaded again meanwhile and this object is gone, so scan the new one.
+            this.lastScan.delete(key);
+            Promise.resolve().then(() => this.findAllUsedAddresses());
+
+            return 0;
+          }
+          if (added > 0) {
+            this.saveWallets();
+          }
+
+          return added;
+        }),
+        finalize(() => this.scans.delete(key)),
+        share());
+      this.scans.set(key, scan);
+    }
+
+    return scan;
+  }
+
+  /**
+   * Finds the used addresses of every wallet that can, at most once a minute
+   * for each. The balance refresh runs it, which waits for the node to be in sync.
+   */
+  findAllUsedAddresses() {
+    const now = Date.now();
+    (this.wallets.value || []).filter(w => this.canFindUsedAddresses(w)).forEach(w => {
+      const last = this.lastScan.get(this.scanKey(w));
+      if (last === undefined || now - last >= this.autoScanInterval) {
+        this.findUsedAddresses(w).pipe(catchError(() => of(0))).subscribe();
       }
-    }, () => xpubs.forEach(x => this.discovering.delete(x)));
+    });
+  }
+
+  private scanKey(wallet: Wallet): string {
+    return this.isServerWallet(wallet) ? 'file:' + wallet.filename : wallet.accounts![0].accountXpubKey!;
   }
 
   addAccount(wallet: Wallet, name: string, password?: string): Observable<Wallet> {
@@ -337,9 +386,6 @@ export class WalletService {
         return;
       }
       this.wallets.next(wallets);
-      if (!backend.onServer) {
-        this.discoverBip44(wallets);
-      }
     });
   }
 

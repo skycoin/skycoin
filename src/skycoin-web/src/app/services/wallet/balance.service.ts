@@ -93,6 +93,8 @@ export class BalanceService {
 
   private getBalance(): Observable<boolean> {
     this.sendTotalBalanceEvent({state: BalanceStates.Updating});
+    // Balances are read only while the node is in sync, as this scan needs.
+    this.walletService.findAllUsedAddresses();
     return this.walletService.addresses.pipe(first(), mergeMap((addresses: Address[]) => {
       if (addresses.length === 0) {
         this.lastBalancesUpdateTime = new Date();

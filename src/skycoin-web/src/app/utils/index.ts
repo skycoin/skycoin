@@ -1,7 +1,7 @@
 import { MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Renderer2 } from '@angular/core';
 import { Overlay } from '@angular/cdk/overlay';
-import { Observable, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { filter, first, map, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -89,9 +89,10 @@ export function openDeleteWalletModal (dialog: CustomMatDialogService, wallet: W
   });
 }
 
-export function scanAddresses(dialog: CustomMatDialogService, wallet: Wallet, blockchainService: BlockchainService, translate: TranslateService): Observable<any> {
+/** Emits once the node is reachable and close enough to in sync to scan addresses, else fails. */
+export function whenNodeSynced(blockchainService: BlockchainService, translate: TranslateService): Observable<void> {
   return blockchainService.progress.pipe(
-    filter(event => event.state === ProgressStates.Progress || event.state === ProgressStates.Error),
+    filter(event => !!event && (event.state === ProgressStates.Progress || event.state === ProgressStates.Error)),
     first(),
     mergeMap(event => {
       if (event.state === ProgressStates.Error) {
@@ -101,12 +102,17 @@ export function scanAddresses(dialog: CustomMatDialogService, wallet: Wallet, bl
         return throwError(() => new Error(translate.instant('wallet.scan.unsynchronized-node-error')));
       }
 
-      return dialog.open(ScanAddressesComponent, <MatDialogConfig>{
-        width: '450px',
-        data: wallet,
-        autoFocus: false
-      }).afterClosed();
+      return of(undefined);
     }));
+}
+
+export function scanAddresses(dialog: CustomMatDialogService, wallet: Wallet, blockchainService: BlockchainService, translate: TranslateService): Observable<any> {
+  return whenNodeSynced(blockchainService, translate).pipe(
+    mergeMap(() => dialog.open(ScanAddressesComponent, <MatDialogConfig>{
+      width: '450px',
+      data: wallet,
+      autoFocus: false
+    }).afterClosed()));
 }
 
 export function getTimeSinceLastBalanceUpdate(balanceService: BalanceService): number {

@@ -199,6 +199,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		checkDBEncodingCmd(),
 		createRawTxnCmd(),
 		createRawTxnV2Cmd(),
+		createJointTxnCmd(),
 		signTxnCmd(),
 		decodeRawTxnCmd(),
 		encodeJSONTxnCmd(),

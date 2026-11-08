@@ -54,16 +54,46 @@ func transactionCmd() *cobra.Command {
 }
 
 func decodeRawTxnCmd() *cobra.Command {
-	return &cobra.Command{
-		Short:                 "Decode raw transaction",
-		Use:                   "decodeRawTransaction [raw transaction]",
-		DisableFlagsInUseLine: true,
-		SilenceUsage:          true,
-		Args:                  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+	cmd := &cobra.Command{
+		Short: "Decode raw transaction",
+		Use:   "decodeRawTransaction [raw transaction]",
+		Long: `Decode a raw transaction to JSON.
+
+    With --review it prints each input with its owner, coins, hours and whether it
+    is signed, each output, the fee, and whether the transaction is fully signed.
+    The inputs are looked up on the node. Add --wallet to mark the wallet's own
+    inputs and outputs.`,
+		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
 			txn, err := coin.DeserializeTransactionHexWithPQ(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)
+			}
+
+			review, err := c.Flags().GetBool("review")
+			if err != nil {
+				return err
+			}
+			wltID, err := c.Flags().GetString("wallet")
+			if err != nil {
+				return err
+			}
+			if review || wltID != "" {
+				var mine map[string]struct{}
+				if wltID != "" {
+					w, err := apiClient.Wallet(wltID)
+					if err != nil {
+						return err
+					}
+					mine = walletAddressSet(w)
+				}
+				inputs, err := lookupInputs(apiClient, txnInputHashes(&txn))
+				if err != nil {
+					return err
+				}
+				fmt.Print(txnReview(&txn, inputs, mine))
+				return nil
 			}
 
 			// Assume the transaction is not malformed and if it has no inputs
@@ -77,6 +107,9 @@ func decodeRawTxnCmd() *cobra.Command {
 			return printJSON(rTxn)
 		},
 	}
+	cmd.Flags().Bool("review", false, "Print a readable review, looking up the inputs on the node")
+	cmd.Flags().StringP("wallet", "w", "", "Wallet whose inputs and outputs to mark in the review. Implies --review")
+	return cmd
 }
 
 func encodeJSONTxnCmd() *cobra.Command {
@@ -345,39 +378,51 @@ func pendingTransactionsCmd() *cobra.Command {
 
 func signTxnCmd() *cobra.Command {
 	signTxnCmd := &cobra.Command{
-		Short:                 "Sign an unsigned transaction with specific wallet",
-		Use:                   "signTransaction [wallet] [raw transaction]",
-		DisableFlagsInUseLine: true,
-		SilenceUsage:          true,
-		Args:                  cobra.ExactArgs(2),
-		RunE: func(_ *cobra.Command, args []string) error {
+		Short: "Sign an unsigned transaction with specific wallet",
+		Use:   "signTransaction [wallet] [raw transaction]",
+		Long: `Sign the inputs of a transaction that the wallet owns.
+
+    A joint transaction spends inputs of several wallets. Each wallet signs only
+    its own inputs, found by looking up each input's owner on the node, and the
+    result goes to the next signer. Use --sign-indexes to choose the inputs by hand.`,
+		SilenceUsage: true,
+		Args:         cobra.ExactArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
 			id := args[0]
 			rawTxn := args[1]
 
-			// Decode the raw transaction to see if the transaction already signed
-			txn, err := coin.DeserializeTransactionHexWithPQ(rawTxn)
+			signIndexes, err := c.Flags().GetIntSlice("sign-indexes")
 			if err != nil {
 				return err
 			}
 
-			if len(txn.Sigs) > 0 && txn.InputSigned(0) {
+			txn, err := coin.DeserializeTransactionHexWithPQ(rawTxn)
+			if err != nil {
+				return err
+			}
+			if txn.IsFullySigned() {
 				return fmt.Errorf("Transaction already signed")
 			}
 
-			// Check if wallet is encrypted
-			req := api.WalletSignTransactionRequest{
-				WalletID:           id,
-				EncodedTransaction: rawTxn,
-			}
-
-			// Ask the node whether the wallet is encrypted. id is the node's wallet ID,
-			// which is what the signing request sends too.
+			// id is the node's wallet ID, which is what the signing request sends too
 			w, err := apiClient.Wallet(id)
 			if err != nil {
 				return err
 			}
 
-			// Read wallet password from terminal if it is encrypted
+			if len(signIndexes) == 0 {
+				signIndexes, err = walletSignIndexes(apiClient, &txn, w)
+				if err != nil {
+					return err
+				}
+			}
+
+			req := api.WalletSignTransactionRequest{
+				WalletID:           id,
+				EncodedTransaction: rawTxn,
+				SignIndexes:        signIndexes,
+			}
+
 			if w.Meta.Encrypted {
 				v, err := readPasswordFromTerminal()
 				if err != nil {
@@ -391,15 +436,38 @@ func signTxnCmd() *cobra.Command {
 				}()
 			}
 
-			// Send transaction signing request
 			signedTxn, err := apiClient.WalletSignTransaction(req)
 			if err != nil {
 				return err
 			}
 
+			signed, err := coin.DeserializeTransactionHexWithPQ(signedTxn.EncodedTransaction)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "signed %d of %d inputs\n", countSigned(&signed), len(signed.In))
+
 			return printJSON(signedTxn)
 		},
 	}
 
+	signTxnCmd.Flags().IntSlice("sign-indexes", nil, "Input indexes to sign. Defaults to the unsigned inputs the wallet owns")
 	return signTxnCmd
+}
+
+// walletSignIndexes returns the unsigned inputs the wallet owns, or nil when
+// those are all the unsigned inputs, so the node signs them all as before
+func walletSignIndexes(c outputsLookup, txn *coin.Transaction, w *api.WalletResponse) ([]int, error) {
+	inputs, err := lookupInputs(c, txnInputHashes(txn))
+	if err != nil {
+		return nil, err
+	}
+	idx := ownedUnsignedIndexes(txn, inputs, walletAddressSet(w))
+	if len(idx) == 0 {
+		return nil, errors.New("the wallet owns none of the unsigned inputs")
+	}
+	if len(idx) == len(txn.In)-countSigned(txn) {
+		return nil, nil
+	}
+	return idx, nil
 }

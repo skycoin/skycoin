@@ -1,0 +1,126 @@
+@use '../../../../theme/_variables' as *;
+
+.-paper {
+  padding: 30px;
+
+  @media (max-width: $max-small-width) {
+    padding: 15px;
+  }
+}
+
+.-modes {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.-text {
+  font-size: $font-size-standard;
+  color: $grey-semi-dark;
+}
+
+.-mono {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.-found {
+  font-size: 12px;
+  color: $grey-semi-dark;
+  margin-top: 4px;
+}
+
+.-destination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .-address {
+    flex: 3;
+    min-width: 0;
+  }
+
+  .-amount {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .-remove {
+    cursor: pointer;
+    font-size: 20px;
+    color: $grey;
+    padding: 0 4px;
+  }
+}
+
+.-link {
+  color: $gradient-blue-dark;
+  cursor: pointer;
+  font-size: $font-size-standard;
+}
+
+.-summary {
+  font-size: $font-size-standard;
+  margin: 15px 0;
+  line-height: 1.8;
+}
+
+.-warning {
+  background: rgba(255, 193, 37, 0.15);
+  border-left: 3px solid $yellow;
+  padding: 10px 12px;
+  font-size: $font-size-standard;
+  margin: 15px 0;
+}
+
+.-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+
+  td {
+    padding: 4px 6px;
+    border-bottom: 1px solid $grey-very-light;
+    white-space: nowrap;
+
+    @media (max-width: $max-small-width) {
+      white-space: normal;
+    }
+  }
+
+  .-addr {
+    font-family: monospace;
+    white-space: normal;
+    word-break: break-all;
+  }
+}
+
+.-yes {
+  color: #00a86b;
+}
+
+.-error {
+  color: $red;
+  font-size: $font-size-standard;
+}
+
+.-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+h4 {
+  font-size: 14px;
+  margin: 15px 0 5px;
+}
+
+.-note {
+  color: $grey-semi-dark;
+  font-style: italic;
+}

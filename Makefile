@@ -18,6 +18,7 @@
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-fibercoin
+.PHONY: integration-test-joint-transaction
 .PHONY: check-newcoin-templates check-release-nocgo
 .PHONY: update-dep sync-upstream-develop
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
@@ -30,7 +31,7 @@
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
-.PHONY: test-explorer-e2e build-wasm check-wasm
+.PHONY: test-explorer-e2e test-web-wallet-joint-e2e build-wasm check-wasm
 
 COIN ?= skycoin
 
@@ -192,6 +193,9 @@ integration-test-stable-auth: ## Run stable tests with HTTP Basic auth enabled
 integration-test-fibercoin: ## Run fibercoin genesis creation and distribution integration test
 	COIN=$(COIN) ./ci-scripts/integration-test-fibercoin.sh
 
+integration-test-joint-transaction: ## Run a two wallet joint transaction on a throwaway fiber coin chain
+	COIN=$(COIN) ./ci-scripts/integration-test-joint-transaction.sh
+
 integration-test-live: ## Run live integration tests
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
 
@@ -257,6 +261,9 @@ test-ui:  ## Run the unit tests of the Angular front-ends that have a working su
 
 test-explorer-e2e:  ## Run the explorer e2e tests against the pinned blockchain database
 	./ci-scripts/explorer-e2e.sh
+
+test-web-wallet-joint-e2e:  ## Create and co-sign a joint transaction in the web wallet in a browser, on a throwaway chain
+	COIN=$(COIN) ./ci-scripts/web-wallet-joint-e2e.sh
 
 build-ui:  ## Build the production bundle of every Angular front-end
 	@set -e; for d in $(ANGULAR_UI_DIRS); do \

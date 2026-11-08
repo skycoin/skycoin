@@ -805,12 +805,14 @@ func handleNewAccount(c *webCtx, s *wallet.Service) {
 // handleSignTransaction signs an unsigned transaction using the local wallet's keys.
 // POST /api/v2/wallet/transaction/sign
 // JSON body: { "wallet_id": "...", "encoded_transaction": "...", "input_addresses": ["addr1", ...], "password": "..." }
-// input_addresses must be in the same order as the transaction inputs.
+// input_addresses must be in the same order as the transaction inputs. The optional
+// sign_indexes signs only those inputs, leaving the others to their owners.
 func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 	var req struct {
 		WalletID           string   `json:"wallet_id"`
 		EncodedTransaction string   `json:"encoded_transaction"`
 		InputAddresses     []string `json:"input_addresses"`
+		SignIndexes        []int    `json:"sign_indexes"`
 		Password           string   `json:"password"`
 	}
 
@@ -845,6 +847,12 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 		return
 	}
 
+	signIndexes, err := signIndexesOrAll(req.SignIndexes, len(txn.In))
+	if err != nil {
+		errBadRequest(c, err.Error())
+		return
+	}
+
 	// Get the wallet
 	wlt, err := wltService.GetWallet(req.WalletID)
 	if err != nil {
@@ -859,7 +867,8 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 	// Sign the transaction using wallet entries matched by address
 	signFunc := func(w wallet.Wallet) error {
 		txn.InnerHash = txn.HashInner()
-		for i, addrStr := range req.InputAddresses {
+		for _, i := range signIndexes {
+			addrStr := req.InputAddresses[i]
 			addr, err := cipher.DecodeBase58Address(addrStr)
 			if err != nil {
 				return fmt.Errorf("invalid input address %q: %v", addrStr, err)
@@ -903,4 +912,26 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 			"encoded_transaction": signedHex,
 		},
 	})
+}
+
+// signIndexesOrAll checks the requested input indexes, or returns every index
+func signIndexesOrAll(req []int, nIn int) ([]int, error) {
+	if len(req) == 0 {
+		all := make([]int, nIn)
+		for i := range all {
+			all[i] = i
+		}
+		return all, nil
+	}
+	seen := make(map[int]struct{}, len(req))
+	for _, i := range req {
+		if i < 0 || i >= nIn {
+			return nil, fmt.Errorf("sign index %d is out of range", i)
+		}
+		if _, ok := seen[i]; ok {
+			return nil, fmt.Errorf("duplicate sign index %d", i)
+		}
+		seen[i] = struct{}{}
+	}
+	return req, nil
 }

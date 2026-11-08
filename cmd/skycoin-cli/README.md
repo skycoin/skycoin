@@ -121,6 +121,7 @@ Available Commands:
   checkdb              Verify the database
   createRawTransaction Create a raw transaction that can be broadcast to the network later
   createRawTransactionV2 Create a raw transaction that can be broadcast to the network later
+  createJointTransaction Create an unsigned transaction that spends outputs of several owners
   decodeRawTransaction Decode raw transaction
   decryptWallet        Decrypt a wallet
   distributeGenesis    Distributes the genesis block coins into the configured distribution addresses
@@ -428,6 +429,24 @@ $ skycoin cli broadcastTransaction dc00000000b8e5e8cfa97d9654044f8cd2da212dfe...
     "txid": "89578005d8730fe1789288ee7dea036160a9bd43234fb673baa6abd91289a48b"
 }
 ```
+
+**Joint transaction:**
+
+Two people spend their own outputs in one transaction, with the coins and coin
+hours of every output set by hand. Each signs only their own input, and a
+signature covers the exact outputs, so neither side can change them. Here a
+customer pays a vendor 1000 coin hours and gets their coins back.
+
+```bash
+$ skycoin cli createJointTransaction --in $CUSTOMER_UXID --in $VENDOR_UXID \
+    --out $CUSTOMER_ADDR,0.001,0 --out $VENDOR_ADDR,0.001,1000 > txn.hex
+$ skycoin cli decodeRawTransaction --wallet customer.wlt $(cat txn.hex)
+$ skycoin cli signTransaction customer.wlt $(cat txn.hex) | jq -r .encoded_transaction > signed.hex
+```
+
+The customer sends `signed.hex` to the vendor, who reviews and signs it the same way
+and broadcasts it once every input is signed. Any input hours not given to an
+output are burned as the fee, which must be at least a tenth of the input hours.
 
 ## Detailed Command Documentation
 

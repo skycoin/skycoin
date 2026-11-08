@@ -110,6 +110,11 @@ jobs:
       - name: Explorer e2e
         run: make test-explorer-e2e
 
+      # Loads two browser wallets on a throwaway chain, then creates, signs and
+      # broadcasts a joint transaction through the wallet's own page.
+      - name: Web wallet joint transaction e2e
+        run: make test-web-wallet-joint-e2e
+
       - name: Verify skydex-client UI embed is current
         run: make check-skydex-ui
 
@@ -130,6 +135,9 @@ jobs:
 
       - name: Run Fibercoin Integration Test
         run: make integration-test-fibercoin
+
+      - name: Run Joint Transaction Integration Test
+        run: make integration-test-joint-transaction
 
       - name: Test Hardware Wallet Libraries
         run: make test-skyhw

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Joint transactions in the CLI, where several wallets spend their own
+  outputs in one transaction. `createJointTransaction` builds it unsigned from
+  given outputs of any owner with coins and coin hours set by hand.
+  `signTransaction` signs only the inputs the wallet owns, or those named with
+  `--sign-indexes`, and says how many inputs are signed.
+  `decodeRawTransaction --review` shows each input with its owner and whether
+  it is signed, each output, the fee and whether the transaction is ready.
 - A server rendered wallet at `/ui2/`, beside the Angular wallet, built with
   templ and htmx in the importable `src/ui2` package. It lists the node's
   wallets with their balances, addresses and history, and shows the node and

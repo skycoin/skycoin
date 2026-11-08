@@ -18,6 +18,7 @@
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-fibercoin
+.PHONY: integration-test-joint-transaction
 .PHONY: check-newcoin-templates check-release-nocgo
 .PHONY: update-dep sync-upstream-develop
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
@@ -191,6 +192,9 @@ integration-test-stable-auth: ## Run stable tests with HTTP Basic auth enabled
 
 integration-test-fibercoin: ## Run fibercoin genesis creation and distribution integration test
 	COIN=$(COIN) ./ci-scripts/integration-test-fibercoin.sh
+
+integration-test-joint-transaction: ## Run a two wallet joint transaction on a throwaway fiber coin chain
+	COIN=$(COIN) ./ci-scripts/integration-test-joint-transaction.sh
 
 integration-test-live: ## Run live integration tests
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c

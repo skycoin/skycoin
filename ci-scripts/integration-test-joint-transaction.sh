@@ -142,6 +142,10 @@ RAW=$(jq -r '.encoded_transaction' <<<"$OUT")
 if "$SKY" cli verifyTransaction "$RAW" >/dev/null 2>&1; then
     fail "a half signed transaction verified as spendable"
 fi
+# The web wallet reviews a half signed transaction this way
+UNSIGNED_OK=$(curl -s -X POST "$HOST/api/v2/transaction/verify" -H "Content-Type: application/json" \
+    -d "$(jq -n --arg tx "$RAW" '{encoded_transaction: $tx, unsigned: true}')" | jq -r '.error == null and .data.unsigned')
+[[ "$UNSIGNED_OK" == true ]] || fail "verify as unsigned rejected a half signed transaction"
 if "$SKY" cli signTransaction "$VENDOR" "$RAW" --sign-indexes 0 >/dev/null 2>&1; then
     fail "vendor signed the customer's input"
 fi

@@ -24,6 +24,7 @@
     @if (showForm && currentCoin && !currentCoin.isGateway()) {
       <div class="-offline-links">
         <span class="-link" (click)="signTransaction()">{{ 'offline-tx.sign-link' | translate }}</span>
+        <a class="-link" [routerLink]="'/joint' | walletPath">{{ 'joint-tx.link' | translate }}</a>
         <span class="-link" (click)="broadcastTransaction()">{{ 'offline-tx.broadcast-link' | translate }}</span>
       </div>
     }

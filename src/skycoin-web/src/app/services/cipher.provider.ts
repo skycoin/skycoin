@@ -216,6 +216,16 @@ export class CipherProvider {
     return this.resultOrError<string>(tx, 'prepare the signed transaction');
   }
 
+  /** Signs a 32 byte hash, given as hex, with a secret key. Returns the signature as hex. */
+  signHash(hash: string, secret: string): Observable<string> {
+    const extras = (window as any)['SkycoinCipherExtras'];
+    if (!extras || typeof extras.signHash !== 'function') {
+      return throwError(() => new Error('the cipher could not sign'));
+    }
+
+    return this.resultOrError<string>(extras.signHash(hash, secret), 'sign');
+  }
+
   private convertToAddress(address: any): GenerateAddressResponse {
     return {
       nextSeed: address.nextSeed,

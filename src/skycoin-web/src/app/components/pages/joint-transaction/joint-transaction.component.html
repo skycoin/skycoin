@@ -1,0 +1,210 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'joint-tx.title' | translate"></app-header>
+  <div class="container">
+    <div class="-paper">
+      <div class="-modes">
+        <app-double-button
+          [leftButtonText]="'joint-tx.create-mode' | translate"
+          [rightButtonText]="'joint-tx.cosign-mode' | translate"
+          className="light small"
+          [activeButton]="mode"
+          (onStateChange)="changeMode($event)">
+        </app-double-button>
+      </div>
+
+      @if (mode === buttons.LeftButton) {
+        <p class="-text">{{ 'joint-tx.create-text' | translate }}</p>
+        <div [formGroup]="createForm">
+          <div class="form-field">
+            <label for="joint-wallet">{{ 'joint-tx.your-wallet' | translate }}</label>
+            <div class="-select">
+              <select formControlName="wallet" id="joint-wallet">
+                <option disabled hidden [ngValue]="null">{{ 'offline-tx.select-wallet' | translate }}</option>
+                @for (wallet of wallets; track wallet) {
+                  <option [ngValue]="wallet">{{ wallet.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          @if (createForm.value.wallet) {
+            <div class="form-field">
+              <label for="joint-outputs">
+                {{ 'joint-tx.your-outputs' | translate }}
+                @if (loadingOwnOutputs) {
+                  <mat-spinner></mat-spinner>
+                }
+              </label>
+              <div class="-select">
+                <mat-select multiple formControlName="outputs" [compareWith]="outputCompare" id="joint-outputs"
+                  [placeholder]="'joint-tx.select-outputs' | translate">
+                  @for (out of ownOutputs; track out.hash) {
+                    <mat-option [value]="out">
+                      <span class="truncated-label">{{ out.hash }}</span> -
+                      {{ out.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}
+                      ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }})
+                    </mat-option>
+                  }
+                </mat-select>
+              </div>
+            </div>
+          }
+
+          <div class="form-field">
+            <label for="joint-theirs">{{ 'joint-tx.their-outputs' | translate }}</label>
+            <textarea formControlName="theirs" id="joint-theirs" rows="2" class="-mono"
+              [placeholder]="'joint-tx.their-outputs-hint' | translate" (blur)="lookupTheirOutputs()"></textarea>
+            @for (out of theirOutputs; track out.hash) {
+              <div class="-found">
+                <span class="truncated-label">{{ out.address }}</span> -
+                {{ out.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}
+                ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }})
+              </div>
+            }
+            @for (hash of missingHashes; track hash) {
+              <div class="-error">{{ 'joint-tx.unknown-output' | translate }} {{ hash }}</div>
+            }
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'joint-tx.outputs' | translate }}</label>
+            <div formArrayName="destinations">
+              @for (dest of destinations.controls; track dest; let i = $index) {
+                <div [formGroupName]="i" class="-destination">
+                  <input formControlName="address" [placeholder]="'joint-tx.address' | translate" class="-address"
+                    [attr.aria-label]="'joint-tx.address' | translate">
+                  <input formControlName="coins" [placeholder]="currentCoin?.coinSymbol || ''" class="-amount"
+                    [attr.aria-label]="'joint-tx.coins' | translate">
+                  <input formControlName="hours" [placeholder]="currentCoin?.hoursName || ''" class="-amount"
+                    [attr.aria-label]="'joint-tx.hours' | translate">
+                  @if (destinations.length > 1) {
+                    <span class="-remove" (click)="removeDestination(i)">&times;</span>
+                  }
+                </div>
+              }
+            </div>
+            <span class="-link" (click)="addDestination()">{{ 'joint-tx.add-output' | translate }}</span>
+          </div>
+
+          <div class="form-field">
+            <label for="joint-change">{{ 'joint-tx.change-address' | translate }}</label>
+            <input formControlName="changeAddress" id="joint-change" [placeholder]="'joint-tx.change-hint' | translate">
+          </div>
+
+          <div class="-summary">
+            <div>{{ 'joint-tx.inputs-total' | translate }}
+              <b>{{ inputCoins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</b>,
+              <b>{{ inputHours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b></div>
+            <div>{{ 'joint-tx.outputs-total' | translate }}
+              <b>{{ outputCoins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</b>,
+              <b>{{ outputHours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b></div>
+            <div>{{ 'joint-tx.fee' | translate }}
+              <b>{{ fee.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b>
+              ({{ 'joint-tx.minimum' | translate }} {{ minimumFee.toString() | number:'1.0-0' }})</div>
+            @if (leftoverCoins.isGreaterThan(0)) {
+              <div>{{ 'joint-tx.change-coins' | translate }}
+                <b>{{ leftoverCoins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</b></div>
+            }
+            @if (createProblem) {
+              <div class="-error">{{ createProblem | translate }}</div>
+            }
+          </div>
+
+          @if (created) {
+            <div class="form-field">
+              <label for="joint-created">{{ 'joint-tx.created' | translate }}</label>
+              <textarea id="joint-created" rows="5" class="-mono" readonly [value]="created"></textarea>
+            </div>
+          }
+          @if (error) {
+            <div class="-error">{{ error | translate }}</div>
+          }
+          <div class="-buttons">
+            @if (created) {
+              <app-button (action)="copy(created)">{{ (copied ? 'offline-tx.copied' : 'offline-tx.copy-button') | translate }}</app-button>
+              <app-button (action)="cosignCreated()">{{ 'joint-tx.review-button' | translate }}</app-button>
+            }
+            <app-button (action)="create()" class="primary" [disabled]="working || !!createProblem">
+              {{ 'joint-tx.create-button' | translate }}
+            </app-button>
+          </div>
+        </div>
+      }
+
+      @if (mode === buttons.RightButton) {
+        <p class="-text">{{ 'joint-tx.cosign-text' | translate }}</p>
+        <div [formGroup]="signForm">
+          <div class="form-field">
+            <label for="joint-sign-wallet">{{ 'joint-tx.your-wallet' | translate }}</label>
+            <div class="-select">
+              <select formControlName="wallet" id="joint-sign-wallet">
+                <option disabled hidden [ngValue]="null">{{ 'offline-tx.select-wallet' | translate }}</option>
+                @for (wallet of wallets; track wallet) {
+                  <option [ngValue]="wallet">{{ wallet.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="joint-raw">{{ 'offline-tx.tx-label' | translate }}</label>
+            <textarea formControlName="rawTx" id="joint-raw" rows="5" class="-mono" (input)="error = ''; tx = undefined"></textarea>
+          </div>
+        </div>
+
+        @if (tx) {
+          <div class="-warning">{{ 'joint-tx.review-warning' | translate }}</div>
+          <h4>{{ 'joint-tx.inputs' | translate }}</h4>
+          <table class="-table">
+            @for (input of tx.inputs; track input.index) {
+              <tr>
+                <td class="-addr">{{ input.address }}</td>
+                <td>{{ input.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</td>
+                <td>{{ input.hours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</td>
+                <td [class.-yes]="input.signed">{{ (input.signed ? 'joint-tx.signed' : 'joint-tx.unsigned') | translate }}</td>
+                <td>@if (input.mine) {<b>{{ 'joint-tx.yours' | translate }}</b>}</td>
+              </tr>
+            }
+          </table>
+          <h4>{{ 'joint-tx.outputs' | translate }}</h4>
+          <table class="-table">
+            @for (output of tx.outputs; track $index) {
+              <tr>
+                <td class="-addr">{{ output.address }}</td>
+                <td>{{ output.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</td>
+                <td>{{ output.hours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</td>
+                <td></td>
+                <td>@if (output.mine) {<b>{{ 'joint-tx.yours' | translate }}</b>}</td>
+              </tr>
+            }
+          </table>
+          <div class="-summary">
+            <div>{{ 'joint-tx.fee' | translate }}
+              <b>{{ tx.fee.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b>
+              ({{ 'joint-tx.minimum' | translate }} {{ tx.minimumFee.toString() | number:'1.0-0' }})</div>
+            <div>{{ 'joint-tx.signed-count' | translate:{ signed: tx.signedCount, total: tx.inputs.length } }}</div>
+            @if (tx.fullySigned) {
+              <div class="-yes">{{ 'joint-tx.ready' | translate }}</div>
+            }
+          </div>
+        }
+        @if (error) {
+          <div class="-error">{{ error | translate }}</div>
+        }
+        <div class="-buttons">
+          <app-button (action)="review()" [disabled]="working || !signForm.value.rawTx.trim()">{{ 'joint-tx.review-button' | translate }}</app-button>
+          @if (tx) {
+            <app-button (action)="copy(tx.encoded)">{{ (copied ? 'offline-tx.copied' : 'offline-tx.copy-button') | translate }}</app-button>
+          }
+          @if (tx && !tx.fullySigned) {
+            <app-button (action)="sign()" class="primary" [disabled]="working || !signForm.value.wallet || unsignedOwnInputs === 0">
+              {{ 'joint-tx.sign-button' | translate }}
+            </app-button>
+          }
+          @if (tx && tx.fullySigned) {
+            <app-button (action)="broadcast()" class="primary" [disabled]="working">{{ 'offline-tx.broadcast-button' | translate }}</app-button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

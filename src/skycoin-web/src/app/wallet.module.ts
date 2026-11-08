@@ -100,6 +100,8 @@ import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { BulkSendComponent } from './components/pages/send-skycoin/send-form-advanced/bulk-send/bulk-send.component';
 import { OfflineTxComponent } from './components/pages/send-skycoin/offline-tx/offline-tx.component';
+import { JointTransactionComponent } from './components/pages/joint-transaction/joint-transaction.component';
+import { JointTransactionService } from './services/wallet/joint-transaction.service';
 import { MsgBarService } from './services/msg-bar.service';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
@@ -176,6 +178,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         SelectAddressComponent,
         BulkSendComponent,
         OfflineTxComponent,
+        JointTransactionComponent,
         MsgBarComponent,
         PasswordDialogComponent,
         QrScanDialogComponent,
@@ -233,6 +236,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         BalanceService,
         HistoryService,
         SpendingService,
+        JointTransactionService,
         GlobalsService,
         CustomMatDialogService,
         Bip39WordListService,

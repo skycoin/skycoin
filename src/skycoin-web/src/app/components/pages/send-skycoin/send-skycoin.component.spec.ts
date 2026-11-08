@@ -7,6 +7,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { CoinService } from '../../../services/coin.service';
 import { NavBarService } from '../../../services/nav-bar.service';
+import { WalletPathPipe } from '../../../wallet-path';
 
 describe('SendSkycoinComponent', () => {
   let component: SendSkycoinComponent;
@@ -14,7 +15,7 @@ describe('SendSkycoinComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ SendSkycoinComponent, MockTranslatePipe ],
+      declarations: [ SendSkycoinComponent, MockTranslatePipe, WalletPathPipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
         { provide: CoinService, useClass: MockCoinService },

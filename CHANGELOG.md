@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `--sign-indexes`, and says how many inputs are signed.
   `decodeRawTransaction --review` shows each input with its owner and whether
   it is signed, each output, the fee and whether the transaction is ready.
+- A Joint transaction page in the web wallet, linked from Send. Create picks
+  your outputs, takes the other party's output hashes and outputs with coins
+  and coin hours set by hand, shows the fee against the minimum, and gives the
+  unsigned transaction to copy. Co-sign reviews a pasted transaction, marks
+  your inputs and outputs and which inputs are signed, signs only your inputs
+  in a node wallet or in the browser, and broadcasts once every input is
+  signed. The web wallet server's sign endpoint takes `sign_indexes` for this.
 - A server rendered wallet at `/ui2/`, beside the Angular wallet, built with
   templ and htmx in the importable `src/ui2` package. It lists the node's
   wallets with their balances, addresses and history, and shows the node and

@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a
 	github.com/0magnet/coloredcobra v1.0.3
+	github.com/0magnet/logrus v1.10.3-0.20261108193845-7365f3bff722
 	github.com/a-h/templ v0.3.1100
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/bitfield/script v0.25.2
@@ -22,7 +23,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rs/cors v1.11.1
 	github.com/shopspring/decimal v1.6.0
-	github.com/sirupsen/logrus v1.10.2
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0

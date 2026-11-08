@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/0magnet/logrus"
 )
 
 var log = NewMasterLogger()

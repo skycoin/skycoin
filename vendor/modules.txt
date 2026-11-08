@@ -7,6 +7,9 @@ github.com/0magnet/bbolt/internal/freelist
 # github.com/0magnet/coloredcobra v1.0.3
 ## explicit; go 1.25.0
 github.com/0magnet/coloredcobra
+# github.com/0magnet/logrus v1.10.3-0.20261108193845-7365f3bff722
+## explicit; go 1.23
+github.com/0magnet/logrus
 # github.com/a-h/templ v0.3.1100
 ## explicit; go 1.26.0
 github.com/a-h/templ
@@ -142,9 +145,6 @@ github.com/sergi/go-diff/diffmatchpatch
 # github.com/shopspring/decimal v1.6.0
 ## explicit; go 1.10
 github.com/shopspring/decimal
-# github.com/sirupsen/logrus v1.10.2
-## explicit; go 1.23
-github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest

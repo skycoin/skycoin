@@ -2,6 +2,8 @@ github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a h1:xCNydYD8p9zv9DS
 github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a/go.mod h1:CpOPhNXerCJIq3QRpKIhrkJdweQF45+mDJuSpWaGwSc=
 github.com/0magnet/coloredcobra v1.0.3 h1:s/3WW+wAssjMEKgzlXWcQ6PGSoKJIoambL68ytXRr00=
 github.com/0magnet/coloredcobra v1.0.3/go.mod h1:Kn7dmRJcnVybFNKY0FNUjLcsivW4FCbAec8ZfVmz51I=
+github.com/0magnet/logrus v1.10.3-0.20261108193845-7365f3bff722 h1:jP6Ky5ctVB6OOmgQz1k7TOCs2sBoyzoWcqnpdbwzkF8=
+github.com/0magnet/logrus v1.10.3-0.20261108193845-7365f3bff722/go.mod h1:D/PU43DLCFgwuSq3EWKroaA/o4Tk33Tn+o5em8WrnJk=
 github.com/a-h/templ v0.3.1100 h1:lQhjVs1IL+M6QWUvojaFBd21+kzwATppSyWkWB9oHoM=
 github.com/a-h/templ v0.3.1100/go.mod h1:j1WAOR7749mlo1AxFLQ7qbDFW5VwyoqszRTlKqEHN9M=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
@@ -94,8 +96,6 @@ github.com/sergi/go-diff v1.4.0 h1:n/SP9D5ad1fORl+llWyN+D6qoUETXNZARKjyY2/KVCw=
 github.com/sergi/go-diff v1.4.0/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
 github.com/shopspring/decimal v1.6.0 h1:DcTwjCj4tJPLuGZYsR9W0hyX9pQwMIkdo26Ig1T9xX4=
 github.com/shopspring/decimal v1.6.0/go.mod h1:gawqmDU56v4yIKSwfBSFip1HdCCXN8/+DMd9qYNcwME=
-github.com/sirupsen/logrus v1.10.2 h1:G2SED73/qrAu6YwbdxOD6peLkCBI3z7L+ykJFTXJBBo=
-github.com/sirupsen/logrus v1.10.2/go.mod h1:SLEg8TqYulVKKfIGHldVp2K2aYz2DKSVBq4g/H5bR7Q=
 github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9 h1:DElGw1Fhj4amuW1KM5q8Xowosb3RiOQce0lDJw0Qv0Y=
 github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9/go.mod h1:OQz8NXVJUWEw7PWYASZ/1BIw5GXgVMTGvrCGDlZa9+k=
 github.com/spf13/afero v1.15.0 h1:b/YBCLWAJdFWJTN9cLhiXXcD7mzKn9Dm86dNnfyQw1I=

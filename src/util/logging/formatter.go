@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
-	"github.com/sirupsen/logrus"
+	"github.com/0magnet/logrus"
 	"golang.org/x/term"
 )
 

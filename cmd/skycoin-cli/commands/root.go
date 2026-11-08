@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/0magnet/logrus"
 
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/fiber"

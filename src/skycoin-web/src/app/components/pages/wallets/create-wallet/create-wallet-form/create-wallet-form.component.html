@@ -98,6 +98,9 @@
         <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
         <input formControlName="seed_passphrase" id="seed_passphrase" type="password" autocomplete="new-password" [placeholder]="'wallet.new.seed-passphrase-placeholder' | translate">
         <p class="-info">{{ 'wallet.new.seed-passphrase-info' | translate }}</p>
+        @if (passphraseHasEdgeSpace) {
+          <p class="-info">{{ 'wallet.new.seed-passphrase-space-warning' | translate }}</p>
+        }
       </div>
     }
   </div>

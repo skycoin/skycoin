@@ -35,4 +35,12 @@ describe('CreateWalletFormComponent', () => {
   it('should be created', () => {
     expect(component).toBeTruthy();
   });
+
+  it('flags a passphrase with a space at either end', () => {
+    const cases: [string, boolean][] = [['', false], ['pass word', false], [' pass', true], ['pass ', true]];
+    cases.forEach(([value, want]) => {
+      component.form.get('seed_passphrase')!.setValue(value);
+      expect(component.passphraseHasEdgeSpace).withContext(JSON.stringify(value)).toBe(want);
+    });
+  });
 });

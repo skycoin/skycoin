@@ -131,6 +131,9 @@ jobs:
       - name: Run Fibercoin Integration Test
         run: make integration-test-fibercoin
 
+      - name: Run Joint Transaction Integration Test
+        run: make integration-test-joint-transaction
+
       - name: Test Hardware Wallet Libraries
         run: make test-skyhw
 

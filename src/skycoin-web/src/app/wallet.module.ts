@@ -74,6 +74,7 @@ import { DisclaimerWarningComponent } from './components/layout/disclaimer-warni
 import { NavBarService } from './services/nav-bar.service';
 import { CoinService } from './services/coin.service';
 import { NodeHealthService } from './services/node-health.service';
+import { NodeNoticesService } from './services/node-notices.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { SelectCoinComponent } from './components/layout/select-coin/select-coin.component';
 import { LanguageService } from './services/language.service';
@@ -231,6 +232,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         NavBarService,
         CoinService,
         NodeHealthService,
+        NodeNoticesService,
         LanguageService,
         WalletService,
         NetworkService,

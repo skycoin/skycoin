@@ -193,6 +193,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		addressGenCmd(),
 		fiberAddressGenCmd(),
 		addressOutputsCmd(),
+		addressSpentCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
 		checkDBCmd(),

@@ -115,6 +115,7 @@ import { HardwareWalletComponent } from './components/pages/settings/hardware-wa
 import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
+import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-scan-dialog.component';
 
 /**
@@ -181,6 +182,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         JointTransactionComponent,
         MsgBarComponent,
         PasswordDialogComponent,
+        ResetPasswordComponent,
         QrScanDialogComponent,
         HwPinDialogComponent,
         HwMessageComponent,

@@ -1,7 +1,12 @@
-import { ChangeDetectionStrategy, Component, Inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, OnInit, inject } from '@angular/core';
 import { AbstractControl, UntypedFormBuilder, UntypedFormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+
+import { Wallet } from '../../../app.datatypes';
+import { WALLET_BASE_PATH, walletPath } from '../../../wallet-path';
+import { walletId } from '../../../services/wallet/wallet.service';
 
 export interface PasswordDialogData {
   /** Translation key or text for the headline. Defaults to password.title. */
@@ -12,6 +17,8 @@ export interface PasswordDialogData {
   confirm?: boolean;
   /** Lets an empty password through, for an optional one. */
   allowEmpty?: boolean;
+  /** The encrypted wallet the password is for. Shows a link to reset it with the seed. */
+  wallet?: Wallet;
 }
 
 /**
@@ -27,6 +34,7 @@ export interface PasswordDialogData {
 })
 export class PasswordDialogComponent implements OnInit {
   form!: UntypedFormGroup;
+  private walletBase = inject(WALLET_BASE_PATH);
 
   static ask(dialog: MatDialog, data: PasswordDialogData = {}): Observable<string | undefined> {
     return dialog.open(PasswordDialogComponent, { width: '450px', data }).afterClosed();
@@ -36,6 +44,7 @@ export class PasswordDialogComponent implements OnInit {
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: PasswordDialogData,
     private formBuilder: UntypedFormBuilder,
+    private router: Router,
   ) {}
 
   ngOnInit() {
@@ -57,6 +66,12 @@ export class PasswordDialogComponent implements OnInit {
 
   cancel() {
     this.dialogRef.close();
+  }
+
+  /** Closes as cancelled and opens the page that resets the wallet password with the seed. */
+  forgot() {
+    this.dialogRef.close();
+    this.router.navigate([walletPath(this.walletBase, '/reset'), walletId(this.data.wallet!)]);
   }
 
   private matches(group: AbstractControl): ValidationErrors | null {

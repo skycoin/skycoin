@@ -467,6 +467,46 @@ export class BrowserWalletBackend implements WalletBackend {
   }
 
   /**
+   * Stores an encrypted wallet under a new password, or unencrypted when password
+   * is empty, using its seed instead of the old password. Nothing changes unless
+   * seed and passphrase give the wallet's stored xpub or addresses.
+   */
+  resetWalletPassword(wallet: Wallet, seed: string, passphrase: string, password: string | null): Observable<void> {
+    if (!wallet.encryptedSeed) {
+      return throwError(() => new Error('Wallet does not have an encrypted seed'));
+    }
+    const bip44 = isBip44(wallet);
+    if (!bip44) {
+      passphrase = '';
+    }
+
+    return this.checkSecrets(wallet, seed, passphrase).pipe(
+      mergeMap(derivedNextSeed => {
+        const nextSeed = bip44 ? undefined : derivedNextSeed;
+        if (!password) {
+          return of({ nextSeed, encrypted: null as (string | null)[] | null });
+        }
+
+        return from(Promise.all([
+          this.encryptionService.encrypt(seed, password),
+          nextSeed ? this.encryptionService.encrypt(nextSeed, password) : Promise.resolve(null),
+          passphrase ? this.encryptionService.encrypt(passphrase, password) : Promise.resolve(null),
+        ])).pipe(map(encrypted => ({ nextSeed, encrypted: encrypted as (string | null)[] | null })));
+      }),
+      map(({ nextSeed, encrypted }) => {
+        wallet.seed = seed;
+        if (bip44) {
+          wallet.seedPassphrase = passphrase;
+        } else {
+          wallet.nextSeed = nextSeed;
+        }
+        wallet.encryptedSeed = encrypted ? encrypted[0]! : undefined;
+        wallet.encryptedNextSeed = encrypted && encrypted[1] ? encrypted[1] : undefined;
+        wallet.encryptedSeedPassphrase = encrypted && encrypted[2] ? encrypted[2] : undefined;
+      }));
+  }
+
+  /**
    * Fails unless seed and passphrase give the wallet's stored xpub or addresses.
    * Emits the next seed after the last address of a deterministic or pq wallet,
    * and leaves the wallet as it was.

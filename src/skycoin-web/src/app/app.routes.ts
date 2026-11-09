@@ -15,6 +15,7 @@ import { HardwareWalletComponent } from './components/pages/settings/hardware-wa
 import { BackupComponent } from './components/pages/settings/backup/backup.component';
 import { CoinsComponent } from './components/pages/settings/coins/coins.component';
 import { JointTransactionComponent } from './components/pages/joint-transaction/joint-transaction.component';
+import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 import { Routes } from "@angular/router";
 
 export const AppRoutes: Routes = [
@@ -46,6 +47,11 @@ export const AppRoutes: Routes = [
   {
     path: 'buy',
     component: BuyComponent,
+    canActivate: [WizardGuardService],
+  },
+  {
+    path: 'reset/:id',
+    component: ResetPasswordComponent,
     canActivate: [WizardGuardService],
   },
   // Node settings are intentionally NOT behind the wizard guard: choosing/

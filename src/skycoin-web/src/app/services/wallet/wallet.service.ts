@@ -181,6 +181,35 @@ export class WalletService {
     return this.browser.removeWalletPassword(wallet, password).pipe(map(() => this.saveWallets()));
   }
 
+  /**
+   * Replaces the password of an encrypted wallet using its seed, or removes it
+   * when password is empty. A wrong seed fails and leaves the wallet as it was.
+   */
+  resetPassword(wallet: Wallet, seed: string, passphrase: string, password: string | null): Observable<void> {
+    seed = this.getCleanSeed(seed);
+    if (this.isServerWallet(wallet)) {
+      const params: any = { id: wallet.filename, seed: seed };
+      if (passphrase) {
+        params.seed_passphrase = passphrase;
+      }
+      if (password) {
+        params.password = password;
+      }
+
+      return this.server.recover(params).pipe(map(encrypted => {
+        wallet.encrypted = encrypted;
+        this.saveWallets();
+      }));
+    }
+
+    return this.browser.resetWalletPassword(wallet, seed, passphrase, password).pipe(map(() => this.saveWallets()));
+  }
+
+  /** True when a password guards the wallet: on the wallet service, or its seed in this browser. */
+  isEncrypted(wallet: Wallet): boolean {
+    return this.isServerWallet(wallet) ? !!wallet.encrypted : !!wallet.encryptedSeed;
+  }
+
   saveWallets() {
     const currentWallets = this.wallets.value || [];
     this.backend.save(currentWallets);
@@ -392,6 +421,16 @@ export class WalletService {
   private getCleanSeed(seed: string): string {
     return seed.replace(/(\n|\r\n)$/, '');
   }
+}
+
+/** A stable id for a wallet in a URL: its file on the wallet service, else its xpub or first address. */
+export function walletId(wallet: Wallet): string {
+  if (wallet.filename) {
+    return wallet.filename;
+  }
+  const xpub = wallet.accounts && wallet.accounts[0] && wallet.accounts[0].accountXpubKey;
+
+  return xpub || (wallet.addresses[0] ? wallet.addresses[0].address : '');
 }
 
 /**

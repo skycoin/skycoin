@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/shopspring/decimal"
 	"github.com/0magnet/logrus"
+	"github.com/shopspring/decimal"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"

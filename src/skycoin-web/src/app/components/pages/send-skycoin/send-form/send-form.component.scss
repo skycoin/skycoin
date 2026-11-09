@@ -1,3 +1,5 @@
+@use '../../../../../theme/variables' as *;
+
 .-buttons {
   text-align: center;
 }
@@ -26,4 +28,12 @@
       opacity: 1;
     }
   }
+}
+
+.send-all-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: $gradient-blue-dark;
+  cursor: pointer;
 }

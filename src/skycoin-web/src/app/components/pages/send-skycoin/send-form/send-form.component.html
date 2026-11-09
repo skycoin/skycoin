@@ -44,6 +44,7 @@
       </div>
     }
     <input formControlName="amount" id="amount" [placeholder]="selectedCurrency === doubleButtonActive.LeftButton ? currentCoin.coinSymbol : ('common.usd' | translate)" (keydown.enter)="onVerify($event)">
+    <div class="send-all-link" (click)="sendAll()">({{ 'send.send-all-available-coins-link' | translate }})</div>
     @if (price) {
       <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }">
         @if (value < 0) {

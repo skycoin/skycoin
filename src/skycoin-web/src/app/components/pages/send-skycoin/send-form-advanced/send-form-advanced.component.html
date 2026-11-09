@@ -141,6 +141,7 @@
               <input formControlName="coins" [id]="'amount' + i">
               <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? currentCoin.coinSymbol : ('common.usd' | translate) }}</span>
             </div>
+            <div class="send-all-link" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>
             @if (price) {
               <div class="coins-value-label">
                 @if (values[i] < 0) {

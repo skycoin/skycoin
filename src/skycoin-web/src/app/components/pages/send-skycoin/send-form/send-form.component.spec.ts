@@ -1,4 +1,5 @@
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { BigNumber } from 'bignumber.js';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { UntypedFormBuilder } from '@angular/forms';
 
@@ -57,5 +58,19 @@ describe('SendFormComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('fills the amount with the whole wallet balance', () => {
+    component.form.get('wallet')!.setValue({ balance: new BigNumber('12.3456') });
+    component.sendAll();
+    expect(component.form.get('amount')!.value).toBe('12.345');
+  });
+
+  it('shows an error when the wallet has no coins', () => {
+    const msgBar = TestBed.inject(MsgBarService);
+    spyOn(msgBar, 'showError');
+    component.form.get('wallet')!.setValue({ balance: new BigNumber(0) });
+    component.sendAll();
+    expect(msgBar.showError).toHaveBeenCalledWith('send.no-coins-left-error');
   });
 });

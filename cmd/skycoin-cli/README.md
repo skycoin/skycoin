@@ -113,6 +113,7 @@ Available Commands:
   addressBalance       Check the balance of specific addresses
   addressGen           Generate skycoin or bitcoin addresses
   addressOutputs       Display outputs of specific addresses
+  addressSpent         Check whether addresses have ever sent coins
   addressTransactions  Show detail for transaction associated with one or more specified addresses
   addresscount         Get the count of addresses with unspent outputs (coins)
   blocks               Lists the content of a single block or a range of blocks

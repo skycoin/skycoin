@@ -121,7 +121,7 @@ label[for=seed] {
   }
 }
 
-.-segwit-toggle {
+.-segwit-toggle, .-temporary {
   mat-checkbox {
     display: inline-block;
   }
@@ -131,6 +131,10 @@ label[for=seed] {
     font-size: 11px;
     color: $grey;
     line-height: 1.4;
+  }
+
+  .-info.-on-blue {
+    color: rgba(255, 255, 255, 0.85);
   }
 }
 

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { generateMnemonic } from 'bip39';
+import { MatCheckboxChange } from '@angular/material/checkbox';
 import { Subscription } from 'rxjs';
 
 import { CoinService } from '../../../../../services/coin.service';
@@ -8,6 +9,9 @@ import { NodeHealthService, CoinHealth } from '../../../../../services/node-heal
 import { BaseCoin } from '../../../../../coins/basecoin';
 import { Bip39WordListService } from '../../../../../services/bip39-word-list.service';
 import { environment } from '../../../../../../environments/environment';
+import { CustomMatDialogService } from '../../../../../services/custom-mat-dialog.service';
+import { ConfirmationData } from '../../../../../app.datatypes';
+import { showConfirmationModal } from '../../../../../utils';
 
 export class FormData {
   label!: string;
@@ -19,6 +23,8 @@ export class FormData {
   // Optional password entered at creation. When set, the new wallet's seed is
   // encrypted right after it's created; blank leaves it stored unencrypted.
   password!: string;
+  // Load the wallet without storing it, so it is gone once the wallet closes.
+  temporary!: boolean;
 }
 
 @Component({
@@ -37,6 +43,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   hasManyCoins!: boolean;
   normalSeed = false;
   customSeedAccepted = false;
+  loadTemporarily = false;
   isProduction = environment.production;
   showWalletType = false;
   isBitcoinCoin = false;
@@ -58,6 +65,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     private coinService: CoinService,
     private nodeHealthService: NodeHealthService,
     private bip39WordListService: Bip39WordListService,
+    private dialog: CustomMatDialogService,
     private changeDetectorRef: ChangeDetectorRef,
   ) { }
 
@@ -127,6 +135,28 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.customSeedAccepted = event.checked;
   }
 
+  /** Asks for confirmation before loading the wallet without storing it. */
+  onTemporaryChange(event: MatCheckboxChange) {
+    if (!event.checked) {
+      this.loadTemporarily = false;
+
+      return;
+    }
+
+    event.source.checked = false;
+    const confirmationData: ConfirmationData = {
+      text: 'wallet.new.temporary-warning',
+      headerText: 'common.warning',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+      redTitle: true,
+    };
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmed => {
+      this.loadTemporarily = !!confirmed;
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
   /**
    * The wallet type new wallets default to. bip44 gives the account xpub the
    * skywire reward system asks for, and both a wallet service and this browser
@@ -145,6 +175,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       seedPassphrase: this.form.value.seed_passphrase || '',
       segwit: !!this.form.value.segwit,
       password: this.form.value.password || '',
+      temporary: !this.create && this.loadTemporarily,
     };
   }
 

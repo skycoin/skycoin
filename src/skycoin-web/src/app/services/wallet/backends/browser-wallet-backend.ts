@@ -49,6 +49,8 @@ export class BrowserWalletBackend implements WalletBackend {
   private appPassword: string | null = null;
   private unlockedStoredWallets: string | null = null;
   private saves: Promise<void> = Promise.resolve();
+  // Wallets loaded temporarily, which are never written to storage.
+  private temporaryWallets: Wallet[] = [];
   private readonly walletsStorageKey = 'wallets';
   private readonly lockedWalletsStorageKey = 'lockedWallets';
 
@@ -65,7 +67,7 @@ export class BrowserWalletBackend implements WalletBackend {
     }
     const storedWallets: string | null = this.unlockedStoredWallets ?? localStorage.getItem(this.walletsStorageKey);
     if (!storedWallets) {
-      return of([]);
+      return of(this.temporaryWallets.slice());
     }
     const wallets: Wallet[] = JSON.parse(storedWallets);
     wallets.forEach((wallet) => {
@@ -84,7 +86,7 @@ export class BrowserWalletBackend implements WalletBackend {
       }
     });
 
-    return of(wallets);
+    return of(wallets.concat(this.temporaryWallets));
   }
 
   create(label: string, seed: string, coinId: number, existing: Wallet[], walletType = 'deterministic',
@@ -148,25 +150,28 @@ export class BrowserWalletBackend implements WalletBackend {
     }));
   }
 
-  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number, count = 1): Observable<void> {
     if (isBip44(wallet)) {
-      return this.addBip44Addresses(wallet, chainIndex === 1 ? 1 : 0, 1).pipe(map(() => undefined));
+      return this.addBip44Addresses(wallet, chainIndex === 1 ? 1 : 0, count).pipe(map(() => undefined));
     }
 
     if (!wallet.seed || !wallet.nextSeed) {
       throw new Error(this.translate.instant('service.wallet.address-without-seed'));
     }
 
-    return this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
+    const added = this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
       map((response: GenerateAddressResponse) => {
         wallet.nextSeed = response.nextSeed;
         wallet.addresses.push(response.address);
       }));
+
+    return count > 1 ? added.pipe(mergeMap(() => this.addAddress(wallet, accountIndex, chainIndex, count - 1))) : added;
   }
 
   save(wallets: Wallet[]): void {
+    this.temporaryWallets = wallets.filter(wallet => wallet.temporary);
     const strippedWallets: Wallet[] = [];
-    wallets.forEach(wallet => {
+    wallets.filter(wallet => !wallet.temporary).forEach(wallet => {
       const strippedAddresses: Address[] = [];
       wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
       const stripped: Wallet = {

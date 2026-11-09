@@ -20,13 +20,14 @@ export interface WalletBackend {
 
   /**
    * Makes a wallet. existing is the current list, for a duplicate check. The server
-   * backend encrypts it with password; the caller encrypts a browser wallet.
+   * backend encrypts it with password; the caller encrypts a browser wallet. A
+   * temporary wallet is never stored, and the server backend loads it with createTemp.
    */
   create(label: string, seed: string, coinId: number, existing: Wallet[], walletType: string,
-    seedPassphrase?: string, segwit?: boolean, password?: string): Observable<Wallet>;
+    seedPassphrase?: string, segwit?: boolean, password?: string, temporary?: boolean): Observable<Wallet>;
 
-  /** Adds the next address to wallet, on the given BIP44 account and chain if any. */
-  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void>;
+  /** Adds the next count addresses to wallet, on the given BIP44 account and chain if any. */
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number, count?: number): Observable<void>;
 
   /** Persists the list, where the backend has anything to persist. */
   save(wallets: Wallet[]): void;

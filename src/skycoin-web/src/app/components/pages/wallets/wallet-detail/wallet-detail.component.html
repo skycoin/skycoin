@@ -7,6 +7,17 @@
       {{ 'wallet.new-address' | translate }}
     </span>
   </div>
+  @if (canScanAddresses) {
+    <div class="btn-scan-addresses -button -not-on-small-and-below" (click)="onScanAddresses()" [ngClass]="{ 'mouse-disabled': scanningAddresses }"
+      [matTooltip]="'wallet.scan-help' | translate">
+      <span [ngClass]="{ '-btn-plus -img': !scanningAddresses, '-disabled-span': scanningAddresses, '-enabled-span': !scanningAddresses }">
+        @if (scanningAddresses) {
+          <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
+        }
+        {{ 'wallet.scan-addresses' | translate }}
+      </span>
+    </div>
+  }
   <div class="-button" (click)="onToggleEmpty()">
     @if (!wallet.hideEmpty) {
       <span class="-img -btn-minus -hide-empty -enabled-span">{{ 'wallet.hide-empty' | translate }}</span>
@@ -22,7 +33,7 @@
       <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
     </div>
   }
-  @if ((currentCoin?.serverWallets && wallet.filename) || (!wallet.isHardware && !currentCoin?.serverWallets)) {
+  @if (!wallet.temporary && ((currentCoin?.serverWallets && wallet.filename) || (!wallet.isHardware && !currentCoin?.serverWallets))) {
     @if (!wallet.encrypted && !wallet.encryptedSeed) {
       <div class="-button -not-on-small-and-below" (click)="onEncryptWallet()">
         <span class="-img -btn-lock -enabled-span">{{ 'wallet.encrypt' | translate }}</span>
@@ -239,6 +250,9 @@
               [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
               {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
             </p>
+            @if (confirmingIndex === i) {
+              <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
+            }
           </div>
           <div class="address -one-line-ellipsis -on-small-and-below-only">
             {{ address.address }}
@@ -261,6 +275,11 @@
           (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
           {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
         </button>
+        @if (wallet.isHardware) {
+          <button mat-menu-item class="btn-confirm-address" (click)="onConfirmAddress(i)">
+            {{ 'wallet.address.confirm' | translate }}
+          </button>
+        }
         <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath" [queryParams]="{ addr: address.address }">
           {{ 'wallet.address.outputs' | translate }}
         </button>

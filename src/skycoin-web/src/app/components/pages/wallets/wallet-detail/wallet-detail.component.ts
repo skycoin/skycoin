@@ -17,6 +17,8 @@ import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses.component';
+import { bip44GapLimit } from '../../../../services/wallet/backends/browser-wallet-backend';
 
 @Component({
     selector: 'app-wallet-detail',
@@ -41,6 +43,8 @@ export class WalletDetailComponent implements OnDestroy {
   currentCoin?: BaseCoin;
   creatingAddress = false;
   scanningAddresses = false;
+  // Index of the hardware wallet address being shown on the device.
+  confirmingIndex: number | null = null;
   showSlowMobileInfo = false;
   spinnerStyle: any;
 
@@ -48,6 +52,7 @@ export class WalletDetailComponent implements OnDestroy {
   private slowInfoSubscription!: Subscription;
   private coinSubscription: Subscription;
   private exposureSubscription?: Subscription;
+  private confirmSubscription?: Subscription;
 
   constructor(
     private walletService: WalletService,
@@ -69,6 +74,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.exposureSubscription?.unsubscribe();
+    this.confirmSubscription?.unsubscribe();
     this.msgBarService.hide();
     this.removeUnlockSubscription();
     this.removeSlowInfoSubscription();
@@ -155,6 +161,10 @@ export class WalletDetailComponent implements OnDestroy {
     });
   }
 
+  get canScanAddresses(): boolean {
+    return this.walletService.canFindUsedAddresses(this.wallet);
+  }
+
   /** Adds the addresses used past the wallet's last ones, as payouts to new xpub indexes are. */
   onScanAddresses() {
     if (this.scanningAddresses) {
@@ -175,28 +185,88 @@ export class WalletDetailComponent implements OnDestroy {
     });
   }
 
+  /** Asks how many addresses to add. A hardware wallet adds one at a time. */
   onAddNewAddress(accountIndex?: number) {
-    const addressCount = accountIndex !== undefined
-      ? (this.wallet.accounts?.[accountIndex]?.externalAddresses?.length || 0)
-      : this.wallet.addresses.length;
+    if (this.wallet.isHardware) {
+      this.confirmAddingAddresses(accountIndex, 1);
 
-    if (addressCount < 5) {
-      this.verifyBeforeAddingNewAddress(accountIndex);
-    } else {
-      const confirmationData: ConfirmationData = {
-        text: 'wallet.add-confirmation',
-        headerText: 'confirmation.header-text',
-        confirmButtonText: 'confirmation.confirm-button',
-        cancelButtonText: 'confirmation.cancel-button'
-      };
-
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(result => {
-        if (result) {
-          this.verifyBeforeAddingNewAddress(accountIndex);
-        }
-        this.changeDetectorRef.markForCheck();
-      });
+      return;
     }
+
+    NumberOfAddressesComponent.openDialog(this.dialog).afterClosed().subscribe(count => {
+      if (count) {
+        this.confirmAddingAddresses(accountIndex, count);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  /**
+   * Warns before leaving bip44GapLimit or more unused addresses in a row, which a
+   * restore from the seed would not find. Used means holding coins or having sent some.
+   */
+  private confirmAddingAddresses(accountIndex: number | undefined, count: number) {
+    const addresses = accountIndex !== undefined
+      ? (this.wallet.accounts?.[accountIndex]?.externalAddresses || [])
+      : this.wallet.addresses;
+
+    let lastUsed = -1;
+    addresses.forEach((address, i) => {
+      if (this.exposed.has(address.address) || (address.balance && address.balance.isGreaterThan(0))) {
+        lastUsed = i;
+      }
+    });
+
+    let text: string | null = null;
+    if (!this.wallet.isHardware && addresses.length - (lastUsed + 1) + count >= bip44GapLimit) {
+      text = 'wallet.add-many-confirmation';
+    } else if (addresses.length >= 5) {
+      text = 'wallet.add-confirmation';
+    }
+
+    if (!text) {
+      this.verifyBeforeAddingNewAddress(accountIndex, count);
+
+      return;
+    }
+
+    const confirmationData: ConfirmationData = {
+      text: text,
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button'
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(result => {
+      if (result) {
+        this.verifyBeforeAddingNewAddress(accountIndex, count);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  /** Shows a hardware wallet address on the device screen, so it can be checked there. */
+  onConfirmAddress(index: number) {
+    if (this.confirmingIndex !== null) {
+      return;
+    }
+
+    this.confirmingIndex = index;
+    this.msgBarService.showWarning(this.translateService.instant('hardware-wallet.confirm-address.instructions',
+      { address: this.wallet.addresses[index].address }));
+
+    this.confirmSubscription?.unsubscribe();
+    this.confirmSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(
+      mergeMap(() => this.hwWalletService.confirmAddress(index)),
+    ).subscribe(() => {
+      this.confirmingIndex = null;
+      this.msgBarService.showDone('hardware-wallet.confirm-address.confirmation');
+      this.changeDetectorRef.markForCheck();
+    }, error => {
+      this.confirmingIndex = null;
+      this.msgBarService.showError(error.translatableErrorMsg || error.message);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   onCopySuccess(address: Address, interval = 500) {
@@ -286,7 +356,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   onAddAccount() {
     if (this.wallet.encrypted) {
-      PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
+      PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label, wallet: this.wallet }).subscribe(password => {
         if (password) {
           this.addAccount(password);
         }
@@ -347,7 +417,7 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onDecryptWallet() {
-    PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
+    PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label, wallet: this.wallet }).subscribe(password => {
       if (password) {
         this.decryptWith(password);
       }
@@ -400,23 +470,23 @@ export class WalletDetailComponent implements OnDestroy {
     openDeleteWalletModal(this.dialog, this.wallet, this.translateService, this.walletService);
   }
 
-  private verifyBeforeAddingNewAddress(accountIndex?: number) {
+  private verifyBeforeAddingNewAddress(accountIndex?: number, count = 1) {
     if (this.wallet.isHardware) {
       this.addHwAddress();
     } else if (this.walletService.isServerWallet(this.wallet) || this.walletService.isBrowserBip44(this.wallet)) {
       // Server-managed wallets don't need seed entry, and a browser bip44
       // wallet derives new addresses from its xpub.
-      this.addNewAddress(accountIndex);
+      this.addNewAddress(accountIndex, count);
     } else if (!this.wallet.seed || !this.wallet.nextSeed) {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
         .subscribe(() => {
-          this.addNewAddress();
+          this.addNewAddress(accountIndex, count);
           this.changeDetectorRef.markForCheck();
         });
     } else {
-      this.addNewAddress(accountIndex);
+      this.addNewAddress(accountIndex, count);
     }
   }
 
@@ -447,7 +517,7 @@ export class WalletDetailComponent implements OnDestroy {
     );
   }
 
-  private addNewAddress(accountIndex?: number) {
+  private addNewAddress(accountIndex?: number, count = 1) {
     if (this.creatingAddress === true) {
       this.msgBarService.showError('wallet.already-adding-address-error');
 
@@ -463,7 +533,7 @@ export class WalletDetailComponent implements OnDestroy {
       });
 
     setTimeout(() => {
-      this.walletService.addAddress(this.wallet, true, accountIndex)
+      this.walletService.addAddress(this.wallet, true, accountIndex, undefined, count)
         .subscribe(
           () => {
             this.showSlowMobileInfo = false;

@@ -33,6 +33,9 @@
                   @if (wallet.isHardware) {
                     <mat-icon class="hw-icon">memory</mat-icon>
                   }
+                  @if (wallet.temporary) {
+                    <mat-icon class="hw-icon -temporary-icon" [matTooltip]="'wallet.temporary' | translate">schedule</mat-icon>
+                  }
                   {{ wallet.label }}
                 </div>
                 <div class="flex-fill -encryption -not-on-small-and-below">

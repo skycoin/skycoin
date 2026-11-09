@@ -214,7 +214,10 @@
       "seed-passphrase-space-warning": "This passphrase starts or ends with a space. It is used exactly as typed, so the space must be entered every time you restore this wallet.",
       "segwit-label": "Native Segwit (bech32)",
       "segwit-info": "Generate bc1q... addresses (BIP84). Recommended for lower fees. Uncheck for legacy P2PKH addresses.",
-      "wallet-created": "The wallet has been added to the list."
+      "wallet-created": "The wallet has been added to the list.",
+      "temporary-check": "Load temporarily",
+      "temporary-info": "The wallet will be kept in memory only and deleted as soon as you close or reload the wallet page.",
+      "temporary-warning": "The wallet will be deleted when you close or reload the wallet page, and it will not have a password. You will need the seed to recover access to the funds. Are you sure you want to continue?"
     },
     "scan": {
       "connection-error": "It is not possible to connect to the server. Please try again later.",
@@ -246,8 +249,19 @@
       "outputs": "Unspent Outputs",
       "history": "History",
       "exposed": "This address has sent coins before, so its public key is on the blockchain. A future quantum computer could use it to steal coins sent to it. Do not receive coins at it again.",
-      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address."
-    }
+      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address.",
+      "confirm": "Confirm Address"
+    },
+    "scan-help": "Finds the already used addresses of this wallet which are missing from the list.",
+    "add-addresses": {
+      "title": "New Addresses",
+      "quantity-label": "How many addresses to create",
+      "quantity-error-info": "You must enter a whole number from 1 to 100.",
+      "cancel-button": "Cancel",
+      "create-button": "Create"
+    },
+    "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones, some addresses may not be found automatically if you restore the wallet using the seed, and you will have to add them by hand. Do you want to continue?",
+    "temporary": "Temporary wallet."
   },
   "qr": {
     "title": "Address",
@@ -634,6 +648,10 @@
       "and": "and",
       "hours": "coin hours",
       "to": "to"
+    },
+    "confirm-address": {
+      "instructions": "Please confirm on the Skywallet that the address is {{ address }}",
+      "confirmation": "Address confirmed."
     }
   },
   "app-lock": {

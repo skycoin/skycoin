@@ -22,6 +22,8 @@ export interface Wallet {
   // A browser bip44 wallet's bip39 seed passphrase, kept like the seed.
   seedPassphrase?: string;
   encryptedSeedPassphrase?: string;
+  // Kept in memory only, so it is gone once the wallet closes.
+  temporary?: boolean;
 }
 
 export interface Bip44Account {

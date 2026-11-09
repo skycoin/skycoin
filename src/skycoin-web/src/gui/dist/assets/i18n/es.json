@@ -190,8 +190,12 @@
       "select-coin": "Seleccionar moneda",
       "unconventional-seed-title": "Posible error",
       "unconventional-seed-text": "Usted introdujo una semilla no convencional. Si lo hizo por alguna razón en especial, puede continuar (sólo recomendable para usuarios avanzados). Sin embargo, si su intención es utilizar una semilla normal del sistema, usted debe borrar los textos y/o caracteres especiales adicionales.",
-      "unconventional-seed-check": "Continuar con la semilla no convencional."
+      "unconventional-seed-check": "Continuar con la semilla no convencional.",
+      "temporary-check": "Cargar temporalmente",
+      "temporary-info": "La billetera se guardará sólo en memoria y será borrada apenas cierre o recargue la página de la billetera.",
+      "temporary-warning": "La billetera será borrada al cerrar o recargar la página de la billetera y no tendrá contraseña. Usted necesitará la semilla para recuperar el acceso a los fondos. ¿Seguro que desea continuar?"
     },
+    "temporary": "Billetera temporal.",
 
     "scan": {
       "connection-error": "No es posible conectar con el servidor. Por favor, vuelva a intentarlo luego.",
@@ -224,7 +228,25 @@
       "copy-address": "Copiar Dirección",
       "copied": "¡Copiado!",
       "outputs": "Salidas No Gastadas",
-      "history": "Historial"
+      "history": "Historial",
+      "confirm": "Confirmar Dirección"
+    },
+
+    "scan-help": "Encuentra las direcciones ya usadas de esta billetera que faltan en la lista.",
+    "add-addresses": {
+      "title": "Nuevas Direcciones",
+      "quantity-label": "Cantidad de direcciones a crear",
+      "quantity-error-info": "Debe ingresar un número entero entre 1 y 100.",
+      "cancel-button": "Cancelar",
+      "create-button": "Crear"
+    },
+    "add-many-confirmation": "ADVERTENCIA: si agrega demasiadas direcciones sin usar las anteriores, es posible que algunas direcciones no se encuentren automáticamente si restaura la billetera con la semilla, y tendrá que agregarlas a mano. ¿Desea continuar?"
+  },
+
+  "hardware-wallet": {
+    "confirm-address": {
+      "instructions": "Por favor confirme en la Skywallet que la dirección es {{ address }}",
+      "confirmation": "Dirección confirmada."
     }
   },
 

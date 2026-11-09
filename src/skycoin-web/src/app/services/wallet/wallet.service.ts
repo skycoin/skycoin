@@ -94,12 +94,12 @@ export class WalletService {
     }));
   }
 
-  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number, count = 1): Observable<void> {
     if (this.isServerWallet(wallet)) {
-      return this.server.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => this.saveWallets()));
+      return this.server.addAddress(wallet, accountIndex, chainIndex, count).pipe(map(() => this.saveWallets()));
     }
 
-    return this.browser.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => {
+    return this.browser.addAddress(wallet, accountIndex, chainIndex, count).pipe(map(() => {
       if (saveWallet) {
         this.saveWallets();
       }
@@ -111,7 +111,7 @@ export class WalletService {
    * the wallet service encrypts on create, the browser before saving.
    */
   create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string,
-    segwit?: boolean, password?: string): Observable<Wallet> {
+    segwit?: boolean, password?: string, temporary = false): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
     const backend = this.backend;
     // Gateway coins keep their wallets on a server; this browser derives bip44
@@ -121,8 +121,15 @@ export class WalletService {
       walletType = 'deterministic';
     }
 
-    return backend.create(label, seed, coinId, this.wallets.value || [], walletType, seedPassphrase, segwit, password).pipe(
-      mergeMap(wallet => password && !backend.onServer
+    return backend.create(label, seed, coinId, this.wallets.value || [], walletType, seedPassphrase, segwit, password, temporary).pipe(
+      map(wallet => {
+        if (temporary) {
+          wallet.temporary = true;
+        }
+
+        return wallet;
+      }),
+      mergeMap(wallet => password && !temporary && !backend.onServer
         ? this.browser.setWalletPassword(wallet, password).pipe(map(() => wallet))
         : of(wallet)),
       map(wallet => {

@@ -20,7 +20,7 @@ export class ServerWalletBackend implements WalletBackend {
   }
 
   create(label: string, seed: string, coinId: number, _existing: Wallet[], walletType: string,
-    seedPassphrase?: string, segwit?: boolean, password?: string): Observable<Wallet> {
+    seedPassphrase?: string, segwit?: boolean, password?: string, temporary = false): Observable<Wallet> {
     const params: any = {
       label: label || 'undefined',
       seed: seed,
@@ -36,12 +36,12 @@ export class ServerWalletBackend implements WalletBackend {
     if (segwit !== undefined) {
       params.segwit = segwit;
     }
-    if (password) {
+    if (password && !temporary) {
       params.encrypt = true;
       params.password = password;
     }
 
-    return this.apiService.post('wallet/create', params).pipe(
+    return this.apiService.post(temporary ? 'wallet/createTemp' : 'wallet/create', params).pipe(
       map((response: any) => ({
         ...toWallet(response, coinId),
         balance: new BigNumber('0'),
@@ -49,10 +49,10 @@ export class ServerWalletBackend implements WalletBackend {
       })));
   }
 
-  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number, count = 1): Observable<void> {
     const params: any = {
       id: wallet.filename,
-      num: '1',
+      num: count.toString(),
     };
     if (accountIndex !== undefined) {
       params.account = accountIndex.toString();
@@ -161,6 +161,9 @@ function toWallet(w: any, coinId: number): Wallet {
     walletType: w.meta.type || 'deterministic',
     filename: w.meta.filename,
   };
+  if (w.meta.temp) {
+    wlt.temporary = true;
+  }
   if (w.meta.type === 'bip44' && w.accounts) {
     wlt.accounts = parseAccounts(w.accounts);
   }

@@ -145,7 +145,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.password = undefined;
     if (this.walletService.isServerWallet(wallet) && wallet.encrypted) {
       this.removeProcessSubscription();
-      this.processSubscription = PasswordDialogComponent.ask(this.dialog, { text: wallet.label }).subscribe(password => {
+      this.processSubscription = PasswordDialogComponent.ask(this.dialog, { text: wallet.label, wallet }).subscribe(password => {
         if (password) {
           this.password = password;
           this.checkBeforeSending();

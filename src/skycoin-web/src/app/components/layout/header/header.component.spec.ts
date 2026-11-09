@@ -22,7 +22,7 @@ describe('HeaderComponent', () => {
   let notices: BehaviorSubject<NodeNotices>;
 
   beforeEach(waitForAsync(() => {
-    notices = new BehaviorSubject<NodeNotices>({ csrfDisabled: false });
+    notices = new BehaviorSubject<NodeNotices>({ csrfDisabled: false, latestVersion: null, downloadUrl: null });
     TestBed.configureTestingModule({
       declarations: [ HeaderComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
@@ -47,11 +47,20 @@ describe('HeaderComponent', () => {
   });
 
   it('shows no notice while the node has none', () => {
+    expect(fixture.nativeElement.querySelector('.-update-notice')).toBeNull();
     expect(fixture.nativeElement.querySelector('.-csrf-notice')).toBeNull();
   });
 
+  it('links a newer node release', () => {
+    notices.next({ csrfDisabled: false, latestVersion: '0.28.7', downloadUrl: 'https://example.com/v0.28.7' });
+    fixture.detectChanges();
+    const link = fixture.nativeElement.querySelector('.-update-notice a') as HTMLAnchorElement;
+    expect(link.textContent!.trim()).toBe('v0.28.7');
+    expect(link.href).toBe('https://example.com/v0.28.7');
+  });
+
   it('warns when the node has CSRF turned off', () => {
-    notices.next({ csrfDisabled: true });
+    notices.next({ csrfDisabled: true, latestVersion: null, downloadUrl: null });
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.-csrf-notice')).not.toBeNull();
   });

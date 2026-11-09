@@ -25,3 +25,32 @@ export function isEqualOrSuperiorVersion(current: string, target: string): boole
 
   return true;
 }
+
+/**
+ * True when version to is newer than from, comparing all 3 parts. A release
+ * candidate such as 0.28.7-rc1 is older than 0.28.7.
+ */
+export function shouldUpgradeVersion(from: string, to: string): boolean {
+  if (!from || !to) {
+    return false;
+  }
+  const toParts = to.split('-')[0].split('.');
+  const fromSplit = from.split('-');
+  const fromParts = fromSplit[0].split('.');
+
+  for (let i = 0; i < 3; i++) {
+    const toNumber = Number(toParts[i] || 0);
+    const fromNumber = Number(fromParts[i] || 0);
+    if (isNaN(toNumber) || isNaN(fromNumber)) {
+      return false;
+    }
+    if (toNumber > fromNumber) {
+      return true;
+    }
+    if (toNumber < fromNumber) {
+      return false;
+    }
+  }
+
+  return fromSplit.length === 2 && fromSplit[1].indexOf('rc') !== -1;
+}

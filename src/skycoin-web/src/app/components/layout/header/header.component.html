@@ -67,6 +67,15 @@
     [value]="percentage! * 100">
   </mat-progress-bar>
   <app-nav-bar class="-on-small-and-below-only"></app-nav-bar>
+  @if (notices?.latestVersion) {
+    <mat-toolbar class="notification-bar -update-notice">
+      <div>
+        {{ 'header.update1' | translate }}
+        <a [href]="notices!.downloadUrl" target="_blank" rel="noreferrer nofollow noopener">v{{ notices!.latestVersion }}</a>
+        {{ 'header.update2' | translate }}
+      </div>
+    </mat-toolbar>
+  }
   @if (notices?.csrfDisabled) {
     <mat-toolbar class="notification-bar -csrf-notice">
       <div>{{ 'header.errors.csrf' | translate }}</div>

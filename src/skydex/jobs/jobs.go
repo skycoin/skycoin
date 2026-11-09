@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/0magnet/logrus"
+	"github.com/google/uuid"
 
 	"github.com/skycoin/skycoin/src/skydex/db"
 )

@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mgutz/ansi"
 	"github.com/0magnet/logrus"
+	"github.com/mgutz/ansi"
 	"golang.org/x/term"
 )
 

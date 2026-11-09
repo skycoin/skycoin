@@ -144,7 +144,7 @@ export class OfflineTxComponent implements OnInit, OnDestroy {
    */
   private unlock(wallet: Wallet): Observable<string | null | undefined> {
     if (this.walletService.isServerWallet(wallet)) {
-      return wallet.encrypted ? PasswordDialogComponent.ask(this.dialog, { text: wallet.label }) : of(null);
+      return wallet.encrypted ? PasswordDialogComponent.ask(this.dialog, { text: wallet.label, wallet }) : of(null);
     }
     if (!wallet.seed) {
       const unlocked = openUnlockWalletModal(wallet, this.dialog);

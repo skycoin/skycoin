@@ -344,7 +344,7 @@ export class JointTransactionComponent implements OnInit, OnDestroy {
    */
   private unlock(wallet: Wallet): Observable<string | null | undefined> {
     if (this.walletService.isServerWallet(wallet)) {
-      return wallet.encrypted ? PasswordDialogComponent.ask(this.dialog, { text: wallet.label }) : of(null);
+      return wallet.encrypted ? PasswordDialogComponent.ask(this.dialog, { text: wallet.label, wallet }) : of(null);
     }
     const unlockedSeed: Observable<null | undefined> = wallet.seed ? of(null) : this.askSeed(wallet);
 

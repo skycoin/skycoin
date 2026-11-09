@@ -356,7 +356,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   onAddAccount() {
     if (this.wallet.encrypted) {
-      PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
+      PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label, wallet: this.wallet }).subscribe(password => {
         if (password) {
           this.addAccount(password);
         }
@@ -417,7 +417,7 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   onDecryptWallet() {
-    PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label }).subscribe(password => {
+    PasswordDialogComponent.ask(this.dialog, { text: this.wallet.label, wallet: this.wallet }).subscribe(password => {
       if (password) {
         this.decryptWith(password);
       }

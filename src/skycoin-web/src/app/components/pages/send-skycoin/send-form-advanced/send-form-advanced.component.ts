@@ -24,6 +24,8 @@ import { BulkSendComponent, BulkDestination } from './bulk-send/bulk-send.compon
 import { OfflineTxComponent, OfflineTxMode } from '../offline-tx/offline-tx.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { maxNoteChars } from '../../../../utils/tx-notes';
+import { EnterLinkComponent } from '../enter-link/enter-link.component';
+import { PaymentLink } from '../../../../utils/qr';
 
 @Component({
     selector: 'app-send-form-advanced',
@@ -453,6 +455,51 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       }
       this.changeDetectorRef.markForCheck();
     });
+  }
+
+  /** Fills the first destination from a pasted payment link, asking first when it would replace typed data. */
+  useLink() {
+    EnterLinkComponent.ask(this.dialog).subscribe(link => {
+      if (!link) {
+        this.changeDetectorRef.markForCheck();
+
+        return;
+      }
+      const first = this.destControls[0];
+      if (first.get('address')!.value || (link.amount && first.get('coins')!.value) || (link.hours && first.get('hours')!.value)) {
+        const confirmationData: ConfirmationData = {
+          text: 'send.fill-with-link.data-overwritten-alert',
+          headerText: 'confirmation.header-text',
+          confirmButtonText: 'confirmation.confirm-button',
+          cancelButtonText: 'confirmation.cancel-button',
+        };
+        showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmed => {
+          if (confirmed) {
+            this.applyLink(link);
+          }
+          this.changeDetectorRef.markForCheck();
+        });
+      } else {
+        this.applyLink(link);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private applyLink(link: PaymentLink) {
+    const first = this.destControls[0];
+    first.get('address')!.setValue(link.address);
+    if (link.amount) {
+      this.selectedCurrency = DoubleButtonActive.LeftButton;
+      first.get('coins')!.setValue(link.amount);
+    }
+    if (link.hours) {
+      this.autoHours = false;
+      this.autoOptions = false;
+      first.get('hours')!.setValue(link.hours);
+    }
+    this.form.get('destinations')!.updateValueAndValidity();
+    this.msgBarService.showDone('send.fill-with-link.confirmation');
   }
 
   private setDestinations(destinations: BulkDestination[]) {

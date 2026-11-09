@@ -128,6 +128,7 @@
       {{ 'send.destinations-label' | translate }}
       <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
       <span class="-options -bulk-send" (click)="openBulkSend()">{{ 'send.bulk-send-button' | translate }}</span>
+      <span class="-options -bulk-send -use-link" (click)="useLink()">{{ 'send.fill-with-link.button' | translate }}</span>
     </label>
     @if (price) {
       <div class="coin-selector-container" [ngClass]="{ disabled: $any(this).busy }">

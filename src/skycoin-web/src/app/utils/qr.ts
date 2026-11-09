@@ -31,6 +31,36 @@ export function parseScannedPayment(text: string): ScannedPayment {
   return { address, amount };
 }
 
+/** A payment link such as skycoin:ADDR?amount=1&hours=2, read by parsePaymentLink. */
+export interface PaymentLink extends ScannedPayment {
+  hours?: string;
+}
+
+/**
+ * Reads a payment link pasted in a send form, or returns null when it is not
+ * one. Unlike a scan it needs a scheme, and hours must be a whole number.
+ */
+export function parsePaymentLink(text: string): PaymentLink | null {
+  const trimmed = (text || '').trim();
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+    return null;
+  }
+  const link: PaymentLink = parseScannedPayment(trimmed);
+  if (!link.address) {
+    return null;
+  }
+  const query = trimmed.split('?', 2)[1];
+  const hours = query ? new URLSearchParams(query).get('hours') : null;
+  if (hours !== null) {
+    if (!/^\d+$/.test(hours)) {
+      return null;
+    }
+    link.hours = hours;
+  }
+
+  return link;
+}
+
 /**
  * Decodes a QR code in an image or video frame, or returns null. The Android
  * app lends its own decoder as window.SkywireQr. Elsewhere jsQR, loaded on

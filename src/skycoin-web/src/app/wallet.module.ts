@@ -100,6 +100,7 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { BulkSendComponent } from './components/pages/send-skycoin/send-form-advanced/bulk-send/bulk-send.component';
+import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
 import { OfflineTxComponent } from './components/pages/send-skycoin/offline-tx/offline-tx.component';
 import { JointTransactionComponent } from './components/pages/joint-transaction/joint-transaction.component';
 import { JointTransactionService } from './services/wallet/joint-transaction.service';
@@ -179,6 +180,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         SendFormAdvancedComponent,
         SelectAddressComponent,
         BulkSendComponent,
+        EnterLinkComponent,
         OfflineTxComponent,
         JointTransactionComponent,
         MsgBarComponent,

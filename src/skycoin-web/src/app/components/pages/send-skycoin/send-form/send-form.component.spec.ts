@@ -2,6 +2,7 @@ import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { BigNumber } from 'bignumber.js';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { UntypedFormBuilder } from '@angular/forms';
+import { of } from 'rxjs';
 
 import { SendFormComponent } from './send-form.component';
 import { WalletService } from '../../../../services/wallet/wallet.service';
@@ -72,5 +73,31 @@ describe('SendFormComponent', () => {
     component.form.get('wallet')!.setValue({ balance: new BigNumber(0) });
     component.sendAll();
     expect(msgBar.showError).toHaveBeenCalledWith('send.no-coins-left-error');
+  });
+
+  function pasteLink(link: any, confirmed = true) {
+    const dialog = TestBed.inject(CustomMatDialogService) as any;
+    dialog.open = jasmine.createSpy('open').and.returnValues(
+      { afterClosed: () => of(link) },
+      { afterClosed: () => of(confirmed) },
+    );
+    component.useLink();
+
+    return dialog.open;
+  }
+
+  it('fills the address, amount and hours from a payment link', () => {
+    const open = pasteLink({ address: 'addr1', amount: '2.5', hours: '7' });
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(component.form.get('address')!.value).toBe('addr1');
+    expect(component.form.get('amount')!.value).toBe('2.5');
+    expect(component.linkHours).toBe('7');
+  });
+
+  it('asks before replacing a typed address and keeps it when refused', () => {
+    component.form.get('address')!.setValue('typed');
+    const open = pasteLink({ address: 'addr1', amount: '1' }, false);
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(component.form.get('address')!.value).toBe('typed');
   });
 });

@@ -232,6 +232,18 @@
     "gateway-confirm-eth": "¿Enviar {{ amount }} {{ symbol }} a {{ to }}? La comisión de la red es como máximo {{ fee }} ETH.",
     "gateway-confirm-btc": "¿Enviar {{ amount }} {{ symbol }} a {{ to }}? La comisión de la red es {{ rate }} satoshis por byte.",
     "gateway-sent": "Enviado. Transacción {{ txid }}",
+    "fill-with-link": {
+      "title": "Utilizar un link de pago",
+      "button": "Utilizar un link de pago",
+      "link-info": "Pegue un link que se le haya enviado solicitando monedas, como skycoin:DIRECCION?amount=1. El formulario se rellenará con sus datos.",
+      "link-label": "Link de pago",
+      "invalid-link-error": "Este no es un link de pago válido.",
+      "data-overwritten-alert": "Se sobrescribirán algunos datos que ha introducido. ¿Seguro de que desea continuar?",
+      "confirmation": "El formulario se ha rellenado con los datos del link de pago.",
+      "link-hours": "El link solicita {{ hours }} {{ name }}, que se enviarán con las monedas.",
+      "process-button": "Procesar",
+      "cancel-button": "Cancelar"
+    },
     "signed-button": "Firmada",
     "unsigned-button": "Sin firmar",
     "unsigned-confirmation": "El formulario sin firmar no envía transacciones. Solo crea el texto de una transacción a partir de las direcciones que ingrese, el cual debe ser firmado antes de que pueda ser enviado a la red. Esto es útil para una billetera cuyas claves se guardan en un equipo fuera de línea. ¿Desea continuar?",

@@ -232,6 +232,18 @@
     "gateway-confirm-eth": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is at most {{ fee }} ETH.",
     "gateway-confirm-btc": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is {{ rate }} satoshis per byte.",
     "gateway-sent": "Sent. Transaction {{ txid }}",
+    "fill-with-link": {
+      "title": "Use a Payment Link",
+      "button": "Use a payment link",
+      "link-info": "Paste a link sent to you requesting coins, such as skycoin:ADDRESS?amount=1. The form will be filled in with its data.",
+      "link-label": "Payment link",
+      "invalid-link-error": "This is not a valid payment link.",
+      "data-overwritten-alert": "Some data you have entered will be overwritten. Are you sure you want to continue?",
+      "confirmation": "The form has been filled in with the data of the payment link.",
+      "link-hours": "The link requests {{ hours }} {{ name }}, which will be sent with the coins.",
+      "process-button": "Process",
+      "cancel-button": "Cancel"
+    },
     "signed-button": "Signed",
     "unsigned-button": "Unsigned",
     "unsigned-confirmation": "The unsigned form does not send transactions. It only creates the text of a transaction from the addresses you enter, which must be signed before it can be sent to the network. This is useful for a wallet whose keys are kept on an offline device. Do you want to continue?",

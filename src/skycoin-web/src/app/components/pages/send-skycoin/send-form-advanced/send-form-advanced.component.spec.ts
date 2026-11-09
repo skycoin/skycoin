@@ -149,4 +149,12 @@ describe('SendFormAdvancedComponent', () => {
       expect(dialog.open.calls.mostRecent().args[1].data.rawTx).toBe('unsigned-tx');
     }));
   });
+
+  it('fills the first destination from a payment link and sets its hours', () => {
+    const dialog = TestBed.inject(CustomMatDialogService) as any;
+    dialog.open = jasmine.createSpy('open').and.returnValue({ afterClosed: () => of({ address: 'addr1', amount: '3', hours: '9' }) });
+    component.useLink();
+    expect(component.destControls[0].value).toEqual({ address: 'addr1', coins: '3', hours: '9' });
+    expect(component.autoHours).toBeFalse();
+  });
 });

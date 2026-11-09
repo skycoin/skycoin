@@ -1,0 +1,16 @@
+<app-modal class="modal" [headline]="'send.fill-with-link.title' | translate" [dialog]="dialogRef">
+  <p>{{ 'send.fill-with-link.link-info' | translate }}</p>
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="payment-link">{{ 'send.fill-with-link.link-label' | translate }}</label>
+      <input formControlName="link" id="payment-link" (input)="error = ''" (keydown.enter)="process()">
+      @if (error) {
+        <div class="-error">{{ error | translate }}</div>
+      }
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="cancel()">{{ 'send.fill-with-link.cancel-button' | translate }}</app-button>
+    <app-button (action)="process()" class="primary">{{ 'send.fill-with-link.process-button' | translate }}</app-button>
+  </div>
+</app-modal>

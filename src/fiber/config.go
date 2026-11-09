@@ -102,8 +102,11 @@ type NodeConfig struct {
 	// PriceTickerSource is the price API source: "coinpaprika" or "coingecko"
 	PriceTickerSource string `mapstructure:"price_ticker_source"`
 
+	// CoinName is the coin name the API reports and the default data directory
+	// name. cmd/newcoin sets it; a fiber.toml can set it with coin_name.
+	CoinName string `mapstructure:"coin_name"`
+
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
-	CoinName string
 	// Ascii Font rendering of CoinName
 	// CoinAscii is the ASCII art representation of the coin
 	CoinAscii     string //nolint:revive

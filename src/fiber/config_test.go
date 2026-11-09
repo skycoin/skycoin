@@ -39,6 +39,7 @@ func TestNewConfig(t *testing.T) {
 			CreateBlockMaxTransactionSize:  1234,
 			CreateBlockMaxDropletPrecision: 4,
 			MaxBlockTransactionsSize:       1111,
+			CoinName:                       "testcoin",
 			DisplayName:                    "Testcoin",
 			Ticker:                         "TST",
 			CoinHoursName:                  "Testcoin Hours",

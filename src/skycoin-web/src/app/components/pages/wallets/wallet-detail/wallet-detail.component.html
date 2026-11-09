@@ -239,6 +239,9 @@
               [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
               {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
             </p>
+            @if (confirmingIndex === i) {
+              <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
+            }
           </div>
           <div class="address -one-line-ellipsis -on-small-and-below-only">
             {{ address.address }}
@@ -261,6 +264,11 @@
           (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
           {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
         </button>
+        @if (wallet.isHardware) {
+          <button mat-menu-item class="btn-confirm-address" (click)="onConfirmAddress(i)">
+            {{ 'wallet.address.confirm' | translate }}
+          </button>
+        }
         <button mat-menu-item [routerLink]="'/settings/outputs' | walletPath" [queryParams]="{ addr: address.address }">
           {{ 'wallet.address.outputs' | translate }}
         </button>

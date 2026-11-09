@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -51,5 +51,47 @@ describe('WalletDetailComponent', () => {
 
   it('should be created', () => {
     expect(component).toBeTruthy();
+  });
+
+  describe('confirming a hardware wallet address', () => {
+    let hw: any;
+    let msgBar: MsgBarService;
+
+    beforeEach(() => {
+      hw = TestBed.inject(HwWalletService);
+      msgBar = TestBed.inject(MsgBarService);
+      (TestBed.inject(TranslateService) as any).instant = (key: string) => key;
+      component.wallet = { label: 'hw', isHardware: true, addresses: [{ address: 'a0' }, { address: 'a1' }] };
+      spyOn(hw, 'checkIfCorrectHwConnected').and.returnValue(of(true));
+      hw.confirmAddress = jasmine.createSpy('confirmAddress').and.returnValue(of({}));
+    });
+
+    it('checks the device, then shows the address on it', () => {
+      spyOn(msgBar, 'showDone');
+      component.onConfirmAddress(1);
+
+      expect(hw.checkIfCorrectHwConnected).toHaveBeenCalledWith('a0');
+      expect(hw.confirmAddress).toHaveBeenCalledWith(1);
+      expect(msgBar.showDone).toHaveBeenCalledWith('hardware-wallet.confirm-address.confirmation');
+      expect(component.confirmingIndex).toBeNull();
+    });
+
+    it('reports a device error', () => {
+      spyOn(msgBar, 'showError');
+      hw.confirmAddress.and.returnValue(throwError(() => ({ translatableErrorMsg: 'hardware-wallet.errors.refused' })));
+      component.onConfirmAddress(0);
+
+      expect(msgBar.showError).toHaveBeenCalledWith('hardware-wallet.errors.refused');
+      expect(component.confirmingIndex).toBeNull();
+    });
+
+    it('ignores a second request while one is on the device', () => {
+      hw.confirmAddress.and.returnValue(NEVER);
+      component.onConfirmAddress(0);
+      component.onConfirmAddress(1);
+
+      expect(hw.confirmAddress).toHaveBeenCalledTimes(1);
+      expect(component.confirmingIndex).toBe(0);
+    });
   });
 });

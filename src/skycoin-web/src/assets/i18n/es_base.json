@@ -222,7 +222,15 @@
       "copy-address": "Copy Address",
       "copied": "Copied!",
       "outputs": "Unspent Outputs",
-      "history": "History"
+      "history": "History",
+      "confirm": "Confirm Address"
+    }
+  },
+
+  "hardware-wallet": {
+    "confirm-address": {
+      "instructions": "Please confirm on the Skywallet that the address is {{ address }}",
+      "confirmation": "Address confirmed."
     }
   },
 

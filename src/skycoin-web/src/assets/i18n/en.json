@@ -246,7 +246,8 @@
       "outputs": "Unspent Outputs",
       "history": "History",
       "exposed": "This address has sent coins before, so its public key is on the blockchain. A future quantum computer could use it to steal coins sent to it. Do not receive coins at it again.",
-      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address."
+      "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address.",
+      "confirm": "Confirm Address"
     }
   },
   "qr": {
@@ -634,6 +635,10 @@
       "and": "and",
       "hours": "coin hours",
       "to": "to"
+    },
+    "confirm-address": {
+      "instructions": "Please confirm on the Skywallet that the address is {{ address }}",
+      "confirmation": "Address confirmed."
     }
   },
   "app-lock": {

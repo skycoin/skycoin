@@ -224,7 +224,15 @@
       "copy-address": "Copiar Dirección",
       "copied": "¡Copiado!",
       "outputs": "Salidas No Gastadas",
-      "history": "Historial"
+      "history": "Historial",
+      "confirm": "Confirmar Dirección"
+    }
+  },
+
+  "hardware-wallet": {
+    "confirm-address": {
+      "instructions": "Por favor confirme en la Skywallet que la dirección es {{ address }}",
+      "confirmation": "Dirección confirmada."
     }
   },
 

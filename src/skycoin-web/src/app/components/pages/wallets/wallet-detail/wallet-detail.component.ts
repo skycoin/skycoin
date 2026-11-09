@@ -41,6 +41,8 @@ export class WalletDetailComponent implements OnDestroy {
   currentCoin?: BaseCoin;
   creatingAddress = false;
   scanningAddresses = false;
+  // Index of the hardware wallet address being shown on the device.
+  confirmingIndex: number | null = null;
   showSlowMobileInfo = false;
   spinnerStyle: any;
 
@@ -48,6 +50,7 @@ export class WalletDetailComponent implements OnDestroy {
   private slowInfoSubscription!: Subscription;
   private coinSubscription: Subscription;
   private exposureSubscription?: Subscription;
+  private confirmSubscription?: Subscription;
 
   constructor(
     private walletService: WalletService,
@@ -69,6 +72,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.exposureSubscription?.unsubscribe();
+    this.confirmSubscription?.unsubscribe();
     this.msgBarService.hide();
     this.removeUnlockSubscription();
     this.removeSlowInfoSubscription();
@@ -197,6 +201,30 @@ export class WalletDetailComponent implements OnDestroy {
         this.changeDetectorRef.markForCheck();
       });
     }
+  }
+
+  /** Shows a hardware wallet address on the device screen, so it can be checked there. */
+  onConfirmAddress(index: number) {
+    if (this.confirmingIndex !== null) {
+      return;
+    }
+
+    this.confirmingIndex = index;
+    this.msgBarService.showWarning(this.translateService.instant('hardware-wallet.confirm-address.instructions',
+      { address: this.wallet.addresses[index].address }));
+
+    this.confirmSubscription?.unsubscribe();
+    this.confirmSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(
+      mergeMap(() => this.hwWalletService.confirmAddress(index)),
+    ).subscribe(() => {
+      this.confirmingIndex = null;
+      this.msgBarService.showDone('hardware-wallet.confirm-address.confirmation');
+      this.changeDetectorRef.markForCheck();
+    }, error => {
+      this.confirmingIndex = null;
+      this.msgBarService.showError(error.translatableErrorMsg || error.message);
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   onCopySuccess(address: Address, interval = 500) {

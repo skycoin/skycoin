@@ -1,54 +1,76 @@
 <div [formGroup]="form">
-  <div class="form-field">
-    <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
-    <div class="-select">
-      <select formControlName="wallet" id="wallets">
-        <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        @for (wallet of walletService.currentWallets | async; track wallet) {
-          <option [disabled]="!wallet.balance || wallet.balance.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-            <span class="truncated-label">{{ wallet.label }}</span> -
-            @if (wallet.balance && wallet.hours) {
-              <span>
-                {{ (wallet.balance ? wallet.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
-              </span>
-            }
-          </option>
-        }
-      </select>
-    </div>
+  <div class="mode-selector">
+    <app-double-button
+      [leftButtonText]="'send.signed-button' | translate"
+      [rightButtonText]="'send.unsigned-button' | translate"
+      className="light small"
+      [activeButton]="modeButton"
+      (onStateChange)="changeFormType($event)"
+    ></app-double-button>
   </div>
 
-  @if (wallet) {
+  @if (manualUnsigned) {
     <div class="form-field">
-      <label for="addresses" (click)="selectAddresses.open()">
+      <label for="manual-addresses">
         {{ 'send.addresses-label' | translate }}
-        <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+        <mat-icon [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
       </label>
+      <input formControlName="manualAddresses" id="manual-addresses">
+    </div>
+  } @else {
+    <div class="form-field">
+      <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
       <div class="-select">
-        <mat-select
-          #selectAddresses multiple
-          formControlName="addresses"
-          [compareWith]="addressCompare"
-          id="addresses"
-          [placeholder]="'send.all-addresses' | translate">
-          @for (addr of addresses; track addr) {
-            <mat-option [value]="addr">
-              <span class="truncated-label">{{ addr.address }}</span> - {{ (addr.balance ? addr.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-              ({{ addr.hours!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
-            </mat-option>
+        <select formControlName="wallet" id="wallets">
+          <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
+          @for (wallet of walletService.currentWallets | async; track wallet) {
+            <option [disabled]="!wallet.balance || wallet.balance.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+              <span class="truncated-label">{{ wallet.label }}</span> -
+              @if (wallet.balance && wallet.hours) {
+                <span>
+                  {{ (wallet.balance ? wallet.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+                  ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                </span>
+              }
+            </option>
           }
-          <mat-select-trigger>
-            @for (address of form.get('addresses')!.value; track address) {
-              <div>
-                <span class="truncated-label">{{ address.address }}</span> - {{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
-              </div>
-            }
-          </mat-select-trigger>
-        </mat-select>
+        </select>
       </div>
     </div>
+  }
+
+  @if (wallet || manualUnsigned) {
+    @if (!manualUnsigned) {
+      <div class="form-field">
+        <label for="addresses" (click)="selectAddresses.open()">
+          {{ 'send.addresses-label' | translate }}
+          <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+        </label>
+        <div class="-select">
+          <mat-select
+            #selectAddresses multiple
+            formControlName="addresses"
+            [compareWith]="addressCompare"
+            id="addresses"
+            [placeholder]="'send.all-addresses' | translate">
+            @for (addr of addresses; track addr) {
+              <mat-option [value]="addr">
+                <span class="truncated-label">{{ addr.address }}</span> - {{ (addr.balance ? addr.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+                ({{ addr.hours!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+              </mat-option>
+            }
+            <mat-select-trigger>
+              @for (address of form.get('addresses')!.value; track address) {
+                <div>
+                  <span class="truncated-label">{{ address.address }}</span> - {{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+                  ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                </div>
+              }
+            </mat-select-trigger>
+          </mat-select>
+        </div>
+      </div>
+    }
     <div class="form-field">
       <label for="outputs" (click)="selectOutputs.open()">
         {{ 'send.outputs-label' | translate }}
@@ -199,13 +221,15 @@
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
   </div>
 
-  <div class="form-field">
-    <label for="note">
-      {{ 'send.personal-note-label' | translate }}
-      <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
-    </label>
-    <input formControlName="note" id="note" [maxlength]="maxNoteChars" (keydown.enter)="preview()">
-  </div>
+  @if (!manualUnsigned) {
+    <div class="form-field">
+      <label for="note">
+        {{ 'send.personal-note-label' | translate }}
+        <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+      </label>
+      <input formControlName="note" id="note" [maxlength]="maxNoteChars" (keydown.enter)="preview()">
+    </div>
+  }
 
   <div class="-autohours">
     <div class="row">
@@ -244,7 +268,9 @@
 
 <div class="-buttons">
   @if (currentCoin && !currentCoin.isGateway()) {
-    <app-button #unsignedButton (action)="createUnsigned()" [disabled]="!form.valid">{{ 'offline-tx.unsigned-button' | translate }}</app-button>
+    <app-button #unsignedButton (action)="createUnsigned()" [ngClass]="{ primary: manualUnsigned }" [disabled]="!form.valid">{{ 'offline-tx.unsigned-button' | translate }}</app-button>
   }
-  <app-button #button (action)="preview()" class="primary" [disabled]="!form.valid">{{ 'send.verify-button' | translate }}</app-button>
+  @if (!manualUnsigned) {
+    <app-button #button (action)="preview()" class="primary" [disabled]="!form.valid">{{ 'send.verify-button' | translate }}</app-button>
+  }
 </div>

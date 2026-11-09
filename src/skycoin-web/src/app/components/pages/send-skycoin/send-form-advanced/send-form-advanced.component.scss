@@ -288,3 +288,12 @@ label mat-icon {
   color: $gradient-blue-dark;
   cursor: pointer;
 }
+
+.mode-selector {
+  text-align: right;
+  margin-bottom: 10px;
+
+  app-double-button {
+    display: inline-block;
+  }
+}

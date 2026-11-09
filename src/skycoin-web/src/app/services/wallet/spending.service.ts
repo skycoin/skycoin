@@ -94,6 +94,7 @@ export class SpendingService {
       map((response: any) => response.txid as string));
   }
 
+  // An unsigned transaction may have no wallet, when its addresses are typed in.
   createTransaction(
     wallet: Wallet,
     addresses: string[]|null,
@@ -110,7 +111,7 @@ export class SpendingService {
     let defaultChange: string | null = null;
 
     return keysReady.pipe(
-      mergeMap(() => this.walletService.changeAddressFor(wallet)),
+      mergeMap(() => wallet ? this.walletService.changeAddressFor(wallet) : of(null)),
       mergeMap(change => {
         defaultChange = change;
         changeAddress = changeAddress || change;
@@ -155,7 +156,7 @@ export class SpendingService {
           processedHours['share_factor'] = hoursSelection.ShareFactor;
         }
 
-        const isServerWallet = this.walletService.isServerWallet(wallet);
+        const isServerWallet = !!wallet && this.walletService.isServerWallet(wallet);
 
         const params = {
           hours_selection: processedHours,
@@ -420,6 +421,11 @@ export class SpendingService {
     return this.getOutputs(wallet, null, null);
   }
 
+  /** The unspent outputs of addresses that may belong to no loaded wallet. */
+  getAddressesUnspentOutputs(addresses: string[]): Observable<Output[]> {
+    return this.getOutputs(null, addresses, null);
+  }
+
   private signWithHardwareWallet(
     wallet: Wallet,
     txInputs: TransactionInput[],
@@ -581,12 +587,12 @@ export class SpendingService {
     }).join(',')));
   }
 
-  private getOutputs(wallet: Wallet, addresses: string[]|null, unspents: string[]|null): Observable<Output[]> {
-    if (!wallet) {
+  private getOutputs(wallet: Wallet | null, addresses: string[]|null, unspents: string[]|null): Observable<Output[]> {
+    if (!wallet && !addresses) {
       return of([]);
     } else {
       return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
-        const requestedAddresses = addresses ? addresses.join(',') : wallet.addresses.map(a => a.address).join(',');
+        const requestedAddresses = addresses ? addresses.join(',') : wallet!.addresses.map(a => a.address).join(',');
 
         let outputsRequest: Observable<any>;
         if (isEqualOrSuperiorVersion(version, '0.25.0')) {

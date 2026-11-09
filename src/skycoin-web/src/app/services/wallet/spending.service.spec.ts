@@ -735,6 +735,18 @@ describe('SpendingService', () => {
       expect(post.calls.all().map(c => c.args[0])).toEqual(['transaction']);
     }));
 
+    it('creates an unsigned transaction from typed addresses with no wallet', fakeAsync(() => {
+      let tx: any;
+      spendingService.createTransaction(
+        null!, ['address1'], null, [{ address: 'dest', coins: new BigNumber(1.5) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) }, null, undefined, true,
+      ).subscribe(t => tx = t);
+
+      expect(tx.encoded).toBe('unsigned');
+      expect(post.calls.argsFor(0)[1].addresses).toEqual(['address1']);
+      expect(post.calls.argsFor(0)[1].change_address).toBeNull();
+    }));
+
     it('refuses an unsigned transaction on a node older than 0.26', fakeAsync(() => {
       (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.25.0');
       let error = '';

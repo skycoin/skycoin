@@ -168,6 +168,25 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form.get('amount')!.updateValueAndValidity();
   }
 
+  /** Fills the amount with the whole balance of the selected wallet. */
+  sendAll() {
+    this.msgBarService.hide();
+    const wallet = this.form.get('wallet')!.value as Wallet;
+    if (!wallet || !wallet.balance || wallet.balance.isLessThanOrEqualTo(0)) {
+      this.msgBarService.showError('send.no-coins-left-error');
+
+      return;
+    }
+
+    let amount: BigNumber = wallet.balance;
+    if (this.selectedCurrency === DoubleButtonActive.RightButton) {
+      amount = amount.multipliedBy(this.price).decimalPlaces(2, BigNumber.ROUND_FLOOR);
+    } else {
+      amount = amount.decimalPlaces(this.blockchainService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
+    }
+    this.form.get('amount')!.setValue(amount.toString());
+  }
+
   private updateValue() {
     if (!this.price) {
       this.value = null!;

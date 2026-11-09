@@ -220,6 +220,29 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
   }
 
+  /** Fills a destination with what the selected sources hold, less the other destinations. */
+  assignAll(index: number) {
+    this.msgBarService.hide();
+    let available: BigNumber = this.availableCoins;
+    if (this.selectedCurrency === DoubleButtonActive.RightButton) {
+      available = available.multipliedBy(this.price).decimalPlaces(2, BigNumber.ROUND_FLOOR);
+    }
+    this.destControls.forEach((dest, i) => {
+      const value = String(dest.get('coins')!.value ?? '').replace(/,/g, '').trim();
+      if (i !== index && /^\d*\.?\d+$/.test(value)) {
+        available = available.minus(value);
+      }
+    });
+    const decimals = this.selectedCurrency === DoubleButtonActive.RightButton ? 2 : this.blockchainService.currentMaxDecimals;
+    available = available.decimalPlaces(decimals, BigNumber.ROUND_FLOOR);
+
+    if (available.isLessThanOrEqualTo(0)) {
+      this.msgBarService.showError('send.no-coins-left-error');
+    } else {
+      this.destControls[index].get('coins')!.setValue(available.toString());
+    }
+  }
+
   private updateValues() {
     if (!this.price) {
       this.values = null!;

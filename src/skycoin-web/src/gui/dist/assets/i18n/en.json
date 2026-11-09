@@ -276,6 +276,8 @@
     "wallet-label": "Wallet",
     "addresses-label": "Addresses",
     "invalid-amount": "Please enter a valid amount",
+    "send-all-available-coins-link": "send all available coins",
+    "no-coins-left-error": "There are no coins left to send",
     "addresses-help": "Limit the addresses from where the coins and hours could be sent",
     "all-addresses": "All the addresses of the selected wallet",
     "outputs-label": "Unspent outputs",

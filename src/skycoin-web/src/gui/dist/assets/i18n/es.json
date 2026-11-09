@@ -242,6 +242,8 @@
     "wallet-label": "Billetera",
     "addresses-label": "Direcciones",
     "invalid-amount": "Por favor introduzca una cantidad válida",
+    "send-all-available-coins-link": "enviar todas las monedas disponibles",
+    "no-coins-left-error": "No quedan monedas para enviar",
     "addresses-help": "Limite las direcciones desde donde pueden enviarse las monedas y las horas",
     "all-addresses": "Todas las direcciones de la billetera seleccionada.",
     "outputs-label": "Salidas no gastadas",

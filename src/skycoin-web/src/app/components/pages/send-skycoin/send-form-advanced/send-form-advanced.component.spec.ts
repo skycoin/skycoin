@@ -1,4 +1,5 @@
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { BigNumber } from 'bignumber.js';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { UntypedFormBuilder } from '@angular/forms';
 import { of } from 'rxjs';
@@ -82,5 +83,22 @@ describe('SendFormAdvancedComponent', () => {
     bulk([{ address: 'a1', coins: '1' }, { address: 'a2', coins: '2' }]);
     expect(bulk(undefined)).toBe('a1,1\na2,2');
     expect(component.destControls.length).toBe(2);
+  });
+
+  it('fills a destination with the available coins less the others', () => {
+    bulk([{ address: 'a1', coins: '2' }, { address: 'a2', coins: '' }]);
+    component.availableCoins = new BigNumber('10.5');
+    component.assignAll(1);
+    expect(component.destControls[1].get('coins')!.value).toBe('8.5');
+  });
+
+  it('shows an error when nothing is left for a destination', () => {
+    const msgBar = TestBed.inject(MsgBarService);
+    spyOn(msgBar, 'showError');
+    bulk([{ address: 'a1', coins: '5' }, { address: 'a2', coins: '' }]);
+    component.availableCoins = new BigNumber('5');
+    component.assignAll(1);
+    expect(msgBar.showError).toHaveBeenCalledWith('send.no-coins-left-error');
+    expect(component.destControls[1].get('coins')!.value).toBe('');
   });
 });

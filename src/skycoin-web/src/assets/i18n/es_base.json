@@ -214,6 +214,8 @@
   },
 
   "send": {
+    "send-all-available-coins-link": "send all available coins",
+    "no-coins-left-error": "There are no coins left to send",
     "gateway-confirm-eth": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is at most {{ fee }} ETH.",
     "gateway-confirm-btc": "Send {{ amount }} {{ symbol }} to {{ to }}? The network fee is {{ rate }} satoshis per byte.",
     "gateway-sent": "Sent. Transaction {{ txid }}",

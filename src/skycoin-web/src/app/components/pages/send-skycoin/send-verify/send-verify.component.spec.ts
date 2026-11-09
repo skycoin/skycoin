@@ -7,6 +7,8 @@ import { SpendingService } from '../../../../services/wallet/spending.service';
 import { MockTranslatePipe, MockBalanceService, MockSpendingService, MockMsgBarService, MockCustomMatDialogService } from '../../../../utils/test-mocks';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { of } from 'rxjs';
+import { getTxNote, setTxNote } from '../../../../utils/tx-notes';
 
 describe('SendVerifyComponent', () => {
   let component: SendVerifyComponent;
@@ -35,5 +37,18 @@ describe('SendVerifyComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('saves the note under the txid the node returns', () => {
+    const spending = TestBed.inject(SpendingService) as any;
+    spending.injectTransaction = () => of('sent-txid');
+    (TestBed.inject(BalanceService) as any).startGettingBalances = () => undefined;
+    const button = { resetState: () => undefined, setLoading: () => undefined, setDisabled: () => undefined } as any;
+    component.sendButton = button;
+    component.backButton = button;
+    component.transaction.note = 'groceries';
+    component.send();
+    expect(getTxNote('sent-txid')).toBe('groceries');
+    setTxNote('sent-txid', '');
   });
 });

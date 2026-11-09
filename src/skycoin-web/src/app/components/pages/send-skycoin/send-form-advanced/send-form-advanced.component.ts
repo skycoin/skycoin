@@ -23,6 +23,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { BulkSendComponent, BulkDestination } from './bulk-send/bulk-send.component';
 import { OfflineTxComponent, OfflineTxMode } from '../offline-tx/offline-tx.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { maxNoteChars } from '../../../../utils/tx-notes';
 
 @Component({
     selector: 'app-send-form-advanced',
@@ -55,6 +56,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   selectedCurrency = DoubleButtonActive.LeftButton;
   values!: number[];
   price!: number;
+  maxNoteChars = maxNoteChars;
 
   private subscriptionsGroup: Subscription[] = [];
   private getOutputsSubscriptions!: Subscription;
@@ -88,6 +90,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       addresses: [null],
       outputs: [null],
       changeAddress: [''],
+      note: [''],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
         this.validateDestinations.bind(this),
@@ -459,7 +462,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private fillForm() {
     this.addresses = this.formData.form.wallet.addresses;
 
-    ['wallet', 'addresses', 'changeAddress'].forEach(name => {
+    ['wallet', 'addresses', 'changeAddress', 'note'].forEach(name => {
       this.form.get(name)!.setValue(this.formData.form[name]);
     });
 
@@ -645,7 +648,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
             outputs: this.form.get('outputs')!.value,
             currency: this.selectedCurrency,
+            note: this.form.get('note')!.value,
           },
+          note: this.form.get('note')!.value,
           amount: amount,
           to: this.destinations.map(d => d.address),
           transaction,
@@ -676,6 +681,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form.get('outputs')!.setValue(null);
     this.form.get('changeAddress')!.setValue('');
     this.defaultChange = '';
+    this.form.get('note')!.setValue('');
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as UntypedFormArray).removeAt(0);

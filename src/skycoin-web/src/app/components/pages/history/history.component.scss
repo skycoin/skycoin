@@ -153,6 +153,14 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
         margin-bottom: 8px;
       }
 
+      &.-note p {
+        color: $grey;
+
+        span {
+          color: $grey-dark;
+        }
+      }
+
       > div {
         display: flex;
       }

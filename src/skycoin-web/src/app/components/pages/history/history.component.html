@@ -121,6 +121,11 @@
                   </div>
                 </div>
               }
+              @if (transaction.note) {
+                <div class="-detail -note">
+                  <p class="-one-line-ellipsis">{{ 'history.note' | translate }}: <span>{{ transaction.note }}</span></p>
+                </div>
+              }
             </div>
             <div class="flex-fill"></div>
             <div class="-balance">

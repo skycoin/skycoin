@@ -32,6 +32,30 @@
             <span>{{ 'tx.status' | translate }}:</span> <span>{{ $any(transaction).confirmed ? ('tx.confirmed' | translate) : ('tx.pending' | translate) }}</span>
           </div>
         }
+        @if (transaction.note || !isPreview) {
+          <div class="-data -note">
+            <span>{{ 'tx.note' | translate }}:</span>
+            @if (!editingNote) {
+              <span>
+                @if (transaction.note) {
+                  {{ transaction.note }}
+                } @else {
+                  <i class="-without-note">{{ 'tx.without-note' | translate }}</i>
+                }
+                @if (!isPreview) {
+                  <mat-icon class="-edit-note" [matTooltip]="'tx.edit-note' | translate" (click)="editNote()">edit</mat-icon>
+                }
+              </span>
+            } @else {
+              <span class="-note-editor">
+                <input #noteInput id="tx-note" [value]="transaction.note || ''" [attr.maxlength]="maxNoteChars"
+                  (keydown.enter)="saveNote(noteInput.value)" (keydown.escape)="cancelNote()">
+                <mat-icon class="-save-note" [matTooltip]="'tx.save-note' | translate" (click)="saveNote(noteInput.value)">check</mat-icon>
+                <mat-icon [matTooltip]="'tx.cancel-note' | translate" (click)="cancelNote()">close</mat-icon>
+              </span>
+            }
+          </div>
+        }
         @if (currentCoin.hasHours()) {
           <div class="-data">
             <span>{{ 'tx.hours' | translate }}:</span>

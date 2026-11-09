@@ -23,6 +23,7 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { QrScanDialogComponent } from '../../../layout/qr-scan-dialog/qr-scan-dialog.component';
 import { parseScannedPayment } from '../../../../utils/qr';
 import { BalanceService } from '../../../../services/wallet/balance.service';
+import { maxNoteChars, setTxNote } from '../../../../utils/tx-notes';
 
 @Component({
     selector: 'app-send-form',
@@ -48,6 +49,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   value!: number;
   valueGreaterThanBalance = false;
   price!: number;
+  maxNoteChars = maxNoteChars;
 
   private processSubscription!: Subscription;
   private subscriptionsGroup: Subscription[] = [];
@@ -234,6 +236,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form.get('wallet')!.setValue('', { emitEvent: false });
     this.form.get('address')!.setValue('');
     this.form.get('amount')!.setValue('');
+    this.form.get('note')!.setValue('');
     this.selectedCurrency = DoubleButtonActive.LeftButton;
   }
 
@@ -346,6 +349,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.button.resetState();
       if (txid) {
         this.msgBarService.showDone(this.translate.instant('send.gateway-sent', { txid: txid }));
+        if (this.form.value.note && !setTxNote(txid, this.form.value.note)) {
+          this.msgBarService.showWarning('send.saving-note-error');
+        }
         this.resetForm();
         this.balanceService.startGettingBalances();
       }
@@ -365,7 +371,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
         address: this.form.value.address,
         amount: this.form.value.amount,
         currency: this.selectedCurrency,
+        note: this.form.value.note,
       },
+      note: this.form.value.note,
       amount: new BigNumber(this.form.value.amount),
       to: [this.form.value.address],
       transaction,
@@ -385,6 +393,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       address: ['', Validators.required],
       amount: ['', [Validators.required]],
       feeSpeed: ['normal'],
+      note: [''],
     });
 
     this.subscriptionsGroup.push(this.form.controls.wallet.valueChanges.subscribe(value => {

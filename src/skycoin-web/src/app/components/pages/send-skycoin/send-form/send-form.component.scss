@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../../../../theme/variables' as *;
 
 .-buttons {
@@ -36,4 +37,12 @@
   font-size: 12px;
   color: $gradient-blue-dark;
   cursor: pointer;
+}
+
+label mat-icon {
+  display: inline;
+  font-size: 14px;
+  color: color.adjust($grey, $lightness: 40%);
+  vertical-align: text-bottom;
+  padding-left: 5px;
 }

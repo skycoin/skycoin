@@ -13,6 +13,7 @@ import { openQrModal } from '../../../utils';
 import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
 import { NormalTransaction } from '../../../app.datatypes';
 import { WalletService } from '../../../services/wallet/wallet.service';
+import { attachTxNotes } from '../../../utils/tx-notes';
 
 export class Wallet {
   label!: string;
@@ -92,6 +93,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
 
       this.closeTransactionsSubscription();
       this.transactionsSubscription = this.historyService.transactions().subscribe(transactions => {
+          attachTxNotes(transactions);
           this.allTransactions = transactions;
           this.transactions = transactions;
           this.cachedAt = this.historyService.cachedAt;
@@ -156,7 +158,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.width = '800px';
     config.data = transaction;
-    this.dialog.open(TransactionDetailComponent, config);
+    this.dialog.open(TransactionDetailComponent, config).afterClosed().subscribe(() => this.changeDetectorRef.markForCheck());
   }
 
   showQr(event: any, address: any) {

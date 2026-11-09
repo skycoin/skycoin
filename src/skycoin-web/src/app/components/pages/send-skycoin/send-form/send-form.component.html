@@ -77,6 +77,14 @@
     </div>
   }
 
+  <div class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" [maxlength]="maxNoteChars" (keydown.enter)="onVerify($event)">
+  </div>
+
   @if (showSlowMobileInfo) {
     <div class="form-field -on-small-and-below-only">
       <label class="slow-mobile-info">{{ 'common.slow-on-mobile' | translate}}</label>

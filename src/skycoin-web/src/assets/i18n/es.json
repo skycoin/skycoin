@@ -78,7 +78,20 @@
     "button": "Continuar",
     "cancel-button": "Cancelar",
     "mismatch": "Las contraseñas no coinciden",
-    "save-seed-text": "Establezca una contraseña para desbloquear esta billetera sin su semilla la próxima vez. Déjela vacía para omitirla."
+    "save-seed-text": "Establezca una contraseña para desbloquear esta billetera sin su semilla la próxima vez. Déjela vacía para omitirla.",
+    "reset-link": "He olvidado mi contraseña"
+  },
+
+  "reset": {
+    "title": "Restablecer Contraseña",
+    "wallet-label": "Billetera",
+    "seed-label": "Semilla de la billetera",
+    "passphrase-label": "Frase de contraseña de la semilla (deje en blanco si la billetera no tiene)",
+    "password-label": "Nueva contraseña (deje en blanco si desea que la billetera no esté encriptada)",
+    "confirm-label": "Confirme la contraseña",
+    "confirm-error-info": "Las dos contraseñas deben coincidir.",
+    "reset-button": "Restablecer",
+    "done": "Contraseña cambiada correctamente."
   },
 
   "buy": {

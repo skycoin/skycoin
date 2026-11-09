@@ -9,6 +9,7 @@ import { ConnectionError } from '../../../enums/connection-error.enum';
 import { CoinService } from '../../../services/coin.service';
 import { BaseCoin } from '../../../coins/basecoin';
 import { getTimeSinceLastBalanceUpdate } from '../../../utils';
+import { NodeNotices, NodeNoticesService } from '../../../services/node-notices.service';
 
 @Component({
     selector: 'app-header',
@@ -35,6 +36,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   timeSinceLastBalanceUpdate = 0;
   problemUpdatingBalance!: boolean;
   synchronized = true;
+  notices: NodeNotices | null = null;
 
   private price!: number | null;
   private subscriptionsGroup: Subscription[] = [];
@@ -49,6 +51,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private balanceService: BalanceService,
     private blockchainService: BlockchainService,
     private coinService: CoinService,
+    private nodeNoticesService: NodeNoticesService,
     private _ngZone: NgZone,
     private changeDetectorRef: ChangeDetectorRef,
   ) {}
@@ -118,6 +121,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
         })
       );
     });
+
+    this.subscriptionsGroup.push(
+      this.nodeNoticesService.notices
+        .subscribe(notices => {
+          this.notices = notices;
+          this.changeDetectorRef.markForCheck();
+        })
+    );
 
     this.subscriptionsGroup.push(
       this.balanceService.hasPendingTransactions

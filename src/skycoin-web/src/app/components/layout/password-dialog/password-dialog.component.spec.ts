@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ReactiveFormsModule, UntypedFormBuilder } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 
 import { PasswordDialogComponent, PasswordDialogData } from './password-dialog.component';
 import { MockTranslatePipe } from '../../../utils/test-mocks';
@@ -10,9 +11,11 @@ describe('PasswordDialogComponent', () => {
   let component: PasswordDialogComponent;
   let fixture: ComponentFixture<PasswordDialogComponent>;
   let dialogRef: jasmine.SpyObj<MatDialogRef<PasswordDialogComponent>>;
+  let router: jasmine.SpyObj<Router>;
 
   function create(data: PasswordDialogData) {
     dialogRef = jasmine.createSpyObj('MatDialogRef', ['close']);
+    router = jasmine.createSpyObj('Router', ['navigate']);
     TestBed.configureTestingModule({
       declarations: [PasswordDialogComponent, MockTranslatePipe],
       imports: [ReactiveFormsModule],
@@ -21,6 +24,7 @@ describe('PasswordDialogComponent', () => {
         UntypedFormBuilder,
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: MAT_DIALOG_DATA, useValue: data },
+        { provide: Router, useValue: router },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(PasswordDialogComponent);
@@ -71,5 +75,18 @@ describe('PasswordDialogComponent', () => {
     create({});
     component.cancel();
     expect(dialogRef.close).toHaveBeenCalledWith();
+  }));
+
+  it('links a wallet password to the page that resets it with the seed', waitForAsync(() => {
+    create({});
+    expect(fixture.nativeElement.querySelector('.-forgot')).toBeNull();
+
+    TestBed.resetTestingModule();
+    create({ wallet: { label: 'w', addresses: [{ address: 'addr1' }], encryptedSeed: 'x' } });
+    const link = fixture.nativeElement.querySelector('.-forgot') as HTMLAnchorElement;
+    expect(link).not.toBeNull();
+    link.click();
+    expect(dialogRef.close).toHaveBeenCalledWith();
+    expect(router.navigate).toHaveBeenCalledWith(['/reset', 'addr1']);
   }));
 });

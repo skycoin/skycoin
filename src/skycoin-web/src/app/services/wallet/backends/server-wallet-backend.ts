@@ -132,6 +132,12 @@ export class ServerWalletBackend implements WalletBackend {
     }).pipe(map(() => {}));
   }
 
+  /** Sets or removes the password of an encrypted wallet with its seed. Emits whether it is encrypted after. */
+  recover(params: { id?: string, seed: string, seed_passphrase?: string, password?: string }): Observable<boolean> {
+    return this.apiService.post('wallet/recover', params, {}, true).pipe(
+      map((response: any) => !!(response && response.data ? response.data : response).meta.encrypted));
+  }
+
   decrypt(wallet: Wallet, password: string): Observable<void> {
     return this.apiService.post('wallet/decrypt', {
       id: wallet.filename,

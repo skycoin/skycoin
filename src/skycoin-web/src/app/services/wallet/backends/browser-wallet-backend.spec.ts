@@ -383,6 +383,47 @@ describe('BrowserWalletBackend removeWalletPassword', () => {
     det.seed = 'abcdefg';
     await expectAsync(firstValueFrom(backend.setWalletPassword(det, 'new'))).toBeRejected();
   });
+
+  it('resets a deterministic wallet password with its seed', async () => {
+    const locked = await lockedDeterministic();
+    await firstValueFrom(backend.resetWalletPassword(locked, 'abcdefg', '', 'new pass'));
+
+    const stored = await reload(locked);
+    expect(stored.seed).toBeUndefined();
+    await expectAsync(firstValueFrom(backend.removeWalletPassword(stored, 'hunter2'))).toBeRejectedWithError('Incorrect password');
+    await firstValueFrom(backend.removeWalletPassword(stored, 'new pass'));
+    expect(stored.seed).toBe('abcdefg');
+    await firstValueFrom(backend.addAddress(stored));
+    expect(stored.addresses.length).toBe(3);
+  });
+
+  it('removes a bip44 wallet password with its seed and passphrase', async () => {
+    const locked = await lockedBip44();
+    await firstValueFrom(backend.resetWalletPassword(locked, mnemonic, 'a seed passphrase', null));
+
+    const stored = await reload(locked);
+    expect(stored.seed).toBe(mnemonic);
+    expect(stored.seedPassphrase).toBe('a seed passphrase');
+    expect(stored.encryptedSeed).toBeUndefined();
+    expect(stored.encryptedSeedPassphrase).toBeUndefined();
+  });
+
+  it('changes nothing for a wrong seed or passphrase', async () => {
+    const det = await lockedDeterministic();
+    const bip = await lockedBip44();
+    const cases: [Wallet, string, string][] = [
+      [det, 'wrong seed', ''],
+      [bip, mnemonic.replace('about', 'abandon'), 'a seed passphrase'],
+      [bip, mnemonic, 'wrong passphrase'],
+    ];
+    for (const [locked, seed, passphrase] of cases) {
+      const before = encryptedFields(locked);
+      await expectAsync(firstValueFrom(backend.resetWalletPassword(locked, seed, passphrase, 'new pass'))).toBeRejected();
+      expect(encryptedFields(locked)).toEqual(before);
+    }
+    await firstValueFrom(backend.removeWalletPassword(det, 'hunter2'));
+    expect(det.seed).toBe('abcdefg');
+  });
 });
 
 describe('BrowserWalletBackend change addresses', () => {

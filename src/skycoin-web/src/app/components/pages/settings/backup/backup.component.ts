@@ -81,7 +81,7 @@ export class BackupComponent implements OnInit, OnDestroy {
   showSeed(wallet: Wallet) {
     const encrypted = this.walletService.isServerWallet(wallet) ? !!wallet.encrypted : !!wallet.encryptedSeed;
     const password: Observable<string | null | undefined> = encrypted ?
-      PasswordDialogComponent.ask(this.dialog, { text: wallet.label }) : of(null);
+      PasswordDialogComponent.ask(this.dialog, { text: wallet.label, wallet }) : of(null);
     this.msgBarService.hide();
     this.seedSubscription?.unsubscribe();
     this.seedSubscription = password.pipe(

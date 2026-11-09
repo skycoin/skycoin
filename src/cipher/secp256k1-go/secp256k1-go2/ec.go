@@ -151,7 +151,6 @@ func GeneratePublicKey(k []byte) []byte {
 	if !pk.IsValid() {
 		log.Panic("public key derived from secret key is unexpectedly valid")
 	}
-	pubkeyTest(pk)
 	return pk.Bytes()
 }
 

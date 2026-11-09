@@ -35,11 +35,6 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 		log.Panic("ERROR: impossible, invalid pubkey length")
 	}
 
-	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: pubkey invald, ret=%d", ret)
-		return nil
-	}
-
 	if ret := VerifyPubkey(pubkey); ret != 1 {
 		log.Printf("seckey=%s\n", hex.EncodeToString(seckey))
 		log.Printf("pubkey=%s\n", hex.EncodeToString(pubkey))
@@ -67,11 +62,6 @@ new_seckey:
 		log.Panic("IMPOSSIBLE: pubkey invalid from valid seckey") //nolint:revive
 		goto new_seckey
 	}
-	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret) //nolint:revive
-		goto new_seckey
-	}
-
 	return pubkey, seckey
 }
 
@@ -90,11 +80,6 @@ func PubkeyFromSeckey(seckey []byte) []byte {
 		log.Panic("ERRROR: impossible, pubkey generation failed")
 		return nil
 	}
-	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret) //nolint:revive
-		return nil
-	}
-
 	return pubkey
 }
 
@@ -174,10 +159,6 @@ new_seckey:
 
 	if len(pubkey) != 33 {
 		log.Panic("ERROR: deterministicKeyPairIteratorStep: impossible, pubkey length wrong")
-	}
-
-	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: deterministicKeyPairIteratorStep: PubkeyIsValid failed, ret=%d", ret)
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {

@@ -8,6 +8,7 @@ import { parseResponseMessage } from './../../../../utils/errors';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { OfflineTxComponent, OfflineTxMode } from '../offline-tx/offline-tx.component';
+import { setTxNote } from '../../../../utils/tx-notes';
 
 @Component({
     selector: 'app-send-verify',
@@ -42,8 +43,8 @@ export class SendVerifyComponent implements OnDestroy {
 
     this.spendingService.injectTransaction(this.transaction.encoded)
       .subscribe(
-        () => {
-          this.onSuccess();
+        txid => {
+          this.onSuccess(txid);
           this.changeDetectorRef.markForCheck();
         },
         (error) => {
@@ -66,9 +67,14 @@ export class SendVerifyComponent implements OnDestroy {
     this.onBack.emit(false);
   }
 
-  private onSuccess() {
+  private onSuccess(txid: string) {
+    const noteSaved = !this.transaction.note || setTxNote(txid, this.transaction.note);
     setTimeout(() => {
-      this.msgBarService.showDone('send.sent');
+      if (noteSaved) {
+        this.msgBarService.showDone('send.sent');
+      } else {
+        this.msgBarService.showWarning('send.saving-note-error');
+      }
       this.changeDetectorRef.markForCheck();
     });
     this.balanceService.startGettingBalances();

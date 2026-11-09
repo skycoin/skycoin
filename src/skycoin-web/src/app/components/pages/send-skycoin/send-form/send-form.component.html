@@ -28,7 +28,11 @@
     <div class="address-row">
       <input formControlName="address" id="address" [placeholder]="'send.recipient-address' | translate" >
       <img class="scan-button" src="assets/skycoin-wallet/img/qr-code-black.png" [matTooltip]="'qr-scan.title' | translate" (click)="scanAddress()">
+      <mat-icon class="link-button" [matTooltip]="'send.fill-with-link.title' | translate" (click)="useLink()">link</mat-icon>
     </div>
+    @if (linkHours) {
+      <div class="link-hours">{{ 'send.fill-with-link.link-hours' | translate: { hours: linkHours, name: currentCoin.hoursName } }}</div>
+    }
   </div>
   <div class="form-field">
     <label for="amount" class="amount-label">{{ 'send.amount-label' | translate }}</label>
@@ -76,6 +80,14 @@
       </div>
     </div>
   }
+
+  <div class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" [maxlength]="maxNoteChars" (keydown.enter)="onVerify($event)">
+  </div>
 
   @if (showSlowMobileInfo) {
     <div class="form-field -on-small-and-below-only">

@@ -21,8 +21,10 @@ import { PriceService } from '../../../../services/price.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { QrScanDialogComponent } from '../../../layout/qr-scan-dialog/qr-scan-dialog.component';
-import { parseScannedPayment } from '../../../../utils/qr';
+import { PaymentLink, parseScannedPayment } from '../../../../utils/qr';
+import { EnterLinkComponent } from '../enter-link/enter-link.component';
 import { BalanceService } from '../../../../services/wallet/balance.service';
+import { maxNoteChars, setTxNote } from '../../../../utils/tx-notes';
 
 @Component({
     selector: 'app-send-form',
@@ -48,6 +50,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
   value!: number;
   valueGreaterThanBalance = false;
   price!: number;
+  maxNoteChars = maxNoteChars;
+  // Hours requested by a pasted payment link, sent instead of the automatic share.
+  linkHours = '';
 
   private processSubscription!: Subscription;
   private subscriptionsGroup: Subscription[] = [];
@@ -110,6 +115,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
         this.selectedCurrency = this.formData.form.currency;
       });
+      this.linkHours = this.formData.form.linkHours || '';
     }
   }
 
@@ -230,10 +236,50 @@ export class SendFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Fills the form from a pasted payment link, asking first when it would replace typed data. */
+  useLink() {
+    EnterLinkComponent.ask(this.dialog).subscribe(link => {
+      if (!link) {
+        this.changeDetectorRef.markForCheck();
+
+        return;
+      }
+      if (this.form.get('address')!.value || (link.amount && this.form.get('amount')!.value)) {
+        const confirmationData: ConfirmationData = {
+          text: 'send.fill-with-link.data-overwritten-alert',
+          headerText: 'confirmation.header-text',
+          confirmButtonText: 'confirmation.confirm-button',
+          cancelButtonText: 'confirmation.cancel-button',
+        };
+        showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmed => {
+          if (confirmed) {
+            this.applyLink(link);
+          }
+          this.changeDetectorRef.markForCheck();
+        });
+      } else {
+        this.applyLink(link);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private applyLink(link: PaymentLink) {
+    this.form.get('address')!.setValue(link.address);
+    if (link.amount) {
+      this.selectedCurrency = DoubleButtonActive.LeftButton;
+      this.form.get('amount')!.setValue(link.amount);
+    }
+    this.linkHours = this.currentCoin && this.currentCoin.hasHours() && link.hours ? link.hours : '';
+    this.msgBarService.showDone('send.fill-with-link.confirmation');
+  }
+
   private resetForm() {
+    this.linkHours = '';
     this.form.get('wallet')!.setValue('', { emitEvent: false });
     this.form.get('address')!.setValue('');
     this.form.get('amount')!.setValue('');
+    this.form.get('note')!.setValue('');
     this.selectedCurrency = DoubleButtonActive.LeftButton;
   }
 
@@ -291,8 +337,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
       [{
         address: this.form.value.address.replace(/\s/g, ''),
         coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? new BigNumber(this.form.value.amount) : new BigNumber(this.value.toString()),
+        hours: this.linkHours ? new BigNumber(this.linkHours) : undefined,
       }],
-      {
+      this.linkHours ? { type: HoursSelectionTypes.Manual } : {
         type: HoursSelectionTypes.Auto,
         ShareFactor: new BigNumber(0.5),
       },
@@ -346,6 +393,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.button.resetState();
       if (txid) {
         this.msgBarService.showDone(this.translate.instant('send.gateway-sent', { txid: txid }));
+        if (this.form.value.note && !setTxNote(txid, this.form.value.note)) {
+          this.msgBarService.showWarning('send.saving-note-error');
+        }
         this.resetForm();
         this.balanceService.startGettingBalances();
       }
@@ -365,7 +415,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
         address: this.form.value.address,
         amount: this.form.value.amount,
         currency: this.selectedCurrency,
+        note: this.form.value.note,
+        linkHours: this.linkHours,
       },
+      note: this.form.value.note,
       amount: new BigNumber(this.form.value.amount),
       to: [this.form.value.address],
       transaction,
@@ -385,6 +438,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       address: ['', Validators.required],
       amount: ['', [Validators.required]],
       feeSpeed: ['normal'],
+      note: [''],
     });
 
     this.subscriptionsGroup.push(this.form.controls.wallet.valueChanges.subscribe(value => {

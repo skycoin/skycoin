@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../../../../theme/variables' as *;
 
 .-buttons {
@@ -15,6 +16,16 @@
   input {
     flex: 1;
     min-width: 0;
+  }
+
+  .link-button {
+    margin-left: 10px;
+    cursor: pointer;
+    color: $grey;
+
+    &:hover {
+      color: $grey-dark;
+    }
   }
 
   .scan-button {
@@ -36,4 +47,18 @@
   font-size: 12px;
   color: $gradient-blue-dark;
   cursor: pointer;
+}
+
+label mat-icon {
+  display: inline;
+  font-size: 14px;
+  color: color.adjust($grey, $lightness: 40%);
+  vertical-align: text-bottom;
+  padding-left: 5px;
+}
+
+.link-hours {
+  font-size: 12px;
+  color: $grey;
+  margin-top: 5px;
 }

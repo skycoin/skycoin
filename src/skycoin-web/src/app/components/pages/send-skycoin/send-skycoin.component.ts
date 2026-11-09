@@ -97,6 +97,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
     transaction.from = this.formData.form.wallet.label;
     transaction.to = this.formData.to;
     transaction.balance = this.formData.amount;
+    transaction.note = this.formData.note;
 
     return transaction;
   }

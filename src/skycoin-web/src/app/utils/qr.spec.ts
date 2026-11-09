@@ -1,4 +1,4 @@
-import { parseScannedPayment } from './qr';
+import { parsePaymentLink, parseScannedPayment } from './qr';
 
 describe('parseScannedPayment', () => {
   it('reads plain addresses and payment URIs', () => {
@@ -17,5 +17,21 @@ describe('parseScannedPayment', () => {
 
   it('ignores an amount that is not a number', () => {
     expect(parseScannedPayment('bitcoin:bc1q?amount=1e3').amount).toBeUndefined();
+  });
+});
+
+describe('parsePaymentLink', () => {
+  it('reads the address, amount and hours of a payment link', () => {
+    expect(parsePaymentLink(' skycoin:2GgFvqoyk9RjwVzj8tqfcXVXB4XAd1Vb9vR?amount=1.5&hours=20 '))
+      .toEqual({ address: '2GgFvqoyk9RjwVzj8tqfcXVXB4XAd1Vb9vR', amount: '1.5', hours: '20' });
+    expect(parsePaymentLink('skycoin:2GgFvqoyk9RjwVzj8tqfcXVXB4XAd1Vb9vR'))
+      .toEqual({ address: '2GgFvqoyk9RjwVzj8tqfcXVXB4XAd1Vb9vR', amount: undefined });
+  });
+
+  it('refuses text that is not a link or has invalid hours', () => {
+    expect(parsePaymentLink('2GgFvqoyk9RjwVzj8tqfcXVXB4XAd1Vb9vR')).toBeNull();
+    expect(parsePaymentLink('skycoin:?amount=1')).toBeNull();
+    expect(parsePaymentLink('skycoin:abc?hours=1.5')).toBeNull();
+    expect(parsePaymentLink('')).toBeNull();
   });
 });

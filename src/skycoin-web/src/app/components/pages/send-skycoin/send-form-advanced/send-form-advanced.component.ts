@@ -3,7 +3,7 @@ import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } fr
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription, throwError, concat } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import { retryWhen, delay, take, first } from 'rxjs';
+import { retryWhen, delay, take, first, debounceTime } from 'rxjs';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { NavBarService } from '../../../../services/nav-bar.service';
@@ -23,6 +23,9 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { BulkSendComponent, BulkDestination } from './bulk-send/bulk-send.component';
 import { OfflineTxComponent, OfflineTxMode } from '../offline-tx/offline-tx.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { maxNoteChars } from '../../../../utils/tx-notes';
+import { EnterLinkComponent } from '../enter-link/enter-link.component';
+import { PaymentLink } from '../../../../utils/qr';
 
 @Component({
     selector: 'app-send-form-advanced',
@@ -55,6 +58,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   selectedCurrency = DoubleButtonActive.LeftButton;
   values!: number[];
   price!: number;
+  // Builds an unsigned transaction from typed addresses, with no wallet loaded.
+  manualUnsigned = false;
+  modeButton = DoubleButtonActive.LeftButton;
+  manualAddresses: string[] = [];
+  maxNoteChars = maxNoteChars;
 
   private subscriptionsGroup: Subscription[] = [];
   private getOutputsSubscriptions!: Subscription;
@@ -88,6 +96,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       addresses: [null],
       outputs: [null],
       changeAddress: [''],
+      note: [''],
+      manualAddresses: [''],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
         this.validateDestinations.bind(this),
@@ -124,6 +134,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
       this.updateAvailableBalance();
       this.form.get('destinations')!.updateValueAndValidity();
+      this.changeDetectorRef.markForCheck();
+    }));
+
+    this.subscriptionsGroup.push(this.form.get('manualAddresses')!.valueChanges.pipe(debounceTime(500)).subscribe(value => {
+      this.loadManualOutputs(value);
       this.changeDetectorRef.markForCheck();
     }));
 
@@ -191,8 +206,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
     this.unsignedButton.setLoading();
     this.spendingService.createTransaction(
-      this.form.get('wallet')!.value,
-      this.selectedAddresses,
+      this.manualUnsigned ? null! : this.form.get('wallet')!.value,
+      this.manualUnsigned ? this.manualAddresses : this.selectedAddresses,
       this.selectedOutputs,
       this.destinations,
       this.hoursSelection,
@@ -212,6 +227,80 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.msgBarService.showError(error.message);
       this.changeDetectorRef.markForCheck();
     });
+  }
+
+  /**
+   * Switches between sending from a wallet and building an unsigned transaction
+   * from typed addresses, after the user confirms the latter.
+   */
+  changeFormType(value: DoubleButtonActive) {
+    this.modeButton = value;
+    if (value === DoubleButtonActive.LeftButton) {
+      this.setManualUnsigned(false);
+
+      return;
+    }
+
+    const confirmationData: ConfirmationData = {
+      text: 'send.unsigned-confirmation',
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.setManualUnsigned(true);
+      } else {
+        this.modeButton = DoubleButtonActive.LeftButton;
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private setManualUnsigned(manual: boolean) {
+    this.manualUnsigned = manual;
+    this.resetForm();
+    this.form.get('wallet')!.setValidators(manual ? null : Validators.required);
+    this.form.get('manualAddresses')!.setValidators(manual ? Validators.required : null);
+    this.form.get('wallet')!.updateValueAndValidity({ emitEvent: false });
+    this.form.get('manualAddresses')!.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Loads the unspent outputs of the comma separated addresses typed in the manual mode. */
+  private loadManualOutputs(value: string) {
+    const addresses = (value || '').split(',').map(a => a.trim()).filter(a => a.length > 0);
+    if (addresses.join(',') === this.manualAddresses.join(',')) {
+      return;
+    }
+
+    this.manualAddresses = addresses;
+    this.closeGetOutputsSubscriptions();
+    this.allUnspentOutputs = [];
+    this.unspentOutputs = [];
+    this.form.get('outputs')!.setValue(null);
+    if (addresses.length === 0) {
+      this.updateAvailableBalance();
+      this.form.get('destinations')!.updateValueAndValidity();
+
+      return;
+    }
+
+    this.loadingUnspentOutputs = true;
+    this.getOutputsSubscriptions = this.spendingService.getAddressesUnspentOutputs(addresses).subscribe(
+      result => {
+        this.loadingUnspentOutputs = false;
+        this.allUnspentOutputs = result;
+        this.unspentOutputs = this.filterUnspentOutputs();
+        this.updateAvailableBalance();
+        this.form.get('destinations')!.updateValueAndValidity();
+        this.changeDetectorRef.markForCheck();
+      },
+      () => {
+        this.loadingUnspentOutputs = false;
+        this.msgBarService.showError('send.manual-addresses-error');
+        this.changeDetectorRef.markForCheck();
+      },
+    );
   }
 
   changeActiveCurrency(value: any) {
@@ -368,6 +457,51 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Fills the first destination from a pasted payment link, asking first when it would replace typed data. */
+  useLink() {
+    EnterLinkComponent.ask(this.dialog).subscribe(link => {
+      if (!link) {
+        this.changeDetectorRef.markForCheck();
+
+        return;
+      }
+      const first = this.destControls[0];
+      if (first.get('address')!.value || (link.amount && first.get('coins')!.value) || (link.hours && first.get('hours')!.value)) {
+        const confirmationData: ConfirmationData = {
+          text: 'send.fill-with-link.data-overwritten-alert',
+          headerText: 'confirmation.header-text',
+          confirmButtonText: 'confirmation.confirm-button',
+          cancelButtonText: 'confirmation.cancel-button',
+        };
+        showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmed => {
+          if (confirmed) {
+            this.applyLink(link);
+          }
+          this.changeDetectorRef.markForCheck();
+        });
+      } else {
+        this.applyLink(link);
+      }
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private applyLink(link: PaymentLink) {
+    const first = this.destControls[0];
+    first.get('address')!.setValue(link.address);
+    if (link.amount) {
+      this.selectedCurrency = DoubleButtonActive.LeftButton;
+      first.get('coins')!.setValue(link.amount);
+    }
+    if (link.hours) {
+      this.autoHours = false;
+      this.autoOptions = false;
+      first.get('hours')!.setValue(link.hours);
+    }
+    this.form.get('destinations')!.updateValueAndValidity();
+    this.msgBarService.showDone('send.fill-with-link.confirmation');
+  }
+
   private setDestinations(destinations: BulkDestination[]) {
     while (this.destControls.length > 0) {
       this.removeDestination(0);
@@ -459,7 +593,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private fillForm() {
     this.addresses = this.formData.form.wallet.addresses;
 
-    ['wallet', 'addresses', 'changeAddress'].forEach(name => {
+    ['wallet', 'addresses', 'changeAddress', 'note'].forEach(name => {
       this.form.get(name)!.setValue(this.formData.form[name]);
     });
 
@@ -645,7 +779,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
             outputs: this.form.get('outputs')!.value,
             currency: this.selectedCurrency,
+            note: this.form.get('note')!.value,
           },
+          note: this.form.get('note')!.value,
           amount: amount,
           to: this.destinations.map(d => d.address),
           transaction,
@@ -676,6 +812,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form.get('outputs')!.setValue(null);
     this.form.get('changeAddress')!.setValue('');
     this.defaultChange = '';
+    this.form.get('note')!.setValue('');
+    this.form.get('manualAddresses')!.setValue('', { emitEvent: false });
+    this.manualAddresses = [];
+    this.closeGetOutputsSubscriptions();
+    this.allUnspentOutputs = [];
+    this.unspentOutputs = [];
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as UntypedFormArray).removeAt(0);
@@ -725,7 +867,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.availableHours = new BigNumber(0);
     this.minimumFee = new BigNumber(0);
 
-    if (!this.form.get('wallet')!.value) {
+    if (!this.form.get('wallet')!.value && !this.manualUnsigned) {
       return;
     }
 
@@ -741,6 +883,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       addresses.map(control => {
         this.availableCoins = this.availableCoins.plus(control.balance!);
         this.availableHours = this.availableHours.plus(control.hours!);
+      });
+    } else if (this.manualUnsigned) {
+      this.allUnspentOutputs.forEach(output => {
+        this.availableCoins = this.availableCoins.plus(output.coins);
+        this.availableHours = this.availableHours.plus(output.calculated_hours);
       });
     } else {
       const wallet: Wallet = this.form.get('wallet')!.value;

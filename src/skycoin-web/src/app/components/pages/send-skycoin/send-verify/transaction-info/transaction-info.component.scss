@@ -120,3 +120,33 @@ h4 {
 .-margin-top {
   margin-top: 30px;
 }
+
+.-note {
+  align-items: center;
+
+  .-without-note {
+    color: $grey;
+  }
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    margin-left: 6px;
+    vertical-align: middle;
+    color: $blue;
+    cursor: pointer;
+  }
+
+  .-note-editor {
+    display: flex;
+    align-items: center;
+    flex: 1;
+
+    input {
+      flex: 1;
+      font-size: 12px;
+      padding: 4px 6px;
+    }
+  }
+}

@@ -95,7 +95,19 @@
     "button": "Proceed",
     "cancel-button": "Cancel",
     "mismatch": "The passwords do not match",
-    "save-seed-text": "Set a password to unlock this wallet without its seed next time. Leave it empty to skip."
+    "save-seed-text": "Set a password to unlock this wallet without its seed next time. Leave it empty to skip.",
+    "reset-link": "I forgot my password"
+  },
+  "reset": {
+    "title": "Reset Password",
+    "wallet-label": "Wallet",
+    "seed-label": "Wallet seed",
+    "passphrase-label": "Seed passphrase (leave empty if the wallet has none)",
+    "password-label": "New password (leave empty if you want the wallet not to be encrypted)",
+    "confirm-label": "Confirm new password",
+    "confirm-error-info": "The two passwords must match.",
+    "reset-button": "Reset",
+    "done": "Password successfully changed."
   },
   "buy": {
     "deposit-address": "Choose an address to generate a BTC deposit link for:",

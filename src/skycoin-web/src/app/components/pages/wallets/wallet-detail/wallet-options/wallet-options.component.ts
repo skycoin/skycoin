@@ -40,7 +40,7 @@ export class WalletOptionsComponent {
     this.showUnlockOption = !environment.production && !data.seed;
     const coin = coinService.currentCoin.getValue();
     // Show encrypt option for server-managed wallets OR browser-only wallets (not hardware)
-    this.showEncryptOption = !!(coin && coin.serverWallets && data.filename) || (!data.isHardware && !(coin && coin.serverWallets));
+    this.showEncryptOption = !data.temporary && (!!(coin && coin.serverWallets && data.filename) || (!data.isHardware && !(coin && coin.serverWallets)));
     this.isEncrypted = !!data.encrypted || !!data.encryptedSeed;
     this.showScanOption = walletService.canFindUsedAddresses(data);
   }

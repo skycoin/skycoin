@@ -188,8 +188,12 @@
       "select-coin": "Select coin",
       "unconventional-seed-title": "Possible error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
-      "unconventional-seed-check": "Continue with the unconventional seed."
+      "unconventional-seed-check": "Continue with the unconventional seed.",
+      "temporary-check": "Load temporarily",
+      "temporary-info": "The wallet will be kept in memory only and deleted as soon as you close or reload the wallet page.",
+      "temporary-warning": "The wallet will be deleted when you close or reload the wallet page, and it will not have a password. You will need the seed to recover access to the funds. Are you sure you want to continue?"
     },
+    "temporary": "Temporary wallet.",
 
     "scan": {
       "connection-error": "It is not possible to connect to the server. Please try again later.",

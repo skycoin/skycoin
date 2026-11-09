@@ -190,8 +190,12 @@
       "select-coin": "Seleccionar moneda",
       "unconventional-seed-title": "Posible error",
       "unconventional-seed-text": "Usted introdujo una semilla no convencional. Si lo hizo por alguna razón en especial, puede continuar (sólo recomendable para usuarios avanzados). Sin embargo, si su intención es utilizar una semilla normal del sistema, usted debe borrar los textos y/o caracteres especiales adicionales.",
-      "unconventional-seed-check": "Continuar con la semilla no convencional."
+      "unconventional-seed-check": "Continuar con la semilla no convencional.",
+      "temporary-check": "Cargar temporalmente",
+      "temporary-info": "La billetera se guardará sólo en memoria y será borrada apenas cierre o recargue la página de la billetera.",
+      "temporary-warning": "La billetera será borrada al cerrar o recargar la página de la billetera y no tendrá contraseña. Usted necesitará la semilla para recuperar el acceso a los fondos. ¿Seguro que desea continuar?"
     },
+    "temporary": "Billetera temporal.",
 
     "scan": {
       "connection-error": "No es posible conectar con el servidor. Por favor, vuelva a intentarlo luego.",

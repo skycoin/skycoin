@@ -49,6 +49,8 @@ export class BrowserWalletBackend implements WalletBackend {
   private appPassword: string | null = null;
   private unlockedStoredWallets: string | null = null;
   private saves: Promise<void> = Promise.resolve();
+  // Wallets loaded temporarily, which are never written to storage.
+  private temporaryWallets: Wallet[] = [];
   private readonly walletsStorageKey = 'wallets';
   private readonly lockedWalletsStorageKey = 'lockedWallets';
 
@@ -65,7 +67,7 @@ export class BrowserWalletBackend implements WalletBackend {
     }
     const storedWallets: string | null = this.unlockedStoredWallets ?? localStorage.getItem(this.walletsStorageKey);
     if (!storedWallets) {
-      return of([]);
+      return of(this.temporaryWallets.slice());
     }
     const wallets: Wallet[] = JSON.parse(storedWallets);
     wallets.forEach((wallet) => {
@@ -84,7 +86,7 @@ export class BrowserWalletBackend implements WalletBackend {
       }
     });
 
-    return of(wallets);
+    return of(wallets.concat(this.temporaryWallets));
   }
 
   create(label: string, seed: string, coinId: number, existing: Wallet[], walletType = 'deterministic',
@@ -167,8 +169,9 @@ export class BrowserWalletBackend implements WalletBackend {
   }
 
   save(wallets: Wallet[]): void {
+    this.temporaryWallets = wallets.filter(wallet => wallet.temporary);
     const strippedWallets: Wallet[] = [];
-    wallets.forEach(wallet => {
+    wallets.filter(wallet => !wallet.temporary).forEach(wallet => {
       const strippedAddresses: Address[] = [];
       wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
       const stripped: Wallet = {

@@ -1,0 +1,19 @@
+<app-modal class="modal" [headline]="'wallet.add-addresses.title' | translate" [dialog]="dialogRef">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="quantity">{{ 'wallet.add-addresses.quantity-label' | translate }}</label>
+      <input formControlName="quantity" id="quantity" type="number" min="1" max="100" (keydown.enter)="continue()">
+      @if (form.invalid && form.get('quantity')!.touched) {
+        <p class="-info">{{ 'wallet.add-addresses.quantity-error-info' | translate }}</p>
+      }
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      {{ 'wallet.add-addresses.cancel-button' | translate }}
+    </app-button>
+    <app-button (action)="continue()" class="primary btn-create-addresses" [disabled]="!form.valid">
+      {{ 'wallet.add-addresses.create-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

@@ -249,7 +249,15 @@
       "exposed-funded": "This address has sent coins before and still holds coins. Its public key is on the blockchain, so a future quantum computer could steal them. Move these coins to a new address.",
       "confirm": "Confirm Address"
     },
-    "scan-help": "Finds the already used addresses of this wallet which are missing from the list."
+    "scan-help": "Finds the already used addresses of this wallet which are missing from the list.",
+    "add-addresses": {
+      "title": "New Addresses",
+      "quantity-label": "How many addresses to create",
+      "quantity-error-info": "You must enter a whole number from 1 to 100.",
+      "cancel-button": "Cancel",
+      "create-button": "Create"
+    },
+    "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones, some addresses may not be found automatically if you restore the wallet using the seed, and you will have to add them by hand. Do you want to continue?"
   },
   "qr": {
     "title": "Address",

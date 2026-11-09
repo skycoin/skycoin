@@ -50,6 +50,7 @@ import { PendingTransactionsComponent } from './components/pages/settings/pendin
 import { TransactionDetailComponent } from './components/pages/history/transaction-detail/transaction-detail.component';
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
 import { ChangeNameComponent } from './components/pages/wallets/change-name/change-name.component';
+import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { UnlockWalletComponent } from './components/pages/wallets/unlock-wallet/unlock-wallet.component';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
@@ -135,6 +136,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         ButtonComponent,
         BuyComponent,
         ChangeNameComponent,
+        NumberOfAddressesComponent,
         ClipboardDirective,
         NumberFieldDirective,
         CreateWalletComponent,

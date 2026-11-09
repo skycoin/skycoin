@@ -93,6 +93,15 @@ describe('BrowserWalletBackend post-quantum wallets', () => {
     expect(wallet.nextSeed).toBe(pqSeedState(seedHex, 2));
   });
 
+  it('adds several addresses at once', async () => {
+    const wallet = await createPQ();
+    await firstValueFrom(backend.addAddress(wallet, undefined, undefined, 3));
+
+    expect(wallet.addresses.length).toBe(4);
+    expect(wallet.addresses[1].address).toBe(secondAddress);
+    expect(wallet.nextSeed).toBe(pqSeedState(seedHex, 4));
+  });
+
   it('unlocks a wallet that kept only its addresses, and rejects a wrong seed', async () => {
     const wallet = await createPQ();
     await firstValueFrom(backend.addAddress(wallet));

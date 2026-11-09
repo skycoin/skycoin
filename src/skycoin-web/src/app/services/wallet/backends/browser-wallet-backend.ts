@@ -148,20 +148,22 @@ export class BrowserWalletBackend implements WalletBackend {
     }));
   }
 
-  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number, count = 1): Observable<void> {
     if (isBip44(wallet)) {
-      return this.addBip44Addresses(wallet, chainIndex === 1 ? 1 : 0, 1).pipe(map(() => undefined));
+      return this.addBip44Addresses(wallet, chainIndex === 1 ? 1 : 0, count).pipe(map(() => undefined));
     }
 
     if (!wallet.seed || !wallet.nextSeed) {
       throw new Error(this.translate.instant('service.wallet.address-without-seed'));
     }
 
-    return this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
+    const added = this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
       map((response: GenerateAddressResponse) => {
         wallet.nextSeed = response.nextSeed;
         wallet.addresses.push(response.address);
       }));
+
+    return count > 1 ? added.pipe(mergeMap(() => this.addAddress(wallet, accountIndex, chainIndex, count - 1))) : added;
   }
 
   save(wallets: Wallet[]): void {

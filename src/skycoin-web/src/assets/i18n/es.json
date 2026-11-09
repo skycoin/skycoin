@@ -228,7 +228,15 @@
       "confirm": "Confirmar Dirección"
     },
 
-    "scan-help": "Encuentra las direcciones ya usadas de esta billetera que faltan en la lista."
+    "scan-help": "Encuentra las direcciones ya usadas de esta billetera que faltan en la lista.",
+    "add-addresses": {
+      "title": "Nuevas Direcciones",
+      "quantity-label": "Cantidad de direcciones a crear",
+      "quantity-error-info": "Debe ingresar un número entero entre 1 y 100.",
+      "cancel-button": "Cancelar",
+      "create-button": "Crear"
+    },
+    "add-many-confirmation": "ADVERTENCIA: si agrega demasiadas direcciones sin usar las anteriores, es posible que algunas direcciones no se encuentren automáticamente si restaura la billetera con la semilla, y tendrá que agregarlas a mano. ¿Desea continuar?"
   },
 
   "hardware-wallet": {

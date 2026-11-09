@@ -25,8 +25,8 @@ export interface WalletBackend {
   create(label: string, seed: string, coinId: number, existing: Wallet[], walletType: string,
     seedPassphrase?: string, segwit?: boolean, password?: string): Observable<Wallet>;
 
-  /** Adds the next address to wallet, on the given BIP44 account and chain if any. */
-  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void>;
+  /** Adds the next count addresses to wallet, on the given BIP44 account and chain if any. */
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number, count?: number): Observable<void>;
 
   /** Persists the list, where the backend has anything to persist. */
   save(wallets: Wallet[]): void;

@@ -49,10 +49,10 @@ export class ServerWalletBackend implements WalletBackend {
       })));
   }
 
-  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number, count = 1): Observable<void> {
     const params: any = {
       id: wallet.filename,
-      num: '1',
+      num: count.toString(),
     };
     if (accountIndex !== undefined) {
       params.account = accountIndex.toString();

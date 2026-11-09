@@ -94,12 +94,12 @@ export class WalletService {
     }));
   }
 
-  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number, count = 1): Observable<void> {
     if (this.isServerWallet(wallet)) {
-      return this.server.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => this.saveWallets()));
+      return this.server.addAddress(wallet, accountIndex, chainIndex, count).pipe(map(() => this.saveWallets()));
     }
 
-    return this.browser.addAddress(wallet, accountIndex, chainIndex).pipe(map(() => {
+    return this.browser.addAddress(wallet, accountIndex, chainIndex, count).pipe(map(() => {
       if (saveWallet) {
         this.saveWallets();
       }

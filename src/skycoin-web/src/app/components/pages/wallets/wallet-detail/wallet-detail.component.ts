@@ -159,6 +159,10 @@ export class WalletDetailComponent implements OnDestroy {
     });
   }
 
+  get canScanAddresses(): boolean {
+    return this.walletService.canFindUsedAddresses(this.wallet);
+  }
+
   /** Adds the addresses used past the wallet's last ones, as payouts to new xpub indexes are. */
   onScanAddresses() {
     if (this.scanningAddresses) {

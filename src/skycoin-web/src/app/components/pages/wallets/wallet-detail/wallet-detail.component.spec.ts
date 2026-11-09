@@ -2,7 +2,7 @@ import { NEVER, of, throwError } from 'rxjs';
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterTestingModule } from '@angular/router/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { ChangeDetectorRef, NO_ERRORS_SCHEMA } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 
 import { WalletDetailComponent } from './wallet-detail.component';
@@ -92,6 +92,34 @@ describe('WalletDetailComponent', () => {
 
       expect(hw.confirmAddress).toHaveBeenCalledTimes(1);
       expect(component.confirmingIndex).toBe(0);
+    });
+  });
+
+  describe('scanning addresses', () => {
+    function render() {
+      fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck();
+      fixture.detectChanges();
+    }
+
+    it('shows a scan button on a wide window for a wallet that can scan', () => {
+      const walletService = TestBed.inject(WalletService);
+      spyOn(walletService, 'canFindUsedAddresses').and.returnValue(true);
+      render();
+      const button = fixture.nativeElement.querySelector('.btn-scan-addresses');
+
+      expect(button).not.toBeNull();
+      expect(button.classList).toContain('-not-on-small-and-below');
+      expect(button.classList).not.toContain('-on-small-and-below-only');
+
+      spyOn(component, 'onScanAddresses');
+      button.click();
+      expect(component.onScanAddresses).toHaveBeenCalled();
+    });
+
+    it('hides the scan button for a wallet that cannot scan', () => {
+      render();
+
+      expect(fixture.nativeElement.querySelector('.btn-scan-addresses')).toBeNull();
     });
   });
 });

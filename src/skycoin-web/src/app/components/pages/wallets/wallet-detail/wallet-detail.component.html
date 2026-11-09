@@ -7,6 +7,17 @@
       {{ 'wallet.new-address' | translate }}
     </span>
   </div>
+  @if (canScanAddresses) {
+    <div class="btn-scan-addresses -button -not-on-small-and-below" (click)="onScanAddresses()" [ngClass]="{ 'mouse-disabled': scanningAddresses }"
+      [matTooltip]="'wallet.scan-help' | translate">
+      <span [ngClass]="{ '-btn-plus -img': !scanningAddresses, '-disabled-span': scanningAddresses, '-enabled-span': !scanningAddresses }">
+        @if (scanningAddresses) {
+          <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
+        }
+        {{ 'wallet.scan-addresses' | translate }}
+      </span>
+    </div>
+  }
   <div class="-button" (click)="onToggleEmpty()">
     @if (!wallet.hideEmpty) {
       <span class="-img -btn-minus -hide-empty -enabled-span">{{ 'wallet.hide-empty' | translate }}</span>

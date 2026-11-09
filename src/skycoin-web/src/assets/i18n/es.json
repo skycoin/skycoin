@@ -226,7 +226,9 @@
       "outputs": "Salidas No Gastadas",
       "history": "Historial",
       "confirm": "Confirmar Dirección"
-    }
+    },
+
+    "scan-help": "Encuentra las direcciones ya usadas de esta billetera que faltan en la lista."
   },
 
   "hardware-wallet": {

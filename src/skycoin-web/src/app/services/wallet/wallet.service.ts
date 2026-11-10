@@ -219,6 +219,16 @@ export class WalletService {
     return this.isServerWallet(wallet) ? !!wallet.encrypted : !!wallet.encryptedSeed;
   }
 
+  /** Changes a wallet's label, on the wallet service for its wallets, as the wallet list reloads from it. */
+  rename(wallet: Wallet, label: string): Observable<void> {
+    const saved = this.isServerWallet(wallet) ? this.server.rename(wallet, label) : of(undefined);
+
+    return saved.pipe(map(() => {
+      wallet.label = label;
+      this.saveWallets();
+    }));
+  }
+
   saveWallets() {
     const currentWallets = this.wallets.value || [];
     this.backend.save(currentWallets);

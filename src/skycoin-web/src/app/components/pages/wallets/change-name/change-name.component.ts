@@ -45,13 +45,20 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     }
 
     this.button.setLoading();
-    this.data.label = this.form.value.label;
-    this.walletService.saveWallets();
-    this.dialogRef.close();
-
-    setTimeout(() => {
-      this.msgBarService.showDone('common.changes-made');
-      this.changeDetectorRef.markForCheck();
+    this.msgBarService.hide();
+    this.walletService.rename(this.data, this.form.value.label).subscribe({
+      next: () => {
+        this.dialogRef.close();
+        setTimeout(() => {
+          this.msgBarService.showDone('common.changes-made');
+          this.changeDetectorRef.markForCheck();
+        });
+      },
+      error: err => {
+        this.button.resetState();
+        this.msgBarService.showError(err && err.message ? err.message : String(err));
+        this.changeDetectorRef.markForCheck();
+      },
     });
   }
 

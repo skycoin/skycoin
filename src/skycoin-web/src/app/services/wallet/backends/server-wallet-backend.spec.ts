@@ -34,4 +34,16 @@ describe('ServerWalletBackend', () => {
     expect(ext[1].hours!.toNumber()).toBe(20);
     expect(wallet.addresses.map(a => a.balance ? a.balance.toNumber() : null)).toEqual([1, 2, null]);
   });
+
+  it('renames a wallet on the wallet service', () => {
+    const api = jasmine.createSpyObj('ApiService', ['post']);
+    api.post.and.returnValue(of({}));
+    const backend = new ServerWalletBackend(api, () => 0);
+
+    let done = false;
+    backend.rename({ filename: 'w.wlt' } as Wallet, 'rewards').subscribe(() => done = true);
+
+    expect(done).toBeTrue();
+    expect(api.post).toHaveBeenCalledWith('wallet/update', { id: 'w.wlt', label: 'rewards' });
+  });
 });

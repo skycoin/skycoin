@@ -10,7 +10,7 @@ import { shouldUpgradeVersion } from '../utils/semver';
 
 /** What the header warns about the node the wallet uses. */
 export interface NodeNotices {
-  /** The node answers state changing requests without a CSRF token. */
+  /** The node holds wallets and answers state changing requests without a CSRF token. */
   csrfDisabled: boolean;
   /** The newest skycoin release, when it is newer than the node. */
   latestVersion: string | null;
@@ -46,7 +46,8 @@ export class NodeNoticesService {
 
     return this.apiService.get('health').pipe(
       switchMap((health: any) => {
-        const csrfDisabled = health.csrf_enabled === false;
+        // A public node runs without CSRF and without the wallet API, and then CSRF guards nothing.
+        const csrfDisabled = health.csrf_enabled === false && health.wallet_api_enabled === true;
         const nodeVersion = (health.version && health.version.version) || '';
         // Only skycoin's own node is a skycoin release, and an empty
         // version_url is how a node turns version checks off.

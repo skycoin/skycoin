@@ -19,6 +19,7 @@
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-fibercoin
 .PHONY: integration-test-joint-transaction
+.PHONY: integration-test-cli-node-wallet
 .PHONY: check-newcoin-templates check-release-nocgo
 .PHONY: update-dep sync-upstream-develop
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
@@ -195,6 +196,9 @@ integration-test-fibercoin: ## Run fibercoin genesis creation and distribution i
 
 integration-test-joint-transaction: ## Run a two wallet joint transaction on a throwaway fiber coin chain
 	COIN=$(COIN) ./ci-scripts/integration-test-joint-transaction.sh
+
+integration-test-cli-node-wallet: ## Spend with the CLI from a wallet file a running node holds, on a throwaway fiber coin chain
+	COIN=$(COIN) ./ci-scripts/integration-test-cli-node-wallet.sh
 
 integration-test-live: ## Run live integration tests
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c

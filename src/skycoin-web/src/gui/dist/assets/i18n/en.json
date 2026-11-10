@@ -549,6 +549,7 @@
     },
     "wallet": {
       "address-without-seed": "trying to generate address without seed!",
+      "change-address-not-added": "the change address could not be added to the wallet, try again",
       "unknown-address": "trying to update the wallet with unknown address!",
       "wallet-exists": "A wallet already exists with this seed",
       "not-enough-hours1": "Not enough available",

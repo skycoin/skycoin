@@ -147,6 +147,8 @@ export class MockWalletService {
   changeAddressFor(wallet: Wallet): Observable<string | null> {
     return of(null);
   }
+
+  releaseChangeAddresses() {}
 }
 
 export class MockHistoryService {

@@ -350,9 +350,9 @@ func fromWalletOrAddress(c *cobra.Command, walletFile string) (walletAddress, er
 // getChangeAddress validates chgAddr. An empty one gets the next unused change
 // address of a bip44 wallet, or stays empty, and the transaction then gets a new
 // change address from the wallet (see newChangeAddress).
-func getChangeAddress(wltAddr walletAddress, chgAddr string, tf wallet.TransactionsFinder) (string, error) {
+func getChangeAddress(c interface{}, wltAddr walletAddress, chgAddr string, tf wallet.TransactionsFinder) (string, error) {
 	if chgAddr == "" && wltAddr.Wallet != "" {
-		a, err := bip44ChangeAddress(wltAddr.Wallet, tf)
+		a, err := bip44ChangeAddress(c, wltAddr.Wallet, tf)
 		if err != nil {
 			return "", err
 		}
@@ -566,7 +566,7 @@ func parseCreateRawTxnArgs(c *cobra.Command, args []string) (*createRawTxnArgs, 
 	if err != nil {
 		return nil, err
 	}
-	chgAddr, err := getChangeAddress(wltAddr, changeAddress, apiTransactionsFinder{apiClient})
+	chgAddr, err := getChangeAddress(apiClient, wltAddr, changeAddress, apiTransactionsFinder{apiClient})
 	if err != nil {
 		return nil, err
 	}
@@ -776,7 +776,7 @@ func createRawTxnWithChange(c GetOutputser, wlt wallet.Wallet, walletFile string
 	added := false
 	if chgAddr == "" {
 		var err error
-		if chgAddr, added, err = newChangeAddress(wlt, password, inAddrs); err != nil {
+		if chgAddr, added, err = newChangeAddress(c, wlt, walletFile, password, inAddrs); err != nil {
 			return nil, err
 		}
 	}
@@ -806,7 +806,10 @@ func saveWalletFile(wlt wallet.Wallet, walletFile string) error {
 // newChangeAddress adds an unused address to wlt for the change, so the change does
 // not return to an address whose public key this spend reveals. A collection wallet
 // cannot make one and keeps the old default, the first of inAddrs.
-func newChangeAddress(wlt wallet.Wallet, password []byte, inAddrs []string) (string, bool, error) {
+//
+// A running node that holds walletFile adds the address itself, since it would
+// write its own copy over a change to the file. The bool is whether to save wlt.
+func newChangeAddress(c interface{}, wlt wallet.Wallet, walletFile string, password []byte, inAddrs []string) (string, bool, error) {
 	opts := []wallet.Option{wallet.OptionGenerateN(1)}
 	switch wlt.Type() {
 	case wallet.WalletTypeCollection:
@@ -818,6 +821,15 @@ func newChangeAddress(wlt wallet.Wallet, password []byte, inAddrs []string) (str
 		opts = append(opts, wallet.OptionChange())
 	}
 
+	n, id, err := nodeWallet(c, walletFile)
+	if err != nil {
+		return "", false, err
+	}
+	if id != "" {
+		addr, err := nodeNewAddress(n, id, wlt, password)
+		return addr, false, err
+	}
+
 	var addrs []cipher.Addresser
 	generate := func(w wallet.Wallet) error {
 		var err error
@@ -825,7 +837,6 @@ func newChangeAddress(wlt wallet.Wallet, password []byte, inAddrs []string) (str
 		return err
 	}
 
-	var err error
 	if wlt.IsEncrypted() && wlt.Type() != wallet.WalletTypeBip44 {
 		err = wallet.GuardUpdate(wlt, password, generate)
 	} else {
@@ -1139,7 +1150,7 @@ func txnTouches(t readable.TransactionWithStatus, addr string) bool {
 
 // bip44ChangeAddress returns the next unused change address of a bip44
 // wallet file, or "" for other wallet types. A new entry is saved.
-func bip44ChangeAddress(path string, tf wallet.TransactionsFinder) (string, error) {
+func bip44ChangeAddress(c interface{}, path string, tf wallet.TransactionsFinder) (string, error) {
 	wlt, err := wallet.Load(path)
 	if err != nil {
 		return "", WalletLoadError{err}
@@ -1147,6 +1158,14 @@ func bip44ChangeAddress(path string, tf wallet.TransactionsFinder) (string, erro
 	bw, ok := wlt.(*bip44wallet.Wallet)
 	if !ok {
 		return "", nil
+	}
+	// A running node that holds the file would write its copy over a new entry
+	n, id, err := nodeWallet(c, path)
+	if err != nil {
+		return "", err
+	}
+	if id != "" {
+		return nodeBip44ChangeAddress(n, id, bw, tf)
 	}
 	before, err := bw.GetEntries(wallet.OptionChange())
 	if err != nil {

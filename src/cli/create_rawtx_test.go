@@ -620,24 +620,24 @@ func TestGetChangeAddressBip44(t *testing.T) {
 	require.NoError(t, wallet.Save(w, dir))
 
 	wa := walletAddress{Wallet: path}
-	first, err := getChangeAddress(wa, "", fakeFinder{})
+	first, err := getChangeAddress(nil, wa, "", fakeFinder{})
 	require.NoError(t, err)
 
 	// unused entry is reused
-	again, err := getChangeAddress(wa, "", fakeFinder{})
+	again, err := getChangeAddress(nil, wa, "", fakeFinder{})
 	require.NoError(t, err)
 	require.Equal(t, first, again)
 
 	// used entry moves on, and the new entry is saved
-	next, err := getChangeAddress(wa, "", fakeFinder{first: true})
+	next, err := getChangeAddress(nil, wa, "", fakeFinder{first: true})
 	require.NoError(t, err)
 	require.NotEqual(t, first, next)
-	reused, err := getChangeAddress(wa, "", fakeFinder{first: true})
+	reused, err := getChangeAddress(nil, wa, "", fakeFinder{first: true})
 	require.NoError(t, err)
 	require.Equal(t, next, reused)
 
 	// an explicit change address wins
-	got, err := getChangeAddress(wa, first, fakeFinder{})
+	got, err := getChangeAddress(nil, wa, first, fakeFinder{})
 	require.NoError(t, err)
 	require.Equal(t, first, got)
 }

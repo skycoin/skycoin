@@ -144,6 +144,9 @@ jobs:
       - name: Run Joint Transaction Integration Test
         run: make integration-test-joint-transaction
 
+      - name: Run CLI Node Wallet Integration Test
+        run: make integration-test-cli-node-wallet
+
       - name: Test Hardware Wallet Libraries
         run: make test-skyhw
 

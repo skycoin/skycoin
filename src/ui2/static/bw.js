@@ -384,10 +384,11 @@
 			return {
 				change: call(c, 'bip44XPubAddresses', [a.accountXpubKey, 1, a.changeAddresses.length, 1])[0].address,
 				receive: call(c, 'bip44XPubAddresses', [a.accountXpubKey, 0, a.externalAddresses.length, 1])[0].address,
+				changeAt: a.changeAddresses.length, receiveAt: a.externalAddresses.length,
 			};
 		}
 		var ch = deterministicChain(c, w, sec), last = ch.addrs[ch.addrs.length - 1];
-		return { change: last.address, receive: last.address, after: ch.after };
+		return { change: last.address, receive: last.address, after: ch.after, changeAt: w.addresses.length };
 	}
 
 	// keysOf maps each address in addrs to its secret key.
@@ -426,23 +427,29 @@
 		if (paid !== s.coins || !s.inputs.length) throw new Error(msg('mismatch'));
 	}
 
-	// remember stores the fresh addresses the transaction paid, so the next
-	// fresh address is a new one.
+	// remember stores the fresh addresses the transaction pays, before it is
+	// sent. It fails if the stored wallet has no place for one of them.
 	function remember(id, fresh, s, password) {
 		var paid = {};
 		s.outputs.forEach(function (o) { paid[o.address] = true; });
+		// add appends addr at index at. It is false for one that is not paid or already there.
+		var add = function (chain, addr, at) {
+			if (!paid[addr] || chain.some(function (e) { return e.address === addr; })) return false;
+			if (chain.length !== at) throw new Error(msg('mismatch'));
+			chain.push({ address: addr });
+			return true;
+		};
 		return withList(function (list) {
 			var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
-			if (!w) return null;
+			if (!w) throw new Error(msg('missing'));
 			if (isBip44(w)) {
 				var a = w.accounts[0];
-				if (paid[fresh.change]) a.changeAddresses.push({ address: fresh.change });
-				if (paid[fresh.receive] && fresh.receive !== fresh.change) a.externalAddresses.push({ address: fresh.receive });
+				var changed = add(a.changeAddresses, fresh.change, fresh.changeAt);
+				if (!add(a.externalAddresses, fresh.receive, fresh.receiveAt) && !changed) return null;
 				w.addresses = a.externalAddresses.concat(a.changeAddresses);
 				return writeStored(list);
 			}
-			if (!paid[fresh.change]) return null;
-			w.addresses.push({ address: fresh.change });
+			if (!add(w.addresses, fresh.change, fresh.changeAt)) return null;
 			if (w.encryptedSeed) {
 				return encrypt(fresh.after, password).then(function (e) {
 					w.encryptedNextSeed = e;
@@ -492,31 +499,30 @@
 				var raw = call(session.c, 'prepareTransaction', [JSON.stringify(inputs), JSON.stringify(s.outputs)]);
 				keys = null;
 				inputs = null;
-				sent = { fresh: session.fresh, s: s, pw: session.pw };
-				htmx.ajax('POST', 'bw/send/inject', { target: '#review', swap: 'innerHTML', values: { id: id, rawtx: raw } });
+				// The fresh addresses are stored before the node gets the transaction,
+				// so the wallet lists them even if the answer never arrives.
+				remember(id, session.fresh, s, session.pw).then(function () {
+					sent = true;
+					htmx.ajax('POST', 'bw/send/inject', { target: '#review', swap: 'innerHTML', values: { id: id, rawtx: raw } });
+				}).catch(function (err) {
+					btn.disabled = false;
+					setError(err && err.message ? err.message : msg('error'));
+				});
 			} catch (err) {
 				btn.disabled = false;
 				setError(err.message);
 			}
 		});
 
-		// Once the node took the transaction, the fresh addresses it paid are
-		// stored. The form is done then: a second send from this page would
-		// derive the same fresh address again.
-		var sent = null;
+		// Once the node took the transaction the form is done: a second send
+		// from this page would derive the same fresh address again.
+		var sent = false;
 		document.addEventListener('htmx:afterSwap', function (e) {
 			if (!sent || !e.detail.target || e.detail.target.id !== 'review') return;
-			var done = sent;
-			sent = null;
+			sent = false;
 			if (!document.querySelector('#review .alert.ok')) return;
 			session = null;
 			form.hidden = true;
-			remember(id, done.fresh, done.s, done.pw).catch(function (err) {
-				var p = document.createElement('p');
-				p.className = 'error';
-				p.textContent = err && err.message ? err.message : msg('error');
-				$('review').appendChild(p);
-			});
 		});
 	}
 

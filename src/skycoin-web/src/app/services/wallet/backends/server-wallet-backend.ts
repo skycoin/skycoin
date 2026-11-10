@@ -139,6 +139,10 @@ export class ServerWalletBackend implements WalletBackend {
     }));
   }
 
+  rename(wallet: Wallet, label: string): Observable<void> {
+    return this.apiService.post('wallet/update', { id: wallet.filename, label: label }).pipe(map(() => {}));
+  }
+
   encrypt(wallet: Wallet, password: string): Observable<void> {
     return this.apiService.post('wallet/encrypt', {
       id: wallet.filename,

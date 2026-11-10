@@ -144,7 +144,7 @@ func sweepWallet(c GetOutputser, walletFile, to string, pr PasswordReader, distP
 
 	added := false
 	if to == "" {
-		if to, added, err = newChangeAddress(wlt, password, inAddrs); err != nil {
+		if to, added, err = newChangeAddress(c, wlt, walletFile, password, inAddrs); err != nil {
 			return nil, "", err
 		}
 	}

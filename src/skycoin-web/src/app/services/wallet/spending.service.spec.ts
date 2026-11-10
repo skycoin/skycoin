@@ -1,5 +1,5 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
-import { Observable, of } from 'rxjs';
+import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
+import { Observable, of, throwError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import BigNumber from 'bignumber.js';
 
@@ -8,6 +8,7 @@ import { WalletService } from './wallet.service';
 import { ApiService } from '../api.service';
 import { CipherProvider } from '../cipher.provider';
 import { CoinService } from '../coin.service';
+import { EncryptionService } from '../encryption.service';
 import { MockCoinService, MockWalletService, MockGlobalsService, MockBlockchainService, MockHwWalletService } from '../../utils/test-mocks';
 import { createWallet, createAddress } from './wallet.service.spec';
 import { GlobalsService } from '../globals.service';
@@ -958,5 +959,116 @@ describe('SpendingService gateway sends', () => {
     expect(post).toHaveBeenCalledWith('btc/send', {
       wallet_id: 'b.wlt', password: '', destinations: [{ address: 'bc1q', coins: 10000 }], fee_rate: 7,
     }, { json: true });
+  }));
+});
+
+describe('SpendingService change address', () => {
+  const fresh = 'address of next seed';
+  let store: Record<string, string>;
+  let spending: SpendingService;
+  let wallet: Wallet;
+  let injected: Observable<any>;
+  let change: boolean;
+
+  beforeEach(() => {
+    store = {};
+    injected = of('txid');
+    change = true;
+    spyOn(localStorage, 'setItem').and.callFake((key, value) => store[key] = value);
+    spyOn(localStorage, 'getItem').and.callFake((key) => store[key]);
+
+    // The node pays the change to the address it is given.
+    const post = (url: string, params: any) => url === 'injectTransaction' ? injected : of({ data: {
+      encoded_transaction: 'unsigned',
+      transaction: {
+        fee: '1',
+        inputs: [{ uxid: 'hash1', address: 'address1', calculated_hours: '2', coins: '5' }],
+        outputs: [{ address: 'dest', coins: '1', hours: '1' }].concat(
+          change ? [{ address: params.change_address, coins: '4', hours: '0' }] : []),
+      },
+    } });
+    const cipher = {
+      generateAddress: (seed: string) => of({ address: createAddress('address of ' + seed), nextSeed: 'after ' + seed }),
+      prepareTransaction: () => of('signed'),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        SpendingService,
+        WalletService,
+        EncryptionService,
+        { provide: ApiService, useValue: { post, get: () => of([]) } },
+        { provide: CipherProvider, useValue: cipher },
+        { provide: TranslateService, useValue: { instant: (k: string) => k } },
+        { provide: CoinService, useClass: MockCoinService },
+        { provide: GlobalsService, useClass: MockGlobalsService },
+        { provide: BlockchainService, useClass: MockBlockchainService },
+        { provide: HwWalletService, useClass: MockHwWalletService },
+      ],
+    });
+    (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.27.0');
+    spending = TestBed.inject(SpendingService);
+    wallet = Object.assign(createWallet(), { addresses: [createAddress('address1', 'secretKey1')] });
+    TestBed.inject(WalletService).wallets.next([wallet]);
+  });
+
+  function create(unsigned = false): PreviewTransaction {
+    let tx: any;
+    spending.createTransaction(
+      wallet, null, null, [{ address: 'dest', coins: new BigNumber(1) }],
+      { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) }, null, undefined, unsigned,
+    ).subscribe(t => tx = t);
+
+    return tx;
+  }
+
+  const listed = () => wallet.addresses.map(a => a.address);
+
+  it('lists the change address of a transaction signed in the browser', fakeAsync(() => {
+    const tx = create();
+    expect(tx.outputs[1].address).toBe(fresh);
+    spending.injectTransaction(tx.encoded).subscribe();
+
+    expect(listed()).toEqual(['address1', fresh]);
+    flushMicrotasks();
+    expect(store['wallets']).toContain(fresh);
+  }));
+
+  it('lists the change address of an unsigned transaction signed elsewhere', fakeAsync(() => {
+    const tx = create(true);
+    expect(tx.encoded).toBe('unsigned');
+    expect(tx.outputs[1].address).toBe(fresh);
+    spending.injectTransaction('signedElsewhere').subscribe();
+
+    expect(listed()).toEqual(['address1', fresh]);
+    flushMicrotasks();
+    expect(store['wallets']).toContain(fresh);
+  }));
+
+  it('lists the change address when the answer to the inject is lost', fakeAsync(() => {
+    injected = throwError(() => new Error('timeout'));
+    spending.injectTransaction(create().encoded).subscribe({ error: () => undefined });
+
+    expect(listed()).toEqual(['address1', fresh]);
+    flushMicrotasks();
+    expect(store['wallets']).toContain(fresh);
+  }));
+
+  it('gives one change address to every transaction made until one is sent', fakeAsync(() => {
+    create(true);
+    const tx = create();
+    expect(tx.outputs[1].address).toBe(fresh);
+    expect(listed()).toEqual(['address1', fresh]);
+
+    spending.injectTransaction(tx.encoded).subscribe();
+    expect(create().outputs[1].address).toBe('address of after next seed');
+    expect(listed()).toEqual(['address1', fresh, 'address of after next seed']);
+  }));
+
+  it('adds no address for a transaction without change', fakeAsync(() => {
+    change = false;
+    spending.injectTransaction(create().encoded).subscribe();
+
+    expect(listed()).toEqual(['address1']);
   }));
 });

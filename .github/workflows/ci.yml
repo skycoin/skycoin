@@ -115,6 +115,11 @@ jobs:
       - name: Web wallet joint transaction e2e
         run: make test-web-wallet-joint-e2e
 
+      # Sends from a deterministic browser wallet, signed in the browser and
+      # offline, and checks the wallet lists the address its change went to.
+      - name: Web wallet send e2e
+        run: make test-web-wallet-send-e2e
+
       - name: Verify skydex-client UI embed is current
         run: make check-skydex-ui
 

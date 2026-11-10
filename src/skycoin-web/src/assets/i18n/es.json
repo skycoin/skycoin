@@ -532,6 +532,7 @@
     },
     "wallet": {
       "address-without-seed": "¡intentando generar una dirección sin semilla!",
+      "change-address-not-added": "no se pudo agregar la dirección de cambio a la billetera, inténtelo de nuevo",
       "unknown-address": "¡intentando actualizar la billetera con una dirección desconocida!",
       "wallet-exists": "Ya hay una billetera con esa semilla",
       "not-enough-hours1": "¡No cuenta con suficientes",

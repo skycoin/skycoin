@@ -35,6 +35,8 @@ export class WalletService {
   private readonly scans = new Map<string, Observable<number>>();
   private readonly lastScan = new Map<string, number>();
   private readonly autoScanInterval = 60 * 1000;
+  // The change address added to each browser wallet for a transaction not sent yet.
+  private reservedChange = new WeakMap<Wallet, string>();
 
   constructor(
     private cipherProvider: CipherProvider,
@@ -291,8 +293,9 @@ export class WalletService {
 
   /**
    * The address change goes to when a send names none: an unused address of a
-   * browser wallet that is not in the wallet yet, the next change chain address
-   * for bip44 or the next address for a deterministic wallet. Null leaves it to
+   * browser wallet. That is the one kept for a transaction not sent yet, or else
+   * one not in the wallet yet, the next change chain address for bip44 or the
+   * next address for a deterministic wallet. Null leaves it to
    * the node, which for a wallet it keeps also picks a new address.
    */
   changeAddressFor(wallet: Wallet): Observable<string | null> {
@@ -300,20 +303,38 @@ export class WalletService {
       return of(null);
     }
 
+    const reserved = this.reservedChange.get(wallet);
+    if (reserved && walletAddresses(wallet).some(a => a.address === reserved)) {
+      return of(reserved);
+    }
+
     return this.browser.peekChangeAddress(wallet);
   }
 
-  /** Adds the change address a sent transaction paid to its browser wallet. */
-  recordChangeAddress(wallet: Wallet, address: string): Observable<void> {
-    if (this.isServerWallet(wallet)) {
+  /**
+   * Adds and saves the change address of a transaction just made, before it is
+   * signed or shown. The wallet keeps using it until a transaction is sent.
+   */
+  reserveChangeAddress(wallet: Wallet, address: string): Observable<void> {
+    if (this.isServerWallet(wallet) || walletAddresses(wallet).some(a => a.address === address)) {
       return of(undefined);
     }
 
-    return this.browser.addChangeAddress(wallet, address).pipe(map(added => {
-      if (added) {
-        this.saveWallets();
+    // A wallet object the list no longer holds would not be saved.
+    const kept = (this.wallets.value || []).includes(wallet);
+
+    return (kept ? this.browser.addChangeAddress(wallet, address) : of(false)).pipe(map(added => {
+      if (!added) {
+        throw new Error(this.translate.instant('service.wallet.change-address-not-added'));
       }
+      this.reservedChange.set(wallet, address);
+      this.saveWallets();
     }));
+  }
+
+  /** Makes the next transaction of every wallet use a new change address. */
+  releaseChangeAddresses() {
+    this.reservedChange = new WeakMap<Wallet, string>();
   }
 
   /** True for a bip44 or xpub wallet, whose used addresses can be found from its public keys. */

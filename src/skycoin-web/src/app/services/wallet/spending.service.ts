@@ -38,11 +38,6 @@ export class SpendingService {
 
   private currentCoin!: BaseCoin;
 
-  // A signed transaction whose change goes to an address its browser wallet
-  // does not list yet. The address is added once the node takes the
-  // transaction, so the next send gets a new one.
-  private pendingChange = new Map<string, { wallet: Wallet, address: string }>();
-
   private get coinsMultiplier(): number {
     return this.currentCoin ? this.currentCoin.coinsMultiplier : 1000000;
   }
@@ -240,10 +235,6 @@ export class SpendingService {
           // In-memory wallets: sign client-side with WASM
           return this.generateRawTransaction(txInputs, txOutputs).pipe(
             map((rawTransaction: string) => {
-              if (defaultChange && changeAddress === defaultChange && txOutputs.some(o => o.address === defaultChange)) {
-                this.pendingChange.set(rawTransaction, { wallet, address: defaultChange });
-              }
-
               return {
                 inputs: txInputs,
                 outputs: txOutputs,
@@ -327,24 +318,26 @@ export class SpendingService {
               }));
           }));
       }
+    }),
+    // Every path above ends here, so no transaction leaves with its change on
+    // an address the wallet does not list.
+    mergeMap(tx => {
+      if (!defaultChange || !tx.outputs.some(o => o.address === defaultChange)) {
+        return of(tx);
+      }
+
+      return this.walletService.reserveChangeAddress(wallet, defaultChange).pipe(map(() => tx));
     }));
   }
 
   injectTransaction(encodedTransaction: string): Observable<string> {
     this.isInjectingTx = true;
     return this.postTransaction(encodedTransaction).pipe(
-      mergeMap(response => {
+      map(response => {
         this.isInjectingTx = false;
-        const change = this.pendingChange.get(encodedTransaction);
-        if (!change) {
-          return of(response);
-        }
-        this.pendingChange.delete(encodedTransaction);
+        this.walletService.releaseChangeAddresses();
 
-        return this.walletService.recordChangeAddress(change.wallet, change.address).pipe(
-          map(() => response),
-          catchError(() => of(response)),
-        );
+        return response;
       }),
       catchError(err => {
         this.isInjectingTx = false;

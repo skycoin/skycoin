@@ -2,7 +2,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
-import { Bip44Account, Wallet } from '../../../app.datatypes';
+import { Address, Bip44Account, Wallet } from '../../../app.datatypes';
 import { defaultCoinId } from '../../../constants/coins-id.const';
 import { ApiService } from '../../api.service';
 import { SeedBackup, WalletBackend } from './wallet-backend';
@@ -82,9 +82,23 @@ export class ServerWalletBackend implements WalletBackend {
   private reload(wallet: Wallet): Observable<void> {
     return this.apiService.get('wallet', { id: wallet.filename } as any).pipe(
       map((response: any) => {
+        // The new address objects keep the balances already read, until the next refresh.
+        const known = new Map<string, Address>();
+        [wallet.addresses, ...(wallet.accounts || []).map(a => [...a.externalAddresses, ...a.changeAddresses])]
+          .forEach(list => (list || []).forEach(a => known.set(a.address, a)));
+        const keep = (a: Address) => {
+          const old = known.get(a.address);
+          if (old) {
+            a.balance = old.balance;
+            a.hours = old.hours;
+          }
+        };
+
         wallet.addresses = (response.entries || []).map((e: any) => ({ address: e.address }));
+        wallet.addresses.forEach(keep);
         if (response.meta.type === 'bip44' && response.accounts) {
           wallet.accounts = parseAccounts(response.accounts);
+          wallet.accounts.forEach(a => [...a.externalAddresses, ...a.changeAddresses].forEach(keep));
         }
       }));
   }

@@ -12,8 +12,8 @@ describe('NodeNoticesService', () => {
   let http: HttpTestingController;
   let health: Observable<any>;
 
-  function healthOf(version: string, csrf = true, coin = 'skycoin', versionUrl = 'https://version.skycoin.com/skycoin/version.txt') {
-    return of({ coin, csrf_enabled: csrf, version: { version }, fiber: { version_url: versionUrl } });
+  function healthOf(version: string, csrf = true, coin = 'skycoin', versionUrl = 'https://version.skycoin.com/skycoin/version.txt', walletApi = true) {
+    return of({ coin, csrf_enabled: csrf, wallet_api_enabled: walletApi, version: { version }, fiber: { version_url: versionUrl } });
   }
 
   function notices(): NodeNotices | undefined {
@@ -87,5 +87,10 @@ describe('NodeNoticesService', () => {
   it('warns when the node has CSRF turned off', () => {
     health = healthOf('0.28.7', false, 'mycoin');
     expect(notices()!.csrfDisabled).toBeTrue();
+  });
+
+  it('does not warn for a public node without the wallet API', () => {
+    health = healthOf('0.28.7', false, 'mycoin', '', false);
+    expect(notices()!.csrfDisabled).toBeFalse();
   });
 });

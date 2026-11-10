@@ -226,6 +226,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		walletAddAddressesCmd(),
 		walletScanAddressesCmd(),
 		walletKeyExportCmd(),
+		walletRenameCmd(),
 		walletBalanceCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(),

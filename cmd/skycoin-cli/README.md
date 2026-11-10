@@ -158,6 +158,7 @@ Available Commands:
   walletHistory        Display the transaction history of specific wallet. Requires skycoin node rpc.
   walletKeyExport      Export a specific key from an HD wallet
   walletOutputs        Display outputs of specific wallet
+  walletRename         Change the label of a wallet
   walletScanAddresses  Scan addresses ahead for deterministic, bip44 or xpub wallet
 ```
 

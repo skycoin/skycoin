@@ -9,7 +9,8 @@ import {
   ViewContainerRef,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Observable, Subject } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 
 import { ApiService } from '../../../services/api/api.service';
 import { ExplorerService } from '../../../services/explorer/explorer.service';
@@ -93,7 +94,7 @@ class MockExplorerService {
 class MockApiService {
   /** Controls exactly when the richlist response arrives. */
   readonly richlist = new Subject<any[]>();
-  getRichlist(): Observable<any[]> { return this.richlist.asObservable(); }
+  getRichlist(_count: number): Observable<any[]> { return this.richlist.asObservable(); }
 }
 
 describe('RichlistComponent change detection', () => {
@@ -121,6 +122,7 @@ describe('RichlistComponent change detection', () => {
       providers: [
         { provide: ApiService, useValue: api },
         { provide: ExplorerService, useClass: MockExplorerService },
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({})) } },
       ],
       // routerLink is not relevant to change detection.
       schemas: [NO_ERRORS_SCHEMA],

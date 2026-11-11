@@ -110,7 +110,8 @@
     "withoutTransactions": "Actualmente no hay transacciones sin confirmar"
   },
   "richlist": {
-    "title": "Top de direcciones"
+    "title": "Top de direcciones",
+    "noEntries": "No hay direcciones en esta página."
   },
   "copy": {
     "copied": "Copiado"

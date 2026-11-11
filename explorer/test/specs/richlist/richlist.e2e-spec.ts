@@ -14,9 +14,9 @@ describe('skycoin-explorer Rich List Page', () => {
     expect(await page.getPageTitle()).toEqual('Rich List');
   });
 
-  it('should contain 20 Entries', async () => {
+  it('should contain 50 Entries', async () => {
     await generalFunctions.waitUntilNoSpinners();
-    expect(await page.getEntriesCount()).toEqual(20);
+    expect(await page.getEntriesCount()).toEqual(50);
   });
 
   it('should have valid entry numbers', async () => {

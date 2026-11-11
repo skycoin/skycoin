@@ -1,0 +1,203 @@
+package ui2
+
+// HistoryPage is the history of every wallet the node keeps.
+templ HistoryPage(t Txns) {
+	@Layout(T(ctx, "nav.history"), "history") {
+		<section class="card">
+			<h1>{ T(ctx, "nav.history") }</h1>
+			@HistoryBody(t)
+		</section>
+	}
+}
+
+// BrowserHistoryPage is the history of the wallets kept in this browser.
+// bw.js puts them in #bw-data and the list is asked for once it has.
+templ BrowserHistoryPage(filter string) {
+	@Layout(T(ctx, "nav.history"), "history") {
+		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Classic } data-msg-error={ T(ctx, "bw.err-storage") }>
+			<h1>{ T(ctx, "nav.history") }</h1>
+			@bwUnlock()
+			@bwData("wallets")
+			<input type="hidden" id="bw-filter" name="filter" value={ filter }/>
+			<div hx-post="bw/history" hx-trigger="bw-ready from:body" hx-include="#bw-data, #bw-filter" hx-swap="innerHTML">
+				<p class="dim">{ T(ctx, "ui2.loading") }</p>
+			</div>
+			<p class="error" id="bw-page-error" role="alert"></p>
+		</section>
+	}
+}
+
+// HistoryBody is the filter and the first page of the history.
+templ HistoryBody(t Txns) {
+	<form id="hist-form" class="bar" action="history" method="get">
+		<select
+			name="filter"
+			class="filter"
+			aria-label={ T(ctx, "history.filter") }
+			if t.Post {
+				hx-post={ t.URL }
+			} else {
+				hx-get={ t.URL }
+			}
+			hx-trigger="change"
+			hx-target="#txns"
+			hx-swap="outerHTML"
+			hx-include={ t.include() }
+			hx-vals='{"page":"1"}'
+		>
+			<option value="">{ T(ctx, "history.all") }</option>
+			for _, w := range t.Options {
+				<optgroup label={ w.Label + " · " + w.Coins }>
+					<option value={ w.Value } selected?={ t.Filter == w.Value }>{ T(ctx, "history.all-addresses") } · { w.Coins }</option>
+					for _, a := range w.Addrs {
+						<option value={ a.Value } selected?={ t.Filter == a.Value }>{ a.Label } · { a.Coins }</option>
+					}
+				</optgroup>
+			}
+		</select>
+		<input
+			class="filter"
+			type="search"
+			name="q"
+			value={ t.Pager.Q }
+			placeholder={ T(ctx, "history.search") }
+			aria-label={ T(ctx, "history.search") }
+			autocomplete="off"
+			if t.Post {
+				hx-post={ t.URL }
+			} else {
+				hx-get={ t.URL }
+			}
+			hx-trigger="input changed delay:300ms, search"
+			hx-target="#txns"
+			hx-swap="outerHTML"
+			hx-include={ t.include() }
+			hx-vals='{"page":"1"}'
+		/>
+	</form>
+	@TxnList(t)
+}
+
+// include are the inputs a request for another part of the list carries.
+func (t Txns) include() string {
+	switch {
+	case t.Options == nil && t.Post:
+		return "#bw-data"
+	case t.Options == nil:
+		return "this"
+	case t.Post:
+		return "#hist-form, #bw-data"
+	}
+	return "#hist-form"
+}
+
+// TxnList is a page of history. Each transaction opens to its detail.
+templ TxnList(t Txns) {
+	<div id="txns">
+		@ErrorBox(t.Err)
+		if t.Err == "" && len(t.Rows) == 0 {
+			if t.Filter != "" || t.Pager.Q != "" {
+				<p class="dim">{ T(ctx, "history.none-filter") }</p>
+			} else {
+				<p class="dim">{ T(ctx, "wallet.no-history") }</p>
+			}
+		}
+		if len(t.Rows) > 0 {
+			<div class="txs">
+				for _, r := range t.Rows {
+					@txnItem(r)
+				}
+			</div>
+		}
+		if t.Post {
+			@PagerNavPost(t.Pager, t.URL, "#txns", t.include())
+		} else {
+			@PagerNav(t.Pager, t.URL, "#txns", t.include())
+		}
+	</div>
+}
+
+templ txnItem(r TxnRow) {
+	<details class={ "tx", r.Kind }>
+		<summary>
+			<span class={ "tx-icon", r.Kind, templ.KV("pending", !r.Confirmed) }><span class="mi">{ kindIcon(r.Kind) }</span></span>
+			<span class="tx-main">
+				<span class="tx-title">
+					<strong>{ T(ctx, kindKey(r)) }</strong>
+					if r.Confirmed {
+						<span class="small dim nowrap">{ r.Time }</span>
+					} else {
+						<span class="badge warn-text">{ T(ctx, "tx.pending") }</span>
+					}
+				</span>
+				for _, a := range r.Addrs {
+					<span class="tx-addr mono small">{ a }</span>
+				}
+				<span class="tx-note small" data-note={ r.Txid }></span>
+			</span>
+			<span class="tx-amt">
+				<strong class="nowrap">
+					if r.Kind == "out" {
+						−
+					}
+					{ r.Coins }
+				</strong>
+				<span class="small dim nowrap">{ r.Hours } { T(ctx, "balance.hours") }</span>
+			</span>
+		</summary>
+		<div class="tx-detail">
+			<dl class="kv">
+				<dt>{ T(ctx, "tx.id") }</dt>
+				<dd class="mono"><span class="key" data-copy={ r.Txid } title={ T(ctx, "ui2.copy") }>{ r.Txid }</span></dd>
+				<dt>{ T(ctx, "tx.status") }</dt>
+				<dd>
+					if r.Confirmed {
+						{ T(ctx, "tx.confirmed") } <span class="dim">· { T(ctx, "tx.block") } { utoa(r.Block) } · { r.Time }</span>
+					} else {
+						{ T(ctx, "tx.pending") }
+					}
+				</dd>
+				<dt>{ T(ctx, "balance.hours") }</dt>
+				<dd>{ T(ctx, "tx.hours-moved", "sent", r.Hours, "burned", r.Burned) }</dd>
+				<dt><label for={ "note-" + r.Txid }>{ T(ctx, "tx.note") }</label></dt>
+				<dd><input class="note-edit" id={ "note-" + r.Txid } data-note-edit={ r.Txid } maxlength="64" placeholder={ T(ctx, "tx.note-help") } autocomplete="off"/></dd>
+			</dl>
+			<div class="io">
+				@txnIOs(T(ctx, "tx.inputs"), r.In)
+				@txnIOs(T(ctx, "tx.outputs"), r.Out)
+			</div>
+		</div>
+	</details>
+}
+
+templ txnIOs(title string, ios []TxnIO) {
+	<div>
+		<h3>{ title }</h3>
+		<ol class="io-list">
+			for _, x := range ios {
+				<li class={ templ.KV("own", x.Own) }>
+					<span class="mono small">{ x.Address }</span>
+					<span class="small dim nowrap">{ x.Coins } · { x.Hours } { T(ctx, "balance.hours") }</span>
+				</li>
+			}
+		</ol>
+	</div>
+}
+
+func kindKey(r TxnRow) string {
+	k := "tx.kind-" + r.Kind
+	if !r.Confirmed {
+		k += "-pending"
+	}
+	return k
+}
+
+func kindIcon(kind string) string {
+	switch kind {
+	case "in":
+		return "call_received"
+	case "out":
+		return "call_made"
+	}
+	return "swap_horiz"
+}

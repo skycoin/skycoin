@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -63,8 +64,25 @@ func (f *fakeNode) WalletBalance(id string) (*api.BalanceResponse, error) {
 	return f.balances[id], nil
 }
 
-func (f *fakeNode) TransactionsVerbose([]string) ([]readable.TransactionWithStatusVerbose, error) {
-	return f.txns, nil
+func (f *fakeNode) TransactionsVerbose(addrs []string) ([]readable.TransactionWithStatusVerbose, error) {
+	want := map[string]bool{}
+	for _, a := range addrs {
+		want[a] = true
+	}
+	var out []readable.TransactionWithStatusVerbose
+	for _, t := range f.txns {
+		hit := false
+		for _, i := range t.Transaction.In {
+			hit = hit || want[i.Address]
+		}
+		for _, o := range t.Transaction.Out {
+			hit = hit || want[o.Address]
+		}
+		if hit {
+			out = append(out, t)
+		}
+	}
+	return out, nil
 }
 
 func u32(n uint32) *uint32 { return &n }
@@ -230,4 +248,78 @@ func TestCatalogsMatch(t *testing.T) {
 			require.NotEmpty(t, m[k], "%s %s", l.Code, k)
 		}
 	}
+}
+
+func TestHistory(t *testing.T) {
+	n := testNode()
+	other := api.WalletResponse{
+		Meta:    readable.WalletMeta{Filename: "b.wlt", Label: "Spending", Type: "deterministic"},
+		Entries: []readable.WalletEntry{{Address: "stranger"}},
+	}
+	n.wallets = append(n.wallets, other)
+
+	all := LoadHistory(n, "", ListQuery{})
+	require.Empty(t, all.Err)
+	require.Len(t, all.Options, 2)
+	require.Equal(t, "Savings", all.Options[0].Label, "sorted by label")
+	require.Equal(t, "w:a.wlt", all.Options[0].Value)
+	require.Equal(t, "a:addrRecv0", all.Options[0].Addrs[0].Value)
+	require.Equal(t, "3.500000", all.Options[0].Coins)
+	kinds := map[string]TxnRow{}
+	for _, r := range all.Rows {
+		kinds[r.Txid] = r
+	}
+	require.Equal(t, "out", kinds["sent"].Kind, "as in the Angular wallet, a payment to another own wallet is sent")
+
+	one := LoadHistory(n, "w:a.wlt", ListQuery{})
+	for _, r := range one.Rows {
+		kinds[r.Txid] = r
+	}
+	require.Equal(t, "out", kinds["sent"].Kind)
+	require.Equal(t, []string{"addrRecv1"}, kinds["sent"].Addrs)
+	require.Equal(t, "1.000000", kinds["sent"].Coins)
+	require.Equal(t, "2", kinds["sent"].Burned, "4 calculated hours in, 2 out")
+	require.Len(t, kinds["sent"].In, 1)
+	require.Len(t, kinds["sent"].Out, 2)
+	require.Equal(t, "in", kinds["received"].Kind)
+	require.Equal(t, []string{"addrRecv0"}, kinds["received"].Addrs)
+
+	h := Handler(n, Options{})
+	body := get(t, h, "/history?filter=w%3Aa.wlt").Body.String()
+	require.Contains(t, body, `<option value="w:a.wlt" selected>`)
+	require.Contains(t, body, `data-note="sent"`)
+	require.Contains(t, body, `hx-get="history/list"`)
+	require.Contains(t, body, `class="active">History`)
+
+	body = get(t, h, "/history/list?filter=w%3Aa.wlt&q=addrRecv0").Body.String()
+	require.Contains(t, body, `id="txns"`)
+	require.Contains(t, body, `data-note="received"`)
+	require.NotContains(t, body, `data-note="sent"`)
+
+	body = get(t, h, "/history/list?q=nothing").Body.String()
+	require.Contains(t, body, "matching the current filter")
+}
+
+func TestBrowserHistory(t *testing.T) {
+	x := sendNode(t)
+	x.n.browser = true
+	h := Handler(x.n, Options{})
+	body := get(t, h, "/history?filter=w%3A"+x.spent).Body.String()
+	require.Contains(t, body, `data-bw-page="list"`)
+	require.Contains(t, body, `hx-post="bw/history"`)
+	require.Contains(t, body, `value="w:`+x.spent+`"`)
+
+	ws := url.Values{"wallets": {jsonOf(t, []BrowserWallet{browserWallet(x)})}}
+	body = postForm(h, "/bw/history", ws).Body.String()
+	require.Contains(t, body, `id="hist-form"`)
+	require.Contains(t, body, `hx-post="bw/history/list"`)
+	require.Contains(t, body, `hx-include="#hist-form, #bw-data"`)
+	require.Equal(t, 1, strings.Count(body, ">Sent<"))
+
+	ws.Set("filter", "a:"+x.change)
+	body = postForm(h, "/bw/history/list", ws).Body.String()
+	require.Equal(t, 1, strings.Count(body, ">Received<"), "the change address received its change")
+	require.NotContains(t, body, ">Sent<")
+
+	require.Contains(t, postForm(h, "/bw/history", url.Values{"wallets": {"x"}}).Body.String(), "could not read")
 }

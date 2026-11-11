@@ -54,7 +54,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | personal note | send-form | missing | missing | |
 | fill from a `skycoin:` link | enter-link | missing | missing | |
 | scan a QR code | qr-scan-dialog | missing | missing | |
-| USD value | send-form | missing | missing | price source on hold |
+| USD value | send-form, history | missing | missing | price source on hold |
 | bulk send from CSV | bulk-send | missing | missing | |
 | unsigned transaction | offline-tx | missing | missing | |
 | sign a transaction | offline-tx | missing | missing | |
@@ -66,10 +66,10 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | feature | Angular | node | browser | notes |
 |---|---|---|---|---|
 | history of one wallet | history | present | present | on the wallet page |
-| history of every wallet | history | missing | missing | |
-| filter by wallet or address | history | missing | missing | |
-| transaction detail | transaction-detail | missing | missing | |
-| notes on transactions | history | missing | missing | |
+| history of every wallet | history | present | present | |
+| filter by wallet or address | history | present | present | ui2 also searches by transaction ID |
+| transaction detail | transaction-detail | present | present | inputs, outputs, hours sent and burned |
+| notes on transactions | history | present | present | shared with the Angular wallet through localStorage |
 | cached copy when the node does not answer | history | missing | missing | |
 
 ## Settings and status

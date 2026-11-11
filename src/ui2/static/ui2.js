@@ -101,3 +101,32 @@
 		if (f) f.reset();
 	});
 })();
+
+// Transaction notes live in this browser under the Angular wallet's
+// "txNotes" key (src/skycoin-web/src/app/utils/tx-notes.ts), so both UIs
+// show the same notes.
+(function () {
+	'use strict';
+	var KEY = 'txNotes', MAX = 64;
+	function read() {
+		try {
+			var n = JSON.parse(localStorage.getItem(KEY) || '{}');
+			return n && typeof n === 'object' ? n : {};
+		} catch (_) { return {}; }
+	}
+	function fill(root) {
+		var notes = read();
+		root.querySelectorAll('[data-note]').forEach(function (e) { e.textContent = notes[e.getAttribute('data-note')] || ''; });
+		root.querySelectorAll('[data-note-edit]').forEach(function (e) { e.value = notes[e.getAttribute('data-note-edit')] || ''; });
+	}
+	document.addEventListener('change', function (e) {
+		var id = e.target.getAttribute && e.target.getAttribute('data-note-edit');
+		if (!id) return;
+		var notes = read(), text = e.target.value.trim().substring(0, MAX);
+		if (text) notes[id] = text; else delete notes[id];
+		try { localStorage.setItem(KEY, JSON.stringify(notes)); } catch (_) { /* private mode */ }
+		fill(document);
+	});
+	document.addEventListener('DOMContentLoaded', function () { fill(document); });
+	document.addEventListener('htmx:afterSettle', function (e) { fill(e.detail.elt || document); });
+})();

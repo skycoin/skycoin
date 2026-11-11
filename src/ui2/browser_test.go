@@ -93,7 +93,8 @@ func TestBrowserPages(t *testing.T) {
 
 	body = postForm(h, "/bw/txns", url.Values{"wallet": {jsonOf(t, w)}}).Body.String()
 	require.Contains(t, body, `id="txns"`)
-	require.Equal(t, 2, strings.Count(body, "Received"))
+	require.Equal(t, 1, strings.Count(body, ">Received<"))
+	require.Equal(t, 1, strings.Count(body, ">Sent<"), "the change does not make a send a receipt")
 
 	require.Contains(t, postForm(h, "/bw/wallet/view", url.Values{"wallet": {"{}"}}).Body.String(), "could not read")
 }

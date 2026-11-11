@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-//go:generate go run github.com/a-h/templ/cmd/templ@v0.3.1070 generate
+//go:generate go run github.com/a-h/templ/cmd/templ@v0.3.1100 generate
 //go:generate goimports -w -local github.com/skycoin/skycoin .
 
 // HTMXVersion is the vendored static/htmx.min.js, the same file skywire's ui2

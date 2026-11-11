@@ -51,6 +51,12 @@ templ StatusLive(s Status) {
 				<dd>{ s.Uptime }</dd>
 				<dt>{ T(ctx, "status.block-hash") }</dt>
 				<dd class="mono small">{ s.BlockHash }</dd>
+				if s.Supply.Current != "" {
+					<dt>{ T(ctx, "status.current-supply") }</dt>
+					<dd>{ s.Supply.Current }</dd>
+					<dt>{ T(ctx, "status.total-supply") }</dt>
+					<dd>{ s.Supply.Total }</dd>
+				}
 				<dt>{ T(ctx, "status.wallet-api") }</dt>
 				<dd>
 					if s.WalletAPI {
@@ -72,6 +78,7 @@ templ StatusLive(s Status) {
 								<th>{ T(ctx, "status.direction") }</th>
 								<th class="num">{ T(ctx, "status.peer-height") }</th>
 								<th>{ T(ctx, "status.agent") }</th>
+								<th>{ T(ctx, "status.last-seen") }</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -92,6 +99,14 @@ templ StatusLive(s Status) {
 									</td>
 									<td class="num" data-label={ T(ctx, "status.peer-height") }>{ utoa(p.Height) }</td>
 									<td class="small" data-label={ T(ctx, "status.agent") }>{ p.Agent }</td>
+									<td class="small nowrap" data-label={ T(ctx, "status.last-seen") }>
+										if p.Sent != "" {
+											<span title={ T(ctx, "status.last-sent") }>↑ { p.Sent }</span>
+										}
+										if p.Received != "" {
+											<span title={ T(ctx, "status.last-received") }>↓ { p.Received }</span>
+										}
+									</td>
 								</tr>
 							}
 						</tbody>

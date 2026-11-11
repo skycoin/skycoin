@@ -274,3 +274,16 @@ details.op { border-top: 1px solid rgba(var(--fg), 0.1); margin: 0; }
 details.op > summary { display: flex; align-items: center; gap: 8px; padding: 10px 4px; min-height: 44px; }
 details.op > .form { padding: 4px 4px 12px; }
 #wallet-options h2 { margin-top: 0; }
+
+/* settings */
+ul.links { list-style: none; margin: 8px 0 0; padding: 0; }
+ul.links li { display: flex; flex-direction: column; gap: 2px; padding: 10px 4px; border-top: 1px solid rgba(var(--fg), 0.1); }
+ul.links li:first-child { border-top: 0; }
+ul.links a { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; text-decoration: none; min-height: 32px; }
+.outputs { padding: 8px 0; border-top: 1px solid rgba(var(--fg), 0.1); }
+.outputs-addr { margin-bottom: 4px; }
+.backup-wallet { padding: 10px 0; border-top: 1px solid rgba(var(--fg), 0.1); }
+.backup-wallet .bar { margin-bottom: 4px; }
+.seed-text { width: 100%; resize: vertical; }
+.bar.seg { gap: 6px; }
+.card > .alert { margin: 8px 0 12px; }

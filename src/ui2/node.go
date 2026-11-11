@@ -35,6 +35,11 @@ type Node interface {
 	DecryptWallet(id, password string) (*api.WalletResponse, error)
 	WalletCreateTransaction(api.WalletCreateTransactionRequest) (*api.CreateTransactionResponse, error)
 	InjectEncodedTransaction(rawtx string) (string, error)
+	WalletFolderName() (*api.WalletFolder, error)
+	WalletSeed(id, password string) (*api.WalletSeedResponse, error)
+	OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error)
+	PendingTransactionsVerbose() ([]readable.UnconfirmedTransactionVerbose, error)
+	CoinSupply() (*api.CoinSupply, error)
 	Balance(addrs []string) (*api.BalanceResponse, error)
 	CreateTransaction(api.CreateTransactionRequest) (*api.CreateTransactionResponse, error)
 }
@@ -235,6 +240,8 @@ type Peer struct {
 	Height   uint64
 	Agent    string
 	Trusted  bool
+	Sent     string
+	Received string
 }
 
 // Status is the node and blockchain status page.
@@ -254,6 +261,7 @@ type Status struct {
 	Outgoing    int
 	Uptime      string
 	WalletAPI   bool
+	Supply      Supply
 	Peers       []Peer
 	Err         string
 }
@@ -288,6 +296,11 @@ func LoadStatus(n Node) Status {
 		s.Percent = strconv.FormatFloat(pct, 'f', 1, 64)
 	}
 
+	if cs, err := n.CoinSupply(); err == nil {
+		s.Supply = Supply{Current: cs.CurrentSupply, Total: cs.TotalSupply}
+	}
+
+	now := time.Now()
 	if c, err := n.NetworkConnections(nil); err != nil {
 		s.Err = err.Error()
 	} else {
@@ -298,6 +311,8 @@ func LoadStatus(n Node) Status {
 				Height:   x.Height,
 				Agent:    agent(x.UserAgent.Coin, x.UserAgent.Version),
 				Trusted:  x.IsTrustedPeer,
+				Sent:     ago(now, x.LastSent),
+				Received: ago(now, x.LastReceived),
 			})
 		}
 		sort.Slice(s.Peers, func(i, j int) bool { return s.Peers[i].Addr < s.Peers[j].Addr })

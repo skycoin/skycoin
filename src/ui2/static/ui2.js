@@ -89,6 +89,12 @@
 (function () {
 	'use strict';
 	document.addEventListener('click', function (e) {
+		var cc = e.target.closest && e.target.closest('[data-clear-closest]');
+		if (cc) {
+			var box = cc.closest('form').querySelector(cc.getAttribute('data-clear-closest'));
+			if (box) box.innerHTML = '';
+			return;
+		}
 		var c = e.target.closest && e.target.closest('[data-clear]');
 		if (!c) return;
 		var p = document.querySelector(c.getAttribute('data-clear'));

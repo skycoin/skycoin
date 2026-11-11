@@ -27,6 +27,7 @@ type fakeNode struct {
 	browser  bool
 	created2 []api.CreateTransactionRequest
 	ops      []string
+	seedOff  bool
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {
@@ -390,4 +391,93 @@ func TestWalletOptions(t *testing.T) {
 	require.Contains(t, body, "Found 4 new used address(es).")
 	body = get(t, h, "/wallet?id=a.wlt&done=%3Cb%3E").Body.String()
 	require.NotContains(t, body, `class="alert ok notice"`)
+}
+
+func (f *fakeNode) WalletFolderName() (*api.WalletFolder, error) {
+	return &api.WalletFolder{Address: "/data/wallets"}, nil
+}
+
+func (f *fakeNode) WalletSeed(id, password string) (*api.WalletSeedResponse, error) {
+	if f.seedOff {
+		return nil, api.NewClientError("403 Forbidden", http.StatusForbidden, "Endpoint is disabled")
+	}
+	if password != "pw" {
+		return nil, api.NewClientError("400 Bad Request", http.StatusBadRequest, "invalid password")
+	}
+	return &api.WalletSeedResponse{Seed: "seed of " + id, SeedPassphrase: "extra"}, nil
+}
+
+func (f *fakeNode) OutputsForAddresses(addrs []string) (*readable.UnspentOutputsSummary, error) {
+	out := &readable.UnspentOutputsSummary{}
+	for _, a := range addrs {
+		if a == "addrRecv0" {
+			out.HeadOutputs = append(out.HeadOutputs, readable.UnspentOutput{Hash: "ux1", Address: a, Coins: "3.5", CalculatedHours: 10})
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeNode) PendingTransactionsVerbose() ([]readable.UnconfirmedTransactionVerbose, error) {
+	tx := func(id string, in, out string) readable.UnconfirmedTransactionVerbose {
+		var t readable.UnconfirmedTransactionVerbose
+		t.Transaction.Hash = id
+		t.Transaction.In = []readable.TransactionInput{{Address: in}}
+		t.Transaction.Out = []readable.TransactionOutput{{Address: out, Coins: "2", Hours: 3}, {Address: in, Coins: "1", Hours: 1}}
+		return t
+	}
+	return []readable.UnconfirmedTransactionVerbose{tx("p-mine", "addrRecv0", "stranger"), tx("p-other", "x", "y")}, nil
+}
+
+func (f *fakeNode) CoinSupply() (*api.CoinSupply, error) {
+	return &api.CoinSupply{CurrentSupply: "1000.000000", TotalSupply: "2000.000000"}, nil
+}
+
+func TestSettingsPages(t *testing.T) {
+	n := testNode()
+	h := Handler(n, Options{})
+	require.Contains(t, get(t, h, "/settings").Body.String(), `href="backup"`)
+	require.Contains(t, get(t, h, "/status").Body.String(), "2000.000000")
+
+	body := get(t, h, "/outputs").Body.String()
+	require.Contains(t, body, "ux1")
+	require.Contains(t, body, "No unspent outputs", "the other addresses have none")
+
+	body = get(t, h, "/pending").Body.String()
+	require.Contains(t, body, "p-mine")
+	require.NotContains(t, body, "p-other")
+	require.Contains(t, body, "3.000000", "every output counts")
+	require.Contains(t, get(t, h, "/pending?all=1").Body.String(), "p-other")
+
+	body = get(t, h, "/backup").Body.String()
+	require.Contains(t, body, "/data/wallets")
+	require.Contains(t, body, `href="backup/addresses?id=a.wlt"`)
+	require.Contains(t, body, `hx-post="backup/seed"`)
+
+	rr := get(t, h, "/backup/addresses?id=a.wlt")
+	require.Equal(t, "addrRecv0\naddrRecv1\naddrChange0", rr.Body.String())
+	require.Equal(t, `attachment; filename=Savings.csv`, rr.Header().Get("Content-Disposition"))
+
+	body = postForm(h, "/backup/seed", url.Values{"id": {"a.wlt"}, "password": {"pw"}}).Body.String()
+	require.Contains(t, body, "seed of a.wlt")
+	require.Contains(t, body, "extra")
+	require.Contains(t, postForm(h, "/backup/seed", url.Values{"id": {"a.wlt"}, "password": {"no"}}).Body.String(), "invalid password")
+	require.Contains(t, postForm(h, "/backup/seed", url.Values{"id": {"a.wlt"}}).Body.String(), "Enter the password.")
+	n.seedOff = true
+	require.Contains(t, postForm(h, "/backup/seed", url.Values{"id": {"a.wlt"}, "password": {"pw"}}).Body.String(), "INSECURE_WALLET_SEED")
+	require.Equal(t, http.StatusMethodNotAllowed, get(t, h, "/backup/seed?id=a.wlt&password=pw").Code)
+}
+
+func TestBrowserSettingsPages(t *testing.T) {
+	x := sendNode(t)
+	x.n.browser = true
+	h := Handler(x.n, Options{})
+	body := get(t, h, "/pending?all=1").Body.String()
+	require.Contains(t, body, `hx-post="bw/pending"`)
+	require.Contains(t, body, `id="bw-all" name="all" value="1"`)
+	require.NotContains(t, get(t, h, "/settings").Body.String(), `href="backup"`)
+
+	ws := url.Values{"wallets": {jsonOf(t, []BrowserWallet{browserWallet(x)})}}
+	require.Contains(t, postForm(h, "/bw/outputs", ws).Body.String(), x.spent)
+	require.Contains(t, postForm(h, "/bw/pending", ws).Body.String(), "no pending transactions")
+	require.Contains(t, postForm(h, "/bw/outputs", url.Values{"wallets": {"x"}}).Body.String(), "could not read")
 }

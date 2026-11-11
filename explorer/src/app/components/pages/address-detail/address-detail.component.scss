@@ -61,3 +61,13 @@ app-qr-code {
     padding-top: 0 !important;
   }
 }
+
+.sent-warning {
+  color: $red;
+  font-weight: 700;
+}
+
+.sent-warning-detail {
+  color: $red;
+  font-size: $siz-small-text;
+}

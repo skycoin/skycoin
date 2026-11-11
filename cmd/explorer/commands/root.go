@@ -944,6 +944,28 @@ var apiEndpoints = []APIEndpoint{
 	},
 
 	{
+		ExplorerPath:   "/api/address_uxouts",
+		SkycoinPath:    "/api/v1/address_uxouts",
+		QueryArgs:      []string{"address"},
+		Description:    "Returns every output an address has received. An output with a nonzero spent_block_seq was spent, so the address has sent coins and its public key is on chain.",
+		ExampleRequest: "/api/address_uxouts?address=2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
+		ExampleResponse: `[
+    {
+        "uxid": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
+        "time": 1426562704,
+        "src_block_seq": 0,
+        "src_tx": "0000000000000000000000000000000000000000000000000000000000000000",
+        "owner_address": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
+        "coins": 100000000000000,
+        "hours": 100000000000000,
+        "calculated_hours": 100000000000000,
+        "spent_block_seq": 1,
+        "spent_tx": "86564b421cd3d4fe6f5f2d7a3e5db9d6fc340892bddd3a150533dff7036d0efe"
+    }
+]`,
+	},
+
+	{
 		ExplorerPath:   "/api/uxout",
 		SkycoinPath:    "/api/v1/uxout",
 		QueryArgs:      []string{"uxid"},

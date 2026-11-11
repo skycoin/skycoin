@@ -136,10 +136,17 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
    * many coins the address has received and sent is calculated.
    */
   hasManyTransactions = false;
+  /**
+   * Whether the address has ever sent coins, which puts its public key on the blockchain.
+   * Null until known.
+   */
+  hasSentCoins: boolean | null = null;
 
   // Subscriptions that will be cleaned when closing the page.
   private navParamsSubscription!: Subscription;
   private operationSubscription!: Subscription;
+  private sentSubscription?: Subscription;
+  private sentAddress = '';
 
   constructor(
     private api: ApiService,
@@ -167,6 +174,29 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
     // Clean all subscriptions.
     this.navParamsSubscription.unsubscribe();
     this.operationSubscription.unsubscribe();
+    this.sentSubscription?.unsubscribe();
+  }
+
+  /**
+   * Checks whether the address has spent any output it received. Done once per address, as
+   * the transaction pages only hold part of the history of a busy address.
+   */
+  private checkSent(address: string) {
+    if (this.sentAddress === address) {
+      return;
+    }
+    this.sentAddress = address;
+    this.hasSentCoins = null;
+    this.sentSubscription?.unsubscribe();
+    this.sentSubscription = this.api.getAddressUxOuts(address).subscribe({
+      next: uxouts => {
+        this.hasSentCoins = (uxouts || []).some(ux => ux.spent_block_seq !== 0);
+        this.changeDetectorRef.markForCheck();
+      },
+      error: () => {
+        this.sentAddress = '';
+      },
+    });
   }
 
   /**
@@ -181,6 +211,7 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
 
     // Get the requested address and page.
     this.address = routeParams['address'];
+    this.checkSent(this.address);
     if (routeParams['page']) {
       this.pageIndex = parseInt(routeParams['page'], 10) - 1;
     } else {

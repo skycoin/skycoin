@@ -97,6 +97,15 @@ export class ApiService {
    *
    * @param address Address to consult.
    */
+  /**
+   * Gets every output the address has received, with spent_block_seq set on those already spent.
+   */
+  getAddressUxOuts(address: string): Observable<{ spent_block_seq: number }[]> {
+    const url = !this.nodeUrl() ? 'address_uxouts' : 'v1/address_uxouts';
+
+    return this.get(url, { address: address });
+  }
+
   getAddressWithPagination(address: string, page: number, pageSize: number): Observable<any> {
     const url = !this.nodeUrl() ? 'paginatedTransactions' : 'v2/transactions';
 

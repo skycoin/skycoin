@@ -60,6 +60,23 @@
 </div>
 
 <div class="-row -tx-number"><span>{{ 'addressDetail.txsNumber' | translate }}</span><br class="-xs-only" /><div> {{ dataLoaded ? totalTransactionsCount : (loadingMsg | translate) }} </div></div>
+<div class="-row">
+  <span>{{ 'addressDetail.hasSent' | translate }}</span><br class="-xs-only" />
+  <div>
+    @if (hasSentCoins === null) {
+      {{ loadingMsg | translate }}
+    }
+    @if (hasSentCoins === false) {
+      {{ 'addressDetail.hasSentNo' | translate }}
+    }
+    @if (hasSentCoins === true) {
+      <span class="sent-warning">{{ 'addressDetail.hasSentYes' | translate }}</span>
+      @if (dataLoaded && balance && balance.isGreaterThan(0)) {
+        <div class="sent-warning-detail">{{ 'addressDetail.exposedFunded' | translate }}</div>
+      }
+    }
+  </div>
+</div>
 @if (!hasManyTransactions) {
   <div class="-row">
     <span>{{ 'addressDetail.totalReceived' | translate }}</span><br class="-xs-only" />

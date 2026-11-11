@@ -77,12 +77,13 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | feature | Angular | node | browser | notes |
 |---|---|---|---|---|
 | sync progress, height, last block | header, blockchain | present | present | ui2 status page |
-| coin supply | blockchain | missing | missing | |
-| peers | network | partial | partial | no last sent, received and seen times |
-| pending transactions list | pending-transactions | missing | missing | status shows the count |
-| unspent outputs | outputs | missing | missing | |
-| backup, show seed | backup | missing | missing | node needs INSECURE_WALLET_SEED |
-| wallet directory, save addresses | backup | missing | n/a | |
+| coin supply | blockchain | present | present | on the status page |
+| peers | network | present | present | on the status page |
+| pending transactions, mine or all | pending-transactions | present | present | |
+| remove a pending transaction from the pool | pending-transactions | missing | missing | the API client has no call for it yet |
+| unspent outputs | outputs | present | present | |
+| backup, show seed | backup | present | missing | the node needs INSECURE_WALLET_SEED, browser seeds stay in bw.js |
+| wallet directory, save addresses | backup | present | missing | |
 | node URL per coin | nodes | n/a | missing | ui2 reads the node that serves it |
 | ETH and BTC endpoints | nodes | missing | missing | |
 | app password set, change, remove | app-password | n/a | partial | unlock only |

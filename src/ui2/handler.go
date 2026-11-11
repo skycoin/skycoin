@@ -1,6 +1,7 @@
 package ui2
 
 import (
+	"mime"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -58,6 +59,38 @@ func Handler(n Node, o Options) http.Handler {
 	mux.HandleFunc("/history/list", page(func(r *http.Request) templ.Component {
 		return TxnList(LoadHistory(n, r.FormValue("filter"), ParseListQuery(r.FormValue)))
 	}))
+	mux.HandleFunc("/settings", page(func(*http.Request) templ.Component { return SettingsPage(browserMode(n)) }))
+	mux.HandleFunc("/outputs", page(func(*http.Request) templ.Component {
+		if browserMode(n) {
+			return BrowserDataPage("nav.outputs", "settings", "bw/outputs", "")
+		}
+		return OutputsPage(LoadNodeOutputs(n))
+	}))
+	mux.HandleFunc("/pending", page(func(r *http.Request) templ.Component {
+		all := r.FormValue("all") != ""
+		if browserMode(n) {
+			return BrowserDataPage("nav.pending", "settings", "bw/pending", r.FormValue("all"))
+		}
+		ws, err := nodeWallets(n)
+		if err != nil && !all {
+			return PendingPage(Pending{Err: err.Error()})
+		}
+		return PendingPage(LoadPending(n, ws, all))
+	}))
+	mux.HandleFunc("/backup", page(func(*http.Request) templ.Component { return BackupPage(LoadBackup(n)) }))
+	mux.HandleFunc("/backup/addresses", func(w http.ResponseWriter, r *http.Request) {
+		label, csv, err := AddressesCSV(n, r.FormValue("id"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": label + ".csv"}))
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		// A download of addresses, never rendered as a page.
+		_, _ = w.Write([]byte(csv)) //nolint:errcheck,gosec
+	})
 	mux.HandleFunc("/status", page(func(*http.Request) templ.Component {
 		return StatusPage(LoadStatus(n))
 	}))
@@ -112,6 +145,13 @@ func Handler(n Node, o Options) http.Handler {
 		return nil
 	}))
 	mux.HandleFunc("/wallet/do/{op}", post(walletOpHandler(n)))
+	mux.HandleFunc("/backup/seed", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		s, err := WalletSeed(n, r.PostFormValue("id"), r.PostFormValue("password"))
+		if err != nil {
+			return formError(err)
+		}
+		return SeedBox(s.Seed, s.SeedPassphrase)
+	}))
 	mux.HandleFunc("/send", page(func(r *http.Request) templ.Component {
 		return SendPage(LoadSend(n, r.FormValue("id"), r.FormValue("from")))
 	}))
@@ -171,6 +211,31 @@ func Handler(n Node, o Options) http.Handler {
 			return bwError(err)
 		}
 		return TxnList(t)
+	}))
+	bwWallets := func(r *http.Request) ([]HistWallet, error) {
+		ws, err := ParseBrowserWallets(r.PostFormValue("wallets"))
+		if err != nil {
+			return nil, err
+		}
+		hw := make([]HistWallet, 0, len(ws))
+		for _, w := range ws {
+			hw = append(hw, w.hist())
+		}
+		return hw, nil
+	}
+	mux.HandleFunc("/bw/outputs", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		ws, err := bwWallets(r)
+		if err != nil {
+			return bwError(err)
+		}
+		return OutputsBody(LoadOutputs(n, ws))
+	}))
+	mux.HandleFunc("/bw/pending", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		ws, err := bwWallets(r)
+		if err != nil {
+			return bwError(err)
+		}
+		return PendingBody(LoadPending(n, ws, r.PostFormValue("all") != ""))
 	}))
 	mux.HandleFunc("/bw/send", page(func(r *http.Request) templ.Component {
 		return BrowserSendPage(r.FormValue("id"), r.FormValue("from"))

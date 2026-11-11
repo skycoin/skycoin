@@ -1,0 +1,223 @@
+package ui2
+
+import "net/url"
+
+// SettingsPage links the pages that are not about one wallet.
+templ SettingsPage(browser bool) {
+	@Layout(T(ctx, "nav.settings"), "settings") {
+		<section class="card">
+			<h1>{ T(ctx, "nav.settings") }</h1>
+			<ul class="links">
+				<li><a href="status"><span class="mi">dns</span>{ T(ctx, "nav.status") }</a><span class="small dim">{ T(ctx, "settings.status-help") }</span></li>
+				<li><a href="pending"><span class="mi">hourglass_empty</span>{ T(ctx, "nav.pending") }</a><span class="small dim">{ T(ctx, "settings.pending-help") }</span></li>
+				<li><a href="outputs"><span class="mi">toll</span>{ T(ctx, "nav.outputs") }</a><span class="small dim">{ T(ctx, "settings.outputs-help") }</span></li>
+				if !browser {
+					<li><a href="backup"><span class="mi">save</span>{ T(ctx, "nav.backup") }</a><span class="small dim">{ T(ctx, "settings.backup-help") }</span></li>
+				}
+			</ul>
+		</section>
+	}
+}
+
+// BrowserDataPage is the shell of a page about every browser wallet, titled
+// by the catalog key titleKey. bw.js puts the wallets in #bw-data and url
+// renders the body from them.
+templ BrowserDataPage(titleKey, nav, url, all string) {
+	@Layout(T(ctx, titleKey), nav) {
+		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Classic } data-msg-error={ T(ctx, "bw.err-storage") }>
+			<h1>{ T(ctx, titleKey) }</h1>
+			@bwUnlock()
+			@bwData("wallets")
+			<input type="hidden" id="bw-all" name="all" value={ all }/>
+			<div hx-post={ url } hx-trigger="bw-ready from:body" hx-include="#bw-data, #bw-all" hx-swap="innerHTML">
+				<p class="dim">{ T(ctx, "ui2.loading") }</p>
+			</div>
+			<p class="error" id="bw-page-error" role="alert"></p>
+		</section>
+	}
+}
+
+// OutputsPage is the unspent outputs of the node's wallets.
+templ OutputsPage(o Outputs) {
+	@Layout(T(ctx, "nav.outputs"), "settings") {
+		<section class="card">
+			<h1>{ T(ctx, "nav.outputs") }</h1>
+			if o.Disabled {
+				@WalletAPIOff()
+			} else {
+				@OutputsBody(o)
+			}
+		</section>
+	}
+}
+
+// OutputsBody lists each wallet's addresses with their unspent outputs.
+templ OutputsBody(o Outputs) {
+	@ErrorBox(o.Err)
+	if o.Err == "" && len(o.Wallets) == 0 {
+		<p class="dim">{ T(ctx, "wallets.none") }</p>
+	}
+	for _, w := range o.Wallets {
+		<h2>{ w.Label }</h2>
+		for _, a := range w.Addrs {
+			<div class="outputs">
+				<div class="mono small outputs-addr"><span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span></div>
+				if len(a.Outputs) == 0 {
+					<p class="small dim">{ T(ctx, "outputs.none") }</p>
+				} else {
+					<div class="table-wrap">
+						<table class="list">
+							<thead>
+								<tr>
+									<th>{ T(ctx, "outputs.hash") }</th>
+									<th class="num">{ T(ctx, "balance.coins") }</th>
+									<th class="num">{ T(ctx, "balance.hours") }</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, x := range a.Outputs {
+									<tr>
+										<td class="mono small">{ x.Hash }</td>
+										<td class="num" data-label={ T(ctx, "balance.coins") }>{ x.Coins }</td>
+										<td class="num" data-label={ T(ctx, "balance.hours") }>{ x.Hours }</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				}
+			</div>
+		}
+	}
+}
+
+func pendingURL(all bool) string {
+	if all {
+		return "pending?all=1"
+	}
+	return "pending"
+}
+
+// PendingPage is the node's pool, the wallets' part of it or all of it.
+templ PendingPage(p Pending) {
+	@Layout(T(ctx, "nav.pending"), "settings") {
+		<section class="card">
+			<h1>{ T(ctx, "nav.pending") }</h1>
+			@PendingBody(p)
+		</section>
+	}
+}
+
+templ PendingBody(p Pending) {
+	<div class="bar seg" role="group">
+		<a class={ "btn sm", templ.KV("primary", !p.All) } href={ templ.URL(pendingURL(false)) } aria-current?={ !p.All }>{ T(ctx, "pending.mine") }</a>
+		<a class={ "btn sm", templ.KV("primary", p.All) } href={ templ.URL(pendingURL(true)) } aria-current?={ p.All }>{ T(ctx, "pending.all") }</a>
+	</div>
+	@ErrorBox(p.Err)
+	if p.Err == "" && len(p.Rows) == 0 {
+		<p class="dim">{ T(ctx, "pending.none") }</p>
+	}
+	if len(p.Rows) > 0 {
+		<div class="table-wrap">
+			<table class="list">
+				<thead>
+					<tr>
+						<th>{ T(ctx, "tx.id") }</th>
+						<th class="num">{ T(ctx, "balance.coins") }</th>
+						<th class="num">{ T(ctx, "balance.hours") }</th>
+						<th>{ T(ctx, "pending.received") }</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, r := range p.Rows {
+						<tr>
+							<td class="mono small"><span class="key" data-copy={ r.Txid } title={ T(ctx, "ui2.copy") }>{ r.Txid }</span></td>
+							<td class="num" data-label={ T(ctx, "balance.coins") }>{ r.Coins }</td>
+							<td class="num" data-label={ T(ctx, "balance.hours") }>{ r.Hours }</td>
+							<td class="nowrap" data-label={ T(ctx, "pending.received") }>{ r.Time }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+func backupCSVURL(id string) string { return "backup/addresses?id=" + url.QueryEscape(id) }
+
+// BackupPage shows where the node keeps its wallets, saves their addresses
+// and shows the seed of an encrypted one.
+templ BackupPage(b Backup) {
+	@Layout(T(ctx, "nav.backup"), "settings") {
+		<section class="card">
+			<h1>{ T(ctx, "nav.backup") }</h1>
+			if b.Disabled {
+				@WalletAPIOff()
+			} else {
+				@ErrorBox(b.Err)
+				if b.Folder != "" {
+					<dl class="kv">
+						<dt>{ T(ctx, "backup.folder") }</dt>
+						<dd class="mono">{ b.Folder }</dd>
+					</dl>
+				}
+				<div class="alert warn"><p>{ T(ctx, "backup.seed-warning") }</p></div>
+				if b.Err == "" && len(b.Wallets) == 0 {
+					<p class="dim">{ T(ctx, "wallets.none") }</p>
+				}
+				<div class="ops">
+					for _, w := range b.Wallets {
+						<div class="backup-wallet">
+							<div class="bar">
+								<strong>
+									if w.Label != "" {
+										{ w.Label }
+									} else {
+										{ w.ID }
+									}
+								</strong>
+								<span class="small dim mono">{ w.ID }</span>
+								<span class="spacer"></span>
+								<a class="btn sm" href={ templ.URL(backupCSVURL(w.ID)) } download><span class="mi">file_download</span>{ T(ctx, "backup.save-addresses") }</a>
+							</div>
+							if w.Encrypted {
+								<details class="fold">
+									<summary>{ T(ctx, "backup.show-seed") }</summary>
+									<form class="form" hx-post="backup/seed" hx-target="find .seed-out" hx-swap="innerHTML" autocomplete="off">
+										<input type="hidden" name="id" value={ w.ID }/>
+										<label>
+											{ T(ctx, "send.password") }
+											<input type="password" name="password" required autocomplete="current-password"/>
+										</label>
+										<div class="bar">
+											<button class="btn primary" type="submit">{ T(ctx, "backup.show-seed") }<span class="busy">…</span></button>
+											<button class="btn" type="button" data-clear-closest=".seed-out">{ T(ctx, "backup.hide-seed") }</button>
+										</div>
+										<div class="seed-out" role="status"></div>
+									</form>
+								</details>
+							} else {
+								<p class="small dim">{ T(ctx, "backup.unencrypted-info") }</p>
+							}
+						</div>
+					}
+				</div>
+			}
+		</section>
+	}
+}
+
+// SeedBox is a wallet's seed, and its passphrase when it has one.
+templ SeedBox(seed, passphrase string) {
+	<div class="alert warn">
+		<p>{ T(ctx, "backup.seed-warning") }</p>
+	</div>
+	<textarea class="mono seed-text" readonly rows="3" aria-label={ T(ctx, "create.seed") }>{ seed }</textarea>
+	if passphrase != "" {
+		<label>
+			{ T(ctx, "backup.passphrase") }
+			<textarea class="mono seed-text" readonly rows="1">{ passphrase }</textarea>
+		</label>
+		<p class="small warn-text">{ T(ctx, "backup.passphrase-info") }</p>
+	}
+}

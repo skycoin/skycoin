@@ -4,7 +4,6 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -98,18 +97,10 @@ func selected(ws []HistWallet, filter string) []string {
 // LoadHistory is the history of every wallet the node keeps.
 func LoadHistory(n Node, filter string, q ListQuery) Txns {
 	out := Txns{Filter: filter, URL: "history/list"}
-	ws, err := n.Wallets()
+	hw, err := nodeWallets(n)
 	if err != nil {
 		out.Err = err.Error()
 		return out
-	}
-	hw := make([]HistWallet, 0, len(ws))
-	for _, w := range ws {
-		h := HistWallet{ID: w.Meta.Filename, Label: w.Meta.Label}
-		for _, e := range w.Entries {
-			h.Addrs = append(h.Addrs, e.Address)
-		}
-		hw = append(hw, h)
 	}
 	return history(n, hw, filter, q, out)
 }
@@ -117,7 +108,7 @@ func LoadHistory(n Node, filter string, q ListQuery) Txns {
 // history fills out with the page of ws's history that filter and q ask for,
 // and the filter options with their balances.
 func history(n Node, ws []HistWallet, filter string, q ListQuery, out Txns) Txns {
-	sort.SliceStable(ws, func(i, j int) bool { return strings.ToLower(ws[i].Label) < strings.ToLower(ws[j].Label) })
+	sortWallets(ws)
 	var all []string
 	for _, w := range ws {
 		all = append(all, w.Addrs...)

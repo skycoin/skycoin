@@ -20,6 +20,10 @@ type CreateForm struct {
 	Password    string
 	Password2   string
 	NonStandard bool
+	// Passphrase is the bip39 seed passphrase of a bip44 wallet.
+	Passphrase string
+	// Temp loads the wallet in the node's memory only, without a password.
+	Temp bool
 }
 
 // ParseCreateForm reads the form through post, which must be a request's
@@ -34,6 +38,8 @@ func ParseCreateForm(post func(string) string) CreateForm {
 		Password:    post("password"),
 		Password2:   post("password2"),
 		NonStandard: post("nonstandard") != "",
+		Passphrase:  post("passphrase"),
+		Temp:        post("mode") == "load" && post("temp") != "",
 	}
 }
 
@@ -54,13 +60,13 @@ func (f CreateForm) Check(n Node) error {
 	switch {
 	case f.Label == "":
 		return errNoLabel
-	case f.Type != "bip44" && f.Type != "deterministic":
+	case f.Type != "bip44" && f.Type != "deterministic" && f.Type != "pq":
 		return errType
 	case f.Seed == "":
 		return errNoSeed
 	case !f.Load && f.Seed != f.SeedConfirm:
 		return errSeedConfirm
-	case f.Password != f.Password2:
+	case !f.Temp && f.Password != f.Password2:
 		return errPasswordConfirm
 	}
 	if ok, err := n.VerifySeed(f.Seed); (err != nil || !ok) && (f.Type == "bip44" || !f.NonStandard) {
@@ -71,16 +77,19 @@ func (f CreateForm) Check(n Node) error {
 
 // Options is what the node's create call takes. A bip44 wallet scans 100
 // addresses, as the Angular wallet does, so a loaded wallet finds its coins.
+// A temporary wallet has no password.
 func (f CreateForm) Options() api.CreateWalletOptions {
 	o := api.CreateWalletOptions{
-		Type:     f.Type,
-		Seed:     f.Seed,
-		Label:    f.Label,
-		Password: f.Password,
-		Encrypt:  f.Password != "",
+		Type:  f.Type,
+		Seed:  f.Seed,
+		Label: f.Label,
+	}
+	if !f.Temp && f.Password != "" {
+		o.Password, o.Encrypt = f.Password, true
 	}
 	if f.Type == "bip44" {
 		o.ScanN = 100
+		o.SeedPassphrase = f.Passphrase
 	}
 	return o
 }

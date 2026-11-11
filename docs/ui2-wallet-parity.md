@@ -21,8 +21,9 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | create, 12 or 24 word seed, deterministic or bip44 | create-wallet | present | present | |
 | load from seed, address scan | create-wallet | present | present | |
 | non standard seed | create-wallet | present | present | |
-| bip39 seed passphrase on load | create-wallet | missing | present | |
-| load temporarily | create-wallet | missing | missing | node `wallet/createTemp` |
+| bip39 seed passphrase on create and load | create-wallet | present | partial | browser: on load only |
+| post-quantum (ML-DSA-44) wallet type | create-wallet | present | missing | |
+| load temporarily | create-wallet | present | missing | |
 | address list, balances, hide empty, filter | wallet-detail | present | present | |
 | copy address | wallet-detail | present | present | |
 | QR code of an address | qr-code | missing | missing | |
@@ -36,7 +37,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | encrypt, decrypt | wallet-options | present | missing | |
 | delete | wallet-options | n/a | missing | Angular only drops a node wallet from its list |
 | account and chain xpubs | wallet-detail | present | present | |
-| reset password with the seed | reset-password | missing | missing | |
+| reset password with the seed | reset-password | present | missing | |
 
 ## Sending
 
@@ -90,7 +91,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | lock screen, erase | app-lock | n/a | partial | unlock only |
 | custom coins, ERC-20 | coins | missing | missing | |
 | Skywallet | hardware-wallet | missing | missing | |
-| onboarding wizard on first run | onboarding | missing | missing | the create page is there |
+| onboarding wizard on first run | onboarding | partial | partial | the empty wallet list explains create and load, no forced first-run flow |
 | node errors: unreachable, CSRF, no peers | header | partial | partial | unreachable only |
 | language | select-language | present | present | |
 | page outside a secure context warning | wallets | n/a | missing | |

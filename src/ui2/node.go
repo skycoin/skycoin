@@ -28,6 +28,8 @@ type Node interface {
 	NewSeed(entropy int) (string, error)
 	VerifySeed(seed string) (bool, error)
 	CreateWallet(api.CreateWalletOptions) (*api.WalletResponse, error)
+	CreateWalletTemp(api.CreateWalletOptions) (*api.WalletResponse, error)
+	RecoverWallet(api.WalletRecoverRequest) (*api.WalletResponse, error)
 	NewWalletAddress(id, password string, options ...wallet.Option) ([]string, error)
 	ScanWalletAddresses(id string, n int, password string) ([]string, error)
 	UpdateWallet(id, label string) error
@@ -94,6 +96,7 @@ type WalletRow struct {
 	Label     string
 	Type      string
 	Encrypted bool
+	Temp      bool
 	Addresses int
 	Balance   Amount
 	Err       string
@@ -122,6 +125,7 @@ func LoadWallets(n Node) Wallets {
 			Label:     w.Meta.Label,
 			Type:      w.Meta.Type,
 			Encrypted: w.Meta.Encrypted,
+			Temp:      w.Meta.Temp,
 			Addresses: len(w.Entries),
 			Href:      walletURL(w.Meta.Filename),
 		}

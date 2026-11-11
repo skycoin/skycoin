@@ -46,6 +46,9 @@ templ walletOptions(w Wallet) {
 				@walletPassword(w)
 			}
 			if w.Meta.Encrypted {
+				<a class="op-link" href={ templ.URL(resetURL(w.ID)) }><span class="mi">restore</span>{ T(ctx, "reset.title") }</a>
+			}
+			if w.Meta.Encrypted {
 				@walletOpForm(w, "decrypt", "lock_open", T(ctx, "wallet.decrypt")) {
 					<p class="small dim">{ T(ctx, "wallet.decrypt-help") }</p>
 					@walletPassword(w)

@@ -1,0 +1,51 @@
+package ui2
+
+import "net/url"
+
+func resetURL(id string) string { return "reset?id=" + url.QueryEscape(id) }
+
+// ResetPage sets a new password on an encrypted wallet from its seed.
+templ ResetPage(w Wallet) {
+	@Layout(T(ctx, "reset.title"), "wallets") {
+		<div class="page-head">
+			<a class="icon-btn" href={ templ.URL(walletURL(w.ID)) } aria-label={ walletTitle(w) }><span class="mi">arrow_back</span></a>
+			<h1>{ T(ctx, "reset.title") }</h1>
+		</div>
+		<section class="card">
+			if w.Meta.Filename == "" {
+				if w.Disabled {
+					@WalletAPIOff()
+				}
+				@ErrorBox(w.Err)
+			} else {
+				<form class="form" hx-post="reset" hx-target="#form-error" hx-swap="innerHTML" autocomplete="off">
+					<input type="hidden" name="id" value={ w.ID }/>
+					<dl class="kv">
+						<dt>{ T(ctx, "reset.wallet") }</dt>
+						<dd>{ walletTitle(w) }</dd>
+					</dl>
+					<label>
+						{ T(ctx, "create.seed") }
+						<textarea name="seed" rows="3" required spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+					</label>
+					if w.Meta.Type == "bip44" {
+						<label>
+							{ T(ctx, "reset.passphrase") }
+							<input type="password" name="passphrase" autocomplete="off"/>
+						</label>
+					}
+					<label>
+						{ T(ctx, "reset.password") }
+						<input type="password" name="password" autocomplete="new-password"/>
+					</label>
+					<label>
+						{ T(ctx, "create.password2") }
+						<input type="password" name="password2" autocomplete="new-password"/>
+					</label>
+					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "reset.button") }<span class="busy">…</span></button></div>
+					<div id="form-error" role="alert"></div>
+				</form>
+			}
+		</section>
+	}
+}

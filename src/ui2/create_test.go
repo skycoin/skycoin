@@ -129,3 +129,72 @@ func TestXPubCard(t *testing.T) {
 	require.Contains(t, body, "xpub-a.wlt-0/1")
 	require.Less(t, strings.Index(body, "xpub-a.wlt-0\""), strings.Index(body, "Chain xPubs"), "the account key comes before the chain keys")
 }
+
+func (f *fakeNode) CreateWalletTemp(o api.CreateWalletOptions) (*api.WalletResponse, error) {
+	f.ops = append(f.ops, "temp "+o.Label)
+	f.created = append(f.created, o)
+	return &api.WalletResponse{Meta: readable.WalletMeta{Filename: "temp.wlt", Temp: true}}, nil
+}
+
+func (f *fakeNode) RecoverWallet(r api.WalletRecoverRequest) (*api.WalletResponse, error) {
+	if r.Seed != testSeed {
+		return nil, api.NewClientError("400 Bad Request", http.StatusBadRequest, "wallet recovery seed is wrong")
+	}
+	f.ops = append(f.ops, "recover "+r.ID+" "+r.SeedPassphrase+" "+r.Password)
+	return f.Wallet(r.ID)
+}
+
+func TestLoadTemporaryAndPassphrase(t *testing.T) {
+	n := testNode()
+	h := Handler(n, Options{})
+	body := get(t, h, "/load").Body.String()
+	require.Contains(t, body, `name="temp"`)
+	require.Contains(t, body, `<option value="pq">`)
+	require.NotContains(t, get(t, h, "/new").Body.String(), `name="temp"`)
+
+	form := url.Values{"mode": {"load"}, "label": {"T"}, "type": {"bip44"}, "seed": {testSeed}, "passphrase": {" extra "}, "temp": {"1"}, "password": {"ignored"}}
+	rr := postForm(h, "/create", form)
+	require.Equal(t, "wallet?id=temp.wlt", rr.Header().Get("HX-Redirect"))
+	o := n.created[len(n.created)-1]
+	require.Equal(t, " extra ", o.SeedPassphrase, "used exactly as typed")
+	require.False(t, o.Encrypt, "a temporary wallet has no password")
+	require.Empty(t, o.Password)
+
+	form.Set("type", "deterministic")
+	form.Del("temp")
+	form.Set("password2", "ignored")
+	postForm(h, "/create", form)
+	o = n.created[len(n.created)-1]
+	require.Empty(t, o.SeedPassphrase, "only a bip44 wallet takes a passphrase")
+	require.True(t, o.Encrypt)
+
+	form.Set("type", "pq")
+	require.NotEmpty(t, postForm(h, "/create", form).Header().Get("HX-Redirect"))
+
+	n.wallets[0].Meta.Temp = true
+	require.Contains(t, get(t, h, "/").Body.String(), ">Temporary<")
+}
+
+func TestResetPassword(t *testing.T) {
+	n := testNode()
+	h := Handler(n, Options{})
+	require.Contains(t, get(t, h, "/wallet?id=a.wlt").Body.String(), `href="reset?id=a.wlt"`)
+	body := get(t, h, "/reset?id=a.wlt").Body.String()
+	require.Contains(t, body, `name="passphrase"`, "a bip44 wallet may have one")
+	require.Contains(t, body, "Savings")
+
+	v := url.Values{"id": {"a.wlt"}, "seed": {"  " + testSeed + " "}, "passphrase": {"p"}, "password": {"new"}, "password2": {"new"}}
+	rr := postForm(h, "/reset", v)
+	require.Equal(t, "wallet?id=a.wlt&done=reset", rr.Header().Get("HX-Redirect"))
+	require.Equal(t, "recover a.wlt p new", n.ops[len(n.ops)-1])
+
+	v.Set("password", "")
+	v.Set("password2", "")
+	require.Equal(t, "wallet?id=a.wlt&done=decrypted", postForm(h, "/reset", v).Header().Get("HX-Redirect"))
+
+	v.Set("seed", "wrong")
+	require.Contains(t, postForm(h, "/reset", v).Body.String(), "seed is wrong")
+	v.Set("password2", "x")
+	require.Contains(t, postForm(h, "/reset", v).Body.String(), "do not match")
+	require.Contains(t, get(t, h, "/reset?id=missing.wlt").Body.String(), "wallet not found")
+}

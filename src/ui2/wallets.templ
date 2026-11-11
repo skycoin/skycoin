@@ -68,6 +68,9 @@ templ walletsTable(w Wallets) {
 								if r.Encrypted {
 									<span class="mi small-icon" title={ T(ctx, "wallet.encrypted") }>lock</span>
 								}
+								if r.Temp {
+									<span class="badge warn-text" title={ T(ctx, "wallet.temp-help") }>{ T(ctx, "wallet.temp") }</span>
+								}
 							</td>
 							<td data-label={ T(ctx, "wallets.type") }><span class="badge">{ r.Type }</span></td>
 							<td class="num" data-label={ T(ctx, "wallets.addresses") }>{ itoa(r.Addresses) }</td>

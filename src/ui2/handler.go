@@ -3,6 +3,7 @@ package ui2
 import (
 	"mime"
 	"net/http"
+	"strings"
 
 	"github.com/a-h/templ"
 )
@@ -172,6 +173,41 @@ func Handler(n Node, o Options) http.Handler {
 			return formError(err)
 		}
 		return SeedBox(s.Seed, s.SeedPassphrase)
+	}))
+	mux.HandleFunc("/tx", page(func(r *http.Request) templ.Component {
+		return TransactionsPage(LoadTxPage(n, r.FormValue("id"), r.FormValue("tx")))
+	}))
+	mux.HandleFunc("/tx/review", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		return TxReviewView(ReviewTx(n, r.PostFormValue("id"), r.PostFormValue("rawtx")))
+	}))
+	mux.HandleFunc("/tx/sign", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		return TxReviewView(SignTx(n, r.PostFormValue("id"), r.PostFormValue("password"), r.PostFormValue("rawtx")))
+	}))
+	mux.HandleFunc("/tx/broadcast", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		txid, err := n.InjectEncodedTransaction(strings.TrimSpace(r.PostFormValue("rawtx")))
+		if err != nil {
+			return SentView("tx", "", err.Error())
+		}
+		return SentView("history", txid, "")
+	}))
+	mux.HandleFunc("/joint", page(func(r *http.Request) templ.Component { return JointPage(LoadTxPage(n, r.FormValue("id"), "")) }))
+	mux.HandleFunc("/joint/outputs", page(func(r *http.Request) templ.Component { return OwnOutputsList(LoadOwnOutputs(n, r.FormValue("id"))) }))
+	mux.HandleFunc("/joint/row", page(func(*http.Request) templ.Component { return JointRowInputs() }))
+	mux.HandleFunc("/joint/create", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		if err := r.ParseForm(); err != nil {
+			return ErrorBox(err.Error())
+		}
+		f := ParseJointForm(r.PostFormValue, func(k string) []string { return r.PostForm[k] })
+		raw, err := CreateJoint(n, f)
+		if err != nil {
+			return formError(err)
+		}
+		return JointCreated(raw, f.ID)
+	}))
+	mux.HandleFunc("/send/unsigned", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		f := ParseSendForm(r.PostFormValue)
+		f.Unsigned = true
+		return UnsignedView(Prepare(n, f))
 	}))
 	mux.HandleFunc("/send", page(func(r *http.Request) templ.Component {
 		return SendPage(LoadSend(n, r.FormValue("id"), r.FormValue("from")))

@@ -53,7 +53,7 @@ templ SendPage(s Send) {
 							<input type="password" name="password" autocomplete="current-password"/>
 						</label>
 					}
-					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "send.review") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "send.review") }</button><button class="btn" type="button" hx-post="send/unsigned" hx-target="#review" hx-swap="innerHTML show:#review:top" title={ T(ctx, "send.unsigned-help") }>{ T(ctx, "send.unsigned") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
 				</form>
 				<div id="review"></div>
 			}
@@ -121,6 +121,37 @@ templ SentView(back, txid, err string) {
 			<p><strong>{ T(ctx, "send.sent") }</strong></p>
 			<p class="mono small">{ txid }</p>
 			<p><a class="btn primary" href={ templ.URL(back) }>{ T(ctx, "send.back") }</a></p>
+		</div>
+	}
+}
+
+// UnsignedView is a transaction made without signatures, to sign on
+// another machine or by another wallet and broadcast later.
+templ UnsignedView(r Review) {
+	if r.Err != "" {
+		@ErrorBox(T(ctx, r.Err))
+	} else {
+		<div class="card sub">
+			<h2>{ T(ctx, "send.unsigned-title") }</h2>
+			for _, w := range r.Warnings {
+				<div class="alert warn"><p>{ T(ctx, w) }</p></div>
+			}
+			<dl class="kv">
+				<dt>{ T(ctx, "send.to") }</dt>
+				<dd class="mono">{ r.To }</dd>
+				<dt>{ T(ctx, "send.coins") }</dt>
+				<dd><strong>{ r.Coins }</strong></dd>
+				<dt>{ T(ctx, "send.fee") }</dt>
+				<dd>{ r.Fee } { T(ctx, "balance.hours") }</dd>
+			</dl>
+			<label class="raw">
+				{ T(ctx, "tx.raw") }
+				<textarea class="mono" rows="4" readonly>{ r.Raw }</textarea>
+			</label>
+			<div class="bar">
+				<button class="btn sm" type="button" data-copy={ r.Raw }><span class="mi">content_copy</span>{ T(ctx, "tx.copy") }</button>
+				<a class="btn sm primary" href={ templ.URL(txPageURL(r.ID, r.Raw)) }>{ T(ctx, "send.unsigned-open") }</a>
+			</div>
 		</div>
 	}
 }

@@ -1,0 +1,250 @@
+package ui2
+
+// TransactionsPage reviews, signs and sends a transaction made elsewhere:
+// an unsigned one to sign offline, a signed one to broadcast, or a joint
+// one to co-sign.
+templ TransactionsPage(p TxPage) {
+	@Layout(T(ctx, "nav.tx"), "tx") {
+		<section class="card">
+			<div class="head">
+				<h1>{ T(ctx, "nav.tx") }</h1>
+				if !p.Disabled {
+					<span class="spacer"></span>
+					<a class="btn" href="joint"><span class="mi">call_merge</span>{ T(ctx, "joint.title") }</a>
+				}
+			</div>
+			<p class="small dim">{ T(ctx, "tx.page-help") }</p>
+			if !p.Disabled {
+				@ErrorBox(p.Err)
+			}
+			<form class="form" hx-post="tx/review" hx-target="#tx-review" hx-swap="innerHTML show:#tx-review:top" hx-disabled-elt="find button" autocomplete="off">
+				<label>
+					{ T(ctx, "tx.raw") }
+					<textarea name="rawtx" class="mono" rows="5" required spellcheck="false" autocapitalize="off">{ p.Raw }</textarea>
+				</label>
+				if !p.Disabled {
+					@walletSelect(p.Wallets, p.Wallet, T(ctx, "tx.wallet"), true)
+					<p class="small dim">{ T(ctx, "tx.wallet-help") }</p>
+				}
+				<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "tx.review") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+			</form>
+			<div id="tx-review"></div>
+		</section>
+	}
+}
+
+templ walletSelect(ws []WalletChoice, sel, label string, optional bool) {
+	<label>
+		{ label }
+		<select name="id">
+			if optional {
+				<option value="">{ T(ctx, "tx.no-wallet") }</option>
+			}
+			for _, w := range ws {
+				<option value={ w.ID } selected?={ w.ID == sel }>{ w.Label }</option>
+			}
+		</select>
+	</label>
+}
+
+// TxReviewView is a decoded transaction with what can be done with it next.
+templ TxReviewView(v TxView) {
+	if v.Txid == "" {
+		@ErrorBox(T(ctx, v.Err))
+	} else {
+		<div class="card sub">
+			<h2>{ T(ctx, "tx.review-title") }</h2>
+			if v.Notice != "" {
+				<div class="alert ok"><p>{ T(ctx, v.Notice) }</p></div>
+			}
+			@ErrorBox(T(ctx, v.Err))
+			<dl class="kv">
+				<dt>{ T(ctx, "tx.id") }</dt>
+				<dd class="mono small">{ v.Txid }</dd>
+				<dt>{ T(ctx, "tx.signatures") }</dt>
+				<dd>
+					{ T(ctx, "tx.signed-count", "signed", itoa(v.Signed), "total", itoa(len(v.Inputs))) }
+					if v.Full {
+						<span class="badge on">{ T(ctx, "tx.ready") }</span>
+					}
+				</dd>
+				<dt>{ T(ctx, "send.fee") }</dt>
+				<dd>
+					{ v.Fee } { T(ctx, "balance.hours") }
+					if v.MinFee != "" {
+						<span class="dim small">({ T(ctx, "tx.min-fee", "fee", v.MinFee) })</span>
+					}
+				</dd>
+			</dl>
+			<div class="io">
+				<div>
+					<h3>{ T(ctx, "tx.inputs") }</h3>
+					<ol class="io-list">
+						for _, in := range v.Inputs {
+							<li class={ templ.KV("own", in.Mine) }>
+								<span class="mono small">{ in.Address }</span>
+								<span class="small dim nowrap">
+									{ in.Coins } · { in.Hours } { T(ctx, "balance.hours") }
+									if in.Signed {
+										<span class="badge on">{ T(ctx, "tx.signed") }</span>
+									} else {
+										<span class="badge warn-text">{ T(ctx, "tx.unsigned") }</span>
+									}
+									if in.Mine {
+										<span class="badge">{ T(ctx, "tx.yours") }</span>
+									}
+								</span>
+							</li>
+						}
+					</ol>
+				</div>
+				<div>
+					<h3>{ T(ctx, "tx.outputs") }</h3>
+					<ol class="io-list">
+						for _, o := range v.Outputs {
+							<li class={ templ.KV("own", o.Mine) }>
+								<span class="mono small">{ o.Address }</span>
+								<span class="small dim nowrap">
+									{ o.Coins } · { o.Hours } { T(ctx, "balance.hours") }
+									if o.Mine {
+										<span class="badge">{ T(ctx, "tx.yours") }</span>
+									}
+								</span>
+							</li>
+						}
+					</ol>
+				</div>
+			</div>
+			<label class="raw">
+				{ T(ctx, "tx.raw") }
+				<textarea class="mono" rows="4" readonly>{ v.Raw }</textarea>
+			</label>
+			<div class="bar">
+				<button class="btn sm" type="button" data-copy={ v.Raw }><span class="mi">content_copy</span>{ T(ctx, "tx.copy") }</button>
+			</div>
+			if v.ToSign > 0 {
+				<div class="alert warn"><p>{ T(ctx, "tx.sign-warning") }</p></div>
+				<form class="form" hx-post="tx/sign" hx-target="#tx-review" hx-swap="innerHTML show:#tx-review:top" hx-disabled-elt="find button" autocomplete="off">
+					<input type="hidden" name="id" value={ v.WalletID }/>
+					<input type="hidden" name="rawtx" value={ v.Raw }/>
+					if v.Encrypted {
+						<label>
+							{ T(ctx, "send.password") }
+							<input type="password" name="password" required autocomplete="current-password"/>
+						</label>
+					}
+					<div class="bar"><button class="btn primary" type="submit"><span class="mi">draw</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+				</form>
+			} else if v.WalletID != "" && !v.Full {
+				if v.Owns {
+					<p class="small dim">{ T(ctx, "joint.own-signed") }</p>
+				} else {
+					<p class="small dim">{ T(ctx, "joint.owns-none") }</p>
+				}
+			}
+			if v.Full && v.Err == "" {
+				<form hx-post="tx/broadcast" hx-target="#tx-review" hx-swap="innerHTML show:#tx-review:top" hx-disabled-elt="find button">
+					<input type="hidden" name="rawtx" value={ v.Raw }/>
+					<div class="bar"><button class="btn primary" type="submit"><span class="mi">send</span>{ T(ctx, "tx.broadcast") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+				</form>
+			}
+		</div>
+	}
+}
+
+// JointPage makes a joint transaction: one transaction spending outputs of
+// several owners, each of whom signs only their own inputs.
+templ JointPage(p TxPage) {
+	@Layout(T(ctx, "joint.title"), "tx") {
+		<div class="page-head">
+			<a class="icon-btn" href="tx" aria-label={ T(ctx, "nav.tx") }><span class="mi">arrow_back</span></a>
+			<h1>{ T(ctx, "joint.title") }</h1>
+		</div>
+		<section class="card">
+			<p class="small dim">{ T(ctx, "joint.create-text") }</p>
+			if p.Disabled {
+				@WalletAPIOff()
+			} else {
+				@ErrorBox(p.Err)
+				<form id="joint" class="form" hx-post="joint/create" hx-target="#joint-out" hx-swap="innerHTML show:#joint-out:top" hx-disabled-elt="find button[type=submit]" autocomplete="off">
+					<label>
+						{ T(ctx, "joint.your-wallet") }
+						<select name="id" hx-get="joint/outputs" hx-target="#own-outputs" hx-trigger="change, load" hx-swap="innerHTML">
+							<option value="">{ T(ctx, "tx.no-wallet") }</option>
+							for _, w := range p.Wallets {
+								<option value={ w.ID } selected?={ w.ID == p.Wallet }>{ w.Label }</option>
+							}
+						</select>
+					</label>
+					<fieldset>
+						<legend>{ T(ctx, "joint.your-outputs") }</legend>
+						<div id="own-outputs"></div>
+					</fieldset>
+					<label>
+						{ T(ctx, "joint.their-outputs") }
+						<textarea name="theirs" class="mono" rows="3" spellcheck="false" autocapitalize="off" placeholder={ T(ctx, "joint.their-outputs-hint") }></textarea>
+					</label>
+					<fieldset>
+						<legend>{ T(ctx, "tx.outputs") }</legend>
+						<div id="joint-rows">
+							@JointRowInputs()
+							@JointRowInputs()
+						</div>
+						<div class="bar">
+							<button class="btn sm" type="button" hx-get="joint/row" hx-target="#joint-rows" hx-swap="beforeend"><span class="mi">add</span>{ T(ctx, "joint.add-output") }</button>
+						</div>
+					</fieldset>
+					<label>
+						{ T(ctx, "joint.change-address") }
+						<input name="change" class="mono" spellcheck="false" autocapitalize="off"/>
+					</label>
+					<p class="small dim">{ T(ctx, "joint.change-hint") }</p>
+					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "joint.create") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+				</form>
+				<div id="joint-out"></div>
+			}
+		</section>
+	}
+}
+
+// JointRowInputs is one output row of the joint form.
+templ JointRowInputs() {
+	<div class="joint-row">
+		<input name="to" class="mono" placeholder={ T(ctx, "send.to") } aria-label={ T(ctx, "send.to") } spellcheck="false" autocapitalize="off"/>
+		<input name="coins" inputmode="decimal" placeholder={ T(ctx, "balance.coins") } aria-label={ T(ctx, "balance.coins") }/>
+		<input name="hours" inputmode="numeric" placeholder={ T(ctx, "balance.hours") } aria-label={ T(ctx, "balance.hours") }/>
+	</div>
+}
+
+// OwnOutputsList are the wallet's outputs to tick for spending.
+templ OwnOutputsList(o OwnOutputs) {
+	@ErrorBox(o.Err)
+	if o.Err == "" && len(o.Outputs) == 0 {
+		<p class="small dim">{ T(ctx, "outputs.none") }</p>
+	}
+	for i, x := range o.Outputs {
+		<label class="check out-pick">
+			<input type="checkbox" name="mine" value={ x.Hash }/>
+			<span>
+				<span class="mono small">{ x.Hash }</span>
+				<span class="small dim">{ o.Addrs[i] } · { x.Coins } · { x.Hours } { T(ctx, "balance.hours") }</span>
+			</span>
+		</label>
+	}
+}
+
+// JointCreated is a new joint transaction, ready to review and sign.
+templ JointCreated(raw, id string) {
+	<div class="alert ok"><p>{ T(ctx, "joint.created") }</p></div>
+	<label class="raw">
+		{ T(ctx, "tx.raw") }
+		<textarea class="mono" rows="4" readonly>{ raw }</textarea>
+	</label>
+	<form class="bar" hx-post="tx/review" hx-target="#tx-review" hx-swap="innerHTML">
+		<input type="hidden" name="rawtx" value={ raw }/>
+		<input type="hidden" name="id" value={ id }/>
+		<button class="btn sm" type="button" data-copy={ raw }><span class="mi">content_copy</span>{ T(ctx, "tx.copy") }</button>
+		<button class="btn primary" type="submit">{ T(ctx, "tx.review") }</button>
+	</form>
+	<div id="tx-review"></div>
+}

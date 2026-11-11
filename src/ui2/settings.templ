@@ -126,6 +126,7 @@ templ PendingBody(p Pending) {
 						<th class="num">{ T(ctx, "balance.coins") }</th>
 						<th class="num">{ T(ctx, "balance.hours") }</th>
 						<th>{ T(ctx, "pending.received") }</th>
+						<th></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -135,6 +136,9 @@ templ PendingBody(p Pending) {
 							<td class="num" data-label={ T(ctx, "balance.coins") }>{ r.Coins }</td>
 							<td class="num" data-label={ T(ctx, "balance.hours") }>{ r.Hours }</td>
 							<td class="nowrap" data-label={ T(ctx, "pending.received") }>{ r.Time }</td>
+							<td class="num">
+								<button class="icon-btn sm" type="button" hx-post="pending/remove" hx-target="closest td" hx-swap="innerHTML" hx-vals={ pendingVals(r.Txid, p.All) } hx-confirm={ T(ctx, "pending.remove-confirm") } title={ T(ctx, "pending.remove") } aria-label={ T(ctx, "pending.remove") }><span class="mi">delete</span></button>
+							</td>
 						</tr>
 					}
 				</tbody>

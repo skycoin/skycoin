@@ -173,6 +173,13 @@ func Handler(n Node, o Options) http.Handler {
 			return ResetPage(LoadWallet(n, r.FormValue("id"), ListQuery{}))
 		})(w, r)
 	})
+	mux.HandleFunc("/pending/remove", post(func(w http.ResponseWriter, r *http.Request) templ.Component {
+		if err := n.RemovePendingTransaction(r.PostFormValue("txid")); err != nil {
+			return ErrorBox(err.Error())
+		}
+		w.Header().Set("HX-Redirect", pendingURL(r.PostFormValue("all") == "true"))
+		return nil
+	}))
 	mux.HandleFunc("/backup/seed", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		s, err := WalletSeed(n, r.PostFormValue("id"), r.PostFormValue("password"))
 		if err != nil {

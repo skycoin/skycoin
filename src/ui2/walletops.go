@@ -21,6 +21,7 @@ var notices = map[string]string{
 	"encrypted": "wallet.done-encrypted",
 	"decrypted": "wallet.done-decrypted",
 	"reset":     "wallet.done-reset",
+	"account":   "wallet.done-account",
 }
 
 // Notice is the message a wallet page opens with, empty for none.
@@ -106,6 +107,9 @@ var walletOps = map[string]walletOp{
 		opts := []wallet.Option{wallet.OptionGenerateN(uint64(num))} //nolint:gosec
 		if w.Meta.Type == "bip44" {
 			opts = append(opts, wallet.OptionExternal())
+			if a, err := strconv.ParseUint(post("account"), 10, 32); err == nil && a > 0 {
+				opts = append(opts, wallet.OptionAccount(uint32(a)))
+			}
 		}
 		addrs, err := n.NewWalletAddress(id, post("password"), opts...)
 		return "added", len(addrs), err
@@ -131,6 +135,10 @@ var walletOps = map[string]walletOp{
 		}
 		_, err := n.EncryptWallet(id, pw)
 		return "encrypted", -1, err
+	},
+	"account": func(n Node, id string, post func(string) string) (string, int, error) {
+		_, err := n.NewWalletAccount(id, post("password"), strings.TrimSpace(post("name")))
+		return "account", -1, err
 	},
 	"decrypt": func(n Node, id string, post func(string) string) (string, int, error) {
 		if post("password") == "" {

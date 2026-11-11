@@ -29,8 +29,10 @@ templ CreatePage(load bool) {
 					<select name="type">
 						<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
 						<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
+						<option value="pq">{ T(ctx, "create.type-pq") }</option>
 					</select>
 				</label>
+				<p class="small dim">{ T(ctx, "create.type-pq-info") }</p>
 				if load {
 					<label>
 						{ T(ctx, "create.seed") }
@@ -40,6 +42,18 @@ templ CreatePage(load bool) {
 						<input type="checkbox" name="nonstandard" value="1"/>
 						{ T(ctx, "create.nonstandard") }
 					</label>
+				}
+				<label>
+					{ T(ctx, "create.passphrase") }
+					<input type="password" name="passphrase" autocomplete="off"/>
+				</label>
+				<p class="small dim">{ T(ctx, "create.passphrase-help") }</p>
+				if load {
+					<label class="check">
+						<input type="checkbox" name="temp" value="1"/>
+						{ T(ctx, "create.temp") }
+					</label>
+					<p class="small dim">{ T(ctx, "create.temp-help") }</p>
 				}
 				<label>
 					{ T(ctx, "create.password") }

@@ -287,3 +287,4 @@ ul.links a { display: inline-flex; align-items: center; gap: 8px; font-weight: 7
 .seed-text { width: 100%; resize: vertical; }
 .bar.seg { gap: 6px; }
 .card > .alert { margin: 8px 0 12px; }
+a.op-link { display: flex; align-items: center; gap: 8px; padding: 10px 4px; min-height: 44px; border-top: 1px solid rgba(var(--fg), 0.1); text-decoration: none; }

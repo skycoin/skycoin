@@ -137,7 +137,11 @@ func Handler(n Node, o Options) http.Handler {
 		if err := f.Check(n); err != nil {
 			return formError(err)
 		}
-		wlt, err := n.CreateWallet(f.Options())
+		create := n.CreateWallet
+		if f.Temp {
+			create = n.CreateWalletTemp
+		}
+		wlt, err := create(f.Options())
 		if err != nil {
 			return formError(err)
 		}
@@ -145,6 +149,23 @@ func Handler(n Node, o Options) http.Handler {
 		return nil
 	}))
 	mux.HandleFunc("/wallet/do/{op}", post(walletOpHandler(n)))
+	mux.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			post(func(w http.ResponseWriter, r *http.Request) templ.Component {
+				id := r.PostFormValue("id")
+				done, err := ResetPassword(n, id, r.PostFormValue)
+				if err != nil {
+					return formError(err)
+				}
+				w.Header().Set("HX-Redirect", walletDoneURL(id, done, -1))
+				return nil
+			})(w, r)
+			return
+		}
+		page(func(r *http.Request) templ.Component {
+			return ResetPage(LoadWallet(n, r.FormValue("id"), ListQuery{}))
+		})(w, r)
+	})
 	mux.HandleFunc("/backup/seed", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		s, err := WalletSeed(n, r.PostFormValue("id"), r.PostFormValue("password"))
 		if err != nil {

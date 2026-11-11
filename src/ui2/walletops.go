@@ -20,6 +20,7 @@ var notices = map[string]string{
 	"scanned":   "wallet.done-scanned",
 	"encrypted": "wallet.done-encrypted",
 	"decrypted": "wallet.done-decrypted",
+	"reset":     "wallet.done-reset",
 }
 
 // Notice is the message a wallet page opens with, empty for none.

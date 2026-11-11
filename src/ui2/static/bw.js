@@ -9,6 +9,14 @@
 	var page = document.querySelector('[data-bw-page]');
 	if (!page) return;
 	var mode = page.getAttribute('data-bw-page');
+	// The keys need WebCrypto, which a page outside a secure context lacks.
+	if (!window.isSecureContext || !window.crypto || !window.crypto.subtle) {
+		var warn = document.createElement('div');
+		warn.className = 'alert warn';
+		warn.setAttribute('role', 'alert');
+		warn.textContent = document.body.getAttribute('data-insecure');
+		page.insertBefore(warn, page.firstChild);
+	}
 	var root = page.getAttribute('data-bw-root') || '../';
 	var WALLETS = 'wallets', LOCKED = 'lockedWallets';
 	var appPassword = null;

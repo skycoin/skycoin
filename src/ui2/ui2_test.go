@@ -498,3 +498,13 @@ func TestQRAndPaymentLink(t *testing.T) {
 	require.Contains(t, get(t, h, "/send?id=s.wlt").Body.String(), `data-fill-link`)
 	require.Contains(t, get(t, h, "/outputs").Body.String(), `id="o-`+x.spent+`"`)
 }
+
+func TestStatusBar(t *testing.T) {
+	n := testNode()
+	h := Handler(n, Options{})
+	require.Contains(t, get(t, h, "/").Body.String(), `hx-get="statusbar"`)
+	body := get(t, h, "/statusbar").Body.String()
+	require.Contains(t, body, "synchronizing, 25.0% (50 of 200 blocks)")
+	require.Contains(t, body, "CSRF is not working", "the fake node reports CSRF off")
+	require.NotContains(t, body, "no peer connections")
+}

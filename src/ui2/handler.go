@@ -100,6 +100,7 @@ func Handler(n Node, o Options) http.Handler {
 	mux.HandleFunc("/status", page(func(*http.Request) templ.Component {
 		return StatusPage(LoadStatus(n))
 	}))
+	mux.HandleFunc("/statusbar", page(func(*http.Request) templ.Component { return StatusBar(LoadBar(n)) }))
 	mux.HandleFunc("/status/live", page(func(*http.Request) templ.Component {
 		return StatusLive(LoadStatus(n))
 	}))

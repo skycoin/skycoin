@@ -92,9 +92,9 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | custom coins, ERC-20 | coins | missing | missing | |
 | Skywallet | hardware-wallet | missing | missing | |
 | onboarding wizard on first run | onboarding | partial | partial | the empty wallet list explains create and load, no forced first-run flow |
-| node errors: unreachable, CSRF, no peers | header | partial | partial | unreachable only |
+| node errors: unreachable, CSRF, no peers, syncing, pending | header | present | present | a strip under the top bar |
 | language | select-language | present | present | |
-| page outside a secure context warning | wallets | n/a | missing | |
+| page outside a secure context warning | wallets | n/a | present | |
 
 ## Multi-coin
 

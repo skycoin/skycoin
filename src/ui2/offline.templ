@@ -133,7 +133,7 @@ templ TxReviewView(v TxView) {
 							<input type="password" name="password" required autocomplete="current-password"/>
 						</label>
 					}
-					<div class="bar"><button class="btn primary" type="submit"><span class="mi">draw</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+					<div class="bar"><button class="btn primary" type="submit"><span class="mi">create</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
 				</form>
 			} else if v.WalletID != "" && !v.Full {
 				if v.Owns {

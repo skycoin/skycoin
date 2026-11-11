@@ -313,3 +313,11 @@ dialog.qr-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
 dialog.qr-dialog h2 { margin: 0; }
 .qr-box { display: flex; justify-content: center; padding: 12px; background: #ffffff; border-radius: 8px; margin: 8px auto; width: fit-content; }
 .qr-box img, .qr-box canvas { display: block; }
+
+/* node status strip */
+.statusbar { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 6px 16px; border-bottom: 1px solid var(--card-border); background: var(--bar-bg); font-size: 0.9em; }
+.statusbar .sb { display: inline-flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; }
+.statusbar .sb .mi { font-size: 18px; }
+.statusbar .sb.warn .mi { color: rgb(var(--amber)); }
+.statusbar .sb.err { color: rgb(var(--rose)); }
+.statusbar a.sb:hover { text-decoration: underline; }

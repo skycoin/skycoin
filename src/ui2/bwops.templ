@@ -21,7 +21,7 @@ templ bwOptions(w Wallet) {
 					@bwPassword("password", T(ctx, "send.password"))
 				}
 			}
-			@bwOp("seed", "key", T(ctx, "backup.show-seed")) {
+			@bwOp("seed", "vpn_key", T(ctx, "backup.show-seed")) {
 				<div class="alert warn"><p>{ T(ctx, "backup.seed-warning") }</p></div>
 				@bwPassword("password", T(ctx, "send.password"))
 				<textarea class="mono seed-text" data-f="seed-out" rows="3" readonly hidden aria-label={ T(ctx, "create.seed") }></textarea>

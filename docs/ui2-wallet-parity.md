@@ -30,14 +30,14 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | exposed address marks, move coins | wallet-detail | present | present | |
 | exposed addresses banner with a count | wallet-detail | present | present | |
 | address history and outputs links | wallet-detail | present | present | |
-| new address | wallet-options | present | missing | |
+| new address | wallet-options | present | present | |
 | scan for addresses | wallet-options | present | missing | |
 | add bip44 account | wallet-detail | missing | missing | |
-| rename | change-name | present | missing | |
-| encrypt, decrypt | wallet-options | present | missing | |
-| delete | wallet-options | n/a | missing | Angular only drops a node wallet from its list |
+| rename | change-name | present | present | |
+| encrypt, decrypt | wallet-options | present | partial | browser: set or change the password; ui2 keeps browser wallets encrypted, so no decrypt |
+| delete | wallet-options | n/a | present | Angular only drops a node wallet from its list |
 | account and chain xpubs | wallet-detail | present | present | |
-| reset password with the seed | reset-password | present | missing | |
+| reset password with the seed | reset-password | present | present | |
 
 ## Sending
 
@@ -83,7 +83,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | pending transactions, mine or all | pending-transactions | present | present | |
 | remove a pending transaction from the pool | pending-transactions | missing | missing | the API client has no call for it yet |
 | unspent outputs | outputs | present | present | |
-| backup, show seed | backup | present | missing | the node needs INSECURE_WALLET_SEED, browser seeds stay in bw.js |
+| backup, show seed | backup | present | present | node: needs INSECURE_WALLET_SEED; browser: on the wallet page, decrypted in bw.js |
 | wallet directory, save addresses | backup | present | missing | |
 | node URL per coin | nodes | n/a | missing | ui2 reads the node that serves it |
 | ETH and BTC endpoints | nodes | missing | missing | |

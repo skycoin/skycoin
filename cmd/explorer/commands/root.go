@@ -1071,8 +1071,8 @@ var apiEndpoints = []APIEndpoint{
 	{
 		ExplorerPath:   "/api/richlist",
 		SkycoinPath:    "/api/v1/richlist",
-		QueryArgs:      []string{"n", "include-distribution"},
-		Description:    "Returns top N richer with unspect outputs, If no n are specified, returns 20.",
+		QueryArgs:      []string{"n", "offset", "include-distribution"},
+		Description:    "Returns the top N addresses by unspent coins after skipping offset of them, and total, the length of the whole list. If no n is specified, returns 20.",
 		ExampleRequest: "/api/richlist?n=4&include-distribution=false",
 		ExampleResponse: `{
     "richlist": [

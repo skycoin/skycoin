@@ -1,4 +1,4 @@
-import { first } from 'rxjs';
+import { first, map, switchMap } from 'rxjs';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';
@@ -20,7 +20,7 @@ import { dataValidityTime } from 'app/app.config';
 })
 export class RichlistComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.
-  private readonly persistentServerEntriesResponseKey = 'serv-etr-response';
+  private readonly persistentServerEntriesResponseKey = 'serv-rlp-response';
 
   /**
    * How many addresses are shown per page.
@@ -40,6 +40,10 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
    * Whether there are more addresses after the current page.
    */
   hasNextPage = false;
+  /**
+   * How many addresses the whole list has, if the node says.
+   */
+  total?: number;
 
   private pageSubscriptions: Subscription[] = [];
   private dataSubscription?: Subscription;
@@ -67,6 +71,13 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
   }
 
   /**
+   * How many pages the list has, if the node says how long it is.
+   */
+  get pageCount(): number | undefined {
+    return this.total !== undefined ? Math.ceil(this.total / this.pageSize) : undefined;
+  }
+
+  /**
    * Coin amounts with a fixed number of decimal places, so the decimal points line up.
    */
   get coinsFormat(): string {
@@ -79,23 +90,41 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
     let oldSavedDataUsed = false;
     const key = this.persistentServerEntriesResponseKey + '-' + this.pageIndex;
 
-    // The node returns the top N addresses, so ask for every address up to the end of this
-    // page and one more, which tells if there is a next page.
+    const start = this.pageIndex * this.pageSize;
     const savedData = checkSavedData ? this.getLocalValue(key) : null;
-    let nextOperation: Observable<RichlistEntry[]> = this.api.getRichlist((this.pageIndex + 1) * this.pageSize + 1);
+    // One address more than the page, so a node without offset paging still shows if page 1
+    // has a next one.
+    let nextOperation: Observable<RichlistPage> = this.api.getRichlist(start, this.pageSize + 1).pipe(
+      switchMap(response => {
+        if (response.total !== undefined || start === 0) {
+          return of<RichlistPage>({
+            entries: response.entries.slice(0, this.pageSize),
+            total: response.total,
+            more: response.entries.length > this.pageSize,
+          });
+        }
+
+        // A node without offset paging returns the top addresses. Ask it for every address up
+        // to the end of this page and one more, which tells if there is a next page.
+        return this.api.getRichlist(0, start + this.pageSize + 1).pipe(map((all): RichlistPage => ({
+          entries: all.entries.slice(start, start + this.pageSize),
+          more: all.entries.length > start + this.pageSize,
+        })));
+      }),
+    );
     if (savedData) {
       nextOperation = of(savedData.value);
       oldSavedDataUsed = savedData.date < (new Date()).getTime() - dataValidityTime;
     }
 
     this.dataSubscription?.unsubscribe();
-    this.dataSubscription = nextOperation.pipe(first()).subscribe(entries => {
+    this.dataSubscription = nextOperation.pipe(first()).subscribe(page => {
       if (!savedData) {
-        this.saveLocalValue(key, entries);
+        this.saveLocalValue(key, page);
       }
-      const start = this.pageIndex * this.pageSize;
-      this.entries = (entries || []).slice(start, start + this.pageSize);
-      this.hasNextPage = (entries || []).length > start + this.pageSize;
+      this.entries = page.entries || [];
+      this.total = page.total;
+      this.hasNextPage = page.total !== undefined ? start + this.entries.length < page.total : !!page.more;
       if (!this.entries.length) {
         this.longErrorMsg = 'richlist.noEntries';
       }
@@ -120,4 +149,14 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
     this.pageSubscriptions.forEach(sub => sub.unsubscribe());
     this.dataSubscription?.unsubscribe();
   }
+}
+
+/**
+ * One page of the richlist. total comes from nodes that page the list themselves, more from
+ * the fallback for older nodes.
+ */
+interface RichlistPage {
+  entries: RichlistEntry[];
+  total?: number;
+  more?: boolean;
 }

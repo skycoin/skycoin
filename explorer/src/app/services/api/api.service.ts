@@ -211,13 +211,19 @@ export class ApiService {
   }
 
   /**
-   * Gets the list of unlocked addresses with most coins.
-   * @param count How many of the top addresses to return.
+   * Gets part of the list of unlocked addresses with most coins.
+   * @param offset How many of the top addresses to skip.
+   * @param count How many addresses to return after them.
+   * @returns The addresses, and the length of the whole list. A node too old to know offset
+   * ignores it and sends no total, which is then undefined.
    */
-  getRichlist(count: number): Observable<RichlistEntry[]> {
+  getRichlist(offset: number, count: number): Observable<{ entries: RichlistEntry[], total?: number }> {
     const url = !this.nodeUrl() ? 'richlist' : 'v1/richlist';
 
-    return this.get(url, { n: count }).pipe(map((response: any) => response.richlist));
+    return this.get(url, { n: count, offset: offset }).pipe(map((response: any) => ({
+      entries: response.richlist || [],
+      total: typeof response.total === 'number' ? response.total : undefined,
+    })));
   }
 
   /**

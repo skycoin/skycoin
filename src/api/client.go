@@ -1293,6 +1293,7 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 // RichlistParams are arguments to the /richlist endpoint
 type RichlistParams struct {
 	N                   int
+	Offset              int
 	IncludeDistribution bool
 }
 
@@ -1303,6 +1304,9 @@ func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
 	if params != nil {
 		v := url.Values{}
 		v.Add("n", fmt.Sprint(params.N))
+		if params.Offset > 0 {
+			v.Add("offset", fmt.Sprint(params.Offset))
+		}
 		v.Add("include-distribution", fmt.Sprint(params.IncludeDistribution))
 		endpoint = "/api/v1/richlist?" + v.Encode()
 	}

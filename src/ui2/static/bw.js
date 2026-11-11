@@ -526,6 +526,147 @@
 		});
 	}
 
+	// nextSeedAfter is the seed after the first count addresses of a
+	// deterministic wallet with seed.
+	function nextSeedAfter(c, seed, count) {
+		var next = asciiToHex(seed);
+		for (var i = 0; i < count; i++) next = call(c, 'generateAddress', [next]).nextSeed;
+		return next;
+	}
+
+	// sealSecrets stores the wallet's secrets encrypted under password, as
+	// the Angular wallet's setWalletPassword does, and drops the clear ones.
+	function sealSecrets(w, sec, password) {
+		return Promise.all([
+			encrypt(sec.seed, password),
+			sec.nextSeed ? encrypt(sec.nextSeed, password) : null,
+			sec.passphrase ? encrypt(sec.passphrase, password) : null,
+		]).then(function (e) {
+			w.encryptedSeed = e[0];
+			if (e[1]) w.encryptedNextSeed = e[1]; else delete w.encryptedNextSeed;
+			if (e[2]) w.encryptedSeedPassphrase = e[2]; else delete w.encryptedSeedPassphrase;
+			delete w.seed;
+			delete w.nextSeed;
+			delete w.seedPassphrase;
+		});
+	}
+
+	// walletOps runs the option forms of the browser wallet whose first
+	// address is id. Each change is written to storage and the page reloads.
+	function walletOps(id) {
+		function field(form, name) { var e = form.querySelector('[data-f="' + name + '"]'); return e ? e.value : ''; }
+		function change(f, done) {
+			return withList(function (list) {
+				var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+				if (!w) throw new Error(msg('missing'));
+				if (w.walletType === 'pq') throw new Error(msg('unsupported'));
+				return Promise.resolve(f(w, list)).then(function () { return writeStored(list); });
+			}).then(function () {
+				window.location.href = done === 'deleted' ? './' : 'bw/wallet?id=' + encodeURIComponent(id) + '&done=' + done;
+			});
+		}
+		var ops = {
+			rename: function (form) {
+				var label = field(form, 'label').trim();
+				if (!label) return Promise.reject(new Error(msg('label')));
+				return change(function (w) { w.label = label; }, 'renamed');
+			},
+			address: function (form) {
+				var n = parseInt(field(form, 'num'), 10);
+				if (!(n >= 1 && n <= 100)) return Promise.reject(new Error(msg('num')));
+				return cipher().then(function (c) {
+					return change(function (w) {
+						if (isBip44(w)) {
+							var a = w.accounts[0];
+							call(c, 'bip44XPubAddresses', [a.accountXpubKey, 0, a.externalAddresses.length, n]).forEach(function (x) {
+								a.externalAddresses.push({ address: x.address });
+							});
+							w.addresses = a.externalAddresses.concat(a.changeAddresses);
+							return null;
+						}
+						var pw = field(form, 'password');
+						return secretsOf(c, w, pw).then(function (sec) {
+							var next = nextSeedAfter(c, sec.seed, w.addresses.length);
+							for (var i = 0; i < n; i++) {
+								var g = call(c, 'generateAddress', [next]);
+								w.addresses.push({ address: g.address });
+								next = g.nextSeed;
+							}
+							if (!w.encryptedSeed) {
+								w.nextSeed = next;
+								return null;
+							}
+							return encrypt(next, pw).then(function (e) { w.encryptedNextSeed = e; });
+						});
+					}, 'added&n=' + n);
+				});
+			},
+			seed: function (form) {
+				return withList(function (list) {
+					var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+					if (!w) throw new Error(msg('missing'));
+					return cipher().then(function (c) { return secretsOf(c, w, field(form, 'password')); });
+				}).then(function (sec) {
+					var s = form.querySelector('[data-f="seed-out"]'), p = form.querySelector('[data-f="passphrase-out"]');
+					s.value = sec.seed;
+					s.hidden = false;
+					p.value = sec.passphrase || '';
+					p.hidden = !sec.passphrase;
+					form.querySelector('[data-f="password"]').value = '';
+				});
+			},
+			password: function (form) {
+				var pw = field(form, 'password'), nw = field(form, 'new');
+				if (!nw) return Promise.reject(new Error(msg('new-password')));
+				if (nw !== field(form, 'new2')) return Promise.reject(new Error(msg('password-confirm')));
+				return cipher().then(function (c) {
+					return change(function (w) {
+						return secretsOf(c, w, pw).then(function (sec) {
+							if (!isBip44(w) && !sec.nextSeed) sec.nextSeed = nextSeedAfter(c, sec.seed, w.addresses.length);
+							return sealSecrets(w, sec, nw);
+						});
+					}, 'reset');
+				});
+			},
+			reset: function (form) {
+				var seed = normalize(field(form, 'seed')), passphrase = field(form, 'passphrase'), nw = field(form, 'new');
+				if (!nw) return Promise.reject(new Error(msg('new-password')));
+				if (nw !== field(form, 'new2')) return Promise.reject(new Error(msg('password-confirm')));
+				return cipher().then(function (c) {
+					return change(function (w) {
+						var sec = { seed: seed, passphrase: isBip44(w) ? passphrase : '' };
+						if (isBip44(w)) {
+							if (call(c, 'bip44AccountXPub', [seed, sec.passphrase]) !== w.accounts[0].accountXpubKey) throw new Error(msg('wrong-seed'));
+						} else {
+							if (call(c, 'generateAddress', [asciiToHex(seed)]).address !== w.addresses[0].address) throw new Error(msg('wrong-seed'));
+							sec.nextSeed = nextSeedAfter(c, seed, w.addresses.length);
+						}
+						return sealSecrets(w, sec, nw);
+					}, 'reset');
+				});
+			},
+			delete: function () {
+				if (!window.confirm(msg('delete'))) return Promise.resolve();
+				return withList(function (list) {
+					var kept = list.filter(function (x) { return !(ours(x) && firstAddress(x) === id); });
+					return writeStored(kept);
+				}).then(function () { window.location.href = './'; });
+			},
+		};
+		document.addEventListener('submit', function (e) {
+			var form = e.target.closest && e.target.closest('form[data-bw-op]');
+			if (!form) return;
+			e.preventDefault();
+			var out = form.querySelector('.op-error');
+			out.textContent = '';
+			var btn = form.querySelector('button[type=submit]');
+			btn.disabled = true;
+			ops[form.getAttribute('data-bw-op')](form).catch(function (err) {
+				out.textContent = err && err.message ? err.message : msg('error');
+			}).then(function () { btn.disabled = false; });
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var fail = function (err) {
 			var e = $('bw-page-error') || $('bw-error');
@@ -540,6 +681,7 @@
 				if (!w) throw new Error(msg('missing'));
 				ready(summary(w));
 			}).catch(fail);
+			walletOps(id);
 		} else if (mode === 'new' || mode === 'load') {
 			createFlow(mode === 'load');
 		} else if (mode === 'send') {

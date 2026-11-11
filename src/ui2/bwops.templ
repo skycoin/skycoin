@@ -1,0 +1,72 @@
+package ui2
+
+// bwOptions are the changes a browser wallet takes. Every field is read by
+// bw.js and has no name, so none of it can be posted anywhere.
+templ bwOptions(w Wallet) {
+	<section class="card" id="wallet-options">
+		<h2>{ T(ctx, "wallet.options") }</h2>
+		<div class="ops">
+			@bwOp("rename", "edit", T(ctx, "wallet.rename")) {
+				<label>
+					{ T(ctx, "wallet.name") }
+					<input type="text" data-f="label" value={ w.Meta.Label } maxlength="200" autocomplete="off"/>
+				</label>
+			}
+			@bwOp("address", "add", T(ctx, "wallet.new-addresses")) {
+				<label>
+					{ T(ctx, "wallet.how-many") }
+					<input type="number" data-f="num" value="1" min="1" max={ itoa(MaxNewAddresses) }/>
+				</label>
+				if w.Meta.Type != "bip44" {
+					@bwPassword("password", T(ctx, "send.password"))
+				}
+			}
+			@bwOp("seed", "key", T(ctx, "backup.show-seed")) {
+				<div class="alert warn"><p>{ T(ctx, "backup.seed-warning") }</p></div>
+				@bwPassword("password", T(ctx, "send.password"))
+				<textarea class="mono seed-text" data-f="seed-out" rows="3" readonly hidden aria-label={ T(ctx, "create.seed") }></textarea>
+				<textarea class="mono seed-text" data-f="passphrase-out" rows="1" readonly hidden aria-label={ T(ctx, "backup.passphrase") }></textarea>
+			}
+			@bwOp("password", "lock", T(ctx, "bw.change-password")) {
+				<p class="small dim">{ T(ctx, "bw.change-password-help") }</p>
+				@bwPassword("password", T(ctx, "bw.current-password"))
+				@bwPassword("new", T(ctx, "wallet.password-new"))
+				@bwPassword("new2", T(ctx, "create.password2"))
+			}
+			@bwOp("reset", "restore", T(ctx, "reset.title")) {
+				<label>
+					{ T(ctx, "create.seed") }
+					<textarea data-f="seed" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+				</label>
+				if w.Meta.Type == "bip44" {
+					@bwPassword("passphrase", T(ctx, "reset.passphrase"))
+				}
+				@bwPassword("new", T(ctx, "wallet.password-new"))
+				@bwPassword("new2", T(ctx, "create.password2"))
+			}
+			@bwOp("delete", "delete", T(ctx, "bw.delete")) {
+				<p class="small dim">{ T(ctx, "bw.delete-help") }</p>
+			}
+		</div>
+	</section>
+}
+
+templ bwOp(op, icon, title string) {
+	<details class="fold op">
+		<summary><span class="mi">{ icon }</span>{ title }</summary>
+		<form class="form" data-bw-op={ op } autocomplete="off">
+			{ children... }
+			<div class="bar">
+				<button class="btn primary" type="submit">{ title }</button>
+			</div>
+			<p class="error op-error" role="alert"></p>
+		</form>
+	</details>
+}
+
+templ bwPassword(field, label string) {
+	<label>
+		{ label }
+		<input type="password" data-f={ field } autocomplete="off"/>
+	</label>
+}

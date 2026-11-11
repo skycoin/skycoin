@@ -60,9 +60,11 @@ templ BrowserList(w Wallets) {
 }
 
 // BrowserWalletPage is one browser wallet. id is its first address.
-templ BrowserWalletPage(id string) {
+templ BrowserWalletPage(id string, n Notice) {
 	@Layout(T(ctx, "nav.wallets"), "wallets") {
-		<div data-bw-page="wallet" data-bw-root={ From(ctx).Classic } data-bw-id={ id } data-msg-missing={ T(ctx, "bw.missing") } data-msg-error={ T(ctx, "bw.err-storage") }>
+		<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+		@noticeBox(n)
+		<div data-bw-page="wallet" data-bw-root={ From(ctx).Classic } data-bw-id={ id } data-msg-missing={ T(ctx, "bw.missing") } data-msg-error={ T(ctx, "bw.err-storage") } data-msg-password={ T(ctx, "wallet.err-password") } data-msg-new-password={ T(ctx, "bw.err-password") } data-msg-wrong-password={ T(ctx, "bw.err-wrong-password") } data-msg-password-confirm={ T(ctx, "create.err-password-confirm") } data-msg-mismatch={ T(ctx, "bw.err-mismatch") } data-msg-label={ T(ctx, "wallet.err-name") } data-msg-num={ T(ctx, "wallet.err-num") } data-msg-unsupported={ T(ctx, "bw.err-unsupported") } data-msg-wrong-seed={ T(ctx, "bw.err-wrong-seed") } data-msg-delete={ T(ctx, "bw.delete-confirm") }>
 			@bwUnlock()
 			@bwData("wallet")
 			<div id="bw-wallet" hx-post="bw/wallet/view" hx-trigger="bw-ready from:body" hx-include="#bw-data" hx-swap="innerHTML">
@@ -122,6 +124,7 @@ templ BrowserWalletView(w Wallet) {
 			@addrTable(w)
 		}
 	</section>
+	@bwOptions(w)
 	<section class="card">
 		<div class="bar">
 			<h2>{ T(ctx, "wallet.history") }</h2>

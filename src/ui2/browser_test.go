@@ -112,3 +112,22 @@ func TestBrowserCreateHasNoNames(t *testing.T) {
 		require.Contains(t, body, "assets/scripts/wasm_exec.js")
 	}
 }
+
+func TestBrowserOptionsHaveNoNames(t *testing.T) {
+	x := sendNode(t)
+	x.n.browser = true
+	h := Handler(x.n, Options{})
+	body := postForm(h, "/bw/wallet/view", url.Values{"wallet": {jsonOf(t, browserWallet(x))}}).Body.String()
+	start := strings.Index(body, `id="wallet-options"`)
+	require.Positive(t, start)
+	opts := body[start : start+strings.Index(body[start:], "</section>")]
+	for _, op := range []string{"rename", "address", "seed", "password", "reset", "delete"} {
+		require.Contains(t, opts, `data-bw-op="`+op+`"`)
+	}
+	require.NotRegexp(t, regexp.MustCompile(`\sname=`), opts, "no option field can be posted")
+	require.NotContains(t, opts, "<form class=\"form\" hx-", "bw.js handles them")
+
+	page := get(t, h, "/bw/wallet?id="+x.spent+"&done=reset").Body.String()
+	require.Contains(t, page, "Password successfully changed.")
+	require.Contains(t, page, `data-msg-wrong-seed=`)
+}

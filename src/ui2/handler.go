@@ -230,7 +230,9 @@ func Handler(n Node, o Options) http.Handler {
 		return SentView(walletURL(id), txid, "")
 	}))
 
-	mux.HandleFunc("/bw/wallet", page(func(r *http.Request) templ.Component { return BrowserWalletPage(r.FormValue("id")) }))
+	mux.HandleFunc("/bw/wallet", page(func(r *http.Request) templ.Component {
+		return BrowserWalletPage(r.FormValue("id"), ParseNotice(r.FormValue))
+	}))
 	mux.HandleFunc("/bw/new", page(func(*http.Request) templ.Component { return BrowserCreatePage(false) }))
 	mux.HandleFunc("/bw/load", page(func(*http.Request) templ.Component { return BrowserCreatePage(true) }))
 	mux.HandleFunc("/bw/list", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {

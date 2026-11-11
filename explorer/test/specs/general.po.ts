@@ -8,8 +8,10 @@ export class GeneralPageFunctions {
     return !isNaN((new Date(numberText)).getTime());
   }
 
+  // EXPLORER_PATH is where the explorer is served below the host, such as
+  // /classic for the Angular one beside the server rendered one.
   async navigateTo(route) {
-    return browser.url(route);
+    return browser.url((process.env.EXPLORER_PATH || '') + route);
   }
 
   goBack() {

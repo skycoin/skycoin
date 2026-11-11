@@ -8,11 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- A server rendered explorer at `/ui2/` beside the Angular one, built with
-  templ and htmx in the `src/explorerui` package. It serves every Angular
-  page, the blocks list, blocks, transactions, addresses with their unspent
-  outputs, unconfirmed transactions, the rich list and search, at the Angular
-  paths below `/ui2`, and every page renders without JavaScript.
+- A server rendered explorer, built with templ and htmx in the
+  `src/explorerui` package, is now the explorer at `/` and the `/app/` paths.
+  It serves every page of the Angular one at the same paths, the blocks list,
+  blocks, transactions, addresses with their unspent outputs, unconfirmed
+  transactions, the rich list and search, and every page renders without
+  JavaScript. The Angular explorer moves to `/classic/` for one release, and
+  the `/ui2/` paths it was tried at redirect to the plain ones.
 - `/api/v1/richlist` takes `offset` to page through the list and returns
   `total`, the length of the whole list. The node builds the list once per
   block instead of on every request.

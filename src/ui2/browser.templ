@@ -122,7 +122,10 @@ templ BrowserWalletView(w Wallet) {
 		}
 	</section>
 	<section class="card">
-		<h2>{ T(ctx, "wallet.history") }</h2>
+		<div class="bar">
+			<h2>{ T(ctx, "wallet.history") }</h2>
+			<a class="btn sm" href={ templ.URL(historyURL(walletFilter(w.ID))) }>{ T(ctx, "history.open") }</a>
+		</div>
 		<div id="txns" hx-post="bw/txns" hx-trigger="load" hx-include="#bw-data" hx-swap="outerHTML">
 			<p class="dim">{ T(ctx, "ui2.loading") }</p>
 		</div>

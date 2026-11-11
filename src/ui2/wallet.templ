@@ -98,7 +98,10 @@ templ WalletPage(w Wallet) {
 				@AddrList(w)
 			</section>
 			<section class="card">
-				<h2>{ T(ctx, "wallet.history") }</h2>
+				<div class="bar">
+					<h2>{ T(ctx, "wallet.history") }</h2>
+					<a class="btn sm" href={ templ.URL(historyURL(walletFilter(w.ID))) }>{ T(ctx, "history.open") }</a>
+				</div>
 				<div id="txns" hx-get={ walletPart("txns", w.ID) } hx-trigger="load" hx-swap="outerHTML">
 					<p class="dim">{ T(ctx, "ui2.loading") }</p>
 				</div>
@@ -164,61 +167,3 @@ templ addrTable(w Wallet) {
 	</div>
 }
 
-// TxnList is a page of a wallet's history.
-templ TxnList(t Txns) {
-	<div id="txns">
-		@ErrorBox(t.Err)
-		if t.Err == "" && len(t.Rows) == 0 {
-			<p class="dim">{ T(ctx, "wallet.no-history") }</p>
-		}
-		if len(t.Rows) > 0 {
-			<div class="table-wrap">
-				<table class="list">
-					<thead>
-						<tr>
-							<th>{ T(ctx, "tx.kind") }</th>
-							<th class="num">{ T(ctx, "balance.coins") }</th>
-							<th class="num">{ T(ctx, "balance.hours") }</th>
-							<th>{ T(ctx, "tx.time") }</th>
-							<th>{ T(ctx, "tx.status") }</th>
-							<th>{ T(ctx, "tx.id") }</th>
-						</tr>
-					</thead>
-					<tbody>
-						for _, r := range t.Rows {
-							<tr>
-								<td class="name"><span class={ "kind", r.Kind }><span class="mi">{ kindIcon(r.Kind) }</span>{ T(ctx, "tx.kind-" + r.Kind) }</span></td>
-								<td class="num" data-label={ T(ctx, "balance.coins") }>{ r.Coins }</td>
-								<td class="num" data-label={ T(ctx, "balance.hours") }>{ r.Hours }</td>
-								<td class="nowrap" data-label={ T(ctx, "tx.time") }>{ r.Time }</td>
-								<td data-label={ T(ctx, "tx.status") }>
-									if r.Confirmed {
-										<span class="badge on">{ T(ctx, "tx.confirmed") }</span>
-									} else {
-										<span class="badge warn-text">{ T(ctx, "tx.pending") }</span>
-									}
-								</td>
-								<td class="mono small" data-label={ T(ctx, "tx.id") }><span class="key txid" data-copy={ r.Txid } title={ r.Txid }>{ r.Txid }</span></td>
-							</tr>
-						}
-					</tbody>
-				</table>
-			</div>
-		}
-		if t.Post {
-			@PagerNavPost(t.Pager, t.URL, "#txns", "#bw-data")
-		} else {
-			@PagerNav(t.Pager, t.URL, "#txns", "this")
-		}
-	</div>
-}
-
-func kindIcon(kind string) string {
-	switch kind {
-	case "in":
-		return "call_received"
-	case "out":
-		return "call_made"
-	}
-	return "swap_horiz"
-}

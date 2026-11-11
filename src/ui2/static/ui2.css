@@ -227,3 +227,40 @@ details.fold > summary { cursor: pointer; padding: 4px 0; }
 .busy { display: none; }
 form.htmx-request .busy { display: inline; }
 #review { scroll-margin-top: 72px; }
+
+/* history */
+.txs { display: flex; flex-direction: column; }
+details.tx { border-bottom: 1px solid rgba(var(--fg), 0.1); }
+details.tx > summary {
+  display: flex; align-items: center; gap: 12px; padding: 10px 4px; cursor: pointer; list-style: none;
+}
+details.tx > summary::-webkit-details-marker { display: none; }
+details.tx > summary:hover { background: rgba(var(--fg), 0.04); }
+details.tx[open] > summary { background: rgba(var(--fg), 0.06); }
+.tx-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--card-border);
+}
+.tx-icon.in .mi { color: rgb(var(--green)); }
+.tx-icon.out .mi { color: rgb(var(--rose)); }
+.tx-icon.pending { border-color: rgb(var(--amber)); }
+.tx-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.tx-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.tx-addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: normal; color: rgba(var(--fg), 0.75); }
+.tx-note { color: rgba(var(--fg), 0.75); font-style: italic; }
+.tx-note:empty { display: none; }
+.tx-amt { display: flex; flex-direction: column; align-items: flex-end; text-align: right; flex-shrink: 0; }
+details.tx.in .tx-amt strong { color: rgb(var(--green)); }
+.tx-detail { padding: 8px 4px 16px 52px; }
+.tx-detail .note-edit { width: 100%; max-width: 420px; }
+.io { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 24px; margin-top: 12px; }
+.io h3 { font-size: 0.95rem; margin: 0 0 4px; }
+.io-list { margin: 0; padding-left: 24px; }
+.io-list li { padding: 3px 0; }
+.io-list li > span { display: block; }
+.io-list li.own .mono { color: var(--link); }
+@media (max-width: 600px) {
+  details.tx > summary { gap: 8px; }
+  .tx-icon { width: 30px; height: 30px; }
+  .tx-detail { padding-left: 4px; }
+}

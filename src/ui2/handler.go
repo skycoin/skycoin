@@ -47,6 +47,15 @@ func Handler(n Node, o Options) http.Handler {
 	mux.HandleFunc("/wallet/txns", page(func(r *http.Request) templ.Component {
 		return TxnList(LoadTxns(n, r.FormValue("id"), ParseListQuery(r.FormValue)))
 	}))
+	mux.HandleFunc("/history", page(func(r *http.Request) templ.Component {
+		if browserMode(n) {
+			return BrowserHistoryPage(r.FormValue("filter"))
+		}
+		return HistoryPage(LoadHistory(n, r.FormValue("filter"), ParseListQuery(r.FormValue)))
+	}))
+	mux.HandleFunc("/history/list", page(func(r *http.Request) templ.Component {
+		return TxnList(LoadHistory(n, r.FormValue("filter"), ParseListQuery(r.FormValue)))
+	}))
 	mux.HandleFunc("/status", page(func(*http.Request) templ.Component {
 		return StatusPage(LoadStatus(n))
 	}))
@@ -138,6 +147,27 @@ func Handler(n Node, o Options) http.Handler {
 			return bwError(err)
 		}
 		return TxnList(LoadBrowserTxns(n, w, ParseListQuery(r.PostFormValue)))
+	}))
+	bwHistory := func(r *http.Request) (Txns, error) {
+		ws, err := ParseBrowserWallets(r.PostFormValue("wallets"))
+		if err != nil {
+			return Txns{}, err
+		}
+		return LoadBrowserHistory(n, ws, r.PostFormValue("filter"), ParseListQuery(r.PostFormValue)), nil
+	}
+	mux.HandleFunc("/bw/history", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		t, err := bwHistory(r)
+		if err != nil {
+			return bwError(err)
+		}
+		return HistoryBody(t)
+	}))
+	mux.HandleFunc("/bw/history/list", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		t, err := bwHistory(r)
+		if err != nil {
+			return bwError(err)
+		}
+		return TxnList(t)
 	}))
 	mux.HandleFunc("/bw/send", page(func(r *http.Request) templ.Component {
 		return BrowserSendPage(r.FormValue("id"), r.FormValue("from"))

@@ -93,8 +93,8 @@ class MockExplorerService {
 
 class MockApiService {
   /** Controls exactly when the richlist response arrives. */
-  readonly richlist = new Subject<any[]>();
-  getRichlist(_count: number): Observable<any[]> { return this.richlist.asObservable(); }
+  readonly richlist = new Subject<any>();
+  getRichlist(_offset: number, _count: number): Observable<any> { return this.richlist.asObservable(); }
 }
 
 describe('RichlistComponent change detection', () => {
@@ -153,10 +153,13 @@ describe('RichlistComponent change detection', () => {
 
     // The response lands outside any change detection pass, as a real HTTP
     // response would.
-    api.richlist.next([
-      { address: 'AddressOne', coins: 100 },
-      { address: 'AddressTwo', coins: 50 },
-    ]);
+    api.richlist.next({
+      entries: [
+        { address: 'AddressOne', coins: 100 },
+        { address: 'AddressTwo', coins: 50 },
+      ],
+      total: 2,
+    });
 
     // Driven from the parent, so the OnPush child is only re-rendered if it was
     // marked dirty. Without markForCheck in the subscription this stays empty.

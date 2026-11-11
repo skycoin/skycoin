@@ -13,6 +13,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -43,6 +44,19 @@ type Visor struct {
 	wallets     *wallet.Service
 	txns        transactionsGetter
 	tf          wallet.TransactionsFinder
+
+	// The richlist is built from every unspent output, so it is kept until the next block.
+	richlists *richlistCache
+}
+
+type richlistCache struct {
+	sync.Mutex
+	bySetting map[bool]richlistAtSeq
+}
+
+type richlistAtSeq struct {
+	seq  uint64
+	list Richlist
 }
 
 // New creates a Visor for managing the blockchain database
@@ -121,6 +135,7 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 		history:     history,
 		wallets:     wltServ,
 		txns:        &txns,
+		richlists:   &richlistCache{bySetting: make(map[bool]richlistAtSeq, 2)},
 	}
 
 	v.tf = newTransactionsFinder(v)
@@ -2210,8 +2225,38 @@ func (vs *Visor) GetUnspentOutputsSummary(filters []OutputsFilter) (*UnspentOutp
 	}, nil
 }
 
-// GetRichlist returns a Richlist
+// GetRichlist returns a Richlist. It is shared with other callers until the next block, so
+// callers must not modify it.
 func (vs *Visor) GetRichlist(includeDistribution bool) (Richlist, error) {
+	c := vs.richlists
+	if c == nil {
+		return vs.buildRichlist(includeDistribution)
+	}
+
+	seq, ok, err := vs.HeadBkSeq()
+	if err != nil {
+		return nil, err
+	}
+
+	// Held while building, so a burst of requests builds the list once.
+	c.Lock()
+	defer c.Unlock()
+	if e, found := c.bySetting[includeDistribution]; found && ok && e.seq == seq {
+		return e.list, nil
+	}
+
+	richlist, err := vs.buildRichlist(includeDistribution)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		c.bySetting[includeDistribution] = richlistAtSeq{seq: seq, list: richlist}
+	}
+
+	return richlist, nil
+}
+
+func (vs *Visor) buildRichlist(includeDistribution bool) (Richlist, error) {
 	rbOuts, err := vs.GetUnspentOutputsSummary(nil)
 	if err != nil {
 		return nil, err

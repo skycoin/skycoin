@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `/api/v1/richlist` takes `offset` to page through the list and returns
+  `total`, the length of the whole list. The node builds the list once per
+  block instead of on every request.
 - Joint transactions in the CLI, where several wallets spend their own
   outputs in one transaction. `createJointTransaction` builds it unsigned from
   given outputs of any owner with coins and coin hours set by hand.

@@ -246,6 +246,7 @@ func TestCoinSupply(t *testing.T) {
 func TestGetRichlist(t *testing.T) {
 	type httpParams struct {
 		topn                string
+		offset              string
 		includeDistribution string
 	}
 	tt := []struct {
@@ -332,6 +333,7 @@ func TestGetRichlist(t *testing.T) {
 				},
 			},
 			result: Richlist{
+				Total: 5,
 				Richlist: []readable.RichlistBalance{
 					{
 						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
@@ -387,6 +389,7 @@ func TestGetRichlist(t *testing.T) {
 				},
 			},
 			result: Richlist{
+				Total: 5,
 				Richlist: []readable.RichlistBalance{
 					{
 						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
@@ -416,6 +419,52 @@ func TestGetRichlist(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "400 - bad offset",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - invalid offset",
+			httpParams: &httpParams{
+				offset: "-1",
+			},
+		},
+		{
+			name:   "200 offset",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpParams: &httpParams{
+				topn:   "1",
+				offset: "3",
+			},
+			gatewayGetRichlistResult: visor.Richlist{
+				{Address: cipher.MustDecodeBase58Address("2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF"), Coins: 1000000e6},
+				{Address: cipher.MustDecodeBase58Address("27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1"), Coins: 500000e6},
+				{Address: cipher.MustDecodeBase58Address("2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW"), Coins: 500000e6},
+				{Address: cipher.MustDecodeBase58Address("2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs"), Coins: 244458e6},
+				{Address: cipher.MustDecodeBase58Address("24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C"), Coins: 195503e6},
+			},
+			result: Richlist{
+				Total: 5,
+				Richlist: []readable.RichlistBalance{
+					{Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs", Coins: "244458.000000"},
+				},
+			},
+		},
+		{
+			name:   "200 offset past the end",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpParams: &httpParams{
+				offset: "9",
+			},
+			gatewayGetRichlistResult: visor.Richlist{
+				{Address: cipher.MustDecodeBase58Address("2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF"), Coins: 1000000e6},
+			},
+			result: Richlist{
+				Total:    1,
+				Richlist: []readable.RichlistBalance{},
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -428,6 +477,9 @@ func TestGetRichlist(t *testing.T) {
 			if tc.httpParams != nil {
 				if tc.httpParams.topn != "" {
 					v.Add("n", tc.httpParams.topn)
+				}
+				if tc.httpParams.offset != "" {
+					v.Add("offset", tc.httpParams.offset)
 				}
 				if tc.httpParams.includeDistribution != "" {
 					v.Add("include-distribution", tc.httpParams.includeDistribution)

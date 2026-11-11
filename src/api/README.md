@@ -4095,8 +4095,12 @@ URI: /api/v1/richlist
 Method: GET
 Args:
     n: top N addresses, [default 20, returns all if <= 0].
+    offset: skip this many of the top addresses first, for paging, default 0.
     include-distribution: include distribution addresses or not, default false.
 ```
+
+`total` is how many addresses the whole list has, before `offset` and `n`. The list is built
+once per block, so repeated requests between blocks are cheap.
 
 Example:
 
@@ -4129,7 +4133,8 @@ Result:
             "coins": "1000000.000000",
             "locked": true
         }
-    ]
+    ],
+    "total": 155
 }
 ```
 

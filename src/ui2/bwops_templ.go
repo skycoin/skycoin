@@ -214,7 +214,7 @@ func bwOptions(w Wallet) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = bwOp("seed", "key", T(ctx, "backup.show-seed")).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = bwOp("seed", "vpn_key", T(ctx, "backup.show-seed")).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

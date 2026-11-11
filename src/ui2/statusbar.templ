@@ -1,0 +1,25 @@
+package ui2
+
+// StatusBar warns about the node: unreachable, syncing, without peers,
+// with pending transactions, or with CSRF checks off.
+templ StatusBar(b Bar) {
+	if b.Any() {
+		<div class="statusbar">
+			if b.Unreachable {
+				<span class="sb err"><span class="mi">error</span>{ T(ctx, "bar.unreachable") }</span>
+			}
+			if b.NoCSRF {
+				<span class="sb err"><span class="mi">error</span>{ T(ctx, "bar.csrf") }</span>
+			}
+			if b.Syncing {
+				<span class="sb warn"><span class="mi">sync</span>{ T(ctx, "bar.syncing", "percent", b.Percent, "current", utoa(b.Current), "highest", utoa(b.Highest)) }</span>
+			}
+			if b.NoPeers {
+				<span class="sb warn"><span class="mi">warning</span>{ T(ctx, "bar.no-peers") }</span>
+			}
+			if b.Pending > 0 {
+				<a class="sb" href="pending?all=1"><span class="mi">hourglass_empty</span>{ T(ctx, "bar.pending", "count", utoa(b.Pending)) }</a>
+			}
+		</div>
+	}
+}

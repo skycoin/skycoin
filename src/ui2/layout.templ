@@ -17,7 +17,7 @@ templ Layout(title, nav string) {
 			<script src={ Asset("ui2.js") } defer></script>
 			<script src={ Asset("bw.js") } defer></script>
 		</head>
-		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-csrf={ From(ctx).Classic + "api/v1/csrf" }>
+		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-insecure={ T(ctx, "bw.insecure") } data-csrf={ From(ctx).Classic + "api/v1/csrf" }>
 			<header class="top">
 				<a class="brand" href="./">
 					<img src={ From(ctx).Classic + "assets/icons/icon-192.png" } alt="" width="32" height="32"/>
@@ -44,6 +44,7 @@ templ Layout(title, nav string) {
 					</div>
 				</div>
 			</header>
+			<div id="statusbar" hx-get="statusbar" hx-trigger="load, every 30s" hx-swap="innerHTML"></div>
 			<main>
 				{ children... }
 			</main>

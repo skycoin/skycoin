@@ -47,16 +47,16 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | wallet password at send | password-dialog | present | present | |
 | change address | send-form-advanced | present | present | |
 | warnings for spent, reused and own destinations | send-verify | present | present | a ui2 addition |
-| several destinations | send-form-advanced | missing | missing | |
-| pick source addresses or outputs | send-form-advanced | missing | missing | |
-| hours allocation (auto share factor, manual) | send-form-advanced | missing | missing | ui2 uses auto, share 0.5 |
-| fee presets slow, normal, fast | send-form | missing | missing | |
-| send all available coins | send-form | missing | missing | |
-| personal note | send-form | missing | missing | |
+| several destinations | send-form-advanced | present | missing | |
+| pick source addresses or outputs | send-form-advanced | present | missing | |
+| hours allocation (auto share factor, manual) | send-form-advanced | present | missing | browser: auto, share 0.5 |
+| fee presets slow, normal, fast | send-form | n/a | n/a | BTC and ETH sends only, see multi-coin |
+| send all available coins | send-form | present | missing | |
+| personal note | send-form | present | missing | |
 | fill from a `skycoin:` link | enter-link | missing | missing | |
 | scan a QR code | qr-scan-dialog | missing | missing | |
 | USD value | send-form, history | missing | missing | price source on hold |
-| bulk send from CSV | bulk-send | missing | missing | |
+| bulk send from CSV | bulk-send | present | missing | lines pasted into the form |
 | unsigned transaction | offline-tx | present | missing | |
 | sign a transaction | offline-tx | present | missing | |
 | broadcast a raw transaction | offline-tx | present | present | the transactions page needs no wallet to broadcast |

@@ -103,6 +103,7 @@
 	document.addEventListener('htmx:afterSwap', function (e) {
 		if (!e.detail.target || e.detail.target.id !== 'review') return;
 		if (!e.detail.target.querySelector('.alert.ok')) return;
+		saveNote(e.detail.target.querySelector('[data-sent-txid]'), document.getElementById('send-note'));
 		var f = document.getElementById('send');
 		if (f) f.reset();
 	});
@@ -136,3 +137,22 @@
 	document.addEventListener('DOMContentLoaded', function () { fill(document); });
 	document.addEventListener('htmx:afterSettle', function (e) { fill(e.detail.elt || document); });
 })();
+
+// "Send all" fills the only destination with every confirmed coin.
+document.addEventListener('click', function (e) {
+	var b = e.target.closest && e.target.closest('[data-fill-all]');
+	if (!b) return;
+	var rows = document.querySelectorAll('#send-rows [name=coins]');
+	if (rows.length) rows[0].value = b.getAttribute('data-fill-all');
+});
+
+// saveNote keeps the note typed on the send form for the transaction the
+// node just took, under the Angular wallet's txNotes key.
+function saveNote(sent, input) {
+	if (!sent || !input || !input.value.trim()) return;
+	try {
+		var notes = JSON.parse(localStorage.getItem('txNotes') || '{}') || {};
+		notes[sent.getAttribute('data-sent-txid')] = input.value.trim().substring(0, 64);
+		localStorage.setItem('txNotes', JSON.stringify(notes));
+	} catch (_) { /* private mode */ }
+}

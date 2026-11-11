@@ -29,10 +29,10 @@ func (f *fakeNode) WalletCreateTransaction(r api.WalletCreateTransactionRequest)
 	}
 	var t api.CreateTransactionResponse
 	t.Transaction.TxID, t.Transaction.Fee, t.EncodedTransaction = "tx1", "3", "RAWTX"
-	t.Transaction.Out = []api.CreatedTransactionOutput{
-		{Address: r.To[0].Address, Coins: r.To[0].Coins, Hours: "5"},
-		{Address: change, Coins: "1.000000", Hours: "4"},
+	for _, to := range r.To {
+		t.Transaction.Out = append(t.Transaction.Out, api.CreatedTransactionOutput{Address: to.Address, Coins: to.Coins, Hours: "5"})
 	}
+	t.Transaction.Out = append(t.Transaction.Out, api.CreatedTransactionOutput{Address: change, Coins: "1.000000", Hours: "4"})
 	return &t, nil
 }
 
@@ -214,4 +214,56 @@ func TestExposedBanner(t *testing.T) {
 	require.Equal(t, 1, w.Exposed, "counted over every address, not the filtered page")
 	body := get(t, Handler(x.n, Options{}), "/wallet?id=s.wlt").Body.String()
 	require.Contains(t, body, "1 address(es) in this wallet hold coins")
+}
+
+func TestAdvancedSend(t *testing.T) {
+	x := sendNode(t)
+	h := Handler(x.n, Options{})
+	last := func() api.WalletCreateTransactionRequest { return x.n.txReqs[len(x.n.txReqs)-1] }
+
+	v := url.Values{"id": {"s.wlt"}, "to": {x.toFresh, x.toSpent, ""}, "coins": {"1", "0.5", ""}, "hours": {"", "", ""}, "share": {"0.25"}, "from_addr": {x.spent}}
+	body := postForm(h, "/send/review", v).Body.String()
+	req := last()
+	require.Len(t, req.To, 2, "the empty row is dropped")
+	require.Equal(t, "0.25", req.HoursSelection.ShareFactor)
+	require.Equal(t, []string{x.spent}, req.Addresses)
+	require.Contains(t, body, x.toSpent)
+	require.Contains(t, body, "public key is public", "a warning for any destination")
+	require.Equal(t, 1, strings.Count(body, `<span class="mono">node-picked-change</span>`), "the change is listed apart")
+
+	v.Set("hours_mode", "manual")
+	require.Contains(t, postForm(h, "/send/review", v).Body.String(), "whole number of hours")
+	v["hours"] = []string{"3", "4", ""}
+	v["from_out"] = []string{"ux9"}
+	postForm(h, "/send/review", v)
+	req = last()
+	require.Equal(t, "manual", req.HoursSelection.Type)
+	require.Equal(t, "4", req.To[1].Hours)
+	require.Equal(t, []string{"ux9"}, req.UxOuts)
+	require.Empty(t, req.Addresses, "outputs win over addresses")
+
+	bulk := url.Values{"id": {"s.wlt"}, "to": {""}, "coins": {""}, "bulk": {"\n" + x.toFresh + ", 2\n" + x.toReused + ",1.5\n"}}
+	postForm(h, "/send/review", bulk)
+	req = last()
+	require.Equal(t, []api.Receiver{{Address: x.toFresh, Coins: "2"}, {Address: x.toReused, Coins: "1.5"}}, req.To)
+	require.Equal(t, "auto", req.HoursSelection.Type)
+	bulk.Set("bulk", x.toFresh+",2,7")
+	postForm(h, "/send/review", bulk)
+	require.Equal(t, "manual", last().HoursSelection.Type)
+	require.Equal(t, "7", last().To[0].Hours)
+	bulk.Set("bulk", x.toFresh+",2,7\n"+x.toReused+",1")
+	require.Contains(t, postForm(h, "/send/review", bulk).Body.String(), "set them for all")
+	bulk.Set("bulk", x.toFresh)
+	require.Contains(t, postForm(h, "/send/review", bulk).Body.String(), "separated by commas")
+
+	v = url.Values{"id": {"s.wlt"}, "to": {x.toFresh}, "coins": {"1"}, "share": {"2"}}
+	require.Contains(t, postForm(h, "/send/review", v).Body.String(), "from 0 to 1")
+	v = url.Values{"id": {"s.wlt"}, "to": {x.toFresh}, "coins": {"1"}, "from_addr": {x.toFresh}}
+	require.Contains(t, postForm(h, "/send/review", v).Body.String(), "not in this wallet")
+
+	page := get(t, h, "/send?id=s.wlt").Body.String()
+	require.Contains(t, page, `data-fill-all="5.000000"`)
+	require.Contains(t, page, `name="from_addr" value="`+x.spent+`"`)
+	require.NotContains(t, page, `value="`+x.unused+`"`, "an empty address is no source")
+	require.Contains(t, get(t, h, "/send/row").Body.String(), `name="hours"`)
 }

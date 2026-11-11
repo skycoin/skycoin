@@ -30,21 +30,66 @@ templ SendPage(s Send) {
 							<p>{ T(ctx, "send.move-amount", "coins", s.FromCoins) }</p>
 						</div>
 					} else {
+						<fieldset>
+							<legend>{ T(ctx, "send.destinations") }</legend>
+							<div id="send-rows">
+								@sendRow(true)
+							</div>
+							<div class="bar">
+								<button class="btn sm" type="button" hx-get="send/row" hx-target="#send-rows" hx-swap="beforeend"><span class="mi">add</span>{ T(ctx, "send.add-destination") }</button>
+								<button class="btn sm" type="button" data-fill-all={ s.Available } title={ T(ctx, "send.all-help") }>{ T(ctx, "send.all") }</button>
+							</div>
+						</fieldset>
 						<label>
-							{ T(ctx, "send.to") }
-							<input name="to" class="mono" required spellcheck="false" autocapitalize="off"/>
+							{ T(ctx, "send.note") }
+							<input name="note" id="send-note" maxlength="64" autocomplete="off"/>
 						</label>
-						<label>
-							{ T(ctx, "send.coins") }
-							<input name="coins" inputmode="decimal" required/>
-						</label>
+						<p class="small dim">{ T(ctx, "send.note-help") }</p>
 						<details class="fold">
-							<summary>{ T(ctx, "send.advanced") }</summary>
+							<summary>{ T(ctx, "send.advanced-options") }</summary>
 							<label>
 								{ T(ctx, "send.change") }
 								<input name="change" class="mono" spellcheck="false" autocapitalize="off" placeholder={ T(ctx, "send.change-default") }/>
 							</label>
 							<p class="small dim">{ T(ctx, "send.change-help") }</p>
+							<fieldset>
+								<legend>{ T(ctx, "send.hours") }</legend>
+								<label class="check"><input type="radio" name="hours_mode" value="auto" checked/>{ T(ctx, "send.hours-auto") }</label>
+								<label>
+									{ T(ctx, "send.share") }
+									<input name="share" type="number" min="0" max="1" step="0.01" value="0.5"/>
+								</label>
+								<label class="check"><input type="radio" name="hours_mode" value="manual"/>{ T(ctx, "send.hours-manual") }</label>
+							</fieldset>
+							if len(s.Addrs) > 0 {
+								<fieldset>
+									<legend>{ T(ctx, "send.from-addresses") }</legend>
+									<p class="small dim">{ T(ctx, "send.from-help") }</p>
+									for _, a := range s.Addrs {
+										<label class="check out-pick">
+											<input type="checkbox" name="from_addr" value={ a.Address }/>
+											<span><span class="mono small">{ a.Address }</span><span class="small dim">{ a.Coins } · { a.Hours } { T(ctx, "balance.hours") }</span></span>
+										</label>
+									}
+								</fieldset>
+							}
+							if len(s.Outputs) > 0 {
+								<fieldset>
+									<legend>{ T(ctx, "send.from-outputs") }</legend>
+									<p class="small dim">{ T(ctx, "send.outputs-help") }</p>
+									for _, o := range s.Outputs {
+										<label class="check out-pick">
+											<input type="checkbox" name="from_out" value={ o.Hash }/>
+											<span><span class="mono small">{ o.Hash }</span><span class="small dim">{ o.Address } · { o.Coins } · { o.Hours } { T(ctx, "balance.hours") }</span></span>
+										</label>
+									}
+								</fieldset>
+							}
+							<label>
+								{ T(ctx, "send.bulk") }
+								<textarea name="bulk" class="mono" rows="4" spellcheck="false" autocapitalize="off" placeholder="address,10&#10;address,2.5"></textarea>
+							</label>
+							<p class="small dim">{ T(ctx, "send.bulk-help") }</p>
 						</details>
 					}
 					if s.Encrypted {
@@ -84,12 +129,7 @@ templ ReviewView(r Review) {
 				<div class="alert warn"><p>{ T(ctx, w) }</p></div>
 			}
 			<dl class="kv">
-				<dt>{ T(ctx, "send.to") }</dt>
-				<dd class="mono">{ r.To }</dd>
-				<dt>{ T(ctx, "send.coins") }</dt>
-				<dd><strong>{ r.Coins }</strong></dd>
-				<dt>{ T(ctx, "send.hours-sent") }</dt>
-				<dd>{ r.Hours }</dd>
+				@reviewDests(r)
 				for _, c := range r.Change {
 					<dt>{ T(ctx, "send.change-output") }</dt>
 					<dd><span class="mono">{ c.Address }</span> <span class="nowrap">{ c.Coins } · { c.Hours } { T(ctx, "balance.hours") }</span></dd>
@@ -119,7 +159,7 @@ templ SentView(back, txid, err string) {
 	} else {
 		<div class="alert ok">
 			<p><strong>{ T(ctx, "send.sent") }</strong></p>
-			<p class="mono small">{ txid }</p>
+			<p class="mono small" data-sent-txid={ txid }>{ txid }</p>
 			<p><a class="btn primary" href={ templ.URL(back) }>{ T(ctx, "send.back") }</a></p>
 		</div>
 	}
@@ -137,10 +177,7 @@ templ UnsignedView(r Review) {
 				<div class="alert warn"><p>{ T(ctx, w) }</p></div>
 			}
 			<dl class="kv">
-				<dt>{ T(ctx, "send.to") }</dt>
-				<dd class="mono">{ r.To }</dd>
-				<dt>{ T(ctx, "send.coins") }</dt>
-				<dd><strong>{ r.Coins }</strong></dd>
+				@reviewDests(r)
 				<dt>{ T(ctx, "send.fee") }</dt>
 				<dd>{ r.Fee } { T(ctx, "balance.hours") }</dd>
 			</dl>
@@ -153,5 +190,26 @@ templ UnsignedView(r Review) {
 				<a class="btn sm primary" href={ templ.URL(txPageURL(r.ID, r.Raw)) }>{ T(ctx, "send.unsigned-open") }</a>
 			</div>
 		</div>
+	}
+}
+
+// SendRow is one more destination of the send form.
+templ SendRow() {
+	@sendRow(false)
+}
+
+templ sendRow(_ bool) {
+	<div class="send-row">
+		<input name="to" class="mono" placeholder={ T(ctx, "send.to") } aria-label={ T(ctx, "send.to") } spellcheck="false" autocapitalize="off"/>
+		<input name="coins" inputmode="decimal" placeholder={ T(ctx, "send.coins") } aria-label={ T(ctx, "send.coins") }/>
+		<input name="hours" inputmode="numeric" placeholder={ T(ctx, "send.row-hours") } aria-label={ T(ctx, "send.row-hours") }/>
+	</div>
+}
+
+// reviewDests lists what each destination gets.
+templ reviewDests(r Review) {
+	for _, d := range r.Dests {
+		<dt>{ T(ctx, "send.to") }</dt>
+		<dd><span class="mono">{ d.To }</span> <span class="nowrap"><strong>{ d.Coins }</strong> · { d.Hours } { T(ctx, "balance.hours") }</span></dd>
 	}
 }

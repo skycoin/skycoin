@@ -156,3 +156,96 @@ function saveNote(sent, input) {
 		localStorage.setItem('txNotes', JSON.stringify(notes));
 	} catch (_) { /* private mode */ }
 }
+
+// The QR dialog. The content follows the Angular wallet's QR dialog:
+// coin:ADDRESS, then amount, hours and message when asked for.
+(function () {
+	'use strict';
+	var dlg = document.getElementById('qr-dialog');
+	if (!dlg) return;
+	var address = '', coin = 'skycoin', loading = null;
+	function $(id) { return document.getElementById(id); }
+	function lib() {
+		if (window.QRCode) return Promise.resolve();
+		if (!loading) {
+			loading = new Promise(function (resolve, reject) {
+				var s = document.createElement('script');
+				s.src = dlg.getAttribute('data-qr-script');
+				s.onload = resolve;
+				s.onerror = reject;
+				document.head.appendChild(s);
+			});
+		}
+		return loading;
+	}
+	function content() {
+		var text = coin + ':' + address, sep = '?', bad = false;
+		var c = $('qr-coins').value.trim(), h = $('qr-hours').value.trim(), m = $('qr-note').value.trim();
+		if (c) {
+			if (String(parseFloat(c)) === c && parseFloat(c) > 0) { text += sep + 'amount=' + c; sep = '&'; } else bad = true;
+		}
+		if (h) {
+			if (String(parseInt(h, 10)) === h && parseInt(h, 10) > 0) { text += sep + 'hours=' + h; sep = '&'; } else bad = true;
+		}
+		if (m) text += sep + 'message=' + encodeURIComponent(m);
+		$('qr-invalid').hidden = !bad;
+		return text;
+	}
+	function draw() {
+		var text = content();
+		$('qr-data').textContent = text;
+		$('qr-data').setAttribute('data-copy', text);
+		lib().then(function () {
+			var box = $('qr-box');
+			box.innerHTML = '';
+			new window.QRCode(box, { text: text, width: 240, height: 240, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
+		});
+	}
+	var timer = 0;
+	dlg.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(draw, 300); });
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest && e.target.closest('[data-qr]');
+		if (!b) return;
+		address = b.getAttribute('data-qr');
+		coin = b.getAttribute('data-qr-coin') || 'skycoin';
+		$('qr-addr').textContent = address;
+		$('qr-addr').setAttribute('data-copy', address);
+		$('qr-coins').value = $('qr-hours').value = $('qr-note').value = '';
+		draw();
+		dlg.showModal();
+	});
+})();
+
+// A payment link fills the first destination, as the Angular wallet's
+// parsePaymentLink reads it (src/skycoin-web/src/app/utils/qr.ts).
+document.addEventListener('click', function (e) {
+	var b = e.target.closest && e.target.closest('[data-fill-link]');
+	if (!b) return;
+	var box = document.getElementById('pay-link');
+	var text = document.getElementById('pay-link-text').value.trim();
+	var m = /^([a-z][a-z0-9+.-]*):(?:\/\/)?([^?]*)(?:\?(.*))?$/i.exec(text);
+	var q = m && m[3] ? new URLSearchParams(m[3]) : new URLSearchParams('');
+	var addr = m ? m[2].split('@')[0].split('/')[0] : '';
+	var amount = q.get('amount'), hours = q.get('hours');
+	if (!addr || (amount !== null && !/^\d*\.?\d+$/.test(amount)) || (hours !== null && !/^\d+$/.test(hours))) {
+		toastMsg(box.getAttribute('data-msg-invalid'), true);
+		return;
+	}
+	var f = document.getElementById('send');
+	f.querySelector('#send-rows [name=to]').value = addr;
+	if (amount !== null) f.querySelector('#send-rows [name=coins]').value = amount;
+	if (hours !== null) {
+		f.querySelector('#send-rows [name=hours]').value = hours;
+		var manual = f.querySelector('[name=hours_mode][value=manual]');
+		if (manual) manual.checked = true;
+	}
+	toastMsg(box.getAttribute('data-msg-done'), false);
+});
+
+function toastMsg(msg, isErr) {
+	var t = document.getElementById('toast');
+	if (!t) return;
+	t.textContent = msg;
+	t.className = 'show' + (isErr ? ' err' : '');
+	setTimeout(function () { t.className = ''; }, 3000);
+}

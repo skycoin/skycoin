@@ -299,3 +299,17 @@ legend { padding: 0 4px; color: rgba(var(--fg), 0.7); }
 label.out-pick { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
 label.out-pick > span { display: flex; flex-direction: column; min-width: 0; }
 @media (max-width: 600px) { .joint-row, .send-row { grid-template-columns: 1fr 1fr; } .joint-row input[name="to"], .send-row input[name="to"] { grid-column: 1 / -1; } }
+
+/* address tools and the QR dialog */
+.addr-tools { display: inline-flex; gap: 2px; vertical-align: middle; margin-left: 4px; }
+.icon-btn.sm { width: 30px; height: 30px; }
+.icon-btn.sm .mi { font-size: 18px; }
+@media (max-width: 600px) { .icon-btn.sm { width: 40px; height: 40px; } }
+dialog.qr-dialog {
+  width: min(420px, calc(100% - 32px)); max-height: calc(100% - 32px); padding: 16px; border-radius: 10px;
+  border: 1px solid var(--card-border); background: var(--bg-1); color: inherit;
+}
+dialog.qr-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+dialog.qr-dialog h2 { margin: 0; }
+.qr-box { display: flex; justify-content: center; padding: 12px; background: #ffffff; border-radius: 8px; margin: 8px auto; width: fit-content; }
+.qr-box img, .qr-box canvas { display: block; }

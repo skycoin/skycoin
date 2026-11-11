@@ -26,10 +26,10 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | load temporarily | create-wallet | present | missing | |
 | address list, balances, hide empty, filter | wallet-detail | present | present | |
 | copy address | wallet-detail | present | present | |
-| QR code of an address | qr-code | missing | missing | |
+| QR code of an address, with a requested amount | qr-code | present | present | drawn with the Angular wallet's qrcode.min.js |
 | exposed address marks, move coins | wallet-detail | present | present | |
 | exposed addresses banner with a count | wallet-detail | present | present | |
-| address history and outputs links | wallet-detail | missing | missing | |
+| address history and outputs links | wallet-detail | present | present | |
 | new address | wallet-options | present | missing | |
 | scan for addresses | wallet-options | present | missing | |
 | add bip44 account | wallet-detail | missing | missing | |
@@ -53,7 +53,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | fee presets slow, normal, fast | send-form | n/a | n/a | BTC and ETH sends only, see multi-coin |
 | send all available coins | send-form | present | missing | |
 | personal note | send-form | present | missing | |
-| fill from a `skycoin:` link | enter-link | missing | missing | |
+| fill from a `skycoin:` link | enter-link | present | missing | |
 | scan a QR code | qr-scan-dialog | missing | missing | |
 | USD value | send-form, history | missing | missing | price source on hold |
 | bulk send from CSV | bulk-send | present | missing | lines pasted into the form |

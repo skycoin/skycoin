@@ -1,0 +1,52 @@
+package ui2
+
+// qrDialog shows an address as a QR code, optionally asking for an amount,
+// hours and a message, as the Angular wallet's QR dialog does. ui2.js
+// fills it with qrcode.min.js from the Angular wallet's assets.
+templ qrDialog() {
+	<dialog id="qr-dialog" class="qr-dialog" data-qr-script={ From(ctx).Classic + "assets/scripts/qrcode.min.js" } aria-labelledby="qr-title">
+		<form method="dialog" class="form">
+			<div class="head">
+				<h2 id="qr-title">{ T(ctx, "qr.title") }</h2>
+				<span class="spacer"></span>
+				<button class="icon-btn" value="close" aria-label={ T(ctx, "qr.close") }><span class="mi">close</span></button>
+			</div>
+			<div class="qr-box" id="qr-box" role="img" aria-label={ T(ctx, "qr.title") }></div>
+			<dl class="kv">
+				<dt>{ T(ctx, "qr.data") }</dt>
+				<dd class="mono small"><span class="key" id="qr-data" data-copy="" title={ T(ctx, "ui2.copy") }></span></dd>
+				<dt>{ T(ctx, "qr.address") }</dt>
+				<dd class="mono small"><span class="key" id="qr-addr" data-copy="" title={ T(ctx, "ui2.copy") }></span></dd>
+			</dl>
+			<details class="fold">
+				<summary>{ T(ctx, "qr.request") }</summary>
+				<label>
+					{ T(ctx, "qr.amount") }
+					<input id="qr-coins" inputmode="decimal" autocomplete="off"/>
+				</label>
+				<label>
+					{ T(ctx, "qr.hours") }
+					<input id="qr-hours" inputmode="numeric" autocomplete="off"/>
+				</label>
+				<label>
+					{ T(ctx, "qr.message") }
+					<input id="qr-note" autocomplete="off"/>
+				</label>
+				<p class="error small" id="qr-invalid" hidden>{ T(ctx, "qr.invalid") }</p>
+			</details>
+		</form>
+	</dialog>
+}
+
+// payLink fills the send form from a payment link such as
+// skycoin:ADDRESS?amount=1&hours=2.
+templ payLink() {
+	<details class="fold" id="pay-link" data-msg-invalid={ T(ctx, "send.link-invalid") } data-msg-done={ T(ctx, "send.link-done") }>
+		<summary>{ T(ctx, "send.link") }</summary>
+		<p class="small dim">{ T(ctx, "send.link-help") }</p>
+		<div class="bar">
+			<input id="pay-link-text" class="mono filter" spellcheck="false" autocapitalize="off" aria-label={ T(ctx, "send.link") }/>
+			<button class="btn sm" type="button" data-fill-link>{ T(ctx, "send.link-use") }</button>
+		</div>
+	</details>
+}

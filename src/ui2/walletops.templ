@@ -1,0 +1,92 @@
+package ui2
+
+// noticeBox says what the last change to the wallet did.
+templ noticeBox(n Notice) {
+	if n.Key != "" {
+		<div class="alert ok notice" role="status">{ T(ctx, n.Key, "count", n.N) }</div>
+	}
+}
+
+// ExposedBanner counts the addresses whose coins a quantum computer could
+// take, as the Angular wallet's banner does.
+templ ExposedBanner(count int) {
+	if count > 0 {
+		<div class="alert warn exposed-banner" role="note">
+			<span class="mi">warning</span>
+			<span>{ T(ctx, "wallet.exposed-banner", "count", itoa(count)) }</span>
+		</div>
+	}
+}
+
+// walletOptions are the changes a node wallet takes: its name, more
+// addresses, a scan for used ones, and its password.
+templ walletOptions(w Wallet) {
+	<section class="card" id="wallet-options">
+		<h2>{ T(ctx, "wallet.options") }</h2>
+		<div class="ops">
+			@walletOpForm(w, "rename", "edit", T(ctx, "wallet.rename")) {
+				<label>
+					{ T(ctx, "wallet.name") }
+					<input type="text" name="label" value={ w.Meta.Label } required maxlength="200"/>
+				</label>
+			}
+			@walletOpForm(w, "address", "add", T(ctx, "wallet.new-addresses")) {
+				<label>
+					{ T(ctx, "wallet.how-many") }
+					<input type="number" name="num" value="1" min="1" max={ itoa(MaxNewAddresses) } required/>
+				</label>
+				@walletPassword(w)
+			}
+			@walletOpForm(w, "scan", "search", T(ctx, "wallet.scan")) {
+				<p class="small dim">{ T(ctx, "wallet.scan-help") }</p>
+				<label>
+					{ T(ctx, "wallet.scan-gap") }
+					<input type="number" name="num" value="20" min="1" max={ itoa(MaxNewAddresses) } required/>
+				</label>
+				@walletPassword(w)
+			}
+			if w.Meta.Encrypted {
+				@walletOpForm(w, "decrypt", "lock_open", T(ctx, "wallet.decrypt")) {
+					<p class="small dim">{ T(ctx, "wallet.decrypt-help") }</p>
+					@walletPassword(w)
+				}
+			} else {
+				@walletOpForm(w, "encrypt", "lock", T(ctx, "wallet.encrypt")) {
+					<p class="small dim">{ T(ctx, "wallet.encrypt-help") }</p>
+					<label>
+						{ T(ctx, "wallet.password-new") }
+						<input type="password" name="password" required autocomplete="new-password"/>
+					</label>
+					<label>
+						{ T(ctx, "create.password2") }
+						<input type="password" name="password2" required autocomplete="new-password"/>
+					</label>
+				}
+			}
+		</div>
+	</section>
+}
+
+// walletOpForm is one folded form that posts to wallet/do/op.
+templ walletOpForm(w Wallet, op, icon, title string) {
+	<details class="fold op">
+		<summary><span class="mi">{ icon }</span>{ title }</summary>
+		<form class="form" hx-post={ "wallet/do/" + op } hx-target="find .op-error" hx-swap="innerHTML" autocomplete="off">
+			<input type="hidden" name="id" value={ w.ID }/>
+			{ children... }
+			<div class="bar">
+				<button class="btn primary" type="submit">{ title }<span class="busy">…</span></button>
+			</div>
+			<div class="op-error" role="alert"></div>
+		</form>
+	</details>
+}
+
+templ walletPassword(w Wallet) {
+	if w.Meta.Encrypted {
+		<label>
+			{ T(ctx, "send.password") }
+			<input type="password" name="password" required autocomplete="current-password"/>
+		</label>
+	}
+}

@@ -264,3 +264,13 @@ details.tx.in .tx-amt strong { color: rgb(var(--green)); }
   .tx-icon { width: 30px; height: 30px; }
   .tx-detail { padding-left: 4px; }
 }
+
+/* wallet options */
+.notice, .exposed-banner { margin-bottom: 16px; }
+.exposed-banner { display: flex; gap: 8px; align-items: flex-start; }
+.exposed-banner .mi { color: rgb(var(--amber)); }
+.ops { display: flex; flex-direction: column; }
+details.op { border-top: 1px solid rgba(var(--fg), 0.1); margin: 0; }
+details.op > summary { display: flex; align-items: center; gap: 8px; padding: 10px 4px; min-height: 44px; }
+details.op > .form { padding: 4px 4px 12px; }
+#wallet-options h2 { margin-top: 0; }

@@ -29,6 +29,10 @@ type Node interface {
 	VerifySeed(seed string) (bool, error)
 	CreateWallet(api.CreateWalletOptions) (*api.WalletResponse, error)
 	NewWalletAddress(id, password string, options ...wallet.Option) ([]string, error)
+	ScanWalletAddresses(id string, n int, password string) ([]string, error)
+	UpdateWallet(id, label string) error
+	EncryptWallet(id, password string) (*api.WalletResponse, error)
+	DecryptWallet(id, password string) (*api.WalletResponse, error)
 	WalletCreateTransaction(api.WalletCreateTransactionRequest) (*api.CreateTransactionResponse, error)
 	InjectEncodedTransaction(rawtx string) (string, error)
 	Balance(addrs []string) (*api.BalanceResponse, error)
@@ -150,11 +154,14 @@ type AddressRow struct {
 
 // Wallet is the page of one wallet.
 type Wallet struct {
-	ID       string
-	Meta     readable.WalletMeta
-	Balance  Amount
-	Addrs    []AddressRow
-	Pager    Pager
+	ID      string
+	Meta    readable.WalletMeta
+	Balance Amount
+	Addrs   []AddressRow
+	Pager   Pager
+	// Exposed counts the addresses that hold coins and have spent.
+	Exposed  int
+	Notice   Notice
 	Disabled bool
 	Err      string
 }
@@ -174,7 +181,8 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 		b = &api.BalanceResponse{}
 	}
 	out.Balance = amountOf(b.BalancePair)
-	rows, err := addressRows(n, w.Entries, b, q, func(a string) string { return sendURL(id, a) })
+	rows, exposed, err := addressRows(n, w.Entries, b, q, func(a string) string { return sendURL(id, a) })
+	out.Exposed = exposed
 	if err != nil {
 		out.Err = err.Error()
 	}
@@ -183,8 +191,10 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 }
 
 // addressRows are the rows of entries that q keeps, with their balances in
-// b. move is the page that moves the coins off an exposed address.
-func addressRows(n Node, entries []readable.WalletEntry, b *api.BalanceResponse, q ListQuery, move func(string) string) ([]AddressRow, error) {
+// b, and how many of all entries are exposed. move is the page that moves
+// the coins off an exposed address.
+func addressRows(n Node, entries []readable.WalletEntry, b *api.BalanceResponse, q ListQuery, move func(string) string) ([]AddressRow, int, error) {
+	exposed := 0
 	all := make([]string, 0, len(entries))
 	for _, e := range entries {
 		all = append(all, e.Address)
@@ -209,12 +219,13 @@ func addressRows(n Node, entries []readable.WalletEntry, b *api.BalanceResponse,
 		r.Exposed = use[e.Address].Spent && !r.Empty
 		if r.Exposed {
 			r.MoveHref = move(e.Address)
+			exposed++
 		}
 		if q.Match(r.Address, r.Chain) && !(q.Hide && r.Empty) {
 			rows = append(rows, r)
 		}
 	}
-	return rows, err
+	return rows, exposed, err
 }
 
 // Peer is one connection of the node.

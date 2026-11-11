@@ -86,6 +86,7 @@ templ BrowserWalletView(w Wallet) {
 		<span class="spacer"></span>
 		<a class="btn primary" href={ templ.URL(bwSendURL(w.ID, "")) }><span class="mi">send</span>{ T(ctx, "send.title") }</a>
 	</div>
+	@ExposedBanner(w.Exposed)
 	<section class="card">
 		@ErrorBox(w.Err)
 		<div class="ov">

@@ -207,3 +207,11 @@ func TestSendHandlers(t *testing.T) {
 	require.Contains(t, body, "Move coins to a new address")
 	require.Contains(t, body, "2.000000")
 }
+
+func TestExposedBanner(t *testing.T) {
+	x := sendNode(t)
+	w := LoadWallet(x.n, "s.wlt", ListQuery{Q: "nothing matches"})
+	require.Equal(t, 1, w.Exposed, "counted over every address, not the filtered page")
+	body := get(t, Handler(x.n, Options{}), "/wallet?id=s.wlt").Body.String()
+	require.Contains(t, body, "1 address(es) in this wallet hold coins")
+}

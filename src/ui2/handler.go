@@ -39,7 +39,9 @@ func Handler(n Node, o Options) http.Handler {
 		return WalletsPage(LoadWallets(n))
 	}))
 	mux.HandleFunc("/wallet", page(func(r *http.Request) templ.Component {
-		return WalletPage(LoadWallet(n, r.FormValue("id"), ParseListQuery(r.FormValue)))
+		w := LoadWallet(n, r.FormValue("id"), ParseListQuery(r.FormValue))
+		w.Notice = ParseNotice(r.FormValue)
+		return WalletPage(w)
 	}))
 	mux.HandleFunc("/wallet/addresses", page(func(r *http.Request) templ.Component {
 		return AddrList(LoadWallet(n, r.FormValue("id"), ParseListQuery(r.FormValue)))
@@ -109,6 +111,7 @@ func Handler(n Node, o Options) http.Handler {
 		w.Header().Set("HX-Redirect", walletURL(wlt.Meta.Filename))
 		return nil
 	}))
+	mux.HandleFunc("/wallet/do/{op}", post(walletOpHandler(n)))
 	mux.HandleFunc("/send", page(func(r *http.Request) templ.Component {
 		return SendPage(LoadSend(n, r.FormValue("id"), r.FormValue("from")))
 	}))

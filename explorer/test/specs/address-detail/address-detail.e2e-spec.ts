@@ -27,9 +27,9 @@ describe('skycoin-explorer Address Page', () => {
     expect(await page.getPageTitleForSmallScreens()).toBe('Address');
   });
 
-  it('should have 5 address details rows', async () => {
+  it('should have 6 address details rows', async () => {
     await browser.setWindowRect(0, 0, 1920, 1080);
-    expect(await generalFunctions.getDetailsRowCount()).toEqual(5);
+    expect(await generalFunctions.getDetailsRowCount()).toEqual(6);
   });
 
   it('should have the correct address for small screens', async () => {

@@ -144,6 +144,29 @@ p { margin: 0 0 10px; }
 .-balance-variation .fee-box { flex-grow: 1; }
 .-balance-variation .separator { opacity: 0.3; margin: 0 10px; font-weight: 700; }
 
+/* Address page */
+.address-head { display: flex; gap: 20px; }
+.address-main { flex: 1; min-width: 0; }
+.address-head .qr { flex: 0 0 130px; margin-top: 90px; }
+.address-head .qr img, .address-head .qr canvas { display: block; width: 130px; height: 130px; }
+.balance-container { padding: 0 0 5px 20px; margin-top: -10px; }
+.balance-container > div { display: inline-block; vertical-align: top; padding: 14px; margin: 0 10px 10px 0; font-weight: 700; border-radius: 5px; background: var(--odd); }
+.balance-container .small { font-weight: 400; font-size: 12px; }
+.balance-container .coin-name { font-weight: 400; font-size: 10px; }
+.sent-warning { color: var(--warn); font-weight: 700; }
+.sent-warning-detail { color: var(--warn); font-size: 12px; }
+.show-all { color: var(--primary); text-align: right; cursor: pointer; list-style: none; margin-top: 20px; }
+.show-all::-webkit-details-marker { display: none; }
+details.more[open] > .show-all { display: none; }
+.-clear-background { background: var(--bg) !important; }
+
+/* Rich list */
+.richlist .c-rank { flex: 0 0 calc((100% - 30px) / 12); }
+.richlist .c-addr { flex: 1; min-width: 0; }
+.richlist .c-coins { flex: 0 0 calc((100% - 30px) / 4); white-space: nowrap; }
+.-coins { text-align: right; font-variant-numeric: tabular-nums; }
+.-decimals { display: inline-block; text-align: left; white-space: nowrap; }
+
 /* Copy buttons and dates */
 .copy { border: 0; background: none; padding: 0 0 0 6px; color: #b8c2cf; cursor: pointer; vertical-align: baseline; }
 .copy:hover { color: var(--primary); }
@@ -206,5 +229,9 @@ time .tz { display: inline-block; width: 12px; height: 12px; margin-right: 4px; 
   .-balance-variation > div { border-bottom: 1px solid var(--sep); padding: 15px 0; }
   .-balance-variation > div:last-child { border-bottom: 0; }
   .header-container .nav-button { margin-left: 4px; }
+  .address-head { display: block; }
+  .address-head .qr { margin: 0 0 10px; }
+  .balance-container { padding-left: 0; margin-top: 0; }
+  .richlist .c-addr, .richlist .c-coins { flex: 1 1 50%; }
   .footer-first-row { padding: 40px 0 24px; }
 }

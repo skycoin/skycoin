@@ -1,0 +1,294 @@
+package explorerui
+
+import (
+	"context"
+	"strings"
+
+	"github.com/skycoin/skycoin/src/readable"
+)
+
+// AddressPage follows explorer/src/app/components/pages/address-detail.
+templ AddressPage(a Address) {
+	@Layout(T(ctx, "addressDetail.title")+" "+a.Addr, addressDesc(ctx, a), a.Status != OK) {
+		<div class="element-details-wrapper address-head">
+			<div class="address-main">
+				<h1 class="-not-xs">{ a.Addr }{ AddrName(a.Addr) }</h1>
+				<h1 class="-xs-only">{ T(ctx, "addressDetail.title") }</h1>
+				if a.Status == OK {
+					<div class="balance-container">
+						<div>
+							{ Amt(ctx, a.Coins) } <span class="coin-name">{ From(ctx).Coin.Ticker }</span>
+							if a.PendingCoins != 0 {
+								<div class="small">{ pendingText(ctx, a.PendingCoins, signed(ctx, a.PendingCoins)) }</div>
+							}
+						</div>
+						<div>
+							{ Int(a.Hours) } <span class="coin-name">{ HoursName(ctx, a.Hours) }</span>
+							if a.PendingHours != 0 {
+								<div class="small">{ pendingText(ctx, a.PendingHours, signedInt(a.PendingHours)) }</div>
+							}
+						</div>
+					</div>
+					<div class="element-details">
+						<div class="-row -xs-only">
+							<span class="label">{ T(ctx, "general.address") }</span>
+							<div class="value">{ a.Addr }{ AddrName(a.Addr) }</div>
+						</div>
+						@Field(T(ctx, "addressDetail.txsNumber")) {
+							{ itoa(a.Count) }
+						}
+						@Field(T(ctx, "addressDetail.hasSent")) {
+							if !a.SentKnown {
+								{ T(ctx, "general.shortLoadingErrorMsg") }
+							} else if !a.HasSent {
+								{ T(ctx, "addressDetail.hasSentNo") }
+							} else {
+								<div>
+									<span class="sent-warning">{ T(ctx, "addressDetail.hasSentYes") }</span>
+									if a.Exposed() {
+										<div class="sent-warning-detail">{ T(ctx, "addressDetail.exposedFunded") }</div>
+									}
+								</div>
+							}
+						}
+						if !a.Many {
+							@Field(T(ctx, "addressDetail.totalReceived")) {
+								{ Amt(ctx, a.Received) } { From(ctx).Coin.Ticker }
+								if a.PendingIn > 0 {
+									&nbsp;({ pendingText(ctx, a.PendingIn, "+"+Amt(ctx, a.PendingIn)) })
+								}
+							}
+							@Field(T(ctx, "addressDetail.totalSent")) {
+								{ Amt(ctx, a.Sent) } { From(ctx).Coin.Ticker }
+								if a.PendingOut > 0 {
+									&nbsp;({ pendingText(ctx, a.PendingOut, "+"+Amt(ctx, a.PendingOut)) })
+								}
+							}
+						}
+						@Field(T(ctx, "addressDetail.tools")) {
+							<a href={ templ.SafeURL("app/unspent/" + a.Addr) } class="-link">{ T(ctx, "addressDetail.unspentOutputs") }</a>
+						}
+					</div>
+				}
+			</div>
+			if a.Status == OK {
+				<div class="qr" data-qr={ From(ctx).Coin.QRPrefix + a.Addr } title={ a.Addr }></div>
+				<script src={ Asset("qrcode.min.js") } defer></script>
+			}
+		</div>
+		if a.Status == NotFound {
+			@Message(T(ctx, "addressDetail.invalidAddress"))
+		} else if a.Status == Failed {
+			@Message(T(ctx, "general.longLoadingErrorMsg"))
+		} else if a.Count == 0 {
+			@Message(T(ctx, "addressDetail.withoutTransactions"))
+		}
+		<div id="txns">
+			for _, tx := range a.Txns {
+				@TxBox(tx, 10, false)
+			}
+			if a.Pages > 1 {
+				@Pages("app/address/"+a.Addr+"/", a.Page, a.Pages, a.Page < a.Pages)
+			}
+		</div>
+	}
+}
+
+func pendingText(ctx context.Context, n int64, amount string) string {
+	key := "addressDetail.pluralPendingCoins"
+	if n == 1 || n == -1 {
+		key = "addressDetail.singularPendingCoins"
+	}
+	return T(ctx, key, "amount", amount)
+}
+
+func signedInt(n int64) string {
+	if n < 0 {
+		return "-" + Int(uint64(-n))
+	}
+	return "+" + Int(uint64(n))
+}
+
+func addressDesc(ctx context.Context, a Address) string {
+	if a.Status != OK {
+		return T(ctx, "addressDetail.invalidAddress")
+	}
+	return T(ctx, "ui2.desc.address", "coin", From(ctx).Coin.FullName, "address", a.Addr, "amount", Amt(ctx, a.Coins)+" "+From(ctx).Coin.Ticker, "txns", itoa(a.Count))
+}
+
+// UnspentPage follows explorer/src/app/components/pages/unspent-outputs.
+templ UnspentPage(u Unspent) {
+	@Layout(T(ctx, "unspentOutputs.title")+" "+u.Addr, T(ctx, "ui2.desc.unspent", "coin", From(ctx).Coin.FullName, "address", u.Addr), u.Status != OK) {
+		<div class="element-details-wrapper">
+			<h1>{ T(ctx, "unspentOutputs.title") }</h1>
+			<div class="element-details">
+				@Field(T(ctx, "unspentOutputs.address")) {
+					@addrLink(u.Addr)
+				}
+				if u.Status == OK {
+					@Field(T(ctx, "unspentOutputs.outputsNumber")) {
+						{ itoa(len(u.Outputs)) }
+					}
+					@Field(T(ctx, "unspentOutputs.totalCoins")) {
+						{ Amt(ctx, u.Coins) } { From(ctx).Coin.Ticker }
+					}
+					@Field(T(ctx, "unspentOutputs.totalHours")) {
+						{ Int(u.Hours) } { HoursName(ctx, u.Hours) }
+					}
+				}
+			</div>
+		</div>
+		if u.Status == NotFound {
+			@Message(T(ctx, "addressDetail.invalidAddress"))
+		} else if u.Status == Failed {
+			@Message(T(ctx, "general.longLoadingErrorMsg"))
+		} else if len(u.Outputs) == 0 {
+			@Message(T(ctx, "unspentOutputs.withoutOutputs"))
+		}
+		for i, o := range u.Outputs {
+			if i < UnspentMax {
+				@outputBox(o)
+			}
+		}
+		if len(u.Outputs) > UnspentMax {
+			<details class="more">
+				<summary class="show-all">{ T(ctx, "unspentOutputs.loadAll", "total", itoa(len(u.Outputs))) }</summary>
+				for _, o := range u.Outputs[UnspentMax:] {
+					@outputBox(o)
+				}
+			</details>
+		}
+	}
+}
+
+templ outputBox(o readable.UnspentOutput) {
+	<div class="transaction">
+		<div class="-title">
+			<div class="title-main">
+				<span class="-inline-block">{ T(ctx, "unspentOutputs.origin") }<span class="-xs-sm-only">:</span></span>
+				<span class="address"><a href={ templ.SafeURL("app/transaction/" + o.SourceTransaction) }>{ o.SourceTransaction }</a>@Copy(o.SourceTransaction)</span>
+			</div>
+			<div class="-date">
+				<span class="-xs-sm-only">{ T(ctx, "unspentOutputs.date") }:<br/></span>
+				@Date(unixWhen(o.Time))
+			</div>
+		</div>
+		<div class="-data -clear-background">
+			<div class="-body">
+				<div class="mono">{ o.Hash }</div>
+				<div class="-balance"><span class="-transparent">{ T(ctx, "general.coins") }:&nbsp;</span>{ AmtS(ctx, o.Coins) }</div>
+				<div class="-balance"><span class="-transparent">{ T(ctx, "unspentOutputs.hoursWhenCreated") }:&nbsp;</span>{ Int(o.Hours) }</div>
+				<div class="-balance"><span class="-transparent">{ T(ctx, "unspentOutputs.currentHours") }:&nbsp;</span>{ Int(o.CalculatedHours) }</div>
+			</div>
+		</div>
+	</div>
+}
+
+// UnconfirmedPage follows
+// explorer/src/app/components/pages/unconfirmed-transactions.
+templ UnconfirmedPage(u Unconfirmed) {
+	@Layout(T(ctx, "unconfirmedTx.title"), T(ctx, "ui2.desc.unconfirmed", "coin", From(ctx).Coin.FullName), false) {
+		<div id="unconfirmed" hx-get="app/unconfirmedtransactions" hx-trigger="every 20s [document.visibilityState === 'visible']" hx-select="#unconfirmed" hx-swap="outerHTML">
+			<div class="element-details-wrapper">
+				<h1>{ T(ctx, "unconfirmedTx.title") }</h1>
+				if u.Status == OK {
+					<div class="element-details">
+						@Field(T(ctx, "unconfirmedTx.quantity")) {
+							if len(u.Txns) > 0 {
+								{ itoa(len(u.Txns)) }
+							} else {
+								{ T(ctx, "unconfirmedTx.withoutTransactions") }
+							}
+						}
+						@Field(T(ctx, "unconfirmedTx.size")) {
+							if len(u.Txns) > 0 {
+								{ Int(u.Size) } bytes
+							} else {
+								{ T(ctx, "unconfirmedTx.withoutTransactions") }
+							}
+						}
+						@Field(T(ctx, "unconfirmedTx.newest")) {
+							if len(u.Txns) > 0 {
+								@Date(u.Newest)
+							} else {
+								{ T(ctx, "unconfirmedTx.withoutTransactions") }
+							}
+						}
+						@Field(T(ctx, "unconfirmedTx.oldest")) {
+							if len(u.Txns) > 0 {
+								@Date(u.Oldest)
+							} else {
+								{ T(ctx, "unconfirmedTx.withoutTransactions") }
+							}
+						}
+					</div>
+				}
+			</div>
+			if u.Status == Failed {
+				@Message(T(ctx, "general.longLoadingErrorMsg"))
+			}
+			for _, tx := range u.Txns {
+				@TxBox(tx, 10, true)
+			}
+		</div>
+	}
+}
+
+// RichlistPage follows explorer/src/app/components/pages/richlist. Amounts
+// have the node's number of decimals and are right aligned, the point and
+// decimals in a box of fixed width, so the points line up.
+templ RichlistPage(r Richlist) {
+	@Layout(richTitle(ctx, r), T(ctx, "ui2.desc.richlist", "coin", From(ctx).Coin.FullName), r.Status != OK || len(r.Rows) == 0) {
+		@templ.Raw("<style>.richlist .-decimals{width:" + itoa(From(ctx).Coin.MaxDecimals+1) + ".5ch}</style>")
+		<h1>{ T(ctx, "richlist.title") }</h1>
+		<div class="table richlist">
+			<div class="-header">
+				<div class="row">
+					<div class="c-rank -not-xs">#</div>
+					<div class="c-addr">{ T(ctx, "general.address") }</div>
+					<div class="c-coins -coins">{ T(ctx, "general.coins") }</div>
+				</div>
+			</div>
+			if r.Status == Failed {
+				@Message(T(ctx, "general.longLoadingErrorMsg"))
+			} else if len(r.Rows) == 0 {
+				@Message(T(ctx, "richlist.noEntries"))
+			}
+			for _, row := range r.Rows {
+				<a class="-row" href={ templ.SafeURL("app/address/" + row.Addr) }>
+					<div class="row">
+						<div class="c-rank -not-xs -gray">{ itoa(row.Rank) }</div>
+						<div class="c-addr">{ row.Addr }{ AddrName(row.Addr) }</div>
+						<div class="c-coins -coins">{ intPart(ctx, row.Coins) }<span class="-decimals">{ fracPart(ctx, row.Coins) }</span></div>
+					</div>
+				</a>
+			}
+		</div>
+		if len(r.Rows) > 0 && (r.Page > 1 || r.HasNext) {
+			@Pages("app/richlist/", r.Page, r.Last, r.HasNext)
+		}
+	}
+}
+
+func richTitle(ctx context.Context, r Richlist) string {
+	if r.Page > 1 {
+		return T(ctx, "richlist.title") + " " + itoa(r.Page)
+	}
+	return T(ctx, "richlist.title")
+}
+
+func fixed(ctx context.Context, d int64) string {
+	return Coins(d, From(ctx).Coin.MaxDecimals, true)
+}
+
+func intPart(ctx context.Context, d int64) string {
+	i, _, _ := strings.Cut(fixed(ctx, d), ".")
+	return i
+}
+
+func fracPart(ctx context.Context, d int64) string {
+	if _, f, ok := strings.Cut(fixed(ctx, d), "."); ok {
+		return "." + f
+	}
+	return ""
+}

@@ -1,0 +1,250 @@
+package explorerui
+
+import (
+	"context"
+	"strings"
+)
+
+// MenuItem is an entry of the site menu, a link or a group of links. It
+// follows explorer/src/app/components/layout/header/menu.ts.
+type MenuItem struct {
+	Name   string
+	Href   string
+	Active bool
+	Items  []MenuItem
+}
+
+func siteMenu(root string) []MenuItem {
+	return []MenuItem{
+		{Name: "Downloads", Href: "https://www.skycoin.com/downloads"},
+		{Name: "Ecosystem", Items: []MenuItem{
+			{Name: "Overview", Href: "https://www.skycoin.com/ecosystem"},
+			{Name: "Skywire", Href: "https://www.skycoin.com/skywire"},
+			{Name: "Obelisk", Href: "https://www.skycoin.com/obelisk"},
+			{Name: "Fiber", Href: "https://www.skycoin.com/fiber"},
+			{Name: "CX", Href: "https://www.skycoin.com/cx"},
+			{Name: "CXO", Href: "https://www.skycoin.com/cxo"},
+		}},
+		{Name: "Skyminer", Href: "https://www.skycoin.com/skyminer"},
+		{Name: "Blog", Href: "https://www.skycoin.com/blog/"},
+		{Name: "Other", Active: true, Items: []MenuItem{
+			{Name: "Gallery", Href: "https://www.skycoin.com/gallery"},
+			{Name: "Explorer", Href: "./", Active: true},
+			{Name: "Explorer API", Href: root + "api.html"},
+		}},
+	}
+}
+
+func external(href string) bool { return len(href) > 4 && href[:4] == "http" }
+
+templ menuLink(m MenuItem, class string) {
+	if external(m.Href) {
+		<a class={ templ.KV(class, class != ""), templ.KV("active", m.Active) } href={ templ.SafeURL(m.Href) } target="_blank" rel="noopener">{ m.Name }</a>
+	} else {
+		<a class={ templ.KV(class, class != ""), templ.KV("active", m.Active) } href={ templ.SafeURL(m.Href) }>{ m.Name }</a>
+	}
+}
+
+templ menu(dark bool) {
+	for _, m := range siteMenu(From(ctx).Root) {
+		if len(m.Items) == 0 {
+			<div class="nav-link">@menuLink(m, "")</div>
+		} else {
+			<div class="nav-link dropdown">
+				<span class={ "dropdown-toggle", templ.KV("active", m.Active) } tabindex="0">{ m.Name }<span class="caret" aria-hidden="true"></span></span>
+				<div class={ "dropdown-menu", templ.KV("dark", dark) }>
+					for _, s := range m.Items {
+						@menuLink(s, "dropdown-item")
+					}
+				</div>
+			</div>
+		}
+	}
+}
+
+func langName(code string) string {
+	for _, l := range Langs {
+		if l.Code == code {
+			return l.Name
+		}
+	}
+	return code
+}
+
+// Layout is the whole document around a page. desc is the page's meta
+// description. A page that found nothing is kept out of search indexes.
+templ Layout(title, desc string, noindex bool) {
+	<!DOCTYPE html>
+	<html lang={ From(ctx).Lang }>
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<base href={ From(ctx).Base }/>
+			<title>{ title } · { T(ctx, "ui2.appName", "coin", From(ctx).Coin.FullName) }</title>
+			<meta name="description" content={ desc }/>
+			if noindex {
+				<meta name="robots" content="noindex"/>
+			} else if From(ctx).Origin != "" {
+				<link rel="canonical" href={ From(ctx).Origin + From(ctx).Path }/>
+			}
+			<meta property="og:title" content={ title }/>
+			<meta property="og:description" content={ desc }/>
+			<meta property="og:type" content="website"/>
+			<link rel="icon" href={ Asset("favicon.ico") }/>
+			<link rel="search" type="application/opensearchdescription+xml" title={ T(ctx, "ui2.appName", "coin", From(ctx).Coin.FullName) } href={ From(ctx).Root + "search.xml" }/>
+			<link rel="stylesheet" href={ Asset("explorer.css") }/>
+			<script src={ Asset("htmx.min.js") } defer></script>
+			<script src={ Asset("explorer.js") } defer></script>
+		</head>
+		<body data-copied={ T(ctx, "copy.copied") }>
+			<div class="app">
+				<header class="page-header">
+					<div class="wrapper">
+						<div class="nav-wrapper">
+							<a href="https://www.skycoin.com/" class="logo"><img src={ Asset("img/logo.svg") } alt="Skycoin" width="134" height="38"/></a>
+							<details class="nav-mobile">
+								<summary aria-label={ T(ctx, "ui2.menu") }><img src={ Asset("img/icMenuBlue.svg") } alt="" width="30" height="30"/></summary>
+								<nav class="nav-panel">
+									@menu(false)
+									<div class="nav-link"><a href="https://t.me/Skycoin" target="_blank" rel="noopener"><img src={ Asset("img/social/telegram.svg") } alt="" width="23" height="23"/> Telegram</a></div>
+								</nav>
+							</details>
+							<nav class="nav-desktop">
+								@menu(false)
+							</nav>
+						</div>
+					</div>
+				</header>
+				<div class="wrapper">
+					<div class="search-row">
+						<form class="search-bar" action="app/search" method="get" role="search">
+							<button type="submit" aria-label={ T(ctx, "search.title") }><img src={ Asset("img/search.png") } alt="" width="20" height="20"/></button>
+							<input name="q" type="search" placeholder={ T(ctx, "searchBar.hint") } aria-label={ T(ctx, "searchBar.hint") } autocomplete="off"/>
+						</form>
+						<details class="lang">
+							<summary aria-label={ T(ctx, "ui2.language") }><img src={ Asset("img/lang/" + From(ctx).Lang + ".png") } alt={ langName(From(ctx).Lang) } width="30" height="20"/><span class="caret" aria-hidden="true"></span></summary>
+							<div class="lang-menu">
+								for _, l := range Langs {
+									<a href={ langHref(ctx, l.Code) } hreflang={ l.Code } class={ templ.KV("active", l.Code == From(ctx).Lang) } hx-boost="false"><img src={ Asset("img/lang/" + l.Code + ".png") } alt="" width="30" height="20"/> { l.Name }</a>
+								}
+							</div>
+						</details>
+					</div>
+					if From(ctx).Syncing {
+						<div class="sync-warning">{ T(ctx, "searchBar.syncAlert") }</div>
+					}
+					<main id="content">
+						{ children... }
+					</main>
+				</div>
+			</div>
+			<footer class="page-footer">
+				<div class="wrapper">
+					<div class="footer-first-row">
+						<a href="./"><img src={ Asset("img/logoBlueWhite.svg") } alt="Skycoin" width="157" height="40"/></a>
+						<nav class="footer-links">
+							@menu(true)
+						</nav>
+					</div>
+					<div class="footer-second-row">
+						<a class="social-link" href="https://github.com/skycoin/skycoin" target="_blank" rel="noopener"><img alt="GitHub" src={ Asset("img/social/github.svg") } width="23" height="23"/></a>
+						<a class="social-link" href="https://t.me/Skycoin" target="_blank" rel="noopener"><img alt="Telegram" src={ Asset("img/social/telegram.svg") } width="23" height="23"/></a>
+					</div>
+					<div class="footer-third-row">
+						<p>© skycoin.com</p>
+						if From(ctx).Classic != "" {
+							<p><a href={ templ.SafeURL(From(ctx).Classic) } hx-boost="false">{ T(ctx, "ui2.classic") }</a></p>
+						}
+						<p><a href="mailto:contact@skycoin.com">contact&#64;skycoin.com</a></p>
+					</div>
+				</div>
+			</footer>
+		</body>
+	</html>
+}
+
+// Field is one labelled row of a details table.
+templ Field(label string) {
+	<div class="-row">
+		<span class="label">{ label }</span>
+		<div class="value">
+			{ children... }
+		</div>
+	</div>
+}
+
+// Copy is the button that copies text, shown once explorer.js runs.
+templ Copy(text string) {
+	<button type="button" class="copy" data-copy={ text } aria-label={ T(ctx, "ui2.copy") } hidden><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"></path></svg></button>
+}
+
+// Date is a moment as yyyy-MM-dd HH:mm:ss, put in the reader's zone by
+// explorer.js.
+templ Date(w When) {
+	if !w.IsZero() {
+		<time datetime={ w.ISO() } data-fmt="full"><span class="tz" aria-hidden="true"></span>{ w.Date() } <span class="-gray">{ w.Clock() }</span></time>
+	}
+}
+
+// Message is the box the Angular pages show while loading or on an error.
+templ Message(msg string) {
+	<div class="message">{ msg }</div>
+}
+
+// HoursName is the name of n coin hours, singular or plural.
+func HoursName(ctx context.Context, n uint64) string {
+	if n == 1 {
+		return From(ctx).Coin.HoursSingular
+	}
+	return From(ctx).Coin.Hours
+}
+
+// Amt is an amount of coins with at most the node's decimals.
+func Amt(ctx context.Context, droplets int64) string {
+	return Coins(droplets, From(ctx).Coin.MaxDecimals, false)
+}
+
+// AmtS is a coin amount given as a string.
+func AmtS(ctx context.Context, s string) string {
+	return Amt(ctx, Droplets(s))
+}
+
+// Pages is the page selection bar of a list whose pages are at
+// <prefix><n>. last is 0 when the number of pages is not known.
+templ Pages(prefix string, page, last int, hasNext bool) {
+	<nav class="pagination" aria-label={ T(ctx, "ui2.pages") } hx-boost="true" hx-target="#content" hx-select="#content" hx-swap="outerHTML show:window:top">
+		@pageLink(prefix, 1, page > 1, "«", "-first")
+		@pageLink(prefix, page-1, page > 1, "‹", "-previous")
+		if page > 2 {
+			@pageLink(prefix, page-2, true, itoa(page-2), "-page -hide-xs")
+		}
+		if page > 1 {
+			@pageLink(prefix, page-1, true, itoa(page-1), "-page")
+		}
+		<span class="-page current" aria-current="page">{ itoa(page) }</span>
+		if hasNext {
+			@pageLink(prefix, page+1, true, itoa(page+1), "-page")
+		}
+		if last > page+1 {
+			@pageLink(prefix, page+2, true, itoa(page+2), "-page -hide-xs")
+		}
+		@pageLink(prefix, page+1, hasNext, "›", "-next")
+		if last > 0 {
+			@pageLink(prefix, last, hasNext, "»", "-last")
+		}
+	</nav>
+}
+
+templ pageLink(prefix string, n int, on bool, text, class string) {
+	if on {
+		<a class={ class } href={ templ.SafeURL(prefix + itoa(n)) }>{ text }</a>
+	} else {
+		<span class={ class, "disabled" } aria-disabled="true">{ text }</span>
+	}
+}
+
+// langHref is the current page in another language. A bare "?lang=" would
+// resolve against <base>, the mount point, so the path is spelled out.
+func langHref(ctx context.Context, code string) templ.SafeURL {
+	return templ.SafeURL(strings.TrimPrefix(From(ctx).Path, "/") + "?lang=" + code)
+}

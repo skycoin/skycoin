@@ -222,9 +222,9 @@ func TestBaseFor(t *testing.T) {
 }
 
 func TestCatalogsMatch(t *testing.T) {
-	en := catalog.load("en")
+	en := catalog.Load("en")
 	for _, l := range Langs {
-		m := catalog.load(l.Code)
+		m := catalog.Load(l.Code)
 		require.Len(t, m, len(en), l.Code)
 		for k := range en {
 			require.NotEmpty(t, m[k], "%s %s", l.Code, k)

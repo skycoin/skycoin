@@ -7,9 +7,7 @@ package ui2
 
 import (
 	"context"
-	"crypto/sha256"
 	"embed"
-	"encoding/hex"
 	"io/fs"
 	"strings"
 )
@@ -32,29 +30,12 @@ var staticFS = func() fs.FS {
 	return sub
 }()
 
-// assetVer maps each static file to a short hash of its content, so a page
-// can name a URL that changes whenever the file does.
-var assetVer = func() map[string]string {
-	m := map[string]string{}
-	_ = fs.WalkDir(staticFS, ".", func(p string, d fs.DirEntry, err error) error { //nolint:errcheck
-		if err != nil || d.IsDir() {
-			return err
-		}
-		b, err := fs.ReadFile(staticFS, p)
-		if err != nil {
-			return err
-		}
-		sum := sha256.Sum256(b)
-		m[p] = hex.EncodeToString(sum[:6])
-		return nil
-	})
-	return m
-}()
+var assets = NewAssets(staticFS)
 
 // Asset is the URL of a static file, relative to the page's <base>, carrying
 // its content hash so it can be cached for good.
 func Asset(name string) string {
-	return "static/" + name + "?v=" + assetVer[name]
+	return assets.URL(name)
 }
 
 // BaseFor is the relative path from a request path, as seen below the mount
@@ -91,9 +72,5 @@ func From(ctx context.Context) *Page {
 // T translates key into the page language. args are name, value pairs that
 // fill {{ name }} placeholders.
 func T(ctx context.Context, key string, args ...string) string {
-	s := catalog.get(From(ctx).Lang, key)
-	for i := 0; i+1 < len(args); i += 2 {
-		s = strings.ReplaceAll(s, "{{ "+args[i]+" }}", args[i+1])
-	}
-	return s
+	return catalog.T(From(ctx).Lang, key, args...)
 }

@@ -1,0 +1,338 @@
+package explorerui
+
+import "context"
+
+// BlocksPage is the home page, following
+// explorer/src/app/components/pages/blocks.
+templ BlocksPage(b Blocks) {
+	@Layout(T(ctx, "blocks.blocksTitle"), T(ctx, "ui2.desc.blocks", "coin", From(ctx).Coin.FullName), false) {
+		<div class="blocks-head">
+			<div class="-title">
+				<h1 class="-not-xs">{ T(ctx, "blocks.blocksTitle") }</h1>
+				<h1 class="-xs-only">{ T(ctx, "blocks.statsTitle") }</h1>
+			</div>
+			<div class="-details">
+				@stat(T(ctx, "blocks.blockHeight"), heightText(ctx, b))
+				@stat(T(ctx, "blocks.currentSupply"), supplyText(ctx, b.Supply, 0))
+				@stat(T(ctx, "blocks.totalSupply"), supplyText(ctx, b.Supply, 1))
+				@stat(T(ctx, "blocks.currentCoinhourSupply"), supplyText(ctx, b.Supply, 2))
+				@stat(T(ctx, "blocks.totalCoinhourSupply"), supplyText(ctx, b.Supply, 3))
+				<p><a href={ templ.SafeURL(From(ctx).Root + "api.html") } class="-link">{ T(ctx, "blocks.explorerApi") }</a></p>
+				<p><a href="app/unconfirmedtransactions" class="-link">{ T(ctx, "blocks.unconfirmedTransactions") }</a></p>
+				<p><a href="app/richlist" class="-link">{ T(ctx, "blocks.richList") }</a></p>
+			</div>
+		</div>
+		<h2 class="-xs-only">{ T(ctx, "blocks.blocksTitle") }</h2>
+		if b.Page == 1 {
+			<div id="blocks" hx-get="app/blocks/1" hx-trigger="every 20s [document.visibilityState === 'visible']" hx-select="#blocks" hx-swap="outerHTML">
+				@blocksTable(b)
+			</div>
+		} else {
+			<div id="blocks">
+				@blocksTable(b)
+			</div>
+		}
+		if len(b.Rows) > 0 {
+			@Pages("app/blocks/", b.Page, b.Pages, b.Page < b.Pages)
+		}
+	}
+}
+
+templ stat(label, value string) {
+	<p><span class="-label">{ label }:</span><br class="-xs-only"/> <span class="-value">{ value }</span></p>
+}
+
+func heightText(ctx context.Context, b Blocks) string {
+	if b.Status == Failed {
+		return T(ctx, "general.shortLoadingErrorMsg")
+	}
+	return Int(b.Height)
+}
+
+func supplyText(ctx context.Context, s *SupplyNums, which int) string {
+	if s == nil {
+		return T(ctx, "general.shortLoadingErrorMsg")
+	}
+	switch which {
+	case 0:
+		return AmtS(ctx, s.Current)
+	case 1:
+		return AmtS(ctx, s.Total)
+	case 2:
+		return IntS(s.CurrentHours)
+	default:
+		return IntS(s.TotalHours)
+	}
+}
+
+templ blocksTable(b Blocks) {
+	<div class="table blocks">
+		<div class="-header">
+			<div class="row">
+				<div class="c-time">{ T(ctx, "blocks.time") }</div>
+				<div class="c-num"><span class="-not-xs">{ T(ctx, "blocks.blockNumberShortLabel") }</span><span class="-xs-only">{ T(ctx, "blocks.blockNumberVeryShortLabel") }</span></div>
+				<div class="c-txs">{ T(ctx, "blocks.transactionsShortLabel") }</div>
+				<div class="c-hash -not-xs">{ T(ctx, "blocks.blockhashShortLabel") }</div>
+			</div>
+		</div>
+		if b.Status == Failed {
+			@Message(T(ctx, "general.longLoadingErrorMsg"))
+		}
+		for _, r := range b.Rows {
+			<a class="-row" href={ templ.SafeURL("app/block/" + utoa(r.Seq)) }>
+				<div class="row">
+					<div class="c-time">
+						<span class="-not-xs">
+							@Date(r.Time)
+						</span>
+						<time class="-xs-only" datetime={ r.Time.ISO() } data-fmt="stack"><span class="-gray"><span class="tz" aria-hidden="true"></span>{ r.Time.Year() }</span><br/><span class="-small-font">{ r.Time.Day() }</span><br/><span class="-small-font">{ r.Time.Minute() }</span></time>
+					</div>
+					<div class="c-num">{ utoa(r.Seq) }</div>
+					<div class="c-txs -gray">{ itoa(r.Txns) }</div>
+					<div class="c-hash -not-xs">{ r.Hash }</div>
+				</div>
+			</a>
+		}
+	</div>
+}
+
+// BlockPage follows explorer/src/app/components/pages/block-details.
+templ BlockPage(b Block) {
+	@Layout(blockTitle(ctx, b), blockDesc(ctx, b), b.Status != OK) {
+		<div class="element-details-wrapper">
+			<div class="header-container">
+				<h1>{ T(ctx, "blockDetails.title") }</h1>
+				if b.Status == OK {
+					<div class="nav-button-container">
+						if b.Seq > 0 {
+							<a href={ templ.SafeURL("app/block/" + utoa(b.Seq-1)) } class="nav-button" rel="prev">‹<span class="-not-xs">&nbsp;{ T(ctx, "blockDetails.goToPrevious") }</span></a>
+						}
+						if b.Seq < b.Height {
+							<a href={ templ.SafeURL("app/block/" + utoa(b.Seq+1)) } class="nav-button" rel="next"><span class="-not-xs">{ T(ctx, "blockDetails.goToNext") }&nbsp;</span>›</a>
+						}
+					</div>
+				}
+			</div>
+			if b.Status == OK {
+				<div class="element-details">
+					@Field(T(ctx, "blockDetails.height")) {
+						{ utoa(b.Seq) }
+					}
+					@Field(T(ctx, "blockDetails.timestamp")) {
+						@Date(b.Time)
+					}
+					@Field(T(ctx, "blockDetails.size")) {
+						{ Int(uint64(b.Size)) } bytes
+					}
+					@Field(T(ctx, "blockDetails.hash")) {
+						<a href={ templ.SafeURL("app/block/" + utoa(b.Seq)) } class="-link mono">{ b.Hash }</a>
+						@Copy(b.Hash)
+					}
+					@Field(T(ctx, "blockDetails.parentHash")) {
+						if b.Seq == 0 {
+							{ T(ctx, "blockDetails.withoutParent") }
+						} else {
+							<a href={ templ.SafeURL("app/block/" + utoa(b.Seq-1)) } class="-link mono">{ b.ParentHash }</a>
+							@Copy(b.ParentHash)
+						}
+					}
+					@Field(T(ctx, "blockDetails.totalAmount")) {
+						{ Amt(ctx, b.Total) } { From(ctx).Coin.Ticker }
+					}
+				</div>
+			}
+		</div>
+		if b.Status == NotFound {
+			@Message(T(ctx, "blockDetails.doesNotExist", "number", b.ID))
+		} else if b.Status == Failed {
+			@Message(T(ctx, "general.longLoadingErrorMsg"))
+		}
+		for _, tx := range b.Txns {
+			@TxBox(tx, 10, false)
+		}
+	}
+}
+
+func blockTitle(ctx context.Context, b Block) string {
+	return T(ctx, "blockDetails.title") + " " + b.ID
+}
+
+func blockDesc(ctx context.Context, b Block) string {
+	if b.Status != OK {
+		return T(ctx, "blockDetails.doesNotExist", "number", b.ID)
+	}
+	return T(ctx, "ui2.desc.block", "coin", From(ctx).Coin.FullName, "number", utoa(b.Seq), "txns", itoa(len(b.Txns)), "hash", b.Hash)
+}
+
+// TxPageView follows explorer/src/app/components/pages/transaction-detail.
+templ TxPageView(p TxPage) {
+	@Layout(T(ctx, "transactionDetail.title")+" "+short(p.ID), txDesc(ctx, p), p.Status != OK) {
+		<div class="element-details-wrapper">
+			<h1>{ T(ctx, "transactionDetail.title") }</h1>
+			if p.Status == OK {
+				<div class="element-details">
+					@Field(T(ctx, "transactionDetail.status")) {
+						if p.Tx.Status.Confirmed {
+							{ T(ctx, "transactionDetail.confirmed") }
+						} else {
+							{ T(ctx, "transactionDetail.unconfirmed") }
+						}
+					}
+					@Field(T(ctx, "transactionDetail.size")) {
+						{ Int(uint64(p.Tx.Size)) } bytes
+					}
+					if p.Tx.Status.Confirmed {
+						@Field(T(ctx, "transactionDetail.block")) {
+							<a href={ templ.SafeURL("app/block/" + utoa(p.Tx.Status.BlockSeq)) } class="-link">{ utoa(p.Tx.Status.BlockSeq) }</a>
+							@Copy(utoa(p.Tx.Status.BlockSeq))
+						}
+					}
+				</div>
+			}
+		</div>
+		if p.Status == NotFound {
+			@Message(T(ctx, "transactionDetail.canNotFind"))
+		} else if p.Status == Failed {
+			@Message(T(ctx, "general.longLoadingErrorMsg"))
+		} else {
+			@TxBox(p.Tx, 32, false)
+		}
+	}
+}
+
+func short(id string) string {
+	if len(id) > 16 {
+		return id[:16] + "…"
+	}
+	return id
+}
+
+func txDesc(ctx context.Context, p TxPage) string {
+	if p.Status != OK {
+		return T(ctx, "transactionDetail.canNotFind")
+	}
+	var total int64
+	for _, o := range p.Tx.Out {
+		total += o.Coins
+	}
+	return T(ctx, "ui2.desc.tx", "coin", From(ctx).Coin.FullName, "id", p.ID, "amount", Amt(ctx, total)+" "+From(ctx).Coin.Ticker)
+}
+
+// TxBox is a transaction with its inputs and outputs, following
+// explorer/src/app/components/layout/transaction-info. Past the first max
+// inputs or outputs, the rest fold away.
+templ TxBox(tx Tx, max int, unconfirmed bool) {
+	<div class="transaction">
+		<div class="-title">
+			<div class="title-main">
+				<span class="-inline-block">{ T(ctx, "txBoxes.transactionIDShortLabel") }<span class="-xs-sm-only">:</span></span>
+				<span class="address"><a href={ templ.SafeURL("app/transaction/" + tx.ID) }>{ tx.ID }</a>@Copy(tx.ID)</span>
+				if tx.HasBalance {
+					<span class={ "-label", templ.KV("-red", tx.Balance < 0), templ.KV("-green", tx.Balance >= 0) }>
+						{ signed(ctx, tx.Balance) } { From(ctx).Coin.Ticker }
+						if !tx.Status.Confirmed {
+							({ T(ctx, "txBoxes.pendingTransaction") })
+						}
+					</span>
+				}
+			</div>
+			if !tx.Time.IsZero() {
+				<div class="-date">
+					if unconfirmed {
+						<span class="-xs-sm-only">{ T(ctx, "txBoxes.firstSeen") }:<br/></span>
+					} else {
+						<span class="-xs-sm-only">{ T(ctx, "txBoxes.date") }:<br/></span>
+					}
+					@Date(tx.Time)
+				</div>
+			}
+		</div>
+		<div class="-header -not-xs cols2">
+			<div>{ T(ctx, "txBoxes.inputs") }</div>
+			<div>{ T(ctx, "txBoxes.outputs") }</div>
+		</div>
+		<div class="-data">
+			<div class="cols2">
+				<div>
+					<div class="-header -xs-only">{ T(ctx, "txBoxes.inputs") }</div>
+					for i, in := range tx.In {
+						if i < max {
+							@txIn(in)
+						}
+					}
+					if len(tx.In) > max {
+						<details class="more">
+							<summary class="-body -link">{ T(ctx, "txBoxes.loadAll", "total", itoa(len(tx.In))) }</summary>
+							for _, in := range tx.In[max:] {
+								@txIn(in)
+							}
+						</details>
+					}
+				</div>
+				<div>
+					<div class="-header -xs-only">{ T(ctx, "txBoxes.outputs") }</div>
+					for i, out := range tx.Out {
+						if i < max {
+							@txOut(out)
+						}
+					}
+					if len(tx.Out) > max {
+						<details class="more">
+							<summary class="-body -link">{ T(ctx, "txBoxes.loadAll", "total", itoa(len(tx.Out))) }</summary>
+							for _, out := range tx.Out[max:] {
+								@txOut(out)
+							}
+						</details>
+					}
+				</div>
+			</div>
+			<div class="-header -xs-only">{ T(ctx, "txBoxes.moreInfo") }</div>
+			<div class="-balance-variation">
+				<div class="fee-box"><span class="-transparent">{ T(ctx, "txBoxes.fee") }:&nbsp;</span>{ Int(tx.Fee) }</div>
+				if tx.HasRunning {
+					<div><span class="-transparent">{ T(ctx, "txBoxes.initialBalance") }:&nbsp;</span>{ Amt(ctx, tx.Before) }</div>
+					<span class="separator -not-xs" aria-hidden="true">›</span>
+					<div><span class="-transparent">{ T(ctx, "txBoxes.finalBalance") }:&nbsp;</span>{ Amt(ctx, tx.After) }</div>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+func signed(ctx context.Context, d int64) string {
+	if d < 0 {
+		return Amt(ctx, d)
+	}
+	return "+" + Amt(ctx, d)
+}
+
+templ addrLink(addr string) {
+	<a class="-link" href={ templ.SafeURL("app/address/" + addr) }>{ addr }{ AddrName(addr) }</a>
+	@Copy(addr)
+}
+
+templ txIn(in TxIn) {
+	<div class="-body">
+		@addrLink(in.Addr)
+		<div class="-balance"><span class="-transparent">{ T(ctx, "general.coins") }:&nbsp;</span>{ Amt(ctx, in.Coins) }</div>
+		<div class="-balance"><span class="-transparent">{ T(ctx, "txBoxes.hoursWhenCreated") }:&nbsp;</span>{ Int(in.Hours) }</div>
+		<div class="-balance"><span class="-transparent">{ T(ctx, "txBoxes.hoursWhenUsed") }:&nbsp;</span>{ Int(in.CalcHours) }</div>
+	</div>
+}
+
+templ txOut(out TxOut) {
+	<div class="-body">
+		@addrLink(out.Addr)
+		<div class="-balance"><span class="-transparent">{ T(ctx, "general.coins") }:&nbsp;</span>{ Amt(ctx, out.Coins) }</div>
+		<div class="-balance"><span class="-transparent">{ T(ctx, "general.hours") }:&nbsp;</span>{ Int(out.Hours) }</div>
+	</div>
+}
+
+// SearchPage is a search term that names nothing, following
+// explorer/src/app/components/pages/search.
+templ SearchPage(term string) {
+	@Layout(T(ctx, "search.title"), T(ctx, "search.unableToFind", "term", term), true) {
+		<h1>{ T(ctx, "search.title") }</h1>
+		@Message(T(ctx, "search.unableToFind", "term", term))
+	}
+}

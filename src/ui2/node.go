@@ -31,6 +31,8 @@ type Node interface {
 	CreateWalletTemp(api.CreateWalletOptions) (*api.WalletResponse, error)
 	RecoverWallet(api.WalletRecoverRequest) (*api.WalletResponse, error)
 	NewWalletAddress(id, password string, options ...wallet.Option) ([]string, error)
+	NewWalletAccount(id, password, name string) (*api.WalletResponse, error)
+	RemovePendingTransaction(txid string) error
 	ScanWalletAddresses(id string, n int, password string) ([]string, error)
 	UpdateWallet(id, label string) error
 	EncryptWallet(id, password string) (*api.WalletResponse, error)
@@ -172,10 +174,15 @@ type Wallet struct {
 	Addrs   []AddressRow
 	Pager   Pager
 	// Exposed counts the addresses that hold coins and have spent.
-	Exposed  int
-	Notice   Notice
-	Disabled bool
-	Err      string
+	Exposed int
+	Notice  Notice
+	// Accounts are a bip44 wallet's accounts after the first, which the
+	// address list does not show.
+	Accounts []AccountView
+	// AccountIDs are every account index, for the new address form.
+	AccountIDs []uint32
+	Disabled   bool
+	Err        string
 }
 
 // LoadWallet reads wallet id, its balance and the page of addresses q asks for.
@@ -199,7 +206,53 @@ func LoadWallet(n Node, id string, q ListQuery) Wallet {
 		out.Err = err.Error()
 	}
 	out.Addrs, out.Pager = Paginate(rows, q, ListPageSize)
+	out.Accounts, out.AccountIDs = loadAccounts(n, w.Accounts)
 	return out
+}
+
+// AccountView is one bip44 account with its addresses and balance.
+type AccountView struct {
+	Index   uint32
+	Name    string
+	Balance Amount
+	Addrs   []AddressRow
+	Err     string
+}
+
+func loadAccounts(n Node, accts []readable.WalletAccount) ([]AccountView, []uint32) {
+	var out []AccountView
+	var ids []uint32
+	for _, a := range accts {
+		ids = append(ids, a.Index)
+		if a.Index == 0 {
+			continue
+		}
+		v := AccountView{Index: a.Index, Name: a.Name}
+		var addrs []string
+		for _, e := range append(append([]readable.WalletEntry{}, a.ExternalEntries...), a.ChangeEntries...) {
+			addrs = append(addrs, e.Address)
+		}
+		b := &api.BalanceResponse{}
+		if len(addrs) > 0 {
+			var err error
+			if b, err = n.Balance(addrs); err != nil {
+				v.Err, b = err.Error(), &api.BalanceResponse{}
+			}
+		}
+		v.Balance = amountOf(b.BalancePair)
+		for i, list := range [][]readable.WalletEntry{a.ExternalEntries, a.ChangeEntries} {
+			chain := "external"
+			if i == 1 {
+				chain = "change"
+			}
+			for j, e := range list {
+				ab := b.Addresses[e.Address]
+				v.Addrs = append(v.Addrs, AddressRow{Address: e.Address, Chain: chain, Index: strconv.Itoa(j), Coins: coins(ab.Confirmed.Coins), Hours: utoa(ab.Confirmed.Hours), Empty: ab.Confirmed.Coins == 0})
+			}
+		}
+		out = append(out, v)
+	}
+	return out, ids
 }
 
 // addressRows are the rows of entries that q keeps, with their balances in

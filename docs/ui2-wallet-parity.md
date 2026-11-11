@@ -32,7 +32,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | address history and outputs links | wallet-detail | present | present | |
 | new address | wallet-options | present | present | |
 | scan for addresses | wallet-options | present | missing | |
-| add bip44 account | wallet-detail | missing | missing | |
+| add bip44 account, addresses per account | wallet-detail | present | missing | browser wallets keep one account, as the Angular wallet's browser backend does |
 | rename | change-name | present | present | |
 | encrypt, decrypt | wallet-options | present | partial | browser: set or change the password; ui2 keeps browser wallets encrypted, so no decrypt |
 | delete | wallet-options | n/a | present | Angular only drops a node wallet from its list |
@@ -81,7 +81,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | coin supply | blockchain | present | present | on the status page |
 | peers | network | present | present | on the status page |
 | pending transactions, mine or all | pending-transactions | present | present | |
-| remove a pending transaction from the pool | pending-transactions | missing | missing | the API client has no call for it yet |
+| remove a pending transaction from the pool | pending-transactions | present | present | |
 | unspent outputs | outputs | present | present | |
 | backup, show seed | backup | present | present | node: needs INSECURE_WALLET_SEED; browser: on the wallet page, decrypted in bw.js |
 | wallet directory, save addresses | backup | present | missing | |

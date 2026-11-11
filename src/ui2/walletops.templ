@@ -35,7 +35,26 @@ templ walletOptions(w Wallet) {
 					{ T(ctx, "wallet.how-many") }
 					<input type="number" name="num" value="1" min="1" max={ itoa(MaxNewAddresses) } required/>
 				</label>
+				if len(w.AccountIDs) > 1 {
+					<label>
+						{ T(ctx, "wallet.account") }
+						<select name="account">
+							for _, a := range w.AccountIDs {
+								<option value={ utoa(uint64(a)) }>{ T(ctx, "wallet.account-n", "n", utoa(uint64(a))) }</option>
+							}
+						</select>
+					</label>
+				}
 				@walletPassword(w)
+			}
+			if w.Meta.Type == "bip44" {
+				@walletOpForm(w, "account", "add", T(ctx, "wallet.add-account")) {
+					<label>
+						{ T(ctx, "wallet.account-name") }
+						<input type="text" name="name" maxlength="100"/>
+					</label>
+					@walletPassword(w)
+				}
 			}
 			@walletOpForm(w, "scan", "search", T(ctx, "wallet.scan")) {
 				<p class="small dim">{ T(ctx, "wallet.scan-help") }</p>
@@ -91,5 +110,31 @@ templ walletPassword(w Wallet) {
 			{ T(ctx, "send.password") }
 			<input type="password" name="password" required autocomplete="current-password"/>
 		</label>
+	}
+}
+
+// accountsSection lists a bip44 wallet's accounts after the first.
+templ accountsSection(w Wallet) {
+	for _, a := range w.Accounts {
+		<section class="card">
+			<div class="head">
+				<h2>
+					if a.Name != "" {
+						{ a.Name }
+					} else {
+						{ T(ctx, "wallet.account-n", "n", utoa(uint64(a.Index))) }
+					}
+				</h2>
+				<span class="badge">m/44'/…/{ utoa(uint64(a.Index)) }'</span>
+				<span class="spacer"></span>
+				<span class="nowrap">@Money(a.Balance) {
+	T(ctx, "balance.coins") 
+}</span>
+			</div>
+			@ErrorBox(a.Err)
+			if len(a.Addrs) > 0 {
+				@addrTable(Wallet{ID: w.ID, Meta: w.Meta, Addrs: a.Addrs})
+			}
+		</section>
 	}
 }

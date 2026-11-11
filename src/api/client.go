@@ -166,6 +166,12 @@ func (c *Client) PostJSON(endpoint string, reqObj, respObj interface{}) error {
 
 // Post makes a POST request to an endpoint.
 func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
+	return c.send(http.MethodPost, endpoint, contentType, body, obj)
+}
+
+// send makes a method request with a CSRF token. A non-empty contentType
+// is sent as the body's type. If the response is not 200 OK it returns an error.
+func (c *Client) send(method, endpoint, contentType string, body io.Reader, obj interface{}) error {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return err
@@ -174,7 +180,7 @@ func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj i
 	endpoint = strings.TrimLeft(endpoint, "/")
 	endpoint = c.Addr + endpoint
 
-	req, err := http.NewRequest(http.MethodPost, endpoint, body)
+	req, err := http.NewRequest(method, endpoint, body)
 	if err != nil {
 		return err
 	}
@@ -185,7 +191,9 @@ func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj i
 		req.Header.Set(CSRFHeaderName, csrf)
 	}
 
-	req.Header.Set("Content-Type", contentType)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -1501,4 +1509,26 @@ func (c *Client) TransactionsVerboseV2(args ...RequestArg) (*TransactionsWithSta
 		return nil, err
 	}
 	return &obj, nil
+}
+
+// NewWalletAccount makes a request to POST /api/v1/wallet/newAccount and
+// adds an account to a bip44 wallet.
+func (c *Client) NewWalletAccount(id, password, name string) (*WalletResponse, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("password", password)
+	if name != "" {
+		v.Add("name", name)
+	}
+	var w WalletResponse
+	if err := c.PostForm("/api/v1/wallet/newAccount", strings.NewReader(v.Encode()), &w); err != nil {
+		return nil, err
+	}
+	return &w, nil
+}
+
+// RemovePendingTransaction makes a request to DELETE /api/v1/pendingTxs and
+// drops a transaction from the node's unconfirmed pool.
+func (c *Client) RemovePendingTransaction(txid string) error {
+	return c.send(http.MethodDelete, "/api/v1/pendingTxs?txid="+url.QueryEscape(txid), "", nil, nil)
 }

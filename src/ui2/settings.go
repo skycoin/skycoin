@@ -1,8 +1,10 @@
 package ui2
 
 import (
+	"encoding/json"
 	"errors"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -243,4 +245,9 @@ func ago(now time.Time, unix int64) string {
 		return itoa(int(d.Hours())) + "h"
 	}
 	return itoa(int(d.Hours()/24)) + "d"
+}
+
+func pendingVals(txid string, all bool) string {
+	b, _ := json.Marshal(map[string]string{"txid": txid, "all": strconv.FormatBool(all)}) //nolint:errcheck
+	return string(b)
 }

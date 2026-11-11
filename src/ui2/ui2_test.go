@@ -508,3 +508,36 @@ func TestStatusBar(t *testing.T) {
 	require.Contains(t, body, "CSRF is not working", "the fake node reports CSRF off")
 	require.NotContains(t, body, "no peer connections")
 }
+
+func (f *fakeNode) NewWalletAccount(id, password, name string) (*api.WalletResponse, error) {
+	f.ops = append(f.ops, "account "+id+" "+password+" "+name)
+	return f.Wallet(id)
+}
+
+func (f *fakeNode) RemovePendingTransaction(txid string) error {
+	f.ops = append(f.ops, "remove "+txid)
+	return nil
+}
+
+func TestAccountsAndPendingRemoval(t *testing.T) {
+	n := testNode()
+	n.wallets[0].Accounts = []readable.WalletAccount{
+		{Index: 0},
+		{Index: 1, Name: "Business", ExternalEntries: []readable.WalletEntry{{Address: "acct1Addr"}}},
+	}
+	h := Handler(n, Options{})
+	body := get(t, h, "/wallet?id=a.wlt").Body.String()
+	require.Contains(t, body, `hx-post="wallet/do/account"`)
+	require.Contains(t, body, "Business")
+	require.Contains(t, body, `data-copy="acct1Addr"`)
+	require.Contains(t, body, `<option value="1">Account 1</option>`)
+
+	rr := postForm(h, "/wallet/do/account", url.Values{"id": {"a.wlt"}, "name": {" Savings 2 "}, "password": {"pw"}})
+	require.Equal(t, "wallet?id=a.wlt&done=account", rr.Header().Get("HX-Redirect"))
+	require.Equal(t, "account a.wlt pw Savings 2", n.ops[len(n.ops)-1])
+
+	rr = postForm(h, "/pending/remove", url.Values{"txid": {"p-mine"}, "all": {"true"}})
+	require.Equal(t, "pending?all=1", rr.Header().Get("HX-Redirect"))
+	require.Equal(t, "remove p-mine", n.ops[len(n.ops)-1])
+	require.Contains(t, get(t, h, "/pending").Body.String(), `hx-post="pending/remove"`)
+}

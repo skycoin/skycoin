@@ -100,6 +100,7 @@ templ WalletPage(w Wallet) {
 				</form>
 				@AddrList(w)
 			</section>
+			@accountsSection(w)
 			<section class="card">
 				<div class="bar">
 					<h2>{ T(ctx, "wallet.history") }</h2>

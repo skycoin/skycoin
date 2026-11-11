@@ -128,4 +128,4 @@ wait_for_http "${EXPLORER_ADDR}/" "explorer" || {
 
 echo "running explorer e2e suite"
 cd explorer
-npx wdio run ./wdio-blockchain-180.conf.ts --baseUrl "$EXPLORER_ADDR"
+EXPLORER_PATH=/classic npx wdio run ./wdio-blockchain-180.conf.ts --baseUrl "$EXPLORER_ADDR"

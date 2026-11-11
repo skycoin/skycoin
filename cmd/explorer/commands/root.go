@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"mime"
 	"net/http"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/calvin"
 
-	"github.com/skycoin/skycoin/explorer"
 	"github.com/skycoin/skycoin/src/explorerui"
 	"github.com/skycoin/skycoin/src/fiber"
 )
@@ -161,42 +159,36 @@ var RootCmd = &cobra.Command{
 				log.Fatalln("Unable to register js mime type.")
 			}
 
-			var fileServer http.Handler
 			if uiFilesFolder != "" {
-				// External GUI directory
-				log.Printf("Serving GUI from local folder: %s", uiFilesFolder)
-				fileServer = http.FileServer(http.Dir(uiFilesFolder))
-			} else {
-				// Embedded GUI
-				log.Println("Serving embedded GUI")
-				sub, err := fs.Sub(explorer.EmbeddedFiles, "dist")
-				if err == nil {
-					fileServer = http.FileServer(http.FS(sub))
-				} else {
-					// fallback if dist/ not present in FS
-					fileServer = http.FileServer(http.FS(explorer.EmbeddedFiles))
-				}
+				log.Printf("Serving the Angular explorer from local folder: %s", uiFilesFolder)
 			}
+			classic := classicHandler()
+			ui := explorerui.Handler(explorerui.NewClient(skycoinAddr.String()), explorerui.Options{Classic: "classic/"})
 
-			// Serve static files, and the Angular index with a link to /ui2
+			// The server rendered explorer has / and the Angular paths. Other
+			// paths are Angular files, kept where its absolute links expect them.
 			gzipHandle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == "/" {
-					serveClassicIndex(w)
+					ui.ServeHTTP(w, r)
 					return
 				}
-				fileServer.ServeHTTP(w, r)
+				classic.files.ServeHTTP(w, r)
 			}))
+			gzipHandle("/app/", ui)
+			gzipHandle("/static/", ui)
 
-			// Angular SPA fallback (/app/* → index.html)
-			gzipHandle("/app/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				serveClassicIndex(w)
+			// The Angular explorer stays reachable at /classic/ for one release.
+			gzipHandle("/classic/", classic)
+
+			// /ui2/ held the server rendered explorer while it sat beside the
+			// Angular one.
+			gzipHandle("/ui2/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				to := strings.TrimPrefix(r.URL.Path, "/ui2")
+				if r.URL.RawQuery != "" {
+					to += "?" + r.URL.RawQuery
+				}
+				http.Redirect(w, r, to, http.StatusMovedPermanently)
 			}))
-
-			// The server rendered explorer, beside the Angular one.
-			gzipHandle("/ui2/", http.StripPrefix("/ui2", explorerui.Handler(
-				explorerui.NewClient(skycoinAddr.String()),
-				explorerui.Options{Root: "../", Classic: "../"},
-			)))
 
 			// Backwards compatibility redirects
 			gzipHandle("/blocks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

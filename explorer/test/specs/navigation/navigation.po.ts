@@ -1,6 +1,6 @@
 export class NavigarionPage {
   navigateTo() {
-    return browser.url('/');
+    return browser.url((process.env.EXPLORER_PATH || '') + '/');
   }
 
   goToRichlistPage() {

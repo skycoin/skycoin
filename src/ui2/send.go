@@ -61,6 +61,8 @@ type SendForm struct {
 	// From moves every coin of this one address of the wallet to an unused
 	// receive address of the same wallet.
 	From string
+	// Unsigned makes the transaction without signing it, to sign elsewhere.
+	Unsigned bool
 }
 
 // ParseSendForm reads the form through post, a request's PostFormValue.
@@ -172,7 +174,7 @@ func Prepare(n Node, f SendForm) Review {
 		return fail(err)
 	}
 
-	req := api.WalletCreateTransactionRequest{WalletID: f.ID, Password: f.Password}
+	req := api.WalletCreateTransactionRequest{WalletID: f.ID, Password: f.Password, Unsigned: f.Unsigned}
 	req.HoursSelection = api.HoursSelection{Type: "auto", Mode: "share", ShareFactor: "0.5"}
 
 	to, amount := f.To, f.Coins

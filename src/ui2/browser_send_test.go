@@ -16,6 +16,16 @@ import (
 func (f *fakeNode) CreateTransaction(r api.CreateTransactionRequest) (*api.CreateTransactionResponse, error) {
 	f.created2 = append(f.created2, r)
 	var t api.CreateTransactionResponse
+	if len(r.UxOuts) > 0 {
+		// A joint transaction: every named output is spent but "dropped".
+		for _, u := range r.UxOuts {
+			if u != "dropped" {
+				t.Transaction.In = append(t.Transaction.In, api.CreatedTransactionInput{UxID: u})
+			}
+		}
+		t.EncodedTransaction = "JOINTRAW"
+		return &t, nil
+	}
 	t.Transaction.Fee = "3"
 	t.Transaction.In = []api.CreatedTransactionInput{{UxID: "ux1", Address: r.Addresses[0]}}
 	t.Transaction.Out = []api.CreatedTransactionOutput{

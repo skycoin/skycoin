@@ -16,18 +16,21 @@ import (
 )
 
 type fakeNode struct {
-	wallets  []api.WalletResponse
-	balances map[string]*api.BalanceResponse
-	txns     []readable.TransactionWithStatusVerbose
-	err      error
-	created  []api.CreateWalletOptions
-	txReqs   []api.WalletCreateTransactionRequest
-	injected []string
-	newAddrs []string
-	browser  bool
-	created2 []api.CreateTransactionRequest
-	ops      []string
-	seedOff  bool
+	wallets      []api.WalletResponse
+	balances     map[string]*api.BalanceResponse
+	txns         []readable.TransactionWithStatusVerbose
+	err          error
+	created      []api.CreateWalletOptions
+	txReqs       []api.WalletCreateTransactionRequest
+	injected     []string
+	newAddrs     []string
+	browser      bool
+	created2     []api.CreateTransactionRequest
+	ops          []string
+	seedOff      bool
+	inputOwners  []string
+	knownOutputs map[string]bool
+	signReqs     []api.WalletSignTransactionRequest
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {
@@ -35,6 +38,7 @@ func (f *fakeNode) Health() (*api.HealthResponse, error) {
 	h.Version.Version = "0.28.7"
 	h.BlockchainMetadata.Head.BkSeq = 123456
 	h.Uptime = wh.FromDuration(3600e9)
+	h.UserVerifyTxn.BurnFactor = 2
 	return h, nil
 }
 

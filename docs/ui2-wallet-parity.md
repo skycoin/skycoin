@@ -57,10 +57,10 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | scan a QR code | qr-scan-dialog | missing | missing | |
 | USD value | send-form, history | missing | missing | price source on hold |
 | bulk send from CSV | bulk-send | missing | missing | |
-| unsigned transaction | offline-tx | missing | missing | |
-| sign a transaction | offline-tx | missing | missing | |
-| broadcast a raw transaction | offline-tx | missing | missing | |
-| joint transactions | joint-transaction | missing | missing | |
+| unsigned transaction | offline-tx | present | missing | |
+| sign a transaction | offline-tx | present | missing | |
+| broadcast a raw transaction | offline-tx | present | present | the transactions page needs no wallet to broadcast |
+| joint transactions, create and co-sign | joint-transaction | present | missing | |
 
 ## History
 

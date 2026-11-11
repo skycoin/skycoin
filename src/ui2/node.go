@@ -44,6 +44,9 @@ type Node interface {
 	CoinSupply() (*api.CoinSupply, error)
 	Balance(addrs []string) (*api.BalanceResponse, error)
 	CreateTransaction(api.CreateTransactionRequest) (*api.CreateTransactionResponse, error)
+	VerifyTransaction(api.VerifyTransactionRequest) (*api.VerifyTransactionResponse, error)
+	WalletSignTransaction(api.WalletSignTransactionRequest) (*api.CreateTransactionResponse, error)
+	OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error)
 }
 
 // walletAPIDisabled reports whether err is the node refusing the WALLET API

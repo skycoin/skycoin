@@ -28,6 +28,7 @@ templ Layout(title, nav string) {
 					<nav class="home">
 						<a href="./" class={ templ.KV("active", nav == "wallets") }>{ T(ctx, "nav.wallets") }</a>
 						<a href="history" class={ templ.KV("active", nav == "history") }>{ T(ctx, "nav.history") }</a>
+						<a href="tx" class={ templ.KV("active", nav == "tx") }>{ T(ctx, "nav.tx") }</a>
 						<a href="status" class={ templ.KV("active", nav == "status") }>{ T(ctx, "nav.status") }</a>
 						<a href="settings" class={ templ.KV("active", nav == "settings") }>{ T(ctx, "nav.settings") }</a>
 					</nav>

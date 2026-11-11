@@ -296,6 +296,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 //
 //	seed: wallet seed [required]
 //	type: wallet type [required, one of "deterministic", "bip44", "xpub" or "pq"]
+//	seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
 //	bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
 //	xpub: xpub key [required for xpub wallets]
 //	label: wallet label [required]
@@ -360,6 +361,7 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 		wlt, err := gateway.CreateWallet("", wallet.Options{
 			Temp:                  true,
 			Seed:                  seed,
+			SeedPassphrase:        r.FormValue("seed-passphrase"),
 			Label:                 label,
 			ScanN:                 scanN,
 			Type:                  walletType,

@@ -695,6 +695,10 @@ func (c *Client) CreateWalletTemp(o CreateWalletOptions) (*WalletResponse, error
 		v.Add("scan", fmt.Sprint(o.ScanN))
 	}
 
+	if o.SeedPassphrase != "" {
+		v.Add("seed-passphrase", o.SeedPassphrase)
+	}
+
 	if o.Bip44Coin != nil {
 		v.Add("bip44-coin", fmt.Sprintf("%d", *o.Bip44Coin))
 	}

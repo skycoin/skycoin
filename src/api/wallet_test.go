@@ -3376,3 +3376,31 @@ func TestWalletNewAccountHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestWalletCreateTempSeedPassphrase(t *testing.T) {
+	gateway := &MockGatewayer{}
+	gateway.On("TransactionsFinder").Return(&visor.TransactionsFinder{})
+	want := wallet.Options{
+		Temp:           true,
+		Type:           wallet.WalletTypeBip44,
+		Label:          "bar",
+		Seed:           "foo",
+		ScanN:          2,
+		SeedPassphrase: "foobar",
+		TF:             gateway.TransactionsFinder(),
+	}
+	w, err := deterministic.NewWallet("filename", "test", "seed", wallet.OptionGenerateN(1))
+	require.NoError(t, err)
+	gateway.On("CreateWallet", "", want).Return(w, nil)
+
+	v := url.Values{"type": {wallet.WalletTypeBip44}, "seed": {"foo"}, "label": {"bar"}, "scan": {"2"}, "seed-passphrase": {"foobar"}}
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/wallet/createTemp", strings.NewReader(v.Encode()))
+	require.NoError(t, err)
+	req.Header.Add("Content-Type", ContentTypeForm)
+	setCSRFParameters(t, tokenValid, req)
+
+	rr := httptest.NewRecorder()
+	newServerMux(defaultMuxConfig(), gateway).ServeHTTP(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
+	gateway.AssertExpectations(t)
+}

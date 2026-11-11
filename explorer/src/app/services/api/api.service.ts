@@ -212,11 +212,12 @@ export class ApiService {
 
   /**
    * Gets the list of unlocked addresses with most coins.
+   * @param count How many of the top addresses to return.
    */
-  getRichlist(): Observable<RichlistEntry[]> {
+  getRichlist(count: number): Observable<RichlistEntry[]> {
     const url = !this.nodeUrl() ? 'richlist' : 'v1/richlist';
 
-    return this.get(url).pipe(map((response: any) => response.richlist));
+    return this.get(url, { n: count }).pipe(map((response: any) => response.richlist));
   }
 
   /**

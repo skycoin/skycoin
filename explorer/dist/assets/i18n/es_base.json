@@ -110,7 +110,8 @@
     "withoutTransactions": "Currently there are no unconfirmed transactions"
   },
   "richlist": {
-    "title": "Rich List"
+    "title": "Rich List",
+    "noEntries": "There are no addresses on this page."
   },
   "copy": {
     "copied": "Copied"

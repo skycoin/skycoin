@@ -8,7 +8,7 @@
     <div class="row">
       <div class="col-sm-1 -not-xs"><div>#</div></div>
       <div class="col-xs-6 col-sm-8"><div>{{ 'general.address' | translate }}</div></div>
-      <div class="col-xs-6 col-sm-3"><div>{{ 'general.coins' | translate }}</div></div>
+      <div class="col-xs-6 col-sm-3 -coins"><div>{{ 'general.coins' | translate }}</div></div>
     </div>
   </div>
 
@@ -18,13 +18,33 @@
   }
 
   <!-- Data list -->
-  @for (entry of entries; track entry; let i = $index) {
+  @for (entry of entries; track entry.address; let i = $index) {
     <a class="-row" [routerLink]="'/app/address/' + entry.address">
       <div class="row">
-        <div class="col-sm-1 -not-xs -gray">{{ i+1 }}</div>
+        <div class="col-sm-1 -not-xs -gray">{{ pageIndex * pageSize + i + 1 }}</div>
         <div class="col-xs-6 col-sm-8">{{ entry.address }}{{ explorer.getAddressName(entry.address) }}</div>
-        <div class="col-xs-6 col-sm-3">{{ entry.coins | amount:true:'first' }}</div>
+        @let coins = ((entry.coins | number:coinsFormat) ?? '').split('.');
+        <div class="col-xs-6 col-sm-3 -coins">{{ coins[0] }}<span class="-decimals" [style.width.ch]="(explorer.maxDecimals || 0) + 1.5">{{ coins.length > 1 ? '.' + coins[1] : '' }}</span></div>
       </div>
     </a>
   }
 </div>
+
+<!-- Page selection bar -->
+@if (entries.length > 0 && (pageIndex > 0 || hasNextPage)) {
+  <div class="pagination">
+    <a class="-first" [ngClass]="{ disabled: pageIndex <= 0 }" routerLink="/app/richlist/1">«</a>
+    <a class="-previous" [ngClass]="{ disabled: pageIndex <= 0 }" routerLink="/app/richlist/{{ pageIndex > 0 ? pageIndex : 1 }}">‹</a>
+    @if (pageIndex > 1) {
+      <a class="-page -hide-xs" routerLink="/app/richlist/{{ pageIndex - 1 }}">{{ pageIndex - 1 }}</a>
+    }
+    @if (pageIndex > 0) {
+      <a class="-page" routerLink="/app/richlist/{{ pageIndex }}">{{ pageIndex }}</a>
+    }
+    <a class="-page disabled">{{ pageIndex + 1 }}</a>
+    @if (hasNextPage) {
+      <a class="-page" routerLink="/app/richlist/{{ pageIndex + 2 }}">{{ pageIndex + 2 }}</a>
+    }
+    <a class="-next" [ngClass]="{ disabled: !hasNextPage }" routerLink="/app/richlist/{{ hasNextPage ? pageIndex + 2 : pageIndex + 1 }}">›</a>
+  </div>
+}

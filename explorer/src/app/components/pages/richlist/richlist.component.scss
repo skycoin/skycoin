@@ -1,0 +1,13 @@
+
+// Right aligned with digits of one width, so the decimal points line up.
+.-coins {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+// A box of fixed width for the point and the decimals, so the point sits at the same place
+// in every row whatever the widths of the digits.
+.-decimals {
+  display: inline-block;
+  text-align: left;
+}

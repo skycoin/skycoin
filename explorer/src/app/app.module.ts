@@ -76,6 +76,10 @@ const ROUTES: Routes = [
     component: RichlistComponent
   },
   {
+    path: 'app/richlist/:page',
+    component: RichlistComponent
+  },
+  {
     path: 'app/unspent/:address',
     component: UnspentOutputsComponent
   },

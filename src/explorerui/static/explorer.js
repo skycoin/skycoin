@@ -43,7 +43,18 @@
 		t.title = zone(d);
 	}
 
+	// Draws the QR code of an address once qrcode.min.js is loaded.
+	function qr(root) {
+		if (typeof QRCode === 'undefined') return;
+		var qs = root.querySelectorAll('[data-qr]');
+		for (var i = 0; i < qs.length; i++) {
+			if (qs[i].firstChild) continue;
+			new QRCode(qs[i], { text: qs[i].getAttribute('data-qr'), width: 130, height: 130, correctLevel: QRCode.CorrectLevel.M });
+		}
+	}
+
 	function enhance(root) {
+		qr(root);
 		var ts = root.querySelectorAll('time[datetime]');
 		for (var i = 0; i < ts.length; i++) localize(ts[i]);
 		if (navigator.clipboard) {
@@ -63,9 +74,7 @@
 		});
 	});
 	document.addEventListener('htmx:afterSettle', function () { enhance(document); });
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', function () { enhance(document); });
-	} else {
-		enhance(document);
-	}
+	enhance(document);
+	// qrcode.min.js comes after this file, so draw again once it has run.
+	document.addEventListener('DOMContentLoaded', function () { qr(document); });
 })();

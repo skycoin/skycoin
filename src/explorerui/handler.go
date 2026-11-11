@@ -70,6 +70,31 @@ func Handler(n Node, o Options) http.Handler {
 		t := LoadTx(n, r.PathValue("txid"))
 		return TxPageView(t), t.Status
 	}))
+	mux.HandleFunc("/app/address/{address}", func(w http.ResponseWriter, r *http.Request) {
+		relRedirect(w, r, "app/address/"+r.PathValue("address")+"/1")
+	})
+	mux.HandleFunc("/app/address/{address}/{page}", page(func(r *http.Request) (templ.Component, Status) {
+		a := LoadAddress(n, r.PathValue("address"), atoi(r.PathValue("page")))
+		return AddressPage(a), a.Status
+	}))
+	mux.HandleFunc("/app/unspent/{address}", page(func(r *http.Request) (templ.Component, Status) {
+		u := LoadUnspent(n, r.PathValue("address"))
+		return UnspentPage(u), u.Status
+	}))
+	mux.HandleFunc("/app/unconfirmedtransactions", page(func(*http.Request) (templ.Component, Status) {
+		u := LoadUnconfirmed(n)
+		return UnconfirmedPage(u), u.Status
+	}))
+	rich := page(func(r *http.Request) (templ.Component, Status) {
+		rl := LoadRichlist(n, atoi(r.PathValue("page")))
+		s := rl.Status
+		if s == OK && len(rl.Rows) == 0 {
+			s = NotFound
+		}
+		return RichlistPage(rl), s
+	})
+	mux.HandleFunc("/app/richlist", rich)
+	mux.HandleFunc("/app/richlist/{page}", rich)
 	search := func(w http.ResponseWriter, r *http.Request, term string) {
 		if to := Search(n, term); to != "" {
 			relRedirect(w, r, to)

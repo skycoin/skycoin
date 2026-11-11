@@ -1,7 +1,13 @@
 package explorerui
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,6 +26,13 @@ type Node interface {
 	BlockBySeqVerbose(seq uint64) (*readable.BlockVerbose, error)
 	BlockByHashVerbose(hash string) (*readable.BlockVerbose, error)
 	TransactionVerbose(txid string) (*readable.TransactionWithStatusVerbose, error)
+	PendingTransactionsVerbose() ([]readable.UnconfirmedTransactionVerbose, error)
+	Richlist(*api.RichlistParams) (*api.Richlist, error)
+	AddressHasSent(addr string) (bool, error)
+	AddressBalance(addr string) (*api.BalanceResponse, error)
+	AddressOutputs(addr string) (*readable.UnspentOutputsSummary, error)
+	AddressTransactions(addr string) ([]readable.TransactionWithStatusVerbose, error)
+	AddressTransactionsPage(addr string, page, limit int) (*api.TransactionsWithStatusVerboseV2, error)
 }
 
 // Client is a Node reached through the REST API client.
@@ -74,8 +87,8 @@ func (ni *nodeInfo) get(n Node) (Coin, bool) {
 	if f.CoinHoursNameSingular != "" {
 		c.HoursSingular = f.CoinHoursNameSingular
 	}
-	if f.QrURIPrefix != "" {
-		c.QRPrefix = f.QrURIPrefix
+	if p := f.QrURIPrefix; p != "" {
+		c.QRPrefix = strings.TrimSuffix(p, ":") + ":"
 	}
 	if d := h.UserVerifyTxn.MaxDropletPrecision; d > 0 {
 		c.MaxDecimals = int(d)
@@ -86,4 +99,85 @@ func (ni *nodeInfo) get(n Node) (Coin, bool) {
 	}
 	ni.coin, ni.syncing, ni.at = c, syncing, time.Now()
 	return c, syncing
+}
+
+func query(path string, kv ...string) string {
+	v := url.Values{}
+	for i := 0; i+1 < len(kv); i += 2 {
+		v.Set(kv[i], kv[i+1])
+	}
+	return path + "?" + v.Encode()
+}
+
+// The query helpers below keep every request a GET, as the explorer's JSON
+// proxy does, where the REST client would POST.
+
+// AddressBalance is GET /api/v1/balance for one address.
+func (c Client) AddressBalance(addr string) (*api.BalanceResponse, error) {
+	var b api.BalanceResponse
+	if err := c.Get(query("/api/v1/balance", "addrs", addr), &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// AddressOutputs is GET /api/v1/outputs for one address.
+func (c Client) AddressOutputs(addr string) (*readable.UnspentOutputsSummary, error) {
+	var o readable.UnspentOutputsSummary
+	if err := c.Get(query("/api/v1/outputs", "addrs", addr), &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// AddressTransactions is GET /api/v1/transactions, every transaction of one
+// address, confirmed or not.
+func (c Client) AddressTransactions(addr string) ([]readable.TransactionWithStatusVerbose, error) {
+	var t []readable.TransactionWithStatusVerbose
+	if err := c.Get(query("/api/v1/transactions", "addrs", addr, "verbose", "1"), &t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// AddressTransactionsPage is GET /api/v2/transactions, one page of an
+// address's transactions, newest first.
+func (c Client) AddressTransactionsPage(addr string, page, limit int) (*api.TransactionsWithStatusVerboseV2, error) {
+	return c.TransactionsVerboseV2(
+		api.RequestArg{Key: "addrs", Value: addr},
+		api.RequestArg{Key: "page", Value: strconv.Itoa(page)},
+		api.RequestArg{Key: "limit", Value: strconv.Itoa(limit)},
+		api.RequestArg{Key: "sort", Value: "desc"},
+	)
+}
+
+// AddressHasSent reports whether addr has spent an output, reading GET
+// /api/v1/address_uxouts only up to the first spent one. The whole list of
+// a busy address runs to tens of megabytes.
+func (c Client) AddressHasSent(addr string) (bool, error) {
+	resp, err := c.HTTPClient.Get(c.Addr + strings.TrimPrefix(query("/api/v1/address_uxouts", "address", addr), "/"))
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close() //nolint:errcheck
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096)) //nolint:errcheck
+		return false, api.NewClientError(resp.Status, resp.StatusCode, string(body))
+	}
+	d := json.NewDecoder(resp.Body)
+	if tok, err := d.Token(); err != nil || tok == nil {
+		return false, err
+	}
+	for d.More() {
+		var o struct {
+			SpentBlockSeq uint64 `json:"spent_block_seq"`
+		}
+		if err := d.Decode(&o); err != nil {
+			return false, err
+		}
+		if o.SpentBlockSeq != 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }

@@ -24,6 +24,11 @@ func Handler(n Node, o Options) http.Handler {
 		o.Classic = "../"
 	}
 	mux := http.NewServeMux()
+	sendForm := func(r *http.Request) SendForm {
+		f := ParseSendForm(r.PostFormValue)
+		f.ReadRows(func(k string) []string { return r.PostForm[k] })
+		return f
+	}
 	mux.Handle("/static/", assets)
 	page := func(f func(r *http.Request) templ.Component) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +210,7 @@ func Handler(n Node, o Options) http.Handler {
 		return JointCreated(raw, f.ID)
 	}))
 	mux.HandleFunc("/send/unsigned", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
-		f := ParseSendForm(r.PostFormValue)
+		f := sendForm(r)
 		f.Unsigned = true
 		return UnsignedView(Prepare(n, f))
 	}))
@@ -213,8 +218,9 @@ func Handler(n Node, o Options) http.Handler {
 		return SendPage(LoadSend(n, r.FormValue("id"), r.FormValue("from")))
 	}))
 	mux.HandleFunc("/send/review", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
-		return ReviewView(Prepare(n, ParseSendForm(r.PostFormValue)))
+		return ReviewView(Prepare(n, sendForm(r)))
 	}))
+	mux.HandleFunc("/send/row", page(func(*http.Request) templ.Component { return SendRow() }))
 	mux.HandleFunc("/send/inject", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		id := r.PostFormValue("id")
 		txid, err := n.InjectEncodedTransaction(r.PostFormValue("rawtx"))

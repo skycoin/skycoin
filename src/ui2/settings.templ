@@ -60,7 +60,7 @@ templ OutputsBody(o Outputs) {
 	for _, w := range o.Wallets {
 		<h2>{ w.Label }</h2>
 		for _, a := range w.Addrs {
-			<div class="outputs">
+			<div class="outputs" id={ "o-" + a.Address }>
 				<div class="mono small outputs-addr"><span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span></div>
 				if len(a.Outputs) == 0 {
 					<p class="small dim">{ T(ctx, "outputs.none") }</p>

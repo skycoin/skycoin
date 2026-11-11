@@ -145,6 +145,11 @@ templ addrTable(w Wallet) {
 					<tr class={ templ.KV("empty", a.Empty) }>
 						<td class="name mono">
 							<span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span>
+							<span class="addr-tools">
+								<button class="icon-btn sm" type="button" data-qr={ a.Address } data-qr-coin={ string(w.Meta.Coin) } title={ T(ctx, "qr.show") } aria-label={ T(ctx, "qr.show") }><span class="mi">qr_code</span></button>
+								<a class="icon-btn sm" href={ templ.URL(historyURL(addrFilter(a.Address))) } title={ T(ctx, "wallet.address-history") } aria-label={ T(ctx, "wallet.address-history") }><span class="mi">history</span></a>
+								<a class="icon-btn sm" href={ templ.URL("outputs#o-" + a.Address) } title={ T(ctx, "wallet.address-outputs") } aria-label={ T(ctx, "wallet.address-outputs") }><span class="mi">toll</span></a>
+							</span>
 							if a.Exposed {
 								<span class="exposed">
 									<span class="badge err" title={ T(ctx, "wallet.exposed-help") }><span class="mi small-icon">warning</span>{ T(ctx, "wallet.exposed") }</span>

@@ -30,6 +30,7 @@ templ SendPage(s Send) {
 							<p>{ T(ctx, "send.move-amount", "coins", s.FromCoins) }</p>
 						</div>
 					} else {
+						@payLink()
 						<fieldset>
 							<legend>{ T(ctx, "send.destinations") }</legend>
 							<div id="send-rows">

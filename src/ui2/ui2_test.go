@@ -485,3 +485,16 @@ func TestBrowserSettingsPages(t *testing.T) {
 	require.Contains(t, postForm(h, "/bw/pending", ws).Body.String(), "no pending transactions")
 	require.Contains(t, postForm(h, "/bw/outputs", url.Values{"wallets": {"x"}}).Body.String(), "could not read")
 }
+
+func TestQRAndPaymentLink(t *testing.T) {
+	x := sendNode(t)
+	h := Handler(x.n, Options{})
+	body := get(t, h, "/wallet?id=s.wlt").Body.String()
+	require.Contains(t, body, `data-qr="`+x.spent+`"`)
+	require.Contains(t, body, `id="qr-dialog"`)
+	require.Contains(t, body, `data-qr-script="../assets/scripts/qrcode.min.js"`)
+	require.Contains(t, body, `href="history?filter=a%3A`+x.spent+`"`)
+	require.Contains(t, body, `href="outputs#o-`+x.spent+`"`)
+	require.Contains(t, get(t, h, "/send?id=s.wlt").Body.String(), `data-fill-link`)
+	require.Contains(t, get(t, h, "/outputs").Body.String(), `id="o-`+x.spent+`"`)
+}

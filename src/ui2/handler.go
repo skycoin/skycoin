@@ -2,7 +2,6 @@ package ui2
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/a-h/templ"
 )
@@ -22,15 +21,8 @@ func Handler(n Node, o Options) http.Handler {
 	if o.Classic == "" {
 		o.Classic = "../"
 	}
-	files := http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))
-
 	mux := http.NewServeMux()
-	mux.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
-		if v := r.URL.Query().Get("v"); v != "" && v == assetVer[strings.TrimPrefix(r.URL.Path, "/static/")] {
-			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		}
-		files.ServeHTTP(w, r)
-	})
+	mux.Handle("/static/", assets)
 	page := func(f func(r *http.Request) templ.Component) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodGet && r.Method != http.MethodHead {

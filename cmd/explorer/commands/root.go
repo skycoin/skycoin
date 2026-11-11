@@ -21,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/calvin"
 
 	"github.com/skycoin/skycoin/explorer"
+	"github.com/skycoin/skycoin/src/explorerui"
 	"github.com/skycoin/skycoin/src/fiber"
 )
 
@@ -177,26 +178,25 @@ var RootCmd = &cobra.Command{
 				}
 			}
 
-			// Serve static files
-			gzipHandle("/", fileServer)
+			// Serve static files, and the Angular index with a link to /ui2
+			gzipHandle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/" {
+					serveClassicIndex(w)
+					return
+				}
+				fileServer.ServeHTTP(w, r)
+			}))
 
 			// Angular SPA fallback (/app/* → index.html)
-			mux.Handle("/app/", gzhttp.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if uiFilesFolder != "" {
-					http.ServeFile(w, r, filepath.Join(uiFilesFolder, "index.html"))
-					return
-				}
-				f, err := explorer.EmbeddedFiles.Open("dist/index.html")
-				if err != nil {
-					http.Error(w, "index.html not found", http.StatusInternalServerError)
-					return
-				}
-				defer f.Close() //nolint:errcheck
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				if _, err := io.Copy(w, f); err != nil {
-					log.Printf("Error serving index.html: %v", err)
-				}
-			})))
+			gzipHandle("/app/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				serveClassicIndex(w)
+			}))
+
+			// The server rendered explorer, beside the Angular one.
+			gzipHandle("/ui2/", http.StripPrefix("/ui2", explorerui.Handler(
+				explorerui.NewClient(skycoinAddr.String()),
+				explorerui.Options{Root: "../", Classic: "../"},
+			)))
 
 			// Backwards compatibility redirects
 			gzipHandle("/blocks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

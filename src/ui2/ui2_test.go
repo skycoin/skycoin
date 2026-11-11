@@ -26,6 +26,7 @@ type fakeNode struct {
 	newAddrs []string
 	browser  bool
 	created2 []api.CreateTransactionRequest
+	ops      []string
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {
@@ -322,4 +323,71 @@ func TestBrowserHistory(t *testing.T) {
 	require.NotContains(t, body, ">Sent<")
 
 	require.Contains(t, postForm(h, "/bw/history", url.Values{"wallets": {"x"}}).Body.String(), "could not read")
+}
+
+func (f *fakeNode) ScanWalletAddresses(id string, n int, _ string) ([]string, error) {
+	f.ops = append(f.ops, "scan "+id+" "+itoa(n))
+	w, err := f.Wallet(id)
+	if err != nil {
+		return nil, err
+	}
+	w.Entries = append(w.Entries, readable.WalletEntry{Address: "scanned"})
+	return []string{"scanned"}, nil
+}
+
+func (f *fakeNode) UpdateWallet(id, label string) error {
+	f.ops = append(f.ops, "rename "+id+" "+label)
+	return nil
+}
+
+func (f *fakeNode) EncryptWallet(id, password string) (*api.WalletResponse, error) {
+	f.ops = append(f.ops, "encrypt "+id+" "+password)
+	return f.Wallet(id)
+}
+
+func (f *fakeNode) DecryptWallet(id, password string) (*api.WalletResponse, error) {
+	f.ops = append(f.ops, "decrypt "+id+" "+password)
+	return f.Wallet(id)
+}
+
+func TestWalletOptions(t *testing.T) {
+	n := testNode()
+	h := Handler(n, Options{})
+	body := get(t, h, "/wallet?id=a.wlt").Body.String()
+	require.Contains(t, body, `hx-post="wallet/do/rename"`)
+	require.Contains(t, body, `hx-post="wallet/do/decrypt"`, "an encrypted wallet offers decrypt")
+	require.NotContains(t, body, `hx-post="wallet/do/encrypt"`)
+	require.Contains(t, body, `value="Savings"`)
+
+	do := func(op string, v url.Values) *httptest.ResponseRecorder {
+		v.Set("id", "a.wlt")
+		return postForm(h, "/wallet/do/"+op, v)
+	}
+	rr := do("rename", url.Values{"label": {" Rainy day "}})
+	require.Equal(t, "wallet?id=a.wlt&done=renamed", rr.Header().Get("HX-Redirect"))
+	require.Equal(t, "rename a.wlt Rainy day", n.ops[len(n.ops)-1])
+
+	rr = do("rename", url.Values{"label": {"  "}})
+	require.Empty(t, rr.Header().Get("HX-Redirect"))
+	require.Contains(t, rr.Body.String(), "Enter a name.")
+
+	rr = do("address", url.Values{"num": {"3"}, "password": {"pw"}})
+	require.Equal(t, "wallet?id=a.wlt&done=added&n=1", rr.Header().Get("HX-Redirect"), "the fake makes one address")
+	require.Contains(t, do("address", url.Values{"num": {"101"}}).Body.String(), "from 1 to 100")
+
+	rr = do("scan", url.Values{"num": {""}})
+	require.Equal(t, "wallet?id=a.wlt&done=scanned&n=1", rr.Header().Get("HX-Redirect"))
+	require.Equal(t, "scan a.wlt 20", n.ops[len(n.ops)-1])
+
+	require.Contains(t, do("encrypt", url.Values{"password": {"a"}, "password2": {"b"}}).Body.String(), "do not match")
+	rr = do("encrypt", url.Values{"password": {"a"}, "password2": {"a"}})
+	require.Equal(t, "wallet?id=a.wlt&done=encrypted", rr.Header().Get("HX-Redirect"))
+	require.Contains(t, do("decrypt", url.Values{}).Body.String(), "Enter the password.")
+	require.Equal(t, http.StatusNotFound, do("delete", url.Values{}).Code)
+	require.Equal(t, http.StatusMethodNotAllowed, get(t, h, "/wallet/do/rename?id=a.wlt&label=x").Code)
+
+	body = get(t, h, "/wallet?id=a.wlt&done=scanned&n=4").Body.String()
+	require.Contains(t, body, "Found 4 new used address(es).")
+	body = get(t, h, "/wallet?id=a.wlt&done=%3Cb%3E").Body.String()
+	require.NotContains(t, body, `class="alert ok notice"`)
 }

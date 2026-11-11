@@ -821,7 +821,7 @@ func chainXPub(name, path string, x XPub) templ.Component {
 }
 
 // formError shows a form error: a catalog key for the form's own checks, or
-// the node's message.
+// the node's message, which the catalog does not hold.
 func formError(err error) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -839,16 +839,9 @@ func formError(err error) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		if strings.HasPrefix(err.Error(), "create.") {
-			templ_7745c5c3_Err = ErrorBox(T(ctx, err.Error())).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = ErrorBox(err.Error()).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
+		templ_7745c5c3_Err = ErrorBox(T(ctx, err.Error())).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
 		}
 		return nil
 	})

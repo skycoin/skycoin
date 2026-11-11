@@ -27,14 +27,14 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | copy address | wallet-detail | present | present | |
 | QR code of an address | qr-code | missing | missing | |
 | exposed address marks, move coins | wallet-detail | present | present | |
-| exposed addresses banner with a count | wallet-detail | missing | missing | rows are marked |
+| exposed addresses banner with a count | wallet-detail | present | present | |
 | address history and outputs links | wallet-detail | missing | missing | |
-| new address | wallet-options | missing | missing | |
-| scan for addresses | wallet-options | missing | missing | |
+| new address | wallet-options | present | missing | |
+| scan for addresses | wallet-options | present | missing | |
 | add bip44 account | wallet-detail | missing | missing | |
-| rename | change-name | missing | missing | |
-| encrypt, decrypt | wallet-options | missing | missing | |
-| delete | wallet-options | n/a | missing | the node has no unload call |
+| rename | change-name | present | missing | |
+| encrypt, decrypt | wallet-options | present | missing | |
+| delete | wallet-options | n/a | missing | Angular only drops a node wallet from its list |
 | account and chain xpubs | wallet-detail | present | present | |
 | reset password with the seed | reset-password | missing | missing | |
 

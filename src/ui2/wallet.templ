@@ -37,6 +37,8 @@ templ WalletPage(w Wallet) {
 				@ErrorBox(w.Err)
 			</section>
 		} else {
+			@noticeBox(w.Notice)
+			@ExposedBanner(w.Exposed)
 			<section class="card">
 				@ErrorBox(w.Err)
 				<div class="ov">
@@ -60,6 +62,7 @@ templ WalletPage(w Wallet) {
 					}
 				</dl>
 			</section>
+			@walletOptions(w)
 			if w.Meta.Type == "bip44" {
 				@XPubSection(w.ID)
 			}

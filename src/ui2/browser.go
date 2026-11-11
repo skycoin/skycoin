@@ -140,7 +140,8 @@ func LoadBrowserWallet(n Node, w BrowserWallet) Wallet {
 		b = &api.BalanceResponse{}
 	}
 	out.Balance = amountOf(b.BalancePair)
-	rows, err := addressRows(n, w.entries(), b, ListQuery{}, func(a string) string { return bwSendURL(w.ID, a) })
+	rows, exposed, err := addressRows(n, w.entries(), b, ListQuery{}, func(a string) string { return bwSendURL(w.ID, a) })
+	out.Exposed = exposed
 	if err != nil {
 		out.Err = err.Error()
 	}

@@ -156,11 +156,7 @@ templ chainXPub(name, path string, x XPub) {
 }
 
 // formError shows a form error: a catalog key for the form's own checks, or
-// the node's message.
+// the node's message, which the catalog does not hold.
 templ formError(err error) {
-	if strings.HasPrefix(err.Error(), "create.") {
-		@ErrorBox(T(ctx, err.Error()))
-	} else {
-		@ErrorBox(err.Error())
-	}
+	@ErrorBox(T(ctx, err.Error()))
 }

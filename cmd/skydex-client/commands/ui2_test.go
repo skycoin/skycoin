@@ -394,3 +394,33 @@ func TestUI2Listings(t *testing.T) {
 	}
 	mustContain(t, body, "<!doctype html>", `id="tab-notice"`, "alert-info")
 }
+
+// TestUI2History merges the browser's trades with the market's finished
+// orders.
+func TestUI2History(t *testing.T) {
+	srv, database := newReadyMarket(t)
+	seedProduct(t, srv, database, "prod-ui2")
+	ts, c := newUI2Server(t, srv, "")
+	connectUI2(t, ts, c)
+	registerUI2(t, ts, c)
+
+	_, body := send(t, c, "GET", ts.URL+"/ui2/history", nil)
+	mustContain(t, body, `hx-post="history/table"`, `data-local="exchange:history"`)
+
+	_, body = send(t, c, "POST", ts.URL+"/ui2/history/table", url.Values{"saved": {"[]"}})
+	mustContain(t, body, "No completed trades yet.", `id="history-data"`, `>[]`)
+
+	send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	_, body = send(t, c, "GET", ts.URL+"/ui2/orders/table", nil)
+	i := strings.Index(body, `name="id" value="`)
+	id := body[i+len(`name="id" value="`):]
+	id = id[:strings.Index(id, `"`)]
+	send(t, c, "POST", ts.URL+"/ui2/orders/cancel", url.Values{"id": {id}}, "HX-Request", "true")
+
+	saved := `[{"id":"purged","type":"sell","sell_coin":"SKY","amount":1,"price":2,"payment_currency":"BTC","status":"completed","created_at":"2020-01-01T00:00:00Z","market_name":"Gone market</script>"}]`
+	_, body = send(t, c, "POST", ts.URL+"/ui2/history/table", url.Values{"saved": {saved}})
+	mustContain(t, body, "Clear history", `data-remove-trade="purged"`, `data-remove-trade="`+id+`"`, "badge enabled", "Gone market", `"market_pk":"`+testMarketRef+`"`)
+	if strings.Count(body, "</script>") != 1 {
+		t.Error("a saved trade can close the JSON script")
+	}
+}

@@ -6,6 +6,7 @@
 
 	var MARKETS = 'exchange:markets';
 	var WALLETS = 'exchange:wallets';
+	var HISTORY = 'exchange:history';
 	var MARKETS_MAX = 12;
 
 	function load(key, fallback) {
@@ -51,7 +52,10 @@
 
 	// Pages and fragments keep the browser's state in step after each swap.
 	function settle(root) {
-		var h = document.querySelector('header[data-market-pk]');
+		// On a phone the tab bar scrolls: keep the open tab in view.
+		var at = (!root || root === document.body) && document.querySelector('.tab-link.active');
+		if (at) at.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		var h =document.querySelector('header[data-market-pk]');
 		if (h && h.getAttribute('data-market-pk')) {
 			var n = document.getElementById('market-name');
 			addMarket(h.getAttribute('data-market-pk'), n ? n.textContent : h.getAttribute('data-market-name'));
@@ -68,6 +72,11 @@
 			el.textContent = el.getAttribute('data-local-time') === 'time' ? d.toLocaleTimeString() : d.toLocaleString();
 		});
 		if (!root || root.querySelector('#create-form')) createForm();
+		var hd = document.getElementById('history-data');
+		if (hd) {
+			try { store(HISTORY, JSON.parse(hd.textContent)); } catch (e) { /* keep what is stored */ }
+			hd.remove();
+		}
 		document.querySelectorAll('[data-autohide]').forEach(function (el) {
 			var ms = +el.getAttribute('data-autohide');
 			el.removeAttribute('data-autohide');
@@ -102,6 +111,20 @@
 			var pk = del.getAttribute('data-remove-market');
 			store(MARKETS, markets().filter(function (m) { return m.pk !== pk; }));
 			htmx.trigger(document.body, 'recent-changed');
+			return;
+		}
+		var rt = t.closest('[data-remove-trade]');
+		if (rt) {
+			var id = rt.getAttribute('data-remove-trade');
+			store(HISTORY, load(HISTORY, []).filter(function (o) { return o && o.id !== id; }));
+			htmx.trigger(document.body, 'history-changed');
+			return;
+		}
+		if (t.closest('[data-clear-trades]')) {
+			if (window.confirm('Clear all locally saved trade history on this device?')) {
+				store(HISTORY, null);
+				htmx.trigger(document.body, 'history-changed');
+			}
 			return;
 		}
 		if (t.closest('[data-clear-markets]')) {

@@ -78,10 +78,10 @@ type Config struct {
 	EnabledAPISets     map[string]struct{}
 	Username           string
 	Password           string
-	// WebWallet, when set, is the wallet GUI, served at the site root.
+	// WebWallet, when set, is the Angular wallet, served at /angular/.
 	WebWallet http.Handler
-	// UI2, when set, builds the server rendered wallet served at /ui2/ around
-	// a client of this API.
+	// UI2, when set, builds the server rendered wallet served at the site
+	// root around a client of this API.
 	UI2          func(*Client) http.Handler
 	ShutdownChan chan struct{} // when closed, triggers daemon shutdown
 }
@@ -400,7 +400,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		if !c.disableCSP {
 			wallet = CSPHandler(wallet, ContentSecurityPolicy)
 		}
-		mux.Handle("/", gzhttp.GzipHandler(wallet))
+		MountAngular(mux, gzhttp.GzipHandler(wallet), c.ui2 != nil)
 	}
 
 	// get the current CSRF token

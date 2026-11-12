@@ -8,7 +8,7 @@ import "strings"
 // the fresh address fields, then asks for the review.
 templ BrowserSendPage(id, from string) {
 	@Layout(T(ctx, "send.title"), "wallets") {
-		<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+		<script src={ From(ctx).Root + "assets/scripts/wasm_exec.js" }></script>
 		<div class="page-head">
 			<a class="icon-btn" href={ templ.URL(bwWalletURL(id)) } aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
 			if from != "" {
@@ -21,7 +21,7 @@ templ BrowserSendPage(id, from string) {
 		<section
 			class="card"
 			data-bw-page="send"
-			data-bw-root={ From(ctx).Classic }
+			data-bw-root={ From(ctx).Root }
 			data-bw-id={ id }
 			data-msg-missing={ T(ctx, "bw.missing") }
 			data-msg-error={ T(ctx, "bw.err-storage") }

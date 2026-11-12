@@ -9,7 +9,7 @@ templ TransactionsPage(p TxPage) {
 	@Layout(T(ctx, "nav.tx"), "tx") {
 		<section class="card" { bwTxAttrs(ctx, p.Disabled)... }>
 			if p.Disabled {
-				<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+				<script src={ From(ctx).Root + "assets/scripts/wasm_exec.js" }></script>
 				@bwUnlock()
 			}
 			<div class="head">
@@ -174,7 +174,7 @@ templ TxReviewView(v TxView) {
 templ JointPage(p TxPage) {
 	@Layout(T(ctx, "joint.title"), "tx") {
 		if p.Disabled {
-			<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+			<script src={ From(ctx).Root + "assets/scripts/wasm_exec.js" }></script>
 		}
 		<div class="page-head">
 			<a class="icon-btn" href="tx" aria-label={ T(ctx, "nav.tx") }><span class="mi">arrow_back</span></a>
@@ -296,7 +296,7 @@ func bwTxAttrs(ctx context.Context, browser bool) templ.Attributes {
 	}
 	return templ.Attributes{
 		"data-bw-page":            "tx",
-		"data-bw-root":            From(ctx).Classic,
+		"data-bw-root":            From(ctx).Root,
 		"data-msg-error":          T(ctx, "bw.err-storage"),
 		"data-msg-missing":        T(ctx, "bw.missing"),
 		"data-msg-password":       T(ctx, "bw.err-send-password"),

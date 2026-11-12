@@ -14,7 +14,7 @@ const EXPECT = process.argv[4];
   pg.on('console', m => { const t = m.text(); if (/WASM|error/i.test(t)) logs.push(m.type() + ': ' + t.slice(0, 120)); });
   pg.on('pageerror', e => logs.push('PAGEERROR: ' + String(e).slice(0, 120)));
 
-  await pg.goto('http://127.0.0.1:' + PORT + '/', { waitUntil: 'networkidle2', timeout: 60000 });
+  await pg.goto('http://127.0.0.1:' + PORT + '/angular/', { waitUntil: 'networkidle2', timeout: 60000 });
   await sleep(6000);
 
   // The "New" tab generates a seed through bip39, which is a different code

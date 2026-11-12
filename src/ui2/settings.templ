@@ -27,7 +27,7 @@ templ SettingsPage(browser bool) {
 // renders the body from them.
 templ BrowserDataPage(titleKey, nav, url, all string) {
 	@Layout(T(ctx, titleKey), nav) {
-		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Classic } data-msg-error={ T(ctx, "bw.err-storage") }>
+		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Root } data-msg-error={ T(ctx, "bw.err-storage") }>
 			<h1>{ T(ctx, titleKey) }</h1>
 			@bwUnlock()
 			@bwData("wallets")

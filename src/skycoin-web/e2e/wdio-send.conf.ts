@@ -18,7 +18,7 @@ exports.config = {
   logLevel: 'warn',
   strictSelectors: false,
   bail: 1,
-  baseUrl: 'http://127.0.0.1:8001/',
+  baseUrl: 'http://127.0.0.1:8001/angular/',
   waitforTimeout: 20000,
   connectionRetryTimeout: 120000,
   connectionRetryCount: 3,

@@ -51,7 +51,7 @@ async function setText(selector: string, value: string) {
 
 describe('web wallet joint transaction', () => {
   it('loads the customer and vendor seeds as browser wallets', async () => {
-    await browser.url('/');
+    await browser.url('./');
     // The first visit asks for a language and acceptance of the disclaimer.
     const english = await $('.//button[contains(normalize-space(.), "English")]');
     await english.waitForClickable();
@@ -65,7 +65,7 @@ describe('web wallet joint transaction', () => {
 
     for (const [label, seed] of [['customer', env('JOINT_CUSTOMER_SEED')], ['vendor', env('JOINT_VENDOR_SEED')]]) {
       if (label === 'vendor') {
-        await browser.url('/#/wizard/create');
+        await browser.url('./#/wizard/create');
       }
       await clickButton('Load', '.-toggle-container');
       await setText('#label', label);
@@ -85,7 +85,7 @@ describe('web wallet joint transaction', () => {
   });
 
   it('creates the transaction as the customer and signs it as each party', async () => {
-    await browser.url('/#/joint');
+    await browser.url('./#/joint');
     await (await $('#joint-wallet')).waitForDisplayed();
     await (await $('#joint-wallet')).selectByVisibleText('customer');
 

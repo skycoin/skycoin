@@ -23,7 +23,7 @@ func TestWebWallet(t *testing.T) {
 		return rr
 	}
 
-	for _, path := range []string{"/", "/main.js", "/assets/scripts/skycoin-lite.wasm"} {
+	for _, path := range []string{"/angular/", "/angular/main.js", "/angular/assets/scripts/skycoin-lite.wasm", "/assets/scripts/skycoin-lite.wasm"} {
 		rr := serve(path)
 		require.Equal(t, http.StatusOK, rr.Code, path)
 		require.Equal(t, "wallet", rr.Body.String(), path)

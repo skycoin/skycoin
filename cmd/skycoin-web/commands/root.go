@@ -579,25 +579,8 @@ func serve(ctx context.Context) error {
 	}
 	guiFS := initGUIFS()
 
-	// The cipher routes are exact matches, so they win over the "/" static
-	// handler and a missing wasm is a plain 404 rather than index.html.
-	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", gui.ServeCipherWasm)
-	mux.HandleFunc("/assets/scripts/wasm_exec.js", gui.ServeWasmExecJS)
-
 	routeCoins(mux, table, custom, coins)
-
-	mountUI2(mux)
-
-	// Serve static files from GUI filesystem. The "/" pattern is the lowest
-	// priority in the ServeMux, so it only matches requests not claimed by the
-	// API/asset routes above — the net/http equivalent of gin's NoRoute.
-	fileServer := http.FileServer(http.FS(guiFS))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" && r.URL.Path != "/favicon.ico" {
-			log.Printf("[STATIC] %s %s", r.Method, r.URL.Path) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
-		}
-		fileServer.ServeHTTP(w, r)
-	})
+	mountUIs(mux, guiFS)
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	fmt.Printf("Skycoin Web Wallet starting...\n")

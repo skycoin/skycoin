@@ -4,7 +4,7 @@ package ui2
 // hours and a message, as the Angular wallet's QR dialog does. ui2.js
 // fills it with qrcode.min.js from the Angular wallet's assets.
 templ qrDialog() {
-	<dialog id="qr-dialog" class="qr-dialog" data-qr-script={ From(ctx).Classic + "assets/scripts/qrcode.min.js" } aria-labelledby="qr-title">
+	<dialog id="qr-dialog" class="qr-dialog" data-qr-script={ From(ctx).Root + "assets/scripts/qrcode.min.js" } aria-labelledby="qr-title">
 		<form method="dialog" class="form">
 			<div class="head">
 				<h2 id="qr-title">{ T(ctx, "qr.title") }</h2>

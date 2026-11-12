@@ -41,7 +41,7 @@ curl -sf -o /dev/null "$WEB/" || { tail -20 "$DATA_DIR/web.log" >&2; fail "web w
 export SEND_SEED="$SENDER_SEED" SEND_ADDRS="$S0,$S1,$S2" SEND_TO="$V1" SEND_NODE="$PEER_HOST"
 
 echo "=== run the browser spec"
-(cd explorer && npx wdio run "$REPO_ROOT/src/skycoin-web/e2e/wdio-send.conf.ts" --baseUrl "$WEB")
+(cd explorer && npx wdio run "$REPO_ROOT/src/skycoin-web/e2e/wdio-send.conf.ts" --baseUrl "$WEB/angular/")
 
 GOT=$(uxout "$S2" coins)
 [[ "$GOT" == "5.000000" ]] || fail "the last change address holds $GOT coins, want 5.000000"

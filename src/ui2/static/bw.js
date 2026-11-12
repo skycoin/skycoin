@@ -17,7 +17,7 @@
 		warn.textContent = document.body.getAttribute('data-insecure');
 		page.insertBefore(warn, page.firstChild);
 	}
-	var root = page.getAttribute('data-bw-root') || '../';
+	var root = page.getAttribute('data-bw-root') || '';
 	var WALLETS = 'wallets', LOCKED = 'lockedWallets';
 	var appPassword = null;
 

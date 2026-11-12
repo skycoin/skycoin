@@ -73,7 +73,7 @@ async function shownCoins(): Promise<number> {
  * listed, whose last is where the change went, and shows coins.
  */
 async function expectWallet(coins: number, listed: string[]) {
-  await browser.url('/#/wallets');
+  await browser.url('./#/wallets');
   const change = listed[listed.length - 1];
   await waitFor(async () => {
     const outputs: any = await (await fetch(`${env('SEND_NODE')}/api/v1/outputs?addrs=${change}`)).json();
@@ -96,7 +96,7 @@ describe('web wallet send', () => {
   const addresses = env('SEND_ADDRS').split(',');
 
   it('loads the seed as a deterministic browser wallet with one address', async () => {
-    await browser.url('/');
+    await browser.url('./');
     // The first visit asks for a language and acceptance of the disclaimer.
     const english = await $('.//button[contains(normalize-space(.), "English")]');
     await english.waitForClickable();
@@ -119,7 +119,7 @@ describe('web wallet send', () => {
   });
 
   it('lists the change address of a send signed in the browser', async () => {
-    await browser.url('/#/send');
+    await browser.url('./#/send');
     await selectWallet('#wallet');
     await setText('#address', env('SEND_TO'));
     await setText('#amount', '3');
@@ -137,7 +137,7 @@ describe('web wallet send', () => {
     const rawTx = async () => (await $('#offline-raw-tx')).getValue();
     const hex = /^[0-9a-f]+$/;
 
-    await browser.url('/#/send');
+    await browser.url('./#/send');
     await clickButton('Advanced');
     await selectWallet('#wallets');
     await setText('#destination0', env('SEND_TO'));

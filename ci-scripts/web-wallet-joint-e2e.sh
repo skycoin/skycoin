@@ -35,7 +35,7 @@ export JOINT_CUSTOMER_BACK="$C1" JOINT_VENDOR_PAID="$V1" JOINT_PAY="$PAY"
 export JOINT_OUT_FILE="$DATA_DIR/signed.hex"
 
 echo "=== run the browser spec"
-(cd explorer && npx wdio run "$REPO_ROOT/src/skycoin-web/e2e/wdio-joint.conf.ts" --baseUrl "$WEB")
+(cd explorer && npx wdio run "$REPO_ROOT/src/skycoin-web/e2e/wdio-joint.conf.ts" --baseUrl "$WEB/angular/")
 RAW=$(cat "$JOINT_OUT_FILE")
 [[ -n "$RAW" ]] || fail "the spec wrote no transaction"
 TXID=$("$SKY" cli decodeRawTransaction "$RAW" | jq -r .txid)

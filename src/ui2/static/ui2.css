@@ -1,9 +1,9 @@
 /* Server rendered wallet. Tokens and layout follow skywire's ui2
    (pkg/visor/ui2/static/ui2.css). Fonts come from the Angular wallet's assets. */
-@font-face { font-family: 'Skycoin'; font-weight: 300; font-display: swap; src: url('../../assets/skycoin-wallet/fonts/skycoin/Skycoin-Light.woff2') format('woff2'); }
-@font-face { font-family: 'Skycoin'; font-weight: 400; font-display: swap; src: url('../../assets/skycoin-wallet/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'); }
-@font-face { font-family: 'Skycoin'; font-weight: 700; font-display: swap; src: url('../../assets/skycoin-wallet/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'); }
-@font-face { font-family: 'Material Icons'; font-style: normal; font-weight: 400; font-display: block; src: url('../../assets/skycoin-wallet/fonts/material-icons/MaterialIcons-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Skycoin'; font-weight: 300; font-display: swap; src: url('../assets/skycoin-wallet/fonts/skycoin/Skycoin-Light.woff2') format('woff2'); }
+@font-face { font-family: 'Skycoin'; font-weight: 400; font-display: swap; src: url('../assets/skycoin-wallet/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Skycoin'; font-weight: 700; font-display: swap; src: url('../assets/skycoin-wallet/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'); }
+@font-face { font-family: 'Material Icons'; font-style: normal; font-weight: 400; font-display: block; src: url('../assets/skycoin-wallet/fonts/material-icons/MaterialIcons-Regular.woff2') format('woff2'); }
 
 :root {
   color-scheme: dark;

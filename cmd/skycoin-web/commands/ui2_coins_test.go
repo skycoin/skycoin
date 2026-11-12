@@ -150,7 +150,7 @@ func newCoinRig(t *testing.T) coinRig {
 	}
 	mux := http.NewServeMux()
 	routeCoins(mux, table, newCustomCoins(table), coins)
-	mountUI2(mux)
+	mountUIs(mux, initGUIFS())
 	return coinRig{h: mux, btc: fb, ethTxs: &sent}
 }
 
@@ -172,7 +172,7 @@ func (rig coinRig) do(t *testing.T, coin, method, path string, form url.Values) 
 // createWallet makes a wallet of coin through /ui2 and returns its id.
 func (rig coinRig) createWallet(t *testing.T, coin, password string) string {
 	t.Helper()
-	rr := rig.do(t, coin, http.MethodPost, "/ui2/create", url.Values{
+	rr := rig.do(t, coin, http.MethodPost, "/create", url.Values{
 		"mode": {"load"}, "label": {"Rig " + coin}, "seed": {hardhatMnemonic},
 		"password": {password}, "password2": {password},
 	})
@@ -186,20 +186,20 @@ func (rig coinRig) createWallet(t *testing.T, coin, password string) string {
 func TestUI2Coins(t *testing.T) {
 	rig := newCoinRig(t)
 
-	body := rig.do(t, "1", http.MethodGet, "/ui2/", nil).Body.String()
+	body := rig.do(t, "1", http.MethodGet, "/", nil).Body.String()
 	require.Contains(t, body, `data-coin`, "the coin picker")
 	require.Contains(t, body, "Bitcoin (BTC)")
 	require.Contains(t, body, `class="onboarding"`)
 	require.NotContains(t, body, `href="tx"`, "a gateway coin has no Skycoin transaction pages")
 
-	require.Contains(t, rig.do(t, "1", http.MethodGet, "/ui2/load", nil).Body.String(), `name="legacy"`)
-	require.NotContains(t, rig.do(t, "2", http.MethodGet, "/ui2/load", nil).Body.String(), `name="legacy"`)
+	require.Contains(t, rig.do(t, "1", http.MethodGet, "/load", nil).Body.String(), `name="legacy"`)
+	require.NotContains(t, rig.do(t, "2", http.MethodGet, "/load", nil).Body.String(), `name="legacy"`)
 
-	body = rig.do(t, "0", http.MethodGet, "/ui2/coins", nil).Body.String()
+	body = rig.do(t, "0", http.MethodGet, "/coins", nil).Body.String()
 	for _, want := range []string{"Bitcoin (BTC)", "Ethereum (ETH)", "DAI (DAI)", `hx-post="coins"`} {
 		require.Contains(t, body, want)
 	}
-	body = rig.do(t, "0", http.MethodGet, "/ui2/coins/endpoints", nil).Body.String()
+	body = rig.do(t, "0", http.MethodGet, "/coins/endpoints", nil).Body.String()
 	require.Contains(t, body, `name="rpc_urls"`)
 }
 
@@ -207,64 +207,64 @@ func TestUI2Bitcoin(t *testing.T) {
 	rig := newCoinRig(t)
 	id := rig.createWallet(t, "1", "pw")
 
-	body := rig.do(t, "1", http.MethodGet, "/ui2/", nil).Body.String()
+	body := rig.do(t, "1", http.MethodGet, "/", nil).Body.String()
 	require.Contains(t, body, "Rig 1")
 	require.Contains(t, body, "0.002", "100000 satoshis at each of 2 addresses")
 
-	body = rig.do(t, "1", http.MethodGet, "/ui2/wallet?id="+url.QueryEscape(id), nil).Body.String()
+	body = rig.do(t, "1", http.MethodGet, "/wallet?id="+url.QueryEscape(id), nil).Body.String()
 	require.Contains(t, body, "bc1q", "a segwit address by default")
 	require.Contains(t, body, `data-qr-coin="bitcoin"`)
 
-	body = rig.do(t, "1", http.MethodGet, "/ui2/gw/txns?id="+url.QueryEscape(id), nil).Body.String()
+	body = rig.do(t, "1", http.MethodGet, "/gw/txns?id="+url.QueryEscape(id), nil).Body.String()
 	require.Contains(t, body, "btc-in")
 	require.Contains(t, body, "0.0015", "the 150000 satoshis it received")
 
-	body = rig.do(t, "1", http.MethodGet, "/ui2/send?id="+url.QueryEscape(id), nil).Body.String()
+	body = rig.do(t, "1", http.MethodGet, "/send?id="+url.QueryEscape(id), nil).Body.String()
 	require.Contains(t, body, "5 sat/byte", "the normal preset, 6 blocks")
 	require.Contains(t, body, "15 sat/byte", "the fast preset, 2 blocks")
 
 	send := url.Values{"id": {id}, "to": {"bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"}, "amount": {"0.0005"}, "preset": {"fast"}}
-	body = rig.do(t, "1", http.MethodPost, "/ui2/send/review", send).Body.String()
+	body = rig.do(t, "1", http.MethodPost, "/send/review", send).Body.String()
 	require.Contains(t, body, `hx-post="send/do"`)
 	require.Contains(t, body, `name="password"`)
 	require.Empty(t, rig.btc.broadcast)
 
 	send.Set("password", "bad")
-	require.NotContains(t, rig.do(t, "1", http.MethodPost, "/ui2/send/do", send).Body.String(), "btc-sent")
+	require.NotContains(t, rig.do(t, "1", http.MethodPost, "/send/do", send).Body.String(), "btc-sent")
 	require.Empty(t, rig.btc.broadcast)
 	send.Set("password", "pw")
-	body = rig.do(t, "1", http.MethodPost, "/ui2/send/do", send).Body.String()
+	body = rig.do(t, "1", http.MethodPost, "/send/do", send).Body.String()
 	require.Contains(t, body, "btc-sent", body)
 	require.Len(t, rig.btc.broadcast, 1)
 
 	send.Set("preset", "nope")
-	require.Contains(t, rig.do(t, "1", http.MethodPost, "/ui2/send/review", send).Body.String(), "Choose a fee.")
+	require.Contains(t, rig.do(t, "1", http.MethodPost, "/send/review", send).Body.String(), "Choose a fee.")
 	send.Set("preset", "fast")
 	send.Set("amount", "0.000000001")
-	require.Contains(t, rig.do(t, "1", http.MethodPost, "/ui2/send/review", send).Body.String(), "amount")
+	require.Contains(t, rig.do(t, "1", http.MethodPost, "/send/review", send).Body.String(), "amount")
 }
 
 func TestUI2Ethereum(t *testing.T) {
 	rig := newCoinRig(t)
 	id := rig.createWallet(t, "2", "")
 
-	body := rig.do(t, "2", http.MethodGet, "/ui2/wallet?id="+url.QueryEscape(id), nil).Body.String()
+	body := rig.do(t, "2", http.MethodGet, "/wallet?id="+url.QueryEscape(id), nil).Body.String()
 	require.Contains(t, body, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "the hardhat seed's first address")
 	require.Contains(t, body, `<span class="ov-big">2</span>`, "1 ETH at each of 2 addresses")
 
-	body = rig.do(t, "3", http.MethodGet, "/ui2/wallet?id="+url.QueryEscape(id), nil).Body.String()
+	body = rig.do(t, "3", http.MethodGet, "/wallet?id="+url.QueryEscape(id), nil).Body.String()
 	require.Contains(t, body, "0.00000000000000001", "5 base units of the token at each of 2 addresses")
 
-	body = rig.do(t, "2", http.MethodGet, "/ui2/send?id="+url.QueryEscape(id), nil).Body.String()
+	body = rig.do(t, "2", http.MethodGet, "/send?id="+url.QueryEscape(id), nil).Body.String()
 	require.Contains(t, body, "ETH")
 	send := url.Values{"id": {id}, "to": {"0x70997970C51812dc3A010C7d01b50e0d17dc79C8"}, "amount": {"0.001"}, "preset": {"normal"}}
-	body = rig.do(t, "2", http.MethodPost, "/ui2/send/do", send).Body.String()
+	body = rig.do(t, "2", http.MethodPost, "/send/do", send).Body.String()
 	require.Contains(t, body, "0xfeed", body)
 	require.Len(t, *rig.ethTxs, 1)
 
-	rr := rig.do(t, "0", http.MethodPost, "/ui2/coins/endpoints", url.Values{"rpc_urls": {"http://127.0.0.1:8545\n"}, "indexer_url": {"http://127.0.0.1:9000/api"}})
+	rr := rig.do(t, "0", http.MethodPost, "/coins/endpoints", url.Values{"rpc_urls": {"http://127.0.0.1:8545\n"}, "indexer_url": {"http://127.0.0.1:9000/api"}})
 	require.Equal(t, "endpoints?done=endpoints", rr.Header().Get("HX-Redirect"), rr.Body.String())
-	require.Contains(t, rig.do(t, "0", http.MethodGet, "/ui2/coins/endpoints", nil).Body.String(), "http://127.0.0.1:9000/api")
+	require.Contains(t, rig.do(t, "0", http.MethodGet, "/coins/endpoints", nil).Body.String(), "http://127.0.0.1:9000/api")
 }
 
 func TestUI2CustomCoins(t *testing.T) {
@@ -274,13 +274,13 @@ func TestUI2CustomCoins(t *testing.T) {
 	}))
 	defer fiber.Close()
 
-	rr := rig.do(t, "0", http.MethodPost, "/ui2/coins", url.Values{"kind": {"fiber"}, "node_url": {fiber.URL + "/"}})
+	rr := rig.do(t, "0", http.MethodPost, "/coins", url.Values{"kind": {"fiber"}, "node_url": {fiber.URL + "/"}})
 	require.Equal(t, "coins?done=coin-added", rr.Header().Get("HX-Redirect"), rr.Body.String())
-	rr = rig.do(t, "0", http.MethodPost, "/ui2/coins", url.Values{"kind": {"erc20"}, "ticker": {"usdt"}, "contract": {"0xdAC17F958D2ee523a2206206994597C13D831ec7"}, "decimals": {"6"}})
+	rr = rig.do(t, "0", http.MethodPost, "/coins", url.Values{"kind": {"erc20"}, "ticker": {"usdt"}, "contract": {"0xdAC17F958D2ee523a2206206994597C13D831ec7"}, "decimals": {"6"}})
 	require.Equal(t, "coins?done=coin-added", rr.Header().Get("HX-Redirect"), rr.Body.String())
-	require.Contains(t, rig.do(t, "0", http.MethodPost, "/ui2/coins", url.Values{"kind": {"erc20"}, "decimals": {"x"}}).Body.String(), "whole number")
+	require.Contains(t, rig.do(t, "0", http.MethodPost, "/coins", url.Values{"kind": {"erc20"}, "decimals": {"x"}}).Body.String(), "whole number")
 
-	body := rig.do(t, "0", http.MethodGet, "/ui2/coins?done=coin-added", nil).Body.String()
+	body := rig.do(t, "0", http.MethodGet, "/coins?done=coin-added", nil).Body.String()
 	require.Contains(t, body, "The coin has been added.")
 	require.Contains(t, body, "Mycoin (MYC)")
 	require.Contains(t, body, "USDT (USDT)")
@@ -289,7 +289,7 @@ func TestUI2CustomCoins(t *testing.T) {
 	id := body[m+len(`hx-vals="{&#34;remove&#34;:&#34;`):]
 	id = id[:strings.Index(id, "&#34;")]
 
-	rr = rig.do(t, "0", http.MethodPost, "/ui2/coins", url.Values{"remove": {id}})
+	rr = rig.do(t, "0", http.MethodPost, "/coins", url.Values{"remove": {id}})
 	require.Equal(t, "coins?done=coin-removed", rr.Header().Get("HX-Redirect"), rr.Body.String())
-	require.NotContains(t, rig.do(t, "0", http.MethodGet, "/ui2/coins", nil).Body.String(), "Mycoin (MYC)")
+	require.NotContains(t, rig.do(t, "0", http.MethodGet, "/coins", nil).Body.String(), "Mycoin (MYC)")
 }

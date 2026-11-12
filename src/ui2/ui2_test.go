@@ -494,7 +494,7 @@ func TestQRAndPaymentLink(t *testing.T) {
 	body := get(t, h, "/wallet?id=s.wlt").Body.String()
 	require.Contains(t, body, `data-qr="`+x.spent+`"`)
 	require.Contains(t, body, `id="qr-dialog"`)
-	require.Contains(t, body, `data-qr-script="../assets/scripts/qrcode.min.js"`)
+	require.Contains(t, body, `data-qr-script="assets/scripts/qrcode.min.js"`)
 	require.Contains(t, body, `href="history?filter=a%3A`+x.spent+`"`)
 	require.Contains(t, body, `href="outputs#o-`+x.spent+`"`)
 	require.Contains(t, get(t, h, "/send?id=s.wlt").Body.String(), `data-fill-link`)

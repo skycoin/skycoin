@@ -1,11 +1,13 @@
 # ui2 wallet parity
 
-The node serves two wallet GUIs: the Angular wallet (`src/skycoin-web`) at the
-root, and the server rendered one (`src/ui2`, templ and htmx) at `/ui2`. The
-Angular wallet stays the default until `/ui2` does everything it does. This
-table tracks how far that is, and each PR that ports an area updates it.
+The node and `skycoin web` serve two wallet GUIs. The server rendered one
+(`src/ui2`, templ and htmx) is the default, at the root. The Angular wallet
+(`src/skycoin-web`, built with its base at `/angular/`) is kept at `/angular/`,
+and the `/ui2/` paths the server rendered one was first served at redirect to
+the root. This table tracks how far ui2 is from the Angular wallet, and each
+PR that ports an area updates it.
 
-`/ui2` runs in two modes. With the WALLET API set (`-enable-gui`) the node
+ui2 runs in two modes. With the WALLET API set (`-enable-gui`) the node
 keeps the wallets ("node" below). Without it (`-web-wallet`) the wallets are
 kept in the browser in the Angular wallet's own format, and `static/bw.js`
 signs with the wasm cipher ("browser" below).

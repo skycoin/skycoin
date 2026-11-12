@@ -71,7 +71,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | filter by wallet or address | history | present | present | ui2 also searches by transaction ID |
 | transaction detail | transaction-detail | present | present | inputs, outputs, hours sent and burned |
 | notes on transactions | history | present | present | shared with the Angular wallet through localStorage |
-| cached copy when the node does not answer | history | missing | missing | |
+| cached copy when the node does not answer | history | present | present | the last good unsearched first page, kept in this browser |
 
 ## Settings and status
 
@@ -91,7 +91,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | lock screen, erase | app-lock | n/a | present | |
 | custom coins, ERC-20 | coins | missing | missing | |
 | Skywallet | hardware-wallet | missing | missing | |
-| onboarding wizard on first run | onboarding | partial | partial | the empty wallet list explains create and load, no forced first-run flow |
+| onboarding wizard on first run | onboarding | present | present | the wallet list opens on a create or load choice while there are none; the password is set in the create form, not a second step |
 | node errors: unreachable, CSRF, no peers, syncing, pending | header | present | present | a strip under the top bar |
 | language | select-language | present | present | |
 | page outside a secure context warning | wallets | n/a | present | |

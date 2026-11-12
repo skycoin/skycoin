@@ -1,0 +1,31 @@
+package ui2
+
+// onboarding greets a node or browser with no wallets yet, as the Angular
+// wallet's first run wizard does: create a wallet with a new seed, or load
+// one from a seed already kept.
+templ onboarding(browser bool) {
+	<div class="onboarding">
+		<h2>{ T(ctx, "onboarding.title") }</h2>
+		<p>{ T(ctx, "onboarding.text") }</p>
+		<div class="choices">
+			<a class="choice" href={ templ.URL(onboardingURL(browser, "new")) }>
+				<span class="mi">add</span>
+				<strong>{ T(ctx, "create.new-title") }</strong>
+				<span class="small dim">{ T(ctx, "onboarding.new") }</span>
+			</a>
+			<a class="choice" href={ templ.URL(onboardingURL(browser, "load")) }>
+				<span class="mi">file_download</span>
+				<strong>{ T(ctx, "create.load-title") }</strong>
+				<span class="small dim">{ T(ctx, "onboarding.load") }</span>
+			</a>
+		</div>
+		<p class="small dim">{ T(ctx, "onboarding.password") }</p>
+	</div>
+}
+
+func onboardingURL(browser bool, page string) string {
+	if browser {
+		return "bw/" + page
+	}
+	return page
+}

@@ -168,5 +168,5 @@ func LoadBrowserHistory(n Node, ws []BrowserWallet, filter string, q ListQuery) 
 	for _, w := range ws {
 		hw = append(hw, w.hist())
 	}
-	return history(n, hw, filter, q, Txns{Filter: filter, URL: "bw/history/list", Post: true})
+	return history(n, hw, filter, q, Txns{Filter: filter, URL: "bw/history/list", Post: true, History: true})
 }

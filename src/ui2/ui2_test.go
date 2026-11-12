@@ -541,3 +541,21 @@ func TestAccountsAndPendingRemoval(t *testing.T) {
 	require.Equal(t, "remove p-mine", n.ops[len(n.ops)-1])
 	require.Contains(t, get(t, h, "/pending").Body.String(), `hx-post="pending/remove"`)
 }
+
+func TestOnboardingAndHistoryCache(t *testing.T) {
+	n := testNode()
+	n.wallets = nil
+	h := Handler(n, Options{})
+	body := get(t, h, "/").Body.String()
+	require.Contains(t, body, `class="onboarding"`)
+	require.Contains(t, body, `class="choice" href="new"`)
+	n.browser = true
+	body = postForm(h, "/bw/list", url.Values{"wallets": {"[]"}}).Body.String()
+	require.Contains(t, body, `class="choice" href="bw/load"`)
+
+	n = testNode()
+	h = Handler(n, Options{})
+	require.Contains(t, get(t, h, "/history?filter=w%3Aa.wlt").Body.String(), `data-history-cache="history|w:a.wlt"`)
+	require.Contains(t, get(t, h, "/history/list?q=x").Body.String(), `data-history-cache=""`, "a search is not kept")
+	require.Contains(t, get(t, h, "/").Body.String(), `data-cached="The history could not be refreshed`)
+}

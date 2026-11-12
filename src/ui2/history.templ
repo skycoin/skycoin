@@ -93,7 +93,7 @@ func (t Txns) include() string {
 
 // TxnList is a page of history. Each transaction opens to its detail.
 templ TxnList(t Txns) {
-	<div id="txns">
+	<div id="txns" data-history-cache={ t.cacheKey() }>
 		@ErrorBox(t.Err)
 		if t.Err == "" && len(t.Rows) == 0 {
 			if t.Filter != "" || t.Pager.Q != "" {

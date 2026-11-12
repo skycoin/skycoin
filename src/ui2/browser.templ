@@ -48,7 +48,7 @@ templ BrowserWalletsPage() {
 templ BrowserList(w Wallets) {
 	@ErrorBox(w.Err)
 	if w.Err == "" && len(w.Rows) == 0 {
-		<p class="dim">{ T(ctx, "bw.none") }</p>
+		@onboarding(true)
 	}
 	if len(w.Rows) > 0 {
 		<div class="head">

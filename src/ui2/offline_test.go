@@ -1,8 +1,11 @@
 package ui2
 
 import (
+	"encoding/json"
+	"html"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -165,5 +168,35 @@ func TestBrowserTxPage(t *testing.T) {
 	body := get(t, Handler(x.n, Options{}), "/tx").Body.String()
 	require.Contains(t, body, `hx-post="tx/review"`, "a browser wallet node still reviews and broadcasts")
 	require.NotContains(t, body, `name="id"`)
-	require.NotContains(t, body, `href="joint"`)
+}
+
+func TestBrowserReviewAndJoint(t *testing.T) {
+	x := sendNode(t)
+	x.n.browser = true
+	x.n.err = api.NewClientError("403 Forbidden", http.StatusForbidden, "Endpoint is disabled")
+	x.n.inputOwners = []string{x.spent, "stranger"}
+	h := Handler(x.n, Options{})
+	w := browserWallet(x)
+
+	body := get(t, h, "/tx").Body.String()
+	require.Contains(t, body, `id="bw-tx-wallet"`)
+	require.Contains(t, body, `data-bw-page="tx"`)
+	require.Contains(t, body, "wasm_exec.js")
+
+	raw := rawTx(t, false, true)
+	body = postForm(h, "/tx/review", url.Values{"rawtx": {raw}, "wallet": {jsonOf(t, w)}}).Body.String()
+	require.Contains(t, body, `id="bw-tx-sign"`)
+	require.NotContains(t, body, `hx-post="tx/sign"`, "a browser wallet signs in the page")
+	m := regexp.MustCompile(`data-bw-tx-sign="([^"]*)"`).FindStringSubmatch(body)
+	require.Len(t, m, 2)
+	var job BrowserSignJob
+	require.NoError(t, json.Unmarshal([]byte(html.UnescapeString(m[1])), &job))
+	require.Equal(t, raw, job.Raw)
+	require.Len(t, job.Inner, 64)
+	require.Equal(t, []BrowserSign{{Index: 0, Hash: cipher.SumSHA256([]byte{0}).Hex(), Address: x.spent}}, job.Inputs, "only the wallet's unsigned input")
+
+	body = get(t, h, "/joint").Body.String()
+	require.Contains(t, body, `hx-post="bw/joint/outputs"`)
+	require.NotContains(t, body, "does not keep wallets")
+	require.Contains(t, postForm(h, "/bw/joint/outputs", url.Values{"wallet": {jsonOf(t, w)}}).Body.String(), "No unspent outputs", "the fake holds none for these addresses")
 }

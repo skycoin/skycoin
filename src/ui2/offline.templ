@@ -1,17 +1,21 @@
 package ui2
 
+import "context"
+
 // TransactionsPage reviews, signs and sends a transaction made elsewhere:
 // an unsigned one to sign offline, a signed one to broadcast, or a joint
 // one to co-sign.
 templ TransactionsPage(p TxPage) {
 	@Layout(T(ctx, "nav.tx"), "tx") {
-		<section class="card">
+		<section class="card" { bwTxAttrs(ctx, p.Disabled)... }>
+			if p.Disabled {
+				<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+				@bwUnlock()
+			}
 			<div class="head">
 				<h1>{ T(ctx, "nav.tx") }</h1>
-				if !p.Disabled {
-					<span class="spacer"></span>
-					<a class="btn" href="joint"><span class="mi">call_merge</span>{ T(ctx, "joint.title") }</a>
-				}
+				<span class="spacer"></span>
+				<a class="btn" href="joint"><span class="mi">call_merge</span>{ T(ctx, "joint.title") }</a>
 			</div>
 			<p class="small dim">{ T(ctx, "tx.page-help") }</p>
 			if !p.Disabled {
@@ -24,8 +28,10 @@ templ TransactionsPage(p TxPage) {
 				</label>
 				if !p.Disabled {
 					@walletSelect(p.Wallets, p.Wallet, T(ctx, "tx.wallet"), true)
-					<p class="small dim">{ T(ctx, "tx.wallet-help") }</p>
+				} else {
+					@bwWalletSelect(T(ctx, "tx.wallet"))
 				}
+				<p class="small dim">{ T(ctx, "tx.wallet-help") }</p>
 				<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "tx.review") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
 			</form>
 			<div id="tx-review"></div>
@@ -124,6 +130,16 @@ templ TxReviewView(v TxView) {
 			</div>
 			if v.ToSign > 0 {
 				<div class="alert warn"><p>{ T(ctx, "tx.sign-warning") }</p></div>
+				if v.Browser != "" {
+					<div class="form" data-bw-tx-sign={ v.SignJob() } data-bw-wallet={ v.Browser }>
+						<label>
+							{ T(ctx, "send.password") }
+							<input type="password" id="bw-tx-password" autocomplete="current-password"/>
+						</label>
+						<div class="bar"><button class="btn primary" type="button" id="bw-tx-sign"><span class="mi">create</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button></div>
+						<p class="error" id="bw-tx-error" role="alert"></p>
+					</div>
+				} else {
 				<form class="form" hx-post="tx/sign" hx-target="#tx-review" hx-swap="innerHTML show:#tx-review:top" hx-disabled-elt="find button" autocomplete="off">
 					<input type="hidden" name="id" value={ v.WalletID }/>
 					<input type="hidden" name="rawtx" value={ v.Raw }/>
@@ -135,7 +151,8 @@ templ TxReviewView(v TxView) {
 					}
 					<div class="bar"><button class="btn primary" type="submit"><span class="mi">create</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
 				</form>
-			} else if v.WalletID != "" && !v.Full {
+				}
+			} else if (v.WalletID != "" || v.Browser != "") && !v.Full {
 				if v.Owns {
 					<p class="small dim">{ T(ctx, "joint.own-signed") }</p>
 				} else {
@@ -156,29 +173,42 @@ templ TxReviewView(v TxView) {
 // several owners, each of whom signs only their own inputs.
 templ JointPage(p TxPage) {
 	@Layout(T(ctx, "joint.title"), "tx") {
+		if p.Disabled {
+			<script src={ From(ctx).Classic + "assets/scripts/wasm_exec.js" }></script>
+		}
 		<div class="page-head">
 			<a class="icon-btn" href="tx" aria-label={ T(ctx, "nav.tx") }><span class="mi">arrow_back</span></a>
 			<h1>{ T(ctx, "joint.title") }</h1>
 		</div>
-		<section class="card">
-			<p class="small dim">{ T(ctx, "joint.create-text") }</p>
+		<section class="card" { bwTxAttrs(ctx, p.Disabled)... }>
 			if p.Disabled {
-				@WalletAPIOff()
-			} else {
-				@ErrorBox(p.Err)
+				@bwUnlock()
+			}
+			<p class="small dim">{ T(ctx, "joint.create-text") }</p>
+				if !p.Disabled {
+					@ErrorBox(p.Err)
+				}
 				<form id="joint" class="form" hx-post="joint/create" hx-target="#joint-out" hx-swap="innerHTML show:#joint-out:top" hx-disabled-elt="find button[type=submit]" autocomplete="off">
-					<label>
-						{ T(ctx, "joint.your-wallet") }
-						<select name="id" hx-get="joint/outputs" hx-target="#own-outputs" hx-trigger="change, load" hx-swap="innerHTML">
+					if p.Disabled {
+						@bwWalletSelect(T(ctx, "joint.your-wallet"))
+					} else {
+						<label>
+							{ T(ctx, "joint.your-wallet") }
+							<select name="id" hx-get="joint/outputs" hx-target="#own-outputs" hx-trigger="change, load" hx-swap="innerHTML">
 							<option value="">{ T(ctx, "tx.no-wallet") }</option>
 							for _, w := range p.Wallets {
 								<option value={ w.ID } selected?={ w.ID == p.Wallet }>{ w.Label }</option>
 							}
-						</select>
-					</label>
+							</select>
+						</label>
+					}
 					<fieldset>
 						<legend>{ T(ctx, "joint.your-outputs") }</legend>
-						<div id="own-outputs"></div>
+						if p.Disabled {
+							<div id="own-outputs" hx-post="bw/joint/outputs" hx-trigger="bw-wallet from:body" hx-include="#bw-data" hx-target="this" hx-swap="innerHTML"></div>
+						} else {
+							<div id="own-outputs"></div>
+						}
 					</fieldset>
 					<label>
 						{ T(ctx, "joint.their-outputs") }
@@ -202,7 +232,6 @@ templ JointPage(p TxPage) {
 					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "joint.create") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
 				</form>
 				<div id="joint-out"></div>
-			}
 		</section>
 	}
 }
@@ -240,11 +269,39 @@ templ JointCreated(raw, id string) {
 		{ T(ctx, "tx.raw") }
 		<textarea class="mono" rows="4" readonly>{ raw }</textarea>
 	</label>
-	<form class="bar" hx-post="tx/review" hx-target="#tx-review" hx-swap="innerHTML">
+	<form class="bar" hx-post="tx/review" hx-target="#tx-review" hx-swap="innerHTML" hx-include="#bw-data">
 		<input type="hidden" name="rawtx" value={ raw }/>
 		<input type="hidden" name="id" value={ id }/>
 		<button class="btn sm" type="button" data-copy={ raw }><span class="mi">content_copy</span>{ T(ctx, "tx.copy") }</button>
 		<button class="btn primary" type="submit">{ T(ctx, "tx.review") }</button>
 	</form>
 	<div id="tx-review"></div>
+}
+
+// bwWalletSelect lists the browser wallets, filled by bw.js. It has no
+// name: bw.js puts the chosen wallet's public part in #bw-data.
+templ bwWalletSelect(label string) {
+	@bwData("wallet")
+	<label>
+		{ label }
+		<select id="bw-tx-wallet">
+			<option value="">{ T(ctx, "tx.no-wallet") }</option>
+		</select>
+	</label>
+}
+
+func bwTxAttrs(ctx context.Context, browser bool) templ.Attributes {
+	if !browser {
+		return templ.Attributes{}
+	}
+	return templ.Attributes{
+		"data-bw-page":            "tx",
+		"data-bw-root":            From(ctx).Classic,
+		"data-msg-error":          T(ctx, "bw.err-storage"),
+		"data-msg-missing":        T(ctx, "bw.missing"),
+		"data-msg-password":       T(ctx, "bw.err-send-password"),
+		"data-msg-wrong-password": T(ctx, "bw.err-wrong-password"),
+		"data-msg-mismatch":       T(ctx, "bw.err-mismatch"),
+		"data-msg-unsupported":    T(ctx, "bw.err-unsupported"),
+	}
 }

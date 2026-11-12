@@ -227,14 +227,25 @@ func LoadSend(n Node, id, from string) Send {
 		s.FromCoins = coins(ab.Confirmed.Coins)
 		return s
 	}
-	var addrs []string
+	all := make([]string, 0, len(w.Entries))
 	for _, e := range w.Entries {
-		ab := b.Addresses[e.Address]
+		all = append(all, e.Address)
+	}
+	fillSources(n, &s, all, b)
+	return s
+}
+
+// fillSources lists the addresses of all that hold coins and their unspent
+// outputs, which the advanced send options can limit a send to.
+func fillSources(n Node, s *Send, all []string, b *api.BalanceResponse) {
+	var addrs []string
+	for _, a := range all {
+		ab := b.Addresses[a]
 		if ab.Confirmed.Coins == 0 {
 			continue
 		}
-		addrs = append(addrs, e.Address)
-		s.Addrs = append(s.Addrs, AddressRow{Address: e.Address, Coins: coins(ab.Confirmed.Coins), Hours: utoa(ab.Confirmed.Hours)})
+		addrs = append(addrs, a)
+		s.Addrs = append(s.Addrs, AddressRow{Address: a, Coins: coins(ab.Confirmed.Coins), Hours: utoa(ab.Confirmed.Hours)})
 	}
 	if len(addrs) > 0 {
 		if o, err := n.OutputsForAddresses(addrs); err == nil {
@@ -243,6 +254,19 @@ func LoadSend(n Node, id, from string) Send {
 			}
 		}
 	}
+}
+
+// LoadBrowserSources is the balance and sources of browser wallet w.
+func LoadBrowserSources(n Node, w BrowserWallet) Send {
+	s := Send{ID: w.ID, Label: w.Label}
+	b, err := n.Balance(w.addrs())
+	if err != nil {
+		s.Err = err.Error()
+		return s
+	}
+	s.Balance = amountOf(b.BalancePair)
+	s.Available = coins(b.Confirmed.Coins)
+	fillSources(n, &s, w.addrs(), b)
 	return s
 }
 
@@ -339,44 +363,8 @@ func Prepare(n Node, f SendForm) Review {
 		req.Addresses = []string{f.From}
 	} else {
 		var manual bool
-		if dests, manual, err = f.dests(); err != nil {
+		if dests, manual, err = checkDests(n, &f, own, &r.Warnings, &req.HoursSelection); err != nil {
 			return fail(err)
-		}
-		if manual {
-			req.HoursSelection = api.HoursSelection{Type: "manual"}
-		} else if f.Share != "" {
-			v, err := strconv.ParseFloat(f.Share, 64)
-			if err != nil || v < 0 || v > 1 {
-				return fail(errBadShare)
-			}
-			req.HoursSelection.ShareFactor = f.Share
-		}
-		for _, d := range dests {
-			if _, err := cipher.DecodeBase58Address(d.To); err != nil {
-				return fail(errBadTo)
-			}
-			if c, err := droplet.FromString(d.Coins); err != nil || c == 0 {
-				return fail(errBadCoins)
-			}
-			if manual {
-				if _, err := strconv.ParseUint(d.Hours, 10, 64); err != nil {
-					return fail(errBadHours)
-				}
-			}
-			if own[d.To] {
-				r.Warnings = addWarning(r.Warnings, warnToOwn)
-				continue
-			}
-			tu, err := addressUse(n, []string{d.To})
-			if err != nil {
-				return fail(err)
-			}
-			switch {
-			case tu[d.To].Spent:
-				r.Warnings = addWarning(r.Warnings, warnToSpent)
-			case tu[d.To].Seen:
-				r.Warnings = addWarning(r.Warnings, warnToReused)
-			}
 		}
 		if !manual {
 			for i := range dests {
@@ -483,4 +471,50 @@ func sendURL(id, from string) string {
 		u += "&from=" + url.QueryEscape(from)
 	}
 	return u
+}
+
+// checkDests reads the destinations f asks for, checks them, sets the
+// hours selection in hs and adds the warnings each destination needs.
+func checkDests(n Node, f *SendForm, own map[string]bool, warnings *[]string, hs *api.HoursSelection) ([]Dest, bool, error) {
+	dests, manual, err := f.dests()
+	if err != nil {
+		return nil, false, err
+	}
+	if manual {
+		*hs = api.HoursSelection{Type: "manual"}
+	} else if f.Share != "" {
+		v, err := strconv.ParseFloat(f.Share, 64)
+		if err != nil || v < 0 || v > 1 {
+			return nil, false, errBadShare
+		}
+		hs.ShareFactor = f.Share
+	}
+	for _, d := range dests {
+		if _, err := cipher.DecodeBase58Address(d.To); err != nil {
+			return nil, false, errBadTo
+		}
+		if c, err := droplet.FromString(d.Coins); err != nil || c == 0 {
+			return nil, false, errBadCoins
+		}
+		if manual {
+			if _, err := strconv.ParseUint(d.Hours, 10, 64); err != nil {
+				return nil, false, errBadHours
+			}
+		}
+		if own[d.To] {
+			*warnings = addWarning(*warnings, warnToOwn)
+			continue
+		}
+		tu, err := addressUse(n, []string{d.To})
+		if err != nil {
+			return nil, false, err
+		}
+		switch {
+		case tu[d.To].Spent:
+			*warnings = addWarning(*warnings, warnToSpent)
+		case tu[d.To].Seen:
+			*warnings = addWarning(*warnings, warnToReused)
+		}
+	}
+	return dests, manual, nil
 }

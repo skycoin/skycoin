@@ -191,6 +191,13 @@ func Handler(n Node, o Options) http.Handler {
 		return TransactionsPage(LoadTxPage(n, r.FormValue("id"), r.FormValue("tx")))
 	}))
 	mux.HandleFunc("/tx/review", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		if s := r.PostFormValue("wallet"); s != "" {
+			w, err := ParseBrowserWallet(s)
+			if err != nil {
+				return bwError(err)
+			}
+			return TxReviewView(ReviewBrowserTx(n, w, r.PostFormValue("rawtx")))
+		}
 		return TxReviewView(ReviewTx(n, r.PostFormValue("id"), r.PostFormValue("rawtx")))
 	}))
 	mux.HandleFunc("/tx/sign", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
@@ -205,6 +212,13 @@ func Handler(n Node, o Options) http.Handler {
 	}))
 	mux.HandleFunc("/joint", page(func(r *http.Request) templ.Component { return JointPage(LoadTxPage(n, r.FormValue("id"), "")) }))
 	mux.HandleFunc("/joint/outputs", page(func(r *http.Request) templ.Component { return OwnOutputsList(LoadOwnOutputs(n, r.FormValue("id"))) }))
+	mux.HandleFunc("/bw/joint/outputs", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		w, err := ParseBrowserWallet(r.PostFormValue("wallet"))
+		if err != nil {
+			return bwError(err)
+		}
+		return OwnOutputsList(LoadOwnOutputsOf(n, w.addrs()))
+	}))
 	mux.HandleFunc("/joint/row", page(func(*http.Request) templ.Component { return JointRowInputs() }))
 	mux.HandleFunc("/joint/create", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		if err := r.ParseForm(); err != nil {
@@ -314,11 +328,21 @@ func Handler(n Node, o Options) http.Handler {
 		return BrowserSendPage(r.FormValue("id"), r.FormValue("from"))
 	}))
 	mux.HandleFunc("/bw/send/review", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
-		f, err := ParseBrowserSendForm(r.PostFormValue)
+		f, err := ParseBrowserSendForm(r.PostFormValue, func(k string) []string { return r.PostForm[k] })
 		if err != nil {
 			return bwError(err)
 		}
+		if r.PostFormValue("unsigned") != "" {
+			return BrowserUnsigned(PrepareBrowser(n, f))
+		}
 		return BrowserReview(PrepareBrowser(n, f))
+	}))
+	mux.HandleFunc("/bw/send/sources", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		w, err := ParseBrowserWallet(r.PostFormValue("wallet"))
+		if err != nil {
+			return bwError(err)
+		}
+		return BrowserSendSources(LoadBrowserSources(n, w))
 	}))
 	mux.HandleFunc("/bw/send/inject", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		back := bwWalletURL(r.PostFormValue("id"))

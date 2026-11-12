@@ -6,12 +6,10 @@ package ui2
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import (
-	"net/url"
+import "github.com/a-h/templ"
+import templruntime "github.com/a-h/templ/runtime"
 
-	"github.com/a-h/templ"
-	templruntime "github.com/a-h/templ/runtime"
-)
+import "net/url"
 
 func walletPart(part, id string) string { return "wallet/" + part + "?id=" + url.QueryEscape(id) }
 

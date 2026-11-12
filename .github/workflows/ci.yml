@@ -189,6 +189,10 @@ jobs:
       - name: Vendor Dependencies
         run: go mod vendor -v
 
+      # /bin/bash is bash 3.2 on macOS, which the script must keep working with.
+      - name: Check Descriptors
+        run: /bin/bash scripts/check-descriptors.sh
+
       - name: Install linters
         run: make install-linters
 
@@ -239,6 +243,10 @@ jobs:
 
       - name: Vendor Dependencies
         run: go mod vendor -v
+
+      - name: Check Descriptors
+        shell: bash
+        run: bash scripts/check-descriptors.sh
 
       - name: Check newcoin Template
         run: make check-newcoin

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/skycoin/skycoin/cmd/skydex-client/skydexui"
 	"github.com/skycoin/skycoin/src/skydex/db"
+	"github.com/skycoin/skycoin/src/skydex/market"
+	"github.com/skycoin/skycoin/src/skydex/protocol"
 	"github.com/skycoin/skycoin/src/skydex/server"
 )
 
@@ -223,4 +226,108 @@ func TestUI2RefusesCrossSiteWrites(t *testing.T) {
 	if res.StatusCode != http.StatusSeeOther {
 		t.Fatalf("same-origin connect = %d, want 303", res.StatusCode)
 	}
+}
+
+const ui2SellerPK = "0311111111111111111111111111111111111111111111111111111111111111aa"
+
+// seedProduct lists an active product from another seller.
+func seedProduct(t *testing.T, srv *server.Server, database *db.Database, id string) {
+	t.Helper()
+	ce, se := net.Pipe()
+	go srv.Serve(se, ui2SellerPK)
+	conn := market.NewConn(ce)
+	defer conn.Close() //nolint
+	resp, err := conn.Do(protocol.TypeRegister, protocol.RegisterRequest{WalletSKY: "FbmPhy5bhsMX8JNeAQdQ4W3DeCYFH97FBg", WalletBTC: "19wiPpvWPxHEmcANKzwUjiRgABQk8wZzCp"})
+	if err != nil || resp.IsError() {
+		t.Fatalf("register seller: %v %s", err, resp.Data)
+	}
+	if err := database.CreateProduct(&db.Product{
+		ID: id, SellerPubKey: ui2SellerPK, SellCoin: "SKY", Amount: 10, Price: 0.0002, PaymentCurrency: "BTC", Status: "active",
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func registerUI2(t *testing.T, ts *httptest.Server, c *http.Client) {
+	t.Helper()
+	_, body := send(t, c, "POST", ts.URL+"/ui2/settings", url.Values{
+		"wallet_sky": {"xPHfK6xn5LZvWAPB5EV6A62WyzQLywci1J"},
+		"wallet_BTC": {"1CLdkSYgwRA4Hm7EUPqaqpAtGG9zgT7dFm"},
+	}, "HX-Request", "true")
+	mustContain(t, body, "Addresses saved.")
+}
+
+// TestUI2MarketBuy lists products and buys one through the market tab.
+func TestUI2MarketBuy(t *testing.T) {
+	srv, database := newReadyMarket(t)
+	seedProduct(t, srv, database, "prod-ui2")
+	ts, c := newUI2Server(t, srv, "")
+	connectUI2(t, ts, c)
+
+	_, body := send(t, c, "GET", ts.URL+"/ui2/market", nil)
+	mustContain(t, body, "Available products", "10 SKY", "0.0002 BTC", "03111111…11aa", `value="prod-ui2"`, `href="market?new=1"`, `id="qr-dialog"`)
+
+	// The market refuses an unregistered buyer, and the client sends them to Settings.
+	res, _ := send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	if res.Header.Get("HX-Redirect") != "./settings" {
+		t.Fatalf("unregistered buy HX-Redirect = %q, want ./settings", res.Header.Get("HX-Redirect"))
+	}
+
+	registerUI2(t, ts, c)
+	res, body = send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	if res.Header.Get("HX-Retarget") != "#market-payment" {
+		t.Fatalf("buy HX-Retarget = %q, body %s", res.Header.Get("HX-Retarget"), body)
+	}
+	mustContain(t, body, "Pay the seller to complete your purchase", "19wiPpvWPxHEmcANKzwUjiRgABQk8wZzCp",
+		`data-qr-link="bitcoin:19wiPpvWPxHEmcANKzwUjiRgABQk8wZzCp?amount=`, `id="market-error" hx-swap-oob="true"`, `id="products"`)
+	// The frozen product left the grid.
+	if strings.Contains(body, `value="prod-ui2"`) {
+		t.Error("the bought product is still offered")
+	}
+
+	// A second buy of the same product fails and shows why.
+	res, body = send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	if res.Header.Get("HX-Retarget") != "" {
+		t.Fatal("a failed buy retargets")
+	}
+	mustContain(t, body, `id="market-error"`, "alert-danger")
+}
+
+// TestUI2MarketListing creates a sell order, with and without htmx.
+func TestUI2MarketListing(t *testing.T) {
+	srv, _ := newReadyMarket(t)
+	ts, c := newUI2Server(t, srv, "")
+	connectUI2(t, ts, c)
+	registerUI2(t, ts, c)
+
+	_, body := send(t, c, "GET", ts.URL+"/ui2/market?new=1", nil)
+	mustContain(t, body, `id="create-form"`, `<option value="SKY">SKY</option>`, `<option value="BTC" selected>BTC</option>`)
+	if strings.Contains(body, `id="create-panel" hidden`) {
+		t.Error("?new=1 leaves the form closed")
+	}
+
+	res, body := send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+		"sell_coin": {"SKY"}, "amount": {"0"}, "price": {"1"}, "payment_currency": {"BTC"},
+	}, "HX-Request", "true")
+	if res.Header.Get("HX-Trigger") != "" {
+		t.Fatal("a refused listing triggers listing-created")
+	}
+	mustContain(t, body, "alert-danger")
+
+	res, body = send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+		"sell_coin": {"SKY"}, "amount": {"10"}, "price": {"0.001"}, "payment_currency": {"BTC"},
+	}, "HX-Request", "true")
+	if res.Header.Get("HX-Trigger") != "listing-created" || res.Header.Get("HX-Retarget") != "#market-deposit" {
+		t.Fatalf("listing headers = %v, body %s", res.Header, body)
+	}
+	mustContain(t, body, "Fund your sell order", "sky-market-wallet", `data-copy="sky-market-wallet"`, "data-local-time")
+
+	// Without htmx the whole page comes back with the instructions.
+	res, body = send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+		"sell_coin": {"SKY"}, "amount": {"10"}, "price": {"0.001"}, "payment_currency": {"BTC"},
+	})
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("plain listing = %d", res.StatusCode)
+	}
+	mustContain(t, body, "<!doctype html>", `class="tab-link active" href="market"`)
 }

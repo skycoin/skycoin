@@ -55,6 +55,9 @@ func Handler(m Market) http.Handler {
 	mux.HandleFunc("POST /recent", h.recent)
 	mux.HandleFunc("GET /readiness", h.readiness)
 	mux.HandleFunc("GET /settings", h.tab("settings"))
+	mux.HandleFunc("GET /market/products", h.productGrid)
+	mux.HandleFunc("POST /market/buy", h.buy)
+	mux.HandleFunc("POST /market/listing", h.createListing)
 	mux.HandleFunc("POST /settings", h.register)
 	for _, t := range Tabs {
 		if t.ID != "settings" {
@@ -101,10 +104,14 @@ func (h *handler) tab(id string) http.HandlerFunc {
 }
 
 // tabBody is the content of a tab below the banners.
-func (h *handler) tabBody(_ *http.Request, p *Page) templ.Component {
+func (h *handler) tabBody(r *http.Request, p *Page) templ.Component {
 	switch p.Tab {
 	case "settings":
 		return SettingsTab(p, nil)
+	case "market":
+		v := h.products()
+		v.Open = r.URL.Query().Get("new") != ""
+		return MarketTab(p, v)
 	}
 	return ClassicTab(p)
 }
@@ -198,11 +205,11 @@ func isHTMX(r *http.Request) bool { return r.Header.Get("HX-Request") == "true" 
 
 // redirect sends the browser to to, a path below the mount point. htmx
 // requests get a full page load, as a connect or disconnect changes the whole
-// page.
+// page. htmx resolves its target against the page's <base>, the mount
+// point, where a Location resolves against the request path.
 func redirect(w http.ResponseWriter, r *http.Request, to string) {
-	loc := ui2.BaseFor(r.URL.Path) + to
 	if isHTMX(r) {
-		w.Header().Set("HX-Redirect", loc)
+		w.Header().Set("HX-Redirect", "./"+to)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -210,7 +217,7 @@ func redirect(w http.ResponseWriter, r *http.Request, to string) {
 	if r.Method == http.MethodPost {
 		code = http.StatusSeeOther
 	}
-	w.Header().Set("Location", loc)
+	w.Header().Set("Location", ui2.BaseFor(r.URL.Path)+to)
 	w.WriteHeader(code)
 }
 

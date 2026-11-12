@@ -75,42 +75,42 @@ func testCase(t *testing.T, cases []blockCase) {
 
 func TestAddBlock(t *testing.T) {
 	testData := []blockCase{
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 0, Time: 0, Fee: 0, Pre: -1},
 			Err:    nil,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 1, Time: 0, Fee: 0, Pre: 0},
 			Err:    nil,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 1, Time: 1, Fee: 0, Pre: 0},
 			Err:    nil,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 2, Time: 2, Fee: 0, Pre: 1},
 			Err:    nil,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 2, Time: 2, Fee: 0, Pre: 1},
 			Err:    errBlockExist,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 2, Time: 2, Fee: 0, Pre: 0},
 			Err:    errWrongParent,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 4, Time: 2, Fee: 0, Pre: 3},
 			Err:    errWrongParent,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 3, Time: 2, Fee: 0, Pre: -1},
 			Err:    errNoParent,
 			Action: "add",
@@ -122,35 +122,35 @@ func TestAddBlock(t *testing.T) {
 
 func TestRemoveBlock(t *testing.T) {
 	testData := []blockCase{
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 0, Time: 0, Fee: 0, Pre: -1},
 			Err:    nil,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 1, Time: 1, Fee: 0, Pre: 0},
 			Err:    nil,
 			Action: "add",
 		},
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 1, Time: 2, Fee: 0, Pre: 0},
 			Err:    nil,
 			Action: "add",
 		},
 		// remove block normally.
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 1, Time: 2, Fee: 0, Pre: 0},
 			Err:    nil,
 			Action: "remove",
 		},
 		// remove genesis block, which has children.
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 0, Time: 0, Fee: 0, Pre: -1},
 			Err:    errHasChild,
 			Action: "remove",
 		},
 		// remove the last block in depth 1.
-		blockCase{
+		{
 			BInfo:  blockInfo{Seq: 1, Time: 1, Fee: 0, Pre: 0},
 			Err:    nil,
 			Action: "remove",
@@ -166,20 +166,20 @@ func TestGetBlockInDepth(t *testing.T) {
 
 	bc := &blockTree{}
 	blocks := []coin.Block{
-		coin.Block{
+		{
 			Head: coin.BlockHeader{
 				BkSeq: 0,
 				Time:  0,
 				Fee:   0,
 			},
 		},
-		coin.Block{
+		{
 			Head: coin.BlockHeader{
 				BkSeq: 1,
 				Time:  1,
 			},
 		},
-		coin.Block{
+		{
 			Head: coin.BlockHeader{
 				BkSeq: 1,
 				Time:  2,

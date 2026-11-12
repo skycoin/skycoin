@@ -21,13 +21,9 @@ linters:
     - nakedret
     - revive
     - staticcheck
-    - unparam
-    - unused
-    - misspell
-    - unparam
-    - revive
     - unconvert
     - unparam
+    - unused
   settings:
     dupl:
       threshold: 100
@@ -52,62 +48,25 @@ linters:
       for-loops: false
     unparam:
       check-exported: false
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
   exclusions:
     generated: lax
     paths:
-      - third_party$
+      - vendor/
+      - third_party/
       - builtin$
       - examples$
       # npm dependencies of the Angular front-ends. The flatted package ships a
-      # Go file, so `./...` walks into it and reports issues in third-party code
-      # that is not ours to fix. These directories only exist after npm install,
-      # which CI now runs for all three front-ends.
+      # Go file that `./...` would otherwise walk into.
       - (^|/)node_modules/
+      # cgo against libusb and hidapi, which the lint jobs on darwin and
+      # windows do not install.
       - cmd/hardware-wallet
       - src/hardware-wallet/usb/lowlevel/
-      - src/cipher/debug_
-      - src/cipher/secp256k1-go/debug_
     rules:
-      # gosec, scoped rather than silenced globally.
-      #
-      # These three are systematic: every hit is the same intentional pattern in
-      # the same kind of file, so a per-site //nolint on each of ~55 lines would
-      # be noise nobody maintains. Everything outside these paths still reports,
-      # and genuine one-offs carry //nolint with a reason at the site.
-      - linters:
-          - gosec
-        text: "G101:"          # test vectors, not credentials
-        path: _test\.go
-      - linters:
-          - gosec
-        text: "G404:"          # shuffled test inputs, not secrets
-        path: _test\.go
-      - linters:
-          - gosec
-        text: "G117:"          # fixtures that intentionally carry a password field
-        path: _test\.go
-      - linters:
-          - gosec
-        text: "G115:"          # deliberate truncation while packing bytes
-        path: "src/(cipher|btc)/"
-      - linters:
-          - gosec
-        # G120 is taint-based: it flags r.FormValue in the node's HTTP handlers
-        # and explores as far as its analysis budget allows, so a different
-        # subset of handlers is reported on each run and per-site //nolint cannot
-        # keep up. The API server sets its own body limits; these calls read a
-        # single query parameter.
-        text: "G120:"
-        path: "src/api/"
-      - linters:
-          - revive
-        text: "var-naming: avoid meaningless package names"
-      - linters:
-          - revive
-        text: "var-naming: avoid package names that conflict with Go standard library"
-      - linters:
-          - misspell
-        path: src/cipher/bip39/wordlists/
       - linters:
           - staticcheck
         text: "QF1003:" # could use tagged switch on errCode (staticcheck)
@@ -134,11 +93,50 @@ linters:
         text: "QF1006:" # could lift into loop condition (staticcheck)
       - linters:
           - staticcheck
-        text: "QF1012:" # use fmt.Fprintf instead of WriteString(fmt.Sprintf) (staticcheck)
+        text: "QF1012:" # could use fmt.Fprintf instead of WriteString(fmt.Sprintf) (staticcheck)
+      # skycoin only. gosec scoped by path rather than silenced globally: each
+      # is one intentional pattern repeated across a kind of file, and genuine
+      # one-offs elsewhere carry //nolint with a reason at the site.
+      - linters:
+          - gosec
+        text: "G101:" # test vectors, not credentials
+        path: _test\.go
+      - linters:
+          - gosec
+        text: "G404:" # shuffled test inputs, not secrets
+        path: _test\.go
+      - linters:
+          - gosec
+        text: "G117:" # fixtures that intentionally carry a password field
+        path: _test\.go
+      - linters:
+          - gosec
+        text: "G115:" # deliberate truncation while packing bytes
+        path: "src/(cipher|btc)/"
+      # G120 is taint-based and reports a different subset of the node's HTTP
+      # handlers on each run, so per-site //nolint cannot keep up. The API
+      # server sets its own body limits and these calls read one query value.
+      - linters:
+          - gosec
+        text: "G120:"
+        path: "src/api/"
+      # Package names such as util and api are the public import paths of the
+      # skycoin library, so renaming them would break every importer.
+      - linters:
+          - revive
+        text: "var-naming: avoid meaningless package names"
+      - linters:
+          - revive
+        text: "var-naming: avoid package names that conflict with Go standard library"
+      # The BIP39 word lists are data in other languages, not English prose.
+      - linters:
+          - misspell
+        path: src/cipher/bip39/wordlists/
 issues:
   new: false
 formatters:
   enable:
+    - gofmt
     - goimports
   settings:
     gofmt:
@@ -149,7 +147,8 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - third_party$
+      - vendor/
+      - third_party/
       - builtin$
       - examples$
       - (^|/)node_modules/

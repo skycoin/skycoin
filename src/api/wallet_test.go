@@ -657,7 +657,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	unconfirmedTxnVerbose, err := readable.NewUnconfirmedTransactionVerbose(uTxn, []visor.TransactionInput{
-		visor.TransactionInput{},
+		{},
 	})
 	require.NoError(t, err)
 

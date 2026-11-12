@@ -823,7 +823,7 @@ func TestGetBlocks(t *testing.T) {
 			gatewayGetBlocksInRangeResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
-					readable.Block{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -855,7 +855,7 @@ func TestGetBlocks(t *testing.T) {
 			},
 			response: &readable.BlocksVerbose{
 				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -881,7 +881,7 @@ func TestGetBlocks(t *testing.T) {
 			gatewayGetBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
-					readable.Block{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -911,7 +911,7 @@ func TestGetBlocks(t *testing.T) {
 			},
 			response: &readable.BlocksVerbose{
 				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -937,7 +937,7 @@ func TestGetBlocks(t *testing.T) {
 			gatewayGetBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
-					readable.Block{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1122,7 +1122,7 @@ func TestGetLastBlocks(t *testing.T) {
 			gatewayGetLastBlocksResult: []coin.SignedBlock{{}},
 			response: &readable.Blocks{
 				Blocks: []readable.Block{
-					readable.Block{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -1152,7 +1152,7 @@ func TestGetLastBlocks(t *testing.T) {
 			},
 			response: &readable.BlocksVerbose{
 				Blocks: []readable.BlockVerbose{
-					readable.BlockVerbose{
+					{
 						Head: readable.BlockHeader{
 							Hash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
 							PreviousHash: "0000000000000000000000000000000000000000000000000000000000000000",

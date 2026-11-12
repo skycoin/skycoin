@@ -77,9 +77,9 @@ func TestRichlist(t *testing.T) {
 		{
 			name: "filterRichlist",
 			filterMap: map[cipher.Address]struct{}{
-				otherAddresses[0]: struct{}{},
-				otherAddresses[1]: struct{}{},
-				otherAddresses[3]: struct{}{},
+				otherAddresses[0]: {},
+				otherAddresses[1]: {},
+				otherAddresses[3]: {},
 			},
 			richlistLen: 5,
 			result: Richlist{
@@ -100,10 +100,10 @@ func TestRichlist(t *testing.T) {
 		{
 			name: "lockedRichlist",
 			filterMap: map[cipher.Address]struct{}{
-				otherAddresses[0]: struct{}{},
-				otherAddresses[1]: struct{}{},
-				otherAddresses[2]: struct{}{},
-				otherAddresses[3]: struct{}{},
+				otherAddresses[0]: {},
+				otherAddresses[1]: {},
+				otherAddresses[2]: {},
+				otherAddresses[3]: {},
 			},
 			result: Richlist{
 				RichlistBalance{Address: distributionAddresses[2], Locked: true, Coins: 2123456},

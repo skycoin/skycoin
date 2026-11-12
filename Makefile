@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: run-client run-daemon run-help
 .PHONY: test test-386 test-amd64
-.PHONY: check check-newcoin check-descriptors
+.PHONY: check check-newcoin check-descriptors vet tidy format install-linters
 .PHONY: run-integration-test-live
 .PHONY: run-integration-test-live-disable-csrf
 .PHONY: run-integration-test-live-disable-networking
@@ -134,10 +134,21 @@ lint-skyhw: ## Run linters on hardware wallet code
 
 check-skyhw: lint-skyhw test-skyhw build-skyhw ## Run all hardware wallet checks (lint, test, build)
 
-lint: ## Run linters. Use make install-linters first.
+# One golangci-lint for skywire, skycoin and skycoin.com. CI pins the same
+# version in .github/workflows/ci.yml.
+GOLANGCI_LINT_VERSION := v2.15.0
+LINT_BIN := $(shell go env GOPATH)/bin
+GOLANGCI_LINT := $(LINT_BIN)/golangci-lint
+
+lint: ## Run linters. Installs the pinned golangci-lint when it is missing or another version
 	go mod vendor -v
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run -c .golangci.yml ./...
+	$(GOLANGCI_LINT) --version 2>/dev/null | grep -q ' $(GOLANGCI_LINT_VERSION:v%=%) ' || GOBIN=$(LINT_BIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GOLANGCI_LINT) --version
+	$(GOLANGCI_LINT) run -c .golangci.yml ./...
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
+	go vet -all ./...
+
+vet: ## Run go vet (the non-golangci-lint half of 'lint')
 	go vet -all ./...
 
 check-newcoin: newcoin ## Check that make newcoin succeeds and no templated files are changed.
@@ -219,9 +230,19 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	go install golang.org/x/tools/cmd/goimports@latest
 
-format: ## Formats the code. Must have goimports installed (use make install-linters).
+tidy: ## Tidies dependencies
+	go mod tidy -v
+
+format: tidy ## Formats the code. Must have goimports installed (use make install-linters).
+	@if grep -qE '^(replace|exclude)' go.mod; then \
+		echo "ERROR: go.mod contains replace or exclude directives which break go install @version"; \
+		grep -E '^(replace|exclude)' go.mod; \
+		exit 1; \
+	fi
+	gofmt -s -w $$(git ls-files 'cmd/*.go' 'src/*.go')
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
 

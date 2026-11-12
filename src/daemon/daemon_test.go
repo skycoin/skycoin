@@ -31,22 +31,22 @@ func TestDivideHashes(t *testing.T) {
 			hashes[:],
 			3,
 			[][]cipher.SHA256{
-				[]cipher.SHA256{
+				{
 					hashes[0],
 					hashes[1],
 					hashes[2],
 				},
-				[]cipher.SHA256{
+				{
 					hashes[3],
 					hashes[4],
 					hashes[5],
 				},
-				[]cipher.SHA256{
+				{
 					hashes[6],
 					hashes[7],
 					hashes[8],
 				},
-				[]cipher.SHA256{
+				{
 					hashes[9],
 				},
 			},
@@ -56,7 +56,7 @@ func TestDivideHashes(t *testing.T) {
 			hashes[:1],
 			1,
 			[][]cipher.SHA256{
-				[]cipher.SHA256{
+				{
 					hashes[0],
 				},
 			},
@@ -72,7 +72,7 @@ func TestDivideHashes(t *testing.T) {
 			hashes[:3],
 			3,
 			[][]cipher.SHA256{
-				[]cipher.SHA256{
+				{
 					hashes[0],
 					hashes[1],
 					hashes[2],
@@ -84,17 +84,17 @@ func TestDivideHashes(t *testing.T) {
 			hashes[:8],
 			3,
 			[][]cipher.SHA256{
-				[]cipher.SHA256{
+				{
 					hashes[0],
 					hashes[1],
 					hashes[2],
 				},
-				[]cipher.SHA256{
+				{
 					hashes[3],
 					hashes[4],
 					hashes[5],
 				},
-				[]cipher.SHA256{
+				{
 					hashes[6],
 					hashes[7],
 				},

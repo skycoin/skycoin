@@ -554,7 +554,7 @@ func TestProcessTransactions(t *testing.T) {
 			false,
 			[]spending{},
 			[]spending{
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{genSecret},
@@ -576,7 +576,7 @@ func TestProcessTransactions(t *testing.T) {
 			false,
 			[]spending{},
 			[]spending{
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{keys[0]},
@@ -591,14 +591,14 @@ func TestProcessTransactions(t *testing.T) {
 			false,
 			[]spending{},
 			[]spending{
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{genSecret},
 					ToAddr:  toAddrs[0],
 					Coins:   10e6,
 				},
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{genSecret},
@@ -620,7 +620,7 @@ func TestProcessTransactions(t *testing.T) {
 			true,
 			[]spending{},
 			[]spending{
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{keys[0]},
@@ -635,14 +635,14 @@ func TestProcessTransactions(t *testing.T) {
 			true,
 			[]spending{},
 			[]spending{
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{genSecret},
 					ToAddr:  toAddrs[0],
 					Coins:   10e6,
 				},
-				spending{
+				{
 					TxIndex: 0,
 					UxIndex: 0,
 					Keys:    []cipher.SecKey{keys[0]},

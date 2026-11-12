@@ -38,7 +38,7 @@ You can check the state of blocks, transactions and more.
 
 The explorer is divided in 2 parts: the frontend and the optional server.
 
-The explorer pages are rendered by the server from `src/explorerui`, with templ and htmx, so they work without JavaScript. The older frontend is an Angular application, served at `/classic/` for one more release. When compiled, it is saved in the `/dist` fonder, inside the root of this repository.
+The explorer pages are rendered by the server from `src/explorerui`, with templ and htmx, so they work without JavaScript. The older frontend is an Angular application, served at `/angular/`. When compiled, it is saved in the `/dist` fonder, inside the root of this repository.
 
 The server is a small program written in Go (Golang) which two functions: serve the contents of the `/dist` folder in [http://127.0.0.1:8001](http://127.0.0.1:8001) (making it is possible to open the frontend in a web browser) and provide an API for getting data from the blockchain. The API provided by the server is just a proxy that gets the data from a Skycoin node, so it needs a Skycoin node to be running to work.
 
@@ -129,7 +129,7 @@ You can also configure the node and server addresses with CLI flags, run `skycoi
 |------|-------|---------|-------------|
 | `--server-host` | `-s` | `127.0.0.1:8001` | The addr:port to bind the explorer web server to |
 | `--node-addr` | `-n` | `http://127.0.0.1:6420` | The skycoin node's address |
-| `--files-folder` | `-f` | _(embedded)_ | Path for a custom precompiled Angular front-end, served at `/classic/` (overrides the embedded one) |
+| `--files-folder` | `-f` | _(embedded)_ | Path for a custom precompiled Angular front-end, served at `/angular/` (overrides the embedded one) |
 | `--api-only` | `-a` | `false` | Only run the API, don't serve static content |
 
 Set `FIBER_TOML` to customize the explorer for a fibercoin (changes the ASCII art and description in the help menu).

@@ -80,8 +80,8 @@ func TestOriginRefererCheck(t *testing.T) {
 
 				setCSRFParameters(t, tokenValid, req)
 
-				isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
-				if isAPIV2 {
+				apiV2 := strings.HasPrefix(endpoint, "/api/v2")
+				if apiV2 {
 					req.Header.Set("Content-Type", ContentTypeJSON)
 				}
 
@@ -107,7 +107,7 @@ func TestOriginRefererCheck(t *testing.T) {
 				case http.StatusForbidden:
 					require.Equal(t, tc.status, rr.Code)
 
-					if isAPIV2 {
+					if apiV2 {
 						require.Equal(t, tc.errV2, rr.Body.String())
 					} else {
 						require.Equal(t, tc.errV1, rr.Body.String())
@@ -169,8 +169,8 @@ func TestHostCheck(t *testing.T) {
 
 					setCSRFParameters(t, tokenValid, req)
 
-					isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
-					if isAPIV2 {
+					apiV2 := strings.HasPrefix(endpoint, "/api/v2")
+					if apiV2 {
 						req.Header.Set("Content-Type", ContentTypeJSON)
 					}
 
@@ -190,7 +190,7 @@ func TestHostCheck(t *testing.T) {
 					switch tc.status {
 					case http.StatusForbidden:
 						require.Equal(t, http.StatusForbidden, rr.Code)
-						if isAPIV2 {
+						if apiV2 {
 							require.Equal(t, tc.errV2, rr.Body.String())
 						} else {
 							require.Equal(t, tc.errV1, rr.Body.String())

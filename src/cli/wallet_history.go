@@ -166,7 +166,7 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput)
 			spentCoins += h.coins
 		}
 
-		isNegative := spentCoins > receivedCoins
+		negative := spentCoins > receivedCoins
 
 		if spentCoins > receivedCoins {
 			coins = spentCoins - receivedCoins
@@ -179,7 +179,7 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput)
 			return nil, err
 		}
 
-		if isNegative {
+		if negative {
 			amount = "-" + amount
 		}
 

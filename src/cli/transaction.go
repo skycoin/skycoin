@@ -99,8 +99,8 @@ func decodeRawTxnCmd() *cobra.Command {
 
 			// Assume the transaction is not malformed and if it has no inputs
 			// that it is the genesis block's transaction
-			isGenesis := len(txn.In) == 0
-			rTxn, err := readable.NewTransaction(txn, isGenesis)
+			genesis := len(txn.In) == 0
+			rTxn, err := readable.NewTransaction(txn, genesis)
 			if err != nil {
 				return err
 			}
@@ -345,12 +345,12 @@ func pendingTransactionsCmd() *cobra.Command {
 		SilenceUsage:          true,
 		Args:                  cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
-			isVerbose, err := c.Flags().GetBool("verbose")
+			verbose, err := c.Flags().GetBool("verbose")
 			if err != nil {
 				return err
 			}
 
-			if isVerbose {
+			if verbose {
 				pendingTxns, err := apiClient.PendingTransactionsVerbose()
 				if err != nil {
 					return err

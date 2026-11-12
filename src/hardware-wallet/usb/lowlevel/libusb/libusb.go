@@ -269,9 +269,9 @@ func Interrupt_Transfer(intf *gousb.Interface, endpoint uint8, data []byte, time
 	}
 
 	// Determine if this is an IN or OUT endpoint
-	isIn := (endpoint & 0x80) != 0
+	inbound := (endpoint & 0x80) != 0
 
-	if isIn {
+	if inbound {
 		epIn, err := intf.InEndpoint(int(endpoint & 0x7F))
 		if err != nil {
 			return nil, err

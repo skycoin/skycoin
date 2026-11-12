@@ -84,9 +84,9 @@ func hostCheck(apiVersion, host string, hostWhitelist []string, handler http.Han
 		}
 	}
 
-	isLocalhost := iputil.IsLocalhost(addr)
+	localhost := iputil.IsLocalhost(addr)
 
-	if isLocalhost && port == 0 {
+	if localhost && port == 0 {
 		logger.Panic("localhost with no port specified is unsupported")
 	}
 
@@ -99,8 +99,8 @@ func hostCheck(apiVersion, host string, hostWhitelist []string, handler http.Han
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// NOTE: The "Host" header is not in http.Request.Header, it's put in the http.Request.Host field
-		_, isWhitelisted := hostWhitelistMap[r.Host]
-		if isLocalhost && r.Host != "" && !isWhitelisted {
+		_, ok := hostWhitelistMap[r.Host]
+		if localhost && r.Host != "" && !ok {
 			logger.Critical().Errorf("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, r.Host)
 			writeError(w, apiVersion, http.StatusForbidden, "Invalid Host")
 			return
@@ -157,7 +157,7 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 				return
 			}
 
-			if _, isWhitelisted := hostWhitelistMap[u.Host]; !isWhitelisted {
+			if _, ok := hostWhitelistMap[u.Host]; !ok {
 				logger.Critical().Errorf("%s header value %s does not match host and is not whitelisted", toCheckHeader, toCheck)
 				writeError(w, apiVersion, http.StatusForbidden, "Invalid Origin or Referer")
 				return

@@ -127,7 +127,7 @@ type TextFormatter struct {
 	colorScheme *compiledColorScheme
 
 	// Whether the logger's out is to a terminal.
-	isTerminal bool
+	terminal bool
 
 	sync.Once
 }
@@ -162,7 +162,7 @@ func (f *TextFormatter) init(entry *logrus.Entry) {
 		f.QuoteCharacter = "\""
 	}
 	if entry.Logger != nil {
-		f.isTerminal = f.checkIfTerminal(entry.Logger.Out)
+		f.terminal = f.checkIfTerminal(entry.Logger.Out)
 	}
 }
 
@@ -200,16 +200,16 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	f.Do(func() { f.init(entry) })
 
-	isFormatted := f.ForceFormatting || f.isTerminal
+	formatted := f.ForceFormatting || f.terminal
 
 	timestampFormat := f.TimestampFormat
 	if timestampFormat == "" {
 		timestampFormat = defaultTimestampFormat
 	}
-	if isFormatted {
-		isColored := (f.ForceColors || f.isTerminal) && !f.DisableColors
+	if formatted {
+		colored := (f.ForceColors || f.terminal) && !f.DisableColors
 		var colorScheme *compiledColorScheme
-		if isColored {
+		if colored {
 			if f.colorScheme == nil {
 				colorScheme = defaultCompiledColorScheme
 			} else {
@@ -255,7 +255,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	priority, ok := entry.Data[logPriorityKey]
-	hasPriority := ok && priority == logPriorityCritical
+	critical := ok && priority == logPriorityCritical
 
 	if entry.Level != logrus.WarnLevel {
 		levelText = entry.Level.String()
@@ -315,7 +315,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	if f.DisableTimestamp {
-		if hasPriority {
+		if critical {
 			str := fmt.Sprintf("%s%s%s"+messageFormat, levelText, callContextText, prefixText, message)
 			fmt.Fprint(b, colorScheme.CriticalColor(str))
 		} else {
@@ -331,7 +331,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 
 		coloredTimestamp := colorScheme.TimestampColor(timestamp)
 
-		if hasPriority {
+		if critical {
 			str := fmt.Sprintf("%s %s%s%s"+messageFormat, timestamp, levelText, callContextText, prefixText, message)
 			fmt.Fprint(b, colorScheme.CriticalColor(str))
 		} else {

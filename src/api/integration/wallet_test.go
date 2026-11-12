@@ -923,13 +923,13 @@ func TestVerifyWallet(t *testing.T) {
 	c := newClient()
 
 	// check with correct seed
-	isValid, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
+	valid, err := c.VerifySeed("nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair")
 	require.NoError(t, err)
-	require.True(t, isValid)
+	require.True(t, valid)
 
 	// check with incorrect seed
-	isValid, err = c.VerifySeed("nut ")
-	require.False(t, isValid)
+	valid, err = c.VerifySeed("nut ")
+	require.False(t, valid)
 	assertResponseError(t, err, http.StatusUnprocessableEntity, bip39.ErrSurroundingWhitespace.Error())
 }
 

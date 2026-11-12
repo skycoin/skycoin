@@ -68,8 +68,8 @@ func TestCSRFWrapper(t *testing.T) {
 
 					setCSRFParameters(t, c, req)
 
-					isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
-					if isAPIV2 {
+					apiV2 := strings.HasPrefix(endpoint, "/api/v2")
+					if apiV2 {
 						req.Header.Set("Content-Type", ContentTypeJSON)
 					}
 
@@ -96,7 +96,7 @@ func TestCSRFWrapper(t *testing.T) {
 						errMsg = ErrCSRFExpired
 					}
 
-					if isAPIV2 {
+					if apiV2 {
 						require.Equal(t, fmt.Sprintf("{\n    \"error\": {\n        \"message\": \"%s\",\n        \"code\": 403\n    }\n}", errMsg), rr.Body.String())
 					} else {
 						require.Equal(t, fmt.Sprintf("403 Forbidden - %s\n", errMsg), rr.Body.String())
@@ -137,8 +137,8 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 
 							setCSRFParameters(t, c, req)
 
-							isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
-							if isAPIV2 {
+							apiV2 := strings.HasPrefix(endpoint, "/api/v2")
+							if apiV2 {
 								req.Header.Set("Content-Type", ContentTypeJSON)
 							}
 
@@ -159,7 +159,7 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 								errMsg = ErrCSRFExpired
 							}
 
-							if isAPIV2 {
+							if apiV2 {
 								require.Equal(t, fmt.Sprintf("{\n    \"error\": {\n        \"message\": \"%s\",\n        \"code\": 403\n    }\n}", errMsg), rr.Body.String())
 							} else {
 								require.Equal(t, fmt.Sprintf("403 Forbidden - %s\n", errMsg), rr.Body.String())

@@ -409,3 +409,10 @@ code { color: var(--sky-blue); }
 .recent-del:hover:not(:disabled) { border-color: #dc3545; color: #ff6b6b; background: rgba(220, 53, 69, 0.1); }
 .recent-del:disabled { cursor: default; opacity: 0.6; }
 .recent-form { flex: 1; display: flex; margin: 0; min-width: 0; }
+
+/* ui2 additions: the QR dialog, the new sell order toggle. */
+dialog.qr-modal { color: var(--sky-white); margin: auto; }
+dialog.qr-modal::backdrop { background: rgba(0, 0, 0, 0.65); }
+.qr-canvas img, .qr-canvas canvas { display: block; }
+[data-toggle-create] .when-open, [data-toggle-create].open .when-closed { display: none; }
+[data-toggle-create].open .when-open { display: inline; }

@@ -1,0 +1,227 @@
+package skydexui
+
+import "github.com/skycoin/skycoin/src/skydex/protocol"
+
+// MarketView is what the Market tab shows.
+type MarketView struct {
+	Products []protocol.ProductView
+	// LoadErr is why the products could not be read.
+	LoadErr string
+	// Open shows the new sell order form, for browsers without JavaScript.
+	Open bool
+	// Error is why the last action failed.
+	Error string
+	// Deposit and Payment are the instructions of the last listing and buy.
+	Deposit *protocol.CreateListingResponse
+	Payment *protocol.BuyProductResponse
+}
+
+// MarketTab follows src/components/Market.jsx.
+templ MarketTab(p *Page, v MarketView) {
+	<div class="page-head">
+		<h2>Market</h2>
+		if len(sellCoins(p)) > 0 {
+			<a class={ "btn", "btn-connect", templ.KV("open", v.Open) } href="market?new=1" hx-boost="false" data-toggle-create data-need-register>
+				<span class="when-closed">+ New Sell Order</span><span class="when-open">Cancel</span>
+			</a>
+		} else {
+			<button type="button" class="btn btn-connect" disabled>+ New Sell Order</button>
+		}
+	</div>
+	@marketError(v.Error, false)
+	<div id="market-deposit">
+		if v.Deposit != nil {
+			@DepositBox(*v.Deposit)
+		}
+	</div>
+	<div id="market-payment">
+		if v.Payment != nil {
+			@PaymentBox(*v.Payment)
+		}
+	</div>
+	if len(sellCoins(p)) > 0 {
+		@createForm(p, v.Open)
+	}
+	<h4 class="section-title">Available products</h4>
+	@ProductGrid(p, v, false)
+}
+
+func sellCoins(p *Page) []string {
+	if p.Coins == nil {
+		return nil
+	}
+	return p.Coins.SellCoins
+}
+
+// payOptions are the coins a listing can be paid in: the external coins and
+// every fibercoin, the one being sold hidden by skydex.js.
+func payOptions(p *Page) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, c := range append(append([]string{}, currencies(p)...), sellCoins(p)...) {
+		if !seen[c] {
+			seen[c] = true
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func firstPayOption(p *Page) string {
+	sell := sellCoins(p)[0]
+	for _, c := range payOptions(p) {
+		if c != sell {
+			return c
+		}
+	}
+	return ""
+}
+
+templ createForm(p *Page, open bool) {
+	<div class="panel trade-builder mb-4" id="create-panel" hidden?={ !open }>
+		<h4 class="panel-title">New sell order</h4>
+		<form method="post" action="market/listing" id="create-form" hx-post="market/listing" hx-target="#market-error" hx-swap="outerHTML" hx-disabled-elt="find button" data-need-register>
+			<div class="trade-leg">
+				<span class="leg-label">You sell</span>
+				<input type="number" name="amount" class="form-control leg-amount" placeholder="0.00" required step="0.0001" min="0" aria-label="amount to sell"/>
+				<select name="sell_coin" class="form-select leg-coin" required aria-label="sell coin">
+					for _, c := range sellCoins(p) {
+						<option value={ c }>{ c }</option>
+					}
+				</select>
+			</div>
+			<div class="trade-arrow">↓</div>
+			<div class="trade-leg">
+				<span class="leg-label">You get</span>
+				<input type="number" name="price" class="form-control leg-amount" placeholder="0.00" required step="0.0001" min="0" aria-label="price"/>
+				<select name="payment_currency" class="form-select leg-coin" required aria-label="payment currency">
+					for _, c := range payOptions(p) {
+						<option value={ c } selected?={ c == firstPayOption(p) } hidden?={ c == sellCoins(p)[0] } disabled?={ c == sellCoins(p)[0] }>{ c }</option>
+					}
+				</select>
+			</div>
+			<div class="trade-summary" id="trade-summary">
+				Set what you sell and what you want for it. Payment can be an external coin (BTC/LTC) or another fibercoin.
+			</div>
+			<button type="submit" class="btn btn-connect" disabled?={ firstPayOption(p) == "" }>Create sell order</button>
+		</form>
+	</div>
+}
+
+// ProductGrid is the product cards, polled every 5 s. oob swaps it in beside
+// a buy's reply.
+templ ProductGrid(p *Page, v MarketView, oob bool) {
+	<div
+		id="products"
+		hx-get="market/products"
+		hx-trigger="every 5s"
+		hx-swap="outerHTML"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		if v.LoadErr != "" {
+			<div class="alert alert-danger">{ v.LoadErr }</div>
+		}
+		if len(v.Products) == 0 {
+			<div class="alert alert-secondary">
+				if ready, known := p.Ready(); known && !ready {
+					This market has no coins configured yet.
+				} else {
+					No products available right now.
+				}
+			</div>
+		} else {
+			<div class="card-grid">
+				for _, pr := range v.Products {
+					<div class="card product-card">
+						<div class="product-amount"><strong>{ num(pr.Amount) } { pr.SellCoin }</strong></div>
+						<div class="product-price">{ num(pr.Price) } { pr.PaymentCurrency }</div>
+						<div class="text-muted small product-seller">Seller <code title={ pr.SellerPubKey }>{ shortKey(pr.SellerPubKey, 8, 4) }</code></div>
+						<form method="post" action="market/buy" hx-post="market/buy" hx-target="#market-error" hx-swap="outerHTML" hx-disabled-elt="find button" data-need-register>
+							<input type="hidden" name="product_id" value={ pr.ID }/>
+							<button type="submit" class="btn btn-connect w-100">Buy</button>
+						</form>
+					</div>
+				}
+			</div>
+		}
+	</div>
+}
+
+// DepositBox tells a seller where to fund a new listing. It stays until
+// dismissed so the escrow address is not lost.
+templ DepositBox(d protocol.CreateListingResponse) {
+	<div class="panel deposit-box">
+		<div class="deposit-head">
+			<h4 class="panel-title mb-0">Fund your sell order</h4>
+			<button type="button" class="deposit-close" data-dismiss aria-label="Dismiss">✕</button>
+		</div>
+		<p class="mb-2">
+			Send exactly <strong>{ num(d.ExpectedAmount) } { d.SellCoin }</strong>
+			({ num(d.Amount) } + { num(d.Commission) } commission) to this escrow address
+			if d.ExpiresAt != "" {
+				before 
+				<strong>
+					@localTime(d.ExpiresAt, false)
+				</strong>:
+			} else {
+				within 15 minutes:
+			}
+		</p>
+		<div class="copy-row">
+			<code class="addr-box">{ d.MarketWallet }</code>
+			@copyButton(d.MarketWallet, "Copy address")
+			@qrButton(d.MarketWallet, d.ExpectedAmount, d.SellCoin, "Fund your sell order", "This is the market escrow address, not the buyer's.")
+		</div>
+		<p class="hint mt-2 mb-0">
+			You can find this again anytime under <strong>My Listings</strong>. The offer becomes a
+			purchasable product once the deposit is confirmed on-chain.
+		</p>
+	</div>
+}
+
+// PaymentBox tells a buyer what to pay and where. It stays until dismissed.
+templ PaymentBox(o protocol.BuyProductResponse) {
+	<div class="panel deposit-box">
+		<div class="deposit-head">
+			<h4 class="panel-title mb-0">Pay the seller to complete your purchase</h4>
+			<button type="button" class="deposit-close" data-dismiss aria-label="Dismiss">✕</button>
+		</div>
+		<p class="mb-2">
+			You are buying <strong>{ num(o.Amount) } { o.SellCoin }</strong>. Pay exactly
+			<strong>{ num(o.ExpectedPaymentAmount) } { o.PaymentCurrency }</strong> to this seller wallet
+			if o.ExpiresAt != "" {
+				before 
+				<strong>
+					@localTime(o.ExpiresAt, false)
+				</strong>:
+			} else {
+				:
+			}
+		</p>
+		<div class="copy-row">
+			<code class="addr-box">{ o.SellerWallet }</code>
+			@copyButton(o.SellerWallet, "Copy address")
+			@qrButton(o.SellerWallet, o.ExpectedPaymentAmount, o.PaymentCurrency, "Pay the seller", "Pay the exact amount so the market can match your payment.")
+		</div>
+		<p class="hint mt-2 mb-0">
+			You can find this again anytime under <strong>My Orders</strong>. Pay the exact amount so the
+			market can match your payment; the { o.SellCoin } is released to you after confirmation.
+		</p>
+	</div>
+}
+
+// marketError is the last action's error. A success clears it out of band.
+templ marketError(msg string, oob bool) {
+	<div
+		id="market-error"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		if msg != "" {
+			<div class="alert alert-danger" role="alert">{ msg }</div>
+		}
+	</div>
+}

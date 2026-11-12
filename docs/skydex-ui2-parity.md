@@ -26,19 +26,19 @@ say what is not. missing: not started.
 | "market isn't accepting trades" banner, polled every 8 s | App | present | |
 | wallet addresses: Skycoin and one per payment coin, saved in the browser | Settings | present | |
 | connected market key | Settings | present | |
-| product grid, polled every 5 s | Market | missing | |
-| buy, payment instructions kept until dismissed | Market | missing | |
-| new sell order form, deposit instructions kept until dismissed | Market | missing | |
-| buy or sell sends unregistered users to Settings | Market | missing | |
+| product grid, polled every 5 s | Market | present | |
+| buy, payment instructions kept until dismissed | Market | present | a failed buy keeps the instructions of the last one, as React does |
+| new sell order form, deposit instructions kept until dismissed | Market | present | opens without JavaScript at market?new=1 |
+| buy or sell sends unregistered users to Settings | Market | present | |
 | my orders table, polled every 5 s | Orders | missing | |
 | live status, confirmations n/N, payment tx of buys in flight | Orders | missing | |
 | cancel a buy before payment | Orders | missing | |
 | my listings table, lifecycle badges, polled every 5 s | MyListings | missing | |
 | cancel a listing | MyListings | missing | |
 | trade history kept in the browser, remove one, clear all | History | missing | |
-| copy to clipboard, also over plain http | CopyButton | missing | |
-| QR code with a payment URI and amount, address only toggle | QrButton | missing | |
-| local times for expiry and creation | all tables | missing | |
+| copy to clipboard, also over plain http | CopyButton | present | |
+| QR code with a payment URI and amount, address only toggle | QrButton | present | drawn with the explorer's qrcode.min.js |
+| local times for expiry and creation | all tables | partial | market instructions so far |
 
 ## Beyond the React UI
 

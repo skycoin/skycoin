@@ -10,17 +10,17 @@ templ Layout(title, nav string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<base href={ From(ctx).Base }/>
 			<title>{ title } · { T(ctx, "app.name") }</title>
-			<link rel="icon" href={ From(ctx).Classic + "favicon.ico" }/>
+			<link rel="icon" href={ From(ctx).Root + "favicon.ico" }/>
 			<script src={ Asset("theme.js") }></script>
 			<link rel="stylesheet" href={ Asset("ui2.css") }/>
 			<script src={ Asset("htmx.min.js") } defer></script>
 			<script src={ Asset("ui2.js") } defer></script>
 			<script src={ Asset("bw.js") } defer></script>
 		</head>
-		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-cached={ T(ctx, "history.cached") } data-insecure={ T(ctx, "bw.insecure") } data-csrf={ From(ctx).Classic + "api/v1/csrf" }>
+		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-cached={ T(ctx, "history.cached") } data-insecure={ T(ctx, "bw.insecure") } data-csrf={ From(ctx).Root + "api/v1/csrf" }>
 			<header class="top">
 				<a class="brand" href="./">
-					<img src={ From(ctx).Classic + "assets/icons/icon-192.png" } alt="" width="32" height="32"/>
+					<img src={ From(ctx).Root + "assets/icons/icon-192.png" } alt="" width="32" height="32"/>
 					<span>{ T(ctx, "app.name") }</span>
 				</a>
 				<button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="top-menu" aria-label={ T(ctx, "ui2.menu") } data-menu-toggle><span class="mi">menu</span></button>

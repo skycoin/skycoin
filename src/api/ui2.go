@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/klauspost/compress/gzhttp"
 )
@@ -19,13 +21,14 @@ func HandlerClient(h http.Handler, host string) *Client {
 	}
 }
 
-// mountUI2 serves the page handler that build makes at /ui2/. Its client
-// calls this mux in process, so the pages go through the same API set, auth
-// and CSRF checks as any other client, without a network round trip.
+// mountUI2 serves the page handler that build makes at the site root. Its
+// client calls this mux in process, so the pages go through the same API
+// set, auth and CSRF checks as any other client, without a network round
+// trip.
 func mountUI2(mux *http.ServeMux, c muxConfig, build func(*Client) http.Handler) {
 	client := HandlerClient(mux, c.host)
 	client.SetAuth(c.username, c.password)
-	h := http.StripPrefix("/ui2", build(client))
+	h := build(client)
 	if !c.disableCSP {
 		h = CSPHandler(h, ContentSecurityPolicy)
 	}
@@ -34,7 +37,49 @@ func mountUI2(mux *http.ServeMux, c muxConfig, build func(*Client) http.Handler)
 		h = ui2HeaderCheck(c, h)
 	}
 	h = basicAuth(apiVersion1, c.username, c.password, "skycoin daemon", h)
-	mux.Handle("/ui2/", gzhttp.GzipHandler(h))
+	mux.Handle("/", gzhttp.GzipHandler(h))
+	mux.Handle("/ui2/", MovedPrefix("/ui2", ""))
+}
+
+// AngularPrefix is where the Angular wallet is served. Its build expects
+// this base (src/skycoin-web/angular.json).
+const AngularPrefix = "/angular"
+
+// MountAngular serves the Angular wallet h at AngularPrefix. Its assets
+// and favicon stay at the root too, where the server rendered pages take
+// them from. withUI2 says the root belongs to those pages, else it
+// redirects to the Angular wallet.
+func MountAngular(mux *http.ServeMux, h http.Handler, withUI2 bool) {
+	mux.Handle(AngularPrefix+"/", http.StripPrefix(AngularPrefix, h))
+	mux.Handle("/assets/", h)
+	mux.Handle("/favicon.ico", h)
+	mux.Handle("/ngsw-worker.js", SafetyWorker(h))
+	if !withUI2 {
+		mux.Handle("/{$}", http.RedirectHandler(AngularPrefix+"/", http.StatusFound))
+	}
+}
+
+// SafetyWorker answers for the service worker the Angular wallet registered
+// at the root before it moved, with the Angular build's safety-worker.js,
+// which unregisters it and drops its caches. h serves the Angular build.
+func SafetyWorker(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Path, r2.URL.RawPath = "/safety-worker.js", ""
+		h.ServeHTTP(w, r2)
+	})
+}
+
+// MovedPrefix redirects a request below from to the same path below to,
+// keeping the query.
+func MovedPrefix(from, to string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := path.Clean(to + "/" + strings.TrimPrefix(r.URL.Path, from))
+		if r.URL.RawQuery != "" {
+			p += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, p, http.StatusMovedPermanently) //nolint:gosec // p is a cleaned path on this host
+	})
 }
 
 // ui2HeaderCheck always checks the Host header against DNS rebinding, and

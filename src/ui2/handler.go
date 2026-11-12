@@ -12,20 +12,23 @@ import (
 // Options configure Handler.
 type Options struct {
 	// Classic is the Angular wallet, relative to where Handler is mounted.
-	// The pages also take the favicon and the CSRF endpoint from there.
-	// Empty means "../".
+	// Empty means "angular/".
 	Classic string
+	// Root is the site root relative to where Handler is mounted. The pages
+	// take the API, the cipher, the favicon and the Angular wallet's assets
+	// from there. Empty means the mount point itself.
+	Root string
 	// Coins, when set, is a host serving several coins, as skycoin web does.
 	// The pages then offer a coin picker and the coins' own pages.
 	Coins *CoinHost
 }
 
-// Handler serves the pages, reading the node through n. It expects the mount
-// prefix to be stripped, so mounted at /ui2/ it sees /ui2/status as /status.
+// Handler serves the pages, reading the node through n. It expects any mount
+// prefix to be stripped, so mounted at /x/ it sees /x/status as /status.
 // The host puts it behind the same auth, host and CSRF checks as the API.
 func Handler(n Node, o Options) http.Handler {
 	if o.Classic == "" {
-		o.Classic = "../"
+		o.Classic = "angular/"
 	}
 	if o.Coins != nil {
 		return newMultiCoin(n, o)
@@ -388,6 +391,7 @@ func render(w http.ResponseWriter, r *http.Request, o Options, c templ.Component
 		Base:    BaseFor(r.URL.Path),
 		Lang:    PickLang(lang, r.Header.Get("Accept-Language")),
 		Classic: o.Classic,
+		Root:    o.Root,
 	}
 	if cs, ok := r.Context().Value(coinsKey{}).(*coinState); ok {
 		p.Coin, p.Coins = cs.cur, cs.all

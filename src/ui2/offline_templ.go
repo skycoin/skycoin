@@ -77,9 +77,9 @@ func TransactionsPage(p TxPage) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(From(ctx).Classic + "assets/scripts/wasm_exec.js").ResolveURL(ctx)
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(From(ctx).Root + "assets/scripts/wasm_exec.js").ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 12, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 12, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 				if templ_7745c5c3_Err != nil {
@@ -1188,9 +1188,9 @@ func JointPage(p TxPage) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var68 string
-				templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(From(ctx).Classic + "assets/scripts/wasm_exec.js").ResolveURL(ctx)
+				templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(From(ctx).Root + "assets/scripts/wasm_exec.js").ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 177, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 177, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 				if templ_7745c5c3_Err != nil {
@@ -1957,7 +1957,7 @@ func bwTxAttrs(ctx context.Context, browser bool) templ.Attributes {
 	}
 	return templ.Attributes{
 		"data-bw-page":            "tx",
-		"data-bw-root":            From(ctx).Classic,
+		"data-bw-root":            From(ctx).Root,
 		"data-msg-error":          T(ctx, "bw.err-storage"),
 		"data-msg-missing":        T(ctx, "bw.missing"),
 		"data-msg-password":       T(ctx, "bw.err-send-password"),

@@ -62,6 +62,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - skydex-client serves its server rendered UI, built with templ and htmx, at
   the root. The React UI moves to `/angular/`, and `/ui2/` redirects to the
   root.
+- The server rendered wallet is the default at the root of the node GUI and
+  of `skycoin web`. The Angular wallet moves to `/angular/`, rebuilt with that
+  base, and `/ui2/` redirects to the root. Its assets stay at the root as
+  well, and `/ngsw-worker.js` answers with Angular's safety worker so the
+  service worker the old root wallet registered removes itself.
+- `ui2.Options` has `Root`, where the pages find the API and the cipher, and
+  `Classic` is only the link to the Angular wallet, `angular/` by default.
 
 ### Fixed
 

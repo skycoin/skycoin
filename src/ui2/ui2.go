@@ -55,6 +55,7 @@ type Page struct {
 	Base    string
 	Lang    string
 	Classic string
+	Root    string
 	// Coin is the coin the pages are about, and Coins every coin the host
 	// offers, when it serves several.
 	Coin  *Coin
@@ -80,7 +81,7 @@ func From(ctx context.Context) *Page {
 	if p, ok := ctx.Value(pageKey{}).(*Page); ok {
 		return p
 	}
-	return &Page{Base: "./", Lang: "en", Classic: "../"}
+	return &Page{Base: "./", Lang: "en", Classic: "angular/"}
 }
 
 // T translates key into the page language. args are name, value pairs that

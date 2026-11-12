@@ -221,22 +221,22 @@ func TestContentSecurityPolicy(t *testing.T) {
 		expectCSPHeader string
 	}{
 		{
-			name:            "enable CSP GET /",
-			endpoint:        "/",
+			name:            "enable CSP GET /angular/",
+			endpoint:        "/angular/",
 			enableCSP:       true,
 			webWallet:       wallet,
 			expectCSPHeader: ContentSecurityPolicy,
 		},
 		{
 			name:            "enable CSP GET a wallet file",
-			endpoint:        "/main.js",
+			endpoint:        "/angular/main.js",
 			enableCSP:       true,
 			webWallet:       wallet,
 			expectCSPHeader: ContentSecurityPolicy,
 		},
 		{
-			name:            "disable CSP GET /",
-			endpoint:        "/",
+			name:            "disable CSP GET /angular/",
+			endpoint:        "/angular/",
 			enableCSP:       false,
 			webWallet:       wallet,
 			expectCSPHeader: "",

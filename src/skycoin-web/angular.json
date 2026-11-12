@@ -72,7 +72,8 @@
                 "src/favicon.ico",
                 "src/manifest.webmanifest"
               ],
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "baseHref": "/angular/"
             },
             "local": {
               "fileReplacements": [

@@ -14,7 +14,7 @@ templ HistoryPage(t Txns) {
 // bw.js puts them in #bw-data and the list is asked for once it has.
 templ BrowserHistoryPage(filter string) {
 	@Layout(T(ctx, "nav.history"), "history") {
-		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Classic } data-msg-error={ T(ctx, "bw.err-storage") }>
+		<section class="card" data-bw-page="list" data-bw-root={ From(ctx).Root } data-msg-error={ T(ctx, "bw.err-storage") }>
 			<h1>{ T(ctx, "nav.history") }</h1>
 			@bwUnlock()
 			@bwData("wallets")

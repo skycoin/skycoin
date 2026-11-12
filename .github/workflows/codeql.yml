@@ -1,0 +1,56 @@
+# CodeQL static analysis (Go) — feeds the OpenSSF Scorecard "SAST" check and
+# surfaces findings in the repo Security tab.
+name: CodeQL
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  schedule:
+    - cron: '27 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push on the same branch or PR supersedes this run, and cancelling it
+# hands the runner straight to the head that matters.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (go)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: go
+          # One binary holds every subcommand. Without cgo the hardware wallet
+          # libraries are not needed (vendored, no network).
+          build-mode: manual
+
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+        run: go build -mod=vendor -o /dev/null .
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:go"

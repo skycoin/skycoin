@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: run-client run-daemon run-help
 .PHONY: test test-386 test-amd64
-.PHONY: check check-newcoin
+.PHONY: check check-newcoin check-descriptors
 .PHONY: run-integration-test-live
 .PHONY: run-integration-test-live-disable-csrf
 .PHONY: run-integration-test-live-disable-networking
@@ -157,11 +157,14 @@ check-newcoin-templates: ## Verify newcoin templates export and round-trip with 
 	if [ "$$FAIL" = "1" ] ; then exit 2 ; fi; \
 	echo "newcoin templates round-trip OK"
 
+check-descriptors: ## Fail if a Go file lacks its c<layer>-<domain>-<system> descriptor, or a package mixes two (docs/code-descriptors.md)
+	bash scripts/check-descriptors.sh
+
 check-release-nocgo: ## Verify cmd/release builds without CGO (no hardware wallet)
 	CGO_ENABLED=0 go build -o /dev/null ./cmd/release/
 	@echo "cmd/release builds OK with CGO_ENABLED=0"
 
-check: lint clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
+check: lint check-descriptors clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
 
 integration-tests-stable: integration-test-stable \
 	integration-test-stable-disable-wallet-api \

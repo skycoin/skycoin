@@ -89,6 +89,7 @@ nav:
       - Lite client: clients/lite.md
       - Explorer: clients/explorer.md
   - Dependency Graph: dependency-graph.md
+  - Code Descriptors: code-descriptors.md
 
 plugins:
   - search

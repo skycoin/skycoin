@@ -269,7 +269,7 @@ func header(p *Page) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a class=\"classic-link\" href=\"../\" hx-boost=\"false\">Classic UI</a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a class=\"classic-link\" href=\"angular/\" hx-boost=\"false\">Classic UI</a> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -590,7 +590,7 @@ func ClassicTab(p *Page) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"alert alert-secondary\">This tab is not in the new UI yet. Open it in the <a href=\"../\" hx-boost=\"false\">classic UI</a>.</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"alert alert-secondary\">This tab is not in the new UI yet. Open it in the <a href=\"angular/\" hx-boost=\"false\">classic UI</a>.</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

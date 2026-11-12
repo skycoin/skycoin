@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `skycoin-web` serves the same `/ui2/` beside its Angular wallet, reading the
   node through its own `/api` proxy. `api.HandlerClient` is an API client that
   calls a handler in process.
+- skydex-client serves its server rendered UI, built with templ and htmx, at
+  the root. The React UI moves to `/angular/`, and `/ui2/` redirects to the
+  root.
 
 ### Fixed
 

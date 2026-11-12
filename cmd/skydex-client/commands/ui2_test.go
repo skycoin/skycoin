@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/skycoin/skycoin/cmd/skydex-client/skydexui"
 	"github.com/skycoin/skycoin/src/skydex/db"
 	"github.com/skycoin/skycoin/src/skydex/market"
 	"github.com/skycoin/skycoin/src/skydex/protocol"
@@ -48,15 +47,16 @@ func newReadyMarket(t *testing.T) (*server.Server, *db.Database) {
 	return server.New(database, nil, 0), database
 }
 
-// newUI2Server serves the client's mux (API and /ui2/) against srv. The
+// newUI2Server serves the client's whole UI and API against srv. The
 // client never follows redirects, so tests see them.
 func newUI2Server(t *testing.T, srv *server.Server, defaultPK string) (*httptest.Server, *http.Client) {
 	t.Helper()
 	sess := newSession(fakeDialer{srv: srv}, defaultPK)
-	mux := http.NewServeMux()
-	registerAPI(mux, sess)
-	mux.Handle("/ui2/", http.StripPrefix("/ui2", skydexui.Handler(uiMarket{sess})))
-	ts := httptest.NewServer(mux)
+	h, err := uiHandler(sess)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(h)
 	t.Cleanup(func() { ts.Close(); sess.close() })
 	c := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	return ts, c
@@ -98,7 +98,7 @@ func mustContain(t *testing.T, body string, want ...string) {
 
 func connectUI2(t *testing.T, ts *httptest.Server, c *http.Client) {
 	t.Helper()
-	res, _ := send(t, c, "POST", ts.URL+"/ui2/connect", url.Values{"market_pk": {testMarketRef}})
+	res, _ := send(t, c, "POST", ts.URL+"/connect", url.Values{"market_pk": {testMarketRef}})
 	if res.StatusCode != http.StatusSeeOther || res.Header.Get("Location") != "./market" {
 		t.Fatalf("connect = %d to %q, want 303 to ./market", res.StatusCode, res.Header.Get("Location"))
 	}
@@ -109,36 +109,36 @@ func connectUI2(t *testing.T, ts *httptest.Server, c *http.Client) {
 func TestUI2Gate(t *testing.T) {
 	ts, c := newUI2Server(t, newTestMarket(t), "the-default-pk")
 
-	res, body := send(t, c, "GET", ts.URL+"/ui2/", nil)
+	res, body := send(t, c, "GET", ts.URL+"/", nil)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("gate = %d", res.StatusCode)
 	}
-	mustContain(t, body, `value="the-default-pk"`, `action="connect"`, `data-local="exchange:markets"`, `href="../"`)
+	mustContain(t, body, `value="the-default-pk"`, `action="connect"`, `data-local="exchange:markets"`, `href="angular/"`)
 
-	res, body = send(t, c, "POST", ts.URL+"/ui2/connect", url.Values{"market_pk": {" "}})
+	res, body = send(t, c, "POST", ts.URL+"/connect", url.Values{"market_pk": {" "}})
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("empty connect = %d", res.StatusCode)
 	}
 	mustContain(t, body, "Please enter the market public key.")
 
 	// Tabs need a connection.
-	res, _ = send(t, c, "GET", ts.URL+"/ui2/settings", nil)
+	res, _ = send(t, c, "GET", ts.URL+"/settings", nil)
 	if res.StatusCode != http.StatusFound || res.Header.Get("Location") != "./" {
 		t.Fatalf("settings while disconnected = %d to %q", res.StatusCode, res.Header.Get("Location"))
 	}
 
 	connectUI2(t, ts, c)
-	res, _ = send(t, c, "GET", ts.URL+"/ui2/", nil)
+	res, _ = send(t, c, "GET", ts.URL+"/", nil)
 	if res.Header.Get("Location") != "./market" {
 		t.Fatalf("gate while connected goes to %q, want ./market", res.Header.Get("Location"))
 	}
-	_, body = send(t, c, "GET", ts.URL+"/ui2/market", nil)
+	_, body = send(t, c, "GET", ts.URL+"/market", nil)
 	mustContain(t, body, "Connected", `data-market-pk="`+testMarketRef+`"`, `class="tab-link active" href="market"`, "Disconnect")
 	// The default market has no sell coin, so it warns.
 	mustContain(t, body, "This market isn’t accepting trades yet")
 
 	// htmx gets a full page load instead of a redirect.
-	res, _ = send(t, c, "POST", ts.URL+"/ui2/disconnect", url.Values{}, "HX-Request", "true")
+	res, _ = send(t, c, "POST", ts.URL+"/disconnect", url.Values{}, "HX-Request", "true")
 	if res.Header.Get("HX-Redirect") != "./" {
 		t.Fatalf("htmx disconnect HX-Redirect = %q", res.Header.Get("HX-Redirect"))
 	}
@@ -155,9 +155,9 @@ func TestUI2Gate(t *testing.T) {
 func TestUI2Recent(t *testing.T) {
 	ts, c := newUI2Server(t, newTestMarket(t), "")
 	saved := `[{"pk":"` + testMarketRef + `","name":"Test market","ts":1},{"pk":""}]`
-	_, body := send(t, c, "POST", ts.URL+"/ui2/recent", url.Values{"saved": {saved}})
+	_, body := send(t, c, "POST", ts.URL+"/recent", url.Values{"saved": {saved}})
 	mustContain(t, body, "Recent markets", "Test market", `value="`+testMarketRef+`"`, "03aaaabbbb…8899aa", "d ago", `data-remove-market="`+testMarketRef+`"`)
-	_, body = send(t, c, "POST", ts.URL+"/ui2/recent", url.Values{"saved": {"[]"}})
+	_, body = send(t, c, "POST", ts.URL+"/recent", url.Values{"saved": {"[]"}})
 	if strings.Contains(body, "Recent markets") {
 		t.Error("empty list still renders")
 	}
@@ -169,19 +169,19 @@ func TestUI2Settings(t *testing.T) {
 	ts, c := newUI2Server(t, srv, "")
 	connectUI2(t, ts, c)
 
-	_, body := send(t, c, "GET", ts.URL+"/ui2/settings", nil)
+	_, body := send(t, c, "GET", ts.URL+"/settings", nil)
 	mustContain(t, body, `name="wallet_sky"`, `name="wallet_BTC"`, `value="`+testMarketRef+`" readonly`)
 	if strings.Contains(body, "data-register-banner") {
 		t.Error("settings shows the register banner")
 	}
 
-	res, body := send(t, c, "POST", ts.URL+"/ui2/settings", url.Values{"wallet_sky": {""}}, "HX-Request", "true")
+	res, body := send(t, c, "POST", ts.URL+"/settings", url.Values{"wallet_sky": {""}}, "HX-Request", "true")
 	mustContain(t, body, "A Skycoin address is required.")
 	if res.Header.Get("HX-Trigger") != "" {
 		t.Error("a refused save triggers wallets-saved")
 	}
 
-	res, body = send(t, c, "POST", ts.URL+"/ui2/settings", url.Values{
+	res, body = send(t, c, "POST", ts.URL+"/settings", url.Values{
 		"wallet_sky": {"xPHfK6xn5LZvWAPB5EV6A62WyzQLywci1J"},
 		"wallet_BTC": {"1CLdkSYgwRA4Hm7EUPqaqpAtGG9zgT7dFm"},
 	}, "HX-Request", "true")
@@ -190,7 +190,7 @@ func TestUI2Settings(t *testing.T) {
 		t.Errorf("HX-Trigger = %q, want wallets-saved", res.Header.Get("HX-Trigger"))
 	}
 
-	_, body = send(t, c, "POST", ts.URL+"/ui2/settings", url.Values{
+	_, body = send(t, c, "POST", ts.URL+"/settings", url.Values{
 		"wallet_sky": {"not-an-address"},
 	}, "HX-Request", "true")
 	mustContain(t, body, "alert-danger")
@@ -204,7 +204,7 @@ func TestUI2Readiness(t *testing.T) {
 	}
 	ts, c := newUI2Server(t, srv, "")
 	connectUI2(t, ts, c)
-	_, body := send(t, c, "GET", ts.URL+"/ui2/readiness?tab=market", nil)
+	_, body := send(t, c, "GET", ts.URL+"/readiness?tab=market", nil)
 	mustContain(t, body, `id="readiness"`, `hx-swap-oob="true"`, "Test market")
 	if strings.Contains(body, "banner-warn") {
 		t.Error("a ready market warns")
@@ -214,15 +214,15 @@ func TestUI2Readiness(t *testing.T) {
 // TestUI2RefusesCrossSiteWrites keeps other sites from driving the client.
 func TestUI2RefusesCrossSiteWrites(t *testing.T) {
 	ts, c := newUI2Server(t, newTestMarket(t), "")
-	res, _ := send(t, c, "POST", ts.URL+"/ui2/connect", url.Values{"market_pk": {testMarketRef}}, "Sec-Fetch-Site", "cross-site")
+	res, _ := send(t, c, "POST", ts.URL+"/connect", url.Values{"market_pk": {testMarketRef}}, "Sec-Fetch-Site", "cross-site")
 	if res.StatusCode != http.StatusForbidden {
 		t.Fatalf("cross-site connect = %d, want 403", res.StatusCode)
 	}
-	res, _ = send(t, c, "POST", ts.URL+"/ui2/disconnect", url.Values{}, "Origin", "http://evil.example")
+	res, _ = send(t, c, "POST", ts.URL+"/disconnect", url.Values{}, "Origin", "http://evil.example")
 	if res.StatusCode != http.StatusForbidden {
 		t.Fatalf("foreign origin disconnect = %d, want 403", res.StatusCode)
 	}
-	res, _ = send(t, c, "POST", ts.URL+"/ui2/connect", url.Values{"market_pk": {testMarketRef}}, "Sec-Fetch-Site", "same-origin")
+	res, _ = send(t, c, "POST", ts.URL+"/connect", url.Values{"market_pk": {testMarketRef}}, "Sec-Fetch-Site", "same-origin")
 	if res.StatusCode != http.StatusSeeOther {
 		t.Fatalf("same-origin connect = %d, want 303", res.StatusCode)
 	}
@@ -250,7 +250,7 @@ func seedProduct(t *testing.T, srv *server.Server, database *db.Database, id str
 
 func registerUI2(t *testing.T, ts *httptest.Server, c *http.Client) {
 	t.Helper()
-	_, body := send(t, c, "POST", ts.URL+"/ui2/settings", url.Values{
+	_, body := send(t, c, "POST", ts.URL+"/settings", url.Values{
 		"wallet_sky": {"xPHfK6xn5LZvWAPB5EV6A62WyzQLywci1J"},
 		"wallet_BTC": {"1CLdkSYgwRA4Hm7EUPqaqpAtGG9zgT7dFm"},
 	}, "HX-Request", "true")
@@ -264,17 +264,17 @@ func TestUI2MarketBuy(t *testing.T) {
 	ts, c := newUI2Server(t, srv, "")
 	connectUI2(t, ts, c)
 
-	_, body := send(t, c, "GET", ts.URL+"/ui2/market", nil)
+	_, body := send(t, c, "GET", ts.URL+"/market", nil)
 	mustContain(t, body, "Available products", "10 SKY", "0.0002 BTC", "03111111…11aa", `value="prod-ui2"`, `href="market?new=1"`, `id="qr-dialog"`)
 
 	// The market refuses an unregistered buyer, and the client sends them to Settings.
-	res, _ := send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	res, _ := send(t, c, "POST", ts.URL+"/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
 	if res.Header.Get("HX-Redirect") != "./settings" {
 		t.Fatalf("unregistered buy HX-Redirect = %q, want ./settings", res.Header.Get("HX-Redirect"))
 	}
 
 	registerUI2(t, ts, c)
-	res, body = send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	res, body = send(t, c, "POST", ts.URL+"/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
 	if res.Header.Get("HX-Retarget") != "#market-payment" {
 		t.Fatalf("buy HX-Retarget = %q, body %s", res.Header.Get("HX-Retarget"), body)
 	}
@@ -286,7 +286,7 @@ func TestUI2MarketBuy(t *testing.T) {
 	}
 
 	// A second buy of the same product fails and shows why.
-	res, body = send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	res, body = send(t, c, "POST", ts.URL+"/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
 	if res.Header.Get("HX-Retarget") != "" {
 		t.Fatal("a failed buy retargets")
 	}
@@ -300,13 +300,13 @@ func TestUI2MarketListing(t *testing.T) {
 	connectUI2(t, ts, c)
 	registerUI2(t, ts, c)
 
-	_, body := send(t, c, "GET", ts.URL+"/ui2/market?new=1", nil)
+	_, body := send(t, c, "GET", ts.URL+"/market?new=1", nil)
 	mustContain(t, body, `id="create-form"`, `<option value="SKY">SKY</option>`, `<option value="BTC" selected>BTC</option>`)
 	if strings.Contains(body, `id="create-panel" hidden`) {
 		t.Error("?new=1 leaves the form closed")
 	}
 
-	res, body := send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+	res, body := send(t, c, "POST", ts.URL+"/market/listing", url.Values{
 		"sell_coin": {"SKY"}, "amount": {"0"}, "price": {"1"}, "payment_currency": {"BTC"},
 	}, "HX-Request", "true")
 	if res.Header.Get("HX-Trigger") != "" {
@@ -314,7 +314,7 @@ func TestUI2MarketListing(t *testing.T) {
 	}
 	mustContain(t, body, "alert-danger")
 
-	res, body = send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+	res, body = send(t, c, "POST", ts.URL+"/market/listing", url.Values{
 		"sell_coin": {"SKY"}, "amount": {"10"}, "price": {"0.001"}, "payment_currency": {"BTC"},
 	}, "HX-Request", "true")
 	if res.Header.Get("HX-Trigger") != "listing-created" || res.Header.Get("HX-Retarget") != "#market-deposit" {
@@ -323,7 +323,7 @@ func TestUI2MarketListing(t *testing.T) {
 	mustContain(t, body, "Fund your sell order", "sky-market-wallet", `data-copy="sky-market-wallet"`, "data-local-time")
 
 	// Without htmx the whole page comes back with the instructions.
-	res, body = send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+	res, body = send(t, c, "POST", ts.URL+"/market/listing", url.Values{
 		"sell_coin": {"SKY"}, "amount": {"10"}, "price": {"0.001"}, "payment_currency": {"BTC"},
 	})
 	if res.StatusCode != http.StatusOK {
@@ -340,11 +340,11 @@ func TestUI2Orders(t *testing.T) {
 	connectUI2(t, ts, c)
 	registerUI2(t, ts, c)
 
-	_, body := send(t, c, "GET", ts.URL+"/ui2/orders", nil)
+	_, body := send(t, c, "GET", ts.URL+"/orders", nil)
 	mustContain(t, body, "My Orders", "have any orders yet.", `hx-get="orders/table"`)
 
-	send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
-	_, body = send(t, c, "GET", ts.URL+"/ui2/orders/table", nil)
+	send(t, c, "POST", ts.URL+"/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	_, body = send(t, c, "GET", ts.URL+"/orders/table", nil)
 	mustContain(t, body, `id="orders"`, "badge buy", "Pending Payment", "Awaiting payment…", "19wiPpvWPxHEmcANKzwUjiRgABQk8wZzCp",
 		`hx-post="orders/cancel"`, "hx-confirm=", "data-local-time=\"datetime\"")
 	i := strings.Index(body, `name="id" value="`)
@@ -354,13 +354,13 @@ func TestUI2Orders(t *testing.T) {
 	id := body[i+len(`name="id" value="`):]
 	id = id[:strings.Index(id, `"`)]
 
-	_, body = send(t, c, "POST", ts.URL+"/ui2/orders/cancel", url.Values{"id": {id}}, "HX-Request", "true")
+	_, body = send(t, c, "POST", ts.URL+"/orders/cancel", url.Values{"id": {id}}, "HX-Request", "true")
 	mustContain(t, body, `id="orders"`, `id="tab-notice" hx-swap-oob="true"`, "alert-info", "Cancelled") //nolint:misspell // the label React shows
 	if strings.Contains(body, `hx-post="orders/cancel"`) {
 		t.Error("a canceled buy can still be canceled")
 	}
 
-	_, body = send(t, c, "POST", ts.URL+"/ui2/orders/cancel", url.Values{"id": {"nope"}}, "HX-Request", "true")
+	_, body = send(t, c, "POST", ts.URL+"/orders/cancel", url.Values{"id": {"nope"}}, "HX-Request", "true")
 	mustContain(t, body, "alert-danger")
 }
 
@@ -371,13 +371,13 @@ func TestUI2Listings(t *testing.T) {
 	connectUI2(t, ts, c)
 	registerUI2(t, ts, c)
 
-	_, body := send(t, c, "GET", ts.URL+"/ui2/listings", nil)
+	_, body := send(t, c, "GET", ts.URL+"/listings", nil)
 	mustContain(t, body, "My Listings", "You have no active sell listings.")
 
-	send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+	send(t, c, "POST", ts.URL+"/market/listing", url.Values{
 		"sell_coin": {"SKY"}, "amount": {"10"}, "price": {"0.001"}, "payment_currency": {"BTC"},
 	}, "HX-Request", "true")
-	_, body = send(t, c, "GET", ts.URL+"/ui2/listings/table", nil)
+	_, body = send(t, c, "GET", ts.URL+"/listings/table", nil)
 	mustContain(t, body, `id="listings"`, "sky-market-wallet", "Pending deposit", `class="badge bg-info">Pending deposit`,
 		"fee", "Cancel this listing?", "For each pending listing")
 	i := strings.Index(body, `name="id" value="`)
@@ -388,7 +388,7 @@ func TestUI2Listings(t *testing.T) {
 	id = id[:strings.Index(id, `"`)]
 
 	// Without htmx the whole tab comes back with the notice.
-	res, body := send(t, c, "POST", ts.URL+"/ui2/listings/cancel", url.Values{"id": {id}})
+	res, body := send(t, c, "POST", ts.URL+"/listings/cancel", url.Values{"id": {id}})
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("plain cancel = %d", res.StatusCode)
 	}
@@ -404,21 +404,21 @@ func TestUI2History(t *testing.T) {
 	connectUI2(t, ts, c)
 	registerUI2(t, ts, c)
 
-	_, body := send(t, c, "GET", ts.URL+"/ui2/history", nil)
+	_, body := send(t, c, "GET", ts.URL+"/history", nil)
 	mustContain(t, body, `hx-post="history/table"`, `data-local="exchange:history"`)
 
-	_, body = send(t, c, "POST", ts.URL+"/ui2/history/table", url.Values{"saved": {"[]"}})
+	_, body = send(t, c, "POST", ts.URL+"/history/table", url.Values{"saved": {"[]"}})
 	mustContain(t, body, "No completed trades yet.", `id="history-data"`, `>[]`)
 
-	send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
-	_, body = send(t, c, "GET", ts.URL+"/ui2/orders/table", nil)
+	send(t, c, "POST", ts.URL+"/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	_, body = send(t, c, "GET", ts.URL+"/orders/table", nil)
 	i := strings.Index(body, `name="id" value="`)
 	id := body[i+len(`name="id" value="`):]
 	id = id[:strings.Index(id, `"`)]
-	send(t, c, "POST", ts.URL+"/ui2/orders/cancel", url.Values{"id": {id}}, "HX-Request", "true")
+	send(t, c, "POST", ts.URL+"/orders/cancel", url.Values{"id": {id}}, "HX-Request", "true")
 
 	saved := `[{"id":"purged","type":"sell","sell_coin":"SKY","amount":1,"price":2,"payment_currency":"BTC","status":"completed","created_at":"2020-01-01T00:00:00Z","market_name":"Gone market</script>"}]`
-	_, body = send(t, c, "POST", ts.URL+"/ui2/history/table", url.Values{"saved": {saved}})
+	_, body = send(t, c, "POST", ts.URL+"/history/table", url.Values{"saved": {saved}})
 	mustContain(t, body, "Clear history", `data-remove-trade="purged"`, `data-remove-trade="`+id+`"`, "badge enabled", "Gone market", `"market_pk":"`+testMarketRef+`"`)
 	if strings.Count(body, "</script>") != 1 {
 		t.Error("a saved trade can close the JSON script")

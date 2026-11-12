@@ -43,8 +43,8 @@ var Tabs = []struct{ ID, Label string }{
 }
 
 // Handler serves the client pages, talking to the market through m. It
-// expects the mount prefix to be stripped, so mounted at /ui2/ it sees
-// /ui2/market as /market.
+// expects any mount prefix to be stripped, so mounted at /x/ it sees
+// /x/market as /market.
 func Handler(m Market) http.Handler {
 	h := &handler{m: m}
 	mux := http.NewServeMux()

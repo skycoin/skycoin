@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Served at /angular/ beside the server rendered client (commands/client.go).
+  base: '/angular/',
   server: {
     port: 8787
   },

@@ -22,6 +22,9 @@ var notices = map[string]string{
 	"decrypted": "wallet.done-decrypted",
 	"reset":     "wallet.done-reset",
 	"account":   "wallet.done-account",
+	"set":       "bw.done-app-set",
+	"change":    "bw.done-app-change",
+	"remove":    "bw.done-app-remove",
 }
 
 // Notice is the message a wallet page opens with, empty for none.

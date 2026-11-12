@@ -21,9 +21,9 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | create, 12 or 24 word seed, deterministic or bip44 | create-wallet | present | present | |
 | load from seed, address scan | create-wallet | present | present | |
 | non standard seed | create-wallet | present | present | |
-| bip39 seed passphrase on create and load | create-wallet | present | partial | browser: on load only |
-| post-quantum (ML-DSA-44) wallet type | create-wallet | present | missing | |
-| load temporarily | create-wallet | present | missing | |
+| bip39 seed passphrase on create and load | create-wallet | present | present | |
+| post-quantum (ML-DSA-44) wallet type | create-wallet | present | present | browser: addresses checked against the node, a post-quantum spend is not tested |
+| load temporarily | create-wallet | present | partial | browser: kept encrypted in the tab's sessionStorage until it closes, where Angular keeps it unencrypted in memory until a reload |
 | address list, balances, hide empty, filter | wallet-detail | present | present | |
 | copy address | wallet-detail | present | present | |
 | QR code of an address, with a requested amount | qr-code | present | present | drawn with the Angular wallet's qrcode.min.js |
@@ -31,10 +31,10 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | exposed addresses banner with a count | wallet-detail | present | present | |
 | address history and outputs links | wallet-detail | present | present | |
 | new address | wallet-options | present | present | |
-| scan for addresses | wallet-options | present | missing | |
+| scan for addresses | wallet-options | present | present | |
 | add bip44 account, addresses per account | wallet-detail | present | missing | browser wallets keep one account, as the Angular wallet's browser backend does |
 | rename | change-name | present | present | |
-| encrypt, decrypt | wallet-options | present | partial | browser: set or change the password; ui2 keeps browser wallets encrypted, so no decrypt |
+| encrypt, decrypt | wallet-options | present | partial | by design ui2 never stores a browser wallet decrypted: it sets or changes the password but does not remove it |
 | delete | wallet-options | n/a | present | Angular only drops a node wallet from its list |
 | account and chain xpubs | wallet-detail | present | present | |
 | reset password with the seed | reset-password | present | present | |
@@ -87,8 +87,8 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | wallet directory, save addresses | backup | present | missing | |
 | node URL per coin | nodes | n/a | missing | ui2 reads the node that serves it |
 | ETH and BTC endpoints | nodes | missing | missing | |
-| app password set, change, remove | app-password | n/a | partial | unlock only |
-| lock screen, erase | app-lock | n/a | partial | unlock only |
+| app password set, change, remove | app-password | n/a | present | the wallets inside stay encrypted with their own passwords |
+| lock screen, erase | app-lock | n/a | present | |
 | custom coins, ERC-20 | coins | missing | missing | |
 | Skywallet | hardware-wallet | missing | missing | |
 | onboarding wizard on first run | onboarding | partial | partial | the empty wallet list explains create and load, no forced first-run flow |

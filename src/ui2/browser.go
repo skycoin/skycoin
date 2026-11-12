@@ -31,6 +31,7 @@ type BrowserWallet struct {
 	Label     string           `json:"label"`
 	Type      string           `json:"type"`
 	Encrypted bool             `json:"encrypted"`
+	Temporary bool             `json:"temporary,omitempty"`
 	XPub      string           `json:"xpub,omitempty"`
 	Addresses []BrowserAddress `json:"addresses"`
 }
@@ -110,6 +111,7 @@ func LoadBrowserWallets(n Node, ws []BrowserWallet) Wallets {
 			Label:     w.Label,
 			Type:      w.Type,
 			Encrypted: w.Encrypted,
+			Temp:      w.Temporary,
 			Addresses: len(w.Addresses),
 			Href:      bwWalletURL(w.ID),
 		}

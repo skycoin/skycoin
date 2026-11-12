@@ -6,10 +6,12 @@ package ui2
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
+import (
+	"context"
 
-import "context"
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
+)
 
 // TransactionsPage reviews, signs and sends a transaction made elsewhere:
 // an unsigned one to sign offline, a signed one to broadcast, or a joint
@@ -983,7 +985,7 @@ func TxReviewView(v TxView) templ.Component {
 					var templ_7745c5c3_Var56 string
 					templ_7745c5c3_Var56, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.WalletID).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 144, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 144, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 					if templ_7745c5c3_Err != nil {
@@ -996,7 +998,7 @@ func TxReviewView(v TxView) templ.Component {
 					var templ_7745c5c3_Var57 string
 					templ_7745c5c3_Var57, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.Raw).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 145, Col: 52}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 145, Col: 53}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
 					if templ_7745c5c3_Err != nil {
@@ -1014,7 +1016,7 @@ func TxReviewView(v TxView) templ.Component {
 						var templ_7745c5c3_Var58 string
 						templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.password"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 148, Col: 32}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 148, Col: 33}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 						if templ_7745c5c3_Err != nil {
@@ -1032,7 +1034,7 @@ func TxReviewView(v TxView) templ.Component {
 					var templ_7745c5c3_Var59 string
 					templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "tx.sign", "count", itoa(v.ToSign)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 152, Col: 138}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 152, Col: 139}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 					if templ_7745c5c3_Err != nil {
@@ -1045,7 +1047,7 @@ func TxReviewView(v TxView) templ.Component {
 					var templ_7745c5c3_Var60 string
 					templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "ui2.working"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 152, Col: 201}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 152, Col: 202}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 					if templ_7745c5c3_Err != nil {
@@ -1301,7 +1303,7 @@ func JointPage(p TxPage) templ.Component {
 				var templ_7745c5c3_Var72 string
 				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.your-wallet"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 196, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 196, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 				if templ_7745c5c3_Err != nil {
@@ -1378,7 +1380,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var76 string
 			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.your-outputs"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 206, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 206, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 			if templ_7745c5c3_Err != nil {
@@ -1406,7 +1408,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var77 string
 			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.their-outputs"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 214, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 214, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 			if templ_7745c5c3_Err != nil {
@@ -1419,7 +1421,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templruntime.NewAttributeExpression(T(ctx, "joint.their-outputs-hint")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 215, Col: 140}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 215, Col: 139}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 			if templ_7745c5c3_Err != nil {
@@ -1432,7 +1434,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var79 string
 			templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "tx.outputs"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 218, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 218, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 			if templ_7745c5c3_Err != nil {
@@ -1457,7 +1459,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var80 string
 			templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.add-output"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 224, Col: 162}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 224, Col: 161}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
 			if templ_7745c5c3_Err != nil {
@@ -1470,7 +1472,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var81 string
 			templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.change-address"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 228, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 228, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 			if templ_7745c5c3_Err != nil {
@@ -1483,7 +1485,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var82 string
 			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.change-hint"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 231, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 231, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
@@ -1496,7 +1498,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var83 string
 			templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "joint.create"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 232, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 232, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
 			if templ_7745c5c3_Err != nil {
@@ -1509,7 +1511,7 @@ func JointPage(p TxPage) templ.Component {
 			var templ_7745c5c3_Var84 string
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "ui2.working"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 232, Col: 151}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `offline.templ`, Line: 232, Col: 150}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 			if templ_7745c5c3_Err != nil {

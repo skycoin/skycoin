@@ -18,7 +18,7 @@ templ bwUnlock() {
 			{ T(ctx, "bw.app-password") }
 			<input type="password" id="bw-app-password" autocomplete="current-password"/>
 		</label>
-		<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "bw.unlock") }</button></div>
+		<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "bw.unlock") }</button><button class="btn" type="button" data-bw-erase={ T(ctx, "bw.erase-confirm") }>{ T(ctx, "bw.erase") }</button></div>
 		<p class="error" id="bw-unlock-error" role="alert"></p>
 	</form>
 }
@@ -168,26 +168,33 @@ templ BrowserCreatePage(load bool) {
 					{ T(ctx, "create.label") }
 					<input id="bw-label" maxlength="100"/>
 				</label>
+				<label>
+					{ T(ctx, "create.type") }
+					<select id="bw-type">
+						<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
+						<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
+						<option value="pq">{ T(ctx, "create.type-pq") }</option>
+					</select>
+				</label>
+				<p class="small dim">{ T(ctx, "create.type-pq-info") }</p>
+				<label>
+					{ T(ctx, "create.passphrase") }
+					<input type="password" id="bw-passphrase" autocomplete="off"/>
+				</label>
 				if load {
-					<label>
-						{ T(ctx, "create.type") }
-						<select id="bw-type">
-							<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
-							<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
-						</select>
-					</label>
 					<label>
 						{ T(ctx, "create.seed") }
 						<textarea id="bw-seed" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-					</label>
-					<label>
-						{ T(ctx, "bw.passphrase") }
-						<input type="password" id="bw-passphrase" autocomplete="off"/>
 					</label>
 					<label class="check">
 						<input type="checkbox" id="bw-nonstandard"/>
 						{ T(ctx, "create.nonstandard") }
 					</label>
+					<label class="check">
+						<input type="checkbox" id="bw-temp"/>
+						{ T(ctx, "create.temp") }
+					</label>
+					<p class="small dim">{ T(ctx, "bw.temp-help") }</p>
 				} else {
 					<label>
 						{ T(ctx, "create.words") }

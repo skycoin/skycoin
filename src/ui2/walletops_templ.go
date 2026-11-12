@@ -6,8 +6,10 @@ package ui2
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
+import (
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
+)
 
 // noticeBox says what the last change to the wallet did.
 func noticeBox(n Notice) templ.Component {

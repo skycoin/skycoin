@@ -14,6 +14,9 @@ templ SettingsPage(browser bool) {
 				if !browser {
 					<li><a href="backup"><span class="mi">save</span>{ T(ctx, "nav.backup") }</a><span class="small dim">{ T(ctx, "settings.backup-help") }</span></li>
 				}
+				if browser {
+					<li><a href="bw/app-password"><span class="mi">lock</span>{ T(ctx, "bw.app-password-title") }</a><span class="small dim">{ T(ctx, "bw.app-password-help") }</span></li>
+				}
 			</ul>
 		</section>
 	}

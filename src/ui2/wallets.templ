@@ -22,6 +22,7 @@ templ WalletsPage(w Wallets) {
 				<div class="bar">
 					<a class="btn primary" href="new"><span class="mi">add</span>{ T(ctx, "create.new-title") }</a>
 					<a class="btn" href="load"><span class="mi">file_download</span>{ T(ctx, "create.load-title") }</a>
+					<a class="btn" href="hw"><span class="mi">memory</span>{ T(ctx, "hw.title") }</a>
 				</div>
 				if w.Err == "" && len(w.Rows) == 0 {
 					@onboarding(false)

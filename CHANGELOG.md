@@ -69,9 +69,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   service worker the old root wallet registered removes itself.
 - `ui2.Options` has `Root`, where the pages find the API and the cipher, and
   `Classic` is only the link to the Angular wallet, `angular/` by default.
+- The server rendered wallet supports the Skywallet at `/hw`: it sets up the
+  device's seed, PIN, passphrase protection and label, adds its wallet to the
+  browser in the Angular wallet's format, and sends with the device signing.
 
 ### Fixed
 
+- The hardware wallet signer sent each input's address index as a path of
+  that many zeros, so the device signed index 0 inputs with no key and others
+  with the key of index 0. It now sends the index itself.
 - A bip44 or xpub wallet showed no balance for coins sent to addresses past
   the ones it listed, as reward payouts to new xpub indexes are. The web wallet
   looked for used addresses only when a wallet was made. It now looks with each

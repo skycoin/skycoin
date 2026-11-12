@@ -92,7 +92,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | app password set, change, remove | app-password | n/a | present | the wallets inside stay encrypted with their own passwords |
 | lock screen, erase | app-lock | n/a | present | |
 | custom coins: fiber coins and ERC-20 tokens | coins | present | n/a | skycoin web with --wallet-dir |
-| Skywallet | hardware-wallet | missing | missing | |
+| Skywallet | hardware-wallet | present | present | `/hw` and `static/hw.js` reach the Skywallet daemon on the browser's machine: seed generate, backup, check and restore, PIN, passphrase, label, wipe, add the wallet, device addresses and signing. Its wallet is kept in this browser in the Angular format. Firmware updates stay with the Skywallet tools, as in Angular |
 | onboarding wizard on first run | onboarding | present | present | the wallet list opens on a create or load choice while there are none; the password is set in the create form, not a second step |
 | node errors: unreachable, CSRF, no peers, syncing, pending | header | present | present | a strip under the top bar |
 | language | select-language | present | present | |

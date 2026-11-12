@@ -9,6 +9,7 @@ import "strings"
 templ BrowserSendPage(id, from string) {
 	@Layout(T(ctx, "send.title"), "wallets") {
 		<script src={ From(ctx).Root + "assets/scripts/wasm_exec.js" }></script>
+		@hwDialog()
 		<div class="page-head">
 			<a class="icon-btn" href={ templ.URL(bwWalletURL(id)) } aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
 			if from != "" {

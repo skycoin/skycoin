@@ -1,0 +1,232 @@
+package ui2
+
+// The Skywallet pages are shells too. static/hw.js talks to the Skywallet
+// daemon on the machine running the browser, which the server cannot reach.
+
+// hwTexts are the messages static/hw.js shows.
+templ hwTexts() {
+	<div
+		hidden
+		data-hw-texts
+		data-msg-pin={ T(ctx, "hw.pin") }
+		data-msg-pin-new={ T(ctx, "hw.pin-new") }
+		data-msg-pin-confirm={ T(ctx, "hw.pin-confirm") }
+		data-msg-pin-current={ T(ctx, "hw.pin-current") }
+		data-msg-word={ T(ctx, "hw.word") }
+		data-msg-passphrase={ T(ctx, "hw.passphrase") }
+		data-msg-button={ T(ctx, "hw.button") }
+		data-msg-yes={ T(ctx, "hw.yes") }
+		data-msg-no={ T(ctx, "hw.no") }
+		data-msg-passphrase-on={ T(ctx, "hw.passphrase-on") }
+		data-msg-passphrase-off={ T(ctx, "hw.passphrase-off") }
+		data-msg-wipe-confirm={ T(ctx, "hw.wipe-confirm") }
+		data-msg-default-label={ T(ctx, "hw.default-label") }
+		data-msg-seed-generated={ T(ctx, "hw.seed-generated") }
+		data-msg-seed-restored={ T(ctx, "hw.seed-restored") }
+		data-msg-seed-matches={ T(ctx, "hw.seed-matches") }
+		data-msg-backed-up={ T(ctx, "hw.backed-up") }
+		data-msg-pin-changed={ T(ctx, "hw.pin-changed") }
+		data-msg-pin-removed={ T(ctx, "hw.pin-removed") }
+		data-msg-label-changed={ T(ctx, "hw.label-changed") }
+		data-msg-settings-applied={ T(ctx, "hw.settings-applied") }
+		data-msg-wiped={ T(ctx, "hw.wiped") }
+		data-msg-added={ T(ctx, "hw.added") }
+		data-msg-err-generic={ T(ctx, "hw.err-generic") }
+		data-msg-err-refused={ T(ctx, "hw.err-refused") }
+		data-msg-err-wrong-pin={ T(ctx, "hw.err-wrong-pin") }
+		data-msg-err-wrong-word={ T(ctx, "hw.err-wrong-word") }
+		data-msg-err-pin-mismatch={ T(ctx, "hw.err-pin-mismatch") }
+		data-msg-err-no-seed={ T(ctx, "hw.err-no-seed") }
+		data-msg-err-invalid-seed={ T(ctx, "hw.err-invalid-seed") }
+		data-msg-err-wrong-seed={ T(ctx, "hw.err-wrong-seed") }
+		data-msg-err-daemon={ T(ctx, "hw.err-daemon") }
+		data-msg-err-disconnected={ T(ctx, "hw.err-disconnected") }
+		data-msg-err-wrong-device={ T(ctx, "hw.err-wrong-device") }
+		data-msg-err-already-added={ T(ctx, "hw.err-already-added") }
+	></div>
+}
+
+// hwDialog asks for what the Skywallet wants during an operation. The PIN
+// pad is laid out as the device's matrix, whose digits only the device shows.
+templ hwDialog() {
+	@hwTexts()
+	<dialog id="hw-dialog" class="qr-dialog" aria-labelledby="hw-dialog-title">
+		<form method="dialog" class="form">
+			<div class="head">
+				<h2 id="hw-dialog-title"></h2>
+			</div>
+			<div id="hw-ask-pin" hidden>
+				<p class="small dim">{ T(ctx, "hw.pin-help") }</p>
+				<input type="password" id="hw-pin" readonly aria-label={ T(ctx, "hw.pin") }/>
+				<div class="pin-pad">
+					for _, k := range []string{"7", "8", "9", "4", "5", "6", "1", "2", "3"} {
+						<button class="btn" type="button" data-hw-key={ k } aria-label={ T(ctx, "hw.pin-key") }>•</button>
+					}
+				</div>
+				<button class="btn sm" type="button" data-hw-del><span class="mi">backspace</span>{ T(ctx, "hw.pin-delete") }</button>
+			</div>
+			<div id="hw-ask-word" hidden>
+				<p class="small dim">{ T(ctx, "hw.word-help") }</p>
+				<input id="hw-word" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label={ T(ctx, "hw.word") }/>
+			</div>
+			<div id="hw-ask-passphrase" hidden>
+				<p class="small dim">{ T(ctx, "hw.passphrase-help") }</p>
+				<input type="password" id="hw-passphrase" autocomplete="off" aria-label={ T(ctx, "hw.passphrase") }/>
+			</div>
+			<div id="hw-ask-button" hidden>
+				<p><span class="mi">touch_app</span> { T(ctx, "hw.button-help") }</p>
+			</div>
+			<div class="bar">
+				<button class="btn" value="cancel">{ T(ctx, "hw.cancel") }</button>
+				<button class="btn primary" value="ok" id="hw-dialog-ok">{ T(ctx, "hw.continue") }</button>
+			</div>
+		</form>
+	</dialog>
+}
+
+// SkywalletPage manages the connected Skywallet and lists its wallets kept
+// in this browser.
+templ SkywalletPage() {
+	@Layout(T(ctx, "hw.title"), "settings") {
+		@hwDialog()
+		<section class="card" data-hw-page>
+			<div class="head">
+				<h1>{ T(ctx, "hw.title") }</h1>
+			</div>
+			<p class="small dim">{ T(ctx, "hw.help") }</p>
+			<p data-hw-state="checking" class="dim">{ T(ctx, "hw.checking") }</p>
+			<p data-hw-state="working" class="dim" hidden>{ T(ctx, "hw.follow-device") }</p>
+			<div data-hw-state="disconnected" hidden>
+				<p>{ T(ctx, "hw.disconnected") }</p>
+				<div class="bar"><button class="btn" type="button" data-hw-op="retry"><span class="mi">refresh</span>{ T(ctx, "hw.retry") }</button></div>
+			</div>
+			<p data-hw-state="bootloader" class="alert warn" hidden>{ T(ctx, "hw.bootloader") }</p>
+			<div data-hw-state="ready empty" hidden>
+				<dl class="kv">
+					<dt>{ T(ctx, "hw.label") }</dt>
+					<dd id="hw-label"></dd>
+					<dt>{ T(ctx, "hw.firmware") }</dt>
+					<dd><span id="hw-firmware" class="mono"></span> <span class="small dim">{ T(ctx, "hw.firmware-help") }</span></dd>
+					<dt>{ T(ctx, "hw.pin-set") }</dt>
+					<dd id="hw-pin-set"></dd>
+					<dt>{ T(ctx, "hw.passphrase-set") }</dt>
+					<dd id="hw-passphrase-set"></dd>
+				</dl>
+			</div>
+			<div data-hw-state="empty" hidden>
+				<p class="alert warn">{ T(ctx, "hw.no-seed") }</p>
+				<div class="bar">
+					<button class="btn primary" type="button" data-hw-op="generate-12">{ T(ctx, "hw.generate-12") }</button>
+					<button class="btn" type="button" data-hw-op="generate-24">{ T(ctx, "hw.generate-24") }</button>
+					<button class="btn" type="button" data-hw-op="restore-12">{ T(ctx, "hw.restore-12") }</button>
+					<button class="btn" type="button" data-hw-op="restore-24">{ T(ctx, "hw.restore-24") }</button>
+				</div>
+			</div>
+			<div data-hw-state="ready" hidden>
+				<p class="alert warn" id="hw-backup-warn" hidden>{ T(ctx, "hw.backup-warning") }</p>
+				<p class="alert warn" id="hw-pin-warn" hidden>{ T(ctx, "hw.pin-warning") }</p>
+				<div class="bar">
+					<button class="btn primary" type="button" data-hw-op="add"><span class="mi">add</span>{ T(ctx, "hw.add") }</button>
+				</div>
+				<div class="ops">
+					<details class="fold op">
+						<summary><span class="mi">vpn_key</span>{ T(ctx, "hw.seed") }</summary>
+						<div class="bar">
+							<button class="btn" type="button" data-hw-op="backup">{ T(ctx, "hw.backup") }</button>
+							<button class="btn" type="button" data-hw-op="check-12">{ T(ctx, "hw.check-12") }</button>
+							<button class="btn" type="button" data-hw-op="check-24">{ T(ctx, "hw.check-24") }</button>
+						</div>
+					</details>
+					<details class="fold op">
+						<summary><span class="mi">dialpad</span>{ T(ctx, "hw.pin-title") }</summary>
+						<div class="bar">
+							<button class="btn" type="button" data-hw-op="set-pin" data-hw-pin="unset">{ T(ctx, "hw.set-pin") }</button>
+							<button class="btn" type="button" data-hw-op="set-pin" data-hw-pin="set">{ T(ctx, "hw.change-pin") }</button>
+							<button class="btn" type="button" data-hw-op="remove-pin" data-hw-pin="set">{ T(ctx, "hw.remove-pin") }</button>
+						</div>
+					</details>
+					<details class="fold op">
+						<summary><span class="mi">security</span>{ T(ctx, "hw.passphrase-title") }</summary>
+						<p class="small dim">{ T(ctx, "hw.passphrase-explain") }</p>
+						<div class="bar"><button class="btn" type="button" data-hw-op="passphrase" id="hw-passphrase-toggle"></button></div>
+					</details>
+					<details class="fold op">
+						<summary><span class="mi">edit</span>{ T(ctx, "hw.label-title") }</summary>
+						<form class="form" id="hw-label-form" autocomplete="off">
+							<label>
+								{ T(ctx, "hw.label") }
+								<input type="text" id="hw-label-input" maxlength="32"/>
+							</label>
+							<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "hw.label-title") }</button></div>
+						</form>
+					</details>
+					<details class="fold op">
+						<summary><span class="mi">delete_forever</span>{ T(ctx, "hw.wipe") }</summary>
+						<p class="small dim">{ T(ctx, "hw.wipe-help") }</p>
+						<div class="bar"><button class="btn danger" type="button" data-hw-op="wipe">{ T(ctx, "hw.wipe") }</button></div>
+					</details>
+				</div>
+			</div>
+			<p class="ok-text" id="hw-done" role="status"></p>
+			<p class="error" id="hw-error" role="alert"></p>
+		</section>
+		<section class="card" data-bw-page="hw" data-bw-root={ From(ctx).Root } data-msg-error={ T(ctx, "bw.err-storage") }>
+			<h2>{ T(ctx, "hw.wallets") }</h2>
+			@bwUnlock()
+			@bwData("wallets")
+			<div id="bw-list" hx-post="hw/list" hx-trigger="bw-ready from:body" hx-include="#bw-data" hx-swap="innerHTML">
+				<p class="dim">{ T(ctx, "ui2.loading") }</p>
+			</div>
+			<p class="error" id="bw-page-error" role="alert"></p>
+		</section>
+	}
+}
+
+// HWList is the Skywallet wallets kept in this browser.
+templ HWList(w Wallets) {
+	@ErrorBox(w.Err)
+	if w.Err == "" && len(w.Rows) == 0 {
+		<p class="dim">{ T(ctx, "hw.no-wallets") }</p>
+	}
+	if len(w.Rows) > 0 {
+		@walletsTable(w)
+	}
+}
+
+// hwOptions are the changes a Skywallet's wallet takes. bw.js asks the
+// device for addresses; the label and the list live in this browser.
+templ hwOptions(w Wallet) {
+	@hwDialog()
+	<section class="card" id="wallet-options">
+		<h2>{ T(ctx, "wallet.options") }</h2>
+		<div class="ops">
+			@bwOp("rename", "edit", T(ctx, "wallet.rename")) {
+				<label>
+					{ T(ctx, "wallet.name") }
+					<input type="text" data-f="label" value={ w.Meta.Label } maxlength="200" autocomplete="off"/>
+				</label>
+			}
+			@bwOp("hw-address", "add", T(ctx, "wallet.new-addresses")) {
+				<label>
+					{ T(ctx, "wallet.how-many") }
+					<input type="number" data-f="num" value="1" min="1" max={ itoa(MaxNewAddresses) }/>
+				</label>
+			}
+			@bwOp("hw-confirm", "visibility", T(ctx, "hw.confirm-address")) {
+				<p class="small dim">{ T(ctx, "hw.confirm-help") }</p>
+				<label>
+					{ T(ctx, "wallet.addresses") }
+					<select data-f="index">
+						for i, a := range w.BrowserAddrs {
+							<option value={ itoa(i) }>{ a }</option>
+						}
+					</select>
+				</label>
+				<p class="ok-text" data-f="confirmed" hidden>{ T(ctx, "hw.confirmed") }</p>
+			}
+			@bwOp("delete", "delete", T(ctx, "bw.delete")) {
+				<p class="small dim">{ T(ctx, "hw.delete-help") }</p>
+			}
+		</div>
+	</section>
+}

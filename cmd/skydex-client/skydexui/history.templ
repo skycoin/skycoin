@@ -1,0 +1,92 @@
+package skydexui
+
+// HistoryTab follows src/components/History.jsx. The list lives in the
+// browser, which posts it to be merged with the market's finished orders.
+templ HistoryTab() {
+	<div id="history" hx-post="history/table" hx-trigger="load, every 8s, history-changed from:body" hx-swap="innerHTML" data-local="exchange:history">
+		<div class="page-head"><h2>History</h2></div>
+	</div>
+}
+
+func historyBadge(status string) string {
+	switch status {
+	case "completed":
+		return "enabled"
+	case "expired":
+		return "disabled"
+	}
+	return "cancelled"
+}
+
+func tradeType(t Trade) string {
+	if t.str("type") == "buy" {
+		return "buy"
+	}
+	return "sell"
+}
+
+// HistoryBody is the merged list, and the same list as JSON for skydex.js
+// to store.
+templ HistoryBody(rows []Trade) {
+	<div class="page-head">
+		<h2>History</h2>
+		if len(rows) > 0 {
+			<button type="button" class="link-btn" data-clear-trades>Clear history</button>
+		}
+	</div>
+	if len(rows) == 0 {
+		<div class="alert alert-secondary">No completed trades yet.</div>
+	} else {
+		<div class="panel table-wrap">
+			<table class="table table-hover align-middle">
+				<thead>
+					<tr>
+						<th>Type</th>
+						<th>Coin</th>
+						<th>Amount</th>
+						<th>Price</th>
+						<th>Market</th>
+						<th>Status</th>
+						<th>Date</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, t := range rows {
+						<tr>
+							<td><span class={ "badge", tradeType(t) }>{ t.str("type") }</span></td>
+							<td>{ t.str("sell_coin") }</td>
+							<td>{ num(t.num("amount")) } { t.str("sell_coin") }</td>
+							<td>{ num(t.num("price")) } { t.str("payment_currency") }</td>
+							<td>
+								if t.str("market_name") != "" {
+									<span title={ t.str("market_pk") }>{ t.str("market_name") }</span>
+								} else if t.str("market_pk") != "" {
+									<code title={ t.str("market_pk") }>{ shortKey(t.str("market_pk"), 8, 4) }</code>
+								} else {
+									@dash()
+								}
+							</td>
+							<td><span class={ "badge", historyBadge(t.str("status")) }>{ t.str("status") }</span></td>
+							<td>
+								if t.str("created_at") != "" {
+									@localTime(t.str("created_at"), true)
+								} else {
+									-
+								}
+							</td>
+							<td>
+								<button type="button" class="recent-del" data-remove-trade={ t.str("id") } aria-label="Remove from history" title="Remove from history">✕</button>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		<div class="hint mt-2">
+			History is saved locally on this device — the market keeps finished orders only
+			temporarily, so this list persists even after they’re removed there.
+		</div>
+	}
+	@templ.JSONScript("history-data", rows)
+}

@@ -35,7 +35,7 @@ say what is not. missing: not started.
 | cancel a buy before payment | Orders | present | |
 | my listings table, lifecycle badges, polled every 5 s | MyListings | present | |
 | cancel a listing | MyListings | present | without JavaScript a cancel skips the confirmation |
-| trade history kept in the browser, remove one, clear all | History | missing | |
+| trade history kept in the browser, remove one, clear all | History | present | the market's finished orders are merged on the server |
 | copy to clipboard, also over plain http | CopyButton | present | |
 | QR code with a payment URI and amount, address only toggle | QrButton | present | drawn with the explorer's qrcode.min.js |
 | local times for expiry and creation | all tables | present |
@@ -46,3 +46,13 @@ say what is not. missing: not started.
 - Forms work without JavaScript. Polling and the browser kept lists need it.
 - Links both ways: "Classic UI" in the `/ui2/` header, "New UI (preview)" in
   the React UI's corner.
+- Each tab is a URL, and on a phone the open tab is scrolled into view.
+
+## Before ui2 becomes the default
+
+- Try it against a live market over skywire. So far it is tested against an
+  in-process market only.
+- Check the copy buttons by hand. Headless browsers refuse the clipboard
+  without a real click.
+- Then serve `skydexui` at the root, and drop the React sources, the npm build
+  and the `check-skydex-ui` CI step.

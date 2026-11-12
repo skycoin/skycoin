@@ -111,7 +111,7 @@ type BlockTransactionVerbose struct {
 }
 
 // NewBlockTransactionVerbose creates BlockTransactionVerbose
-func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.TransactionInput, isGenesis bool) (BlockTransactionVerbose, error) {
+func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.TransactionInput, genesis bool) (BlockTransactionVerbose, error) {
 	if len(inputs) != len(txn.In) {
 		return BlockTransactionVerbose{}, errors.New("NewBlockTransactionVerbose: len(inputs) != len(txn.In)")
 	}
@@ -119,7 +119,7 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 	// Genesis transaction uses empty SHA256 as txid
 	// FIXME: If/when the blockchain is regenerated, use a real hash as the txID for the genesis block. The bkSeq argument can be removed then.
 	txID := cipher.SHA256{}
-	if !isGenesis {
+	if !genesis {
 		txID = txn.Hash()
 	}
 
@@ -156,7 +156,7 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 	}
 
 	var fee uint64
-	if isGenesis {
+	if genesis {
 		if hoursIn != 0 {
 			err := errors.New("NewBlockTransactionVerbose genesis block should have 0 input hours")
 			return BlockTransactionVerbose{}, err
@@ -229,8 +229,8 @@ type UnconfirmedTransactionVerbose struct {
 
 // NewUnconfirmedTransactionVerbose creates a verbose readable unconfirmed transaction
 func NewUnconfirmedTransactionVerbose(unconfirmed *visor.UnconfirmedTransaction, inputs []visor.TransactionInput) (*UnconfirmedTransactionVerbose, error) {
-	isGenesis := false // The genesis transaction is never unconfirmed
-	txn, err := NewBlockTransactionVerbose(unconfirmed.Transaction, inputs, isGenesis)
+	genesis := false // The genesis transaction is never unconfirmed
+	txn, err := NewBlockTransactionVerbose(unconfirmed.Transaction, inputs, genesis)
 	if err != nil {
 		return nil, err
 	}

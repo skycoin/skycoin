@@ -86,9 +86,9 @@ type BlockBody struct {
 // NewBlockBody creates a readable block body
 func NewBlockBody(b coin.Block) (*BlockBody, error) {
 	txns := make([]Transaction, len(b.Body.Transactions))
-	isGenesis := b.Head.BkSeq == 0
+	genesis := b.Head.BkSeq == 0
 	for i := range b.Body.Transactions {
-		txn, err := NewTransaction(b.Body.Transactions[i], isGenesis)
+		txn, err := NewTransaction(b.Body.Transactions[i], genesis)
 		if err != nil {
 			return nil, err
 		}

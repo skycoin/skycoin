@@ -232,9 +232,9 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 			Providers []string `json:"providers"`
 			Provider  string   `json:"provider"`
 			URL       string   `json:"url"`
-			// HasKey replaces the explorer API key itself: the operator sets it
+			// KeySet replaces the explorer API key itself: the operator sets it
 			// but never reads it back, mirroring has_seed on /api/sellcoins.
-			HasKey     bool   `json:"has_key"`
+			KeySet     bool   `json:"has_key"`
 			DefaultURL string `json:"default_url"` // built-in explorer endpoint, if any
 			Available  bool   `json:"available"`   // enabled (a provider is configured)
 		}
@@ -269,7 +269,7 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 				Providers:  providers,
 				Provider:   provider,
 				URL:        url,
-				HasKey:     strings.TrimSpace(key) != "",
+				KeySet:     strings.TrimSpace(key) != "",
 				DefaultURL: chain.DefaultExplorerURL(c),
 				Available:  strings.TrimSpace(provider) != "",
 			})
@@ -290,11 +290,11 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 			// Report whether a seed is set without ever exposing it.
 			type coinView struct {
 				*db.SellCoin
-				HasSeed bool `json:"has_seed"`
+				SeedSet bool `json:"has_seed"`
 			}
 			out := make([]coinView, 0, len(coins))
 			for _, c := range coins {
-				out = append(out, coinView{SellCoin: c, HasSeed: strings.TrimSpace(c.WalletSeed) != ""})
+				out = append(out, coinView{SellCoin: c, SeedSet: strings.TrimSpace(c.WalletSeed) != ""})
 			}
 			mWriteJSON(w, http.StatusOK, map[string]any{"sellcoins": out})
 		case http.MethodPost:

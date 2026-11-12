@@ -1936,14 +1936,14 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *api.CreateTransactionResponse) {
 		nResultOutputs := len(result.Transaction.Out)
 		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
-		hasChange := nResultOutputs == nOutputs+1
+		withChange := nResultOutputs == nOutputs+1
 		changeOutput := result.Transaction.Out[nResultOutputs-1]
-		if hasChange {
+		if withChange {
 			require.Equal(t, changeOutput.Address, changeAddress)
 		}
 
-		tLog(t, "hasChange", hasChange)
-		if hasChange {
+		tLog(t, "withChange", withChange)
+		if withChange {
 			tLog(t, "changeCoins", changeOutput.Coins)
 			tLog(t, "changeHours", changeOutput.Hours)
 		}

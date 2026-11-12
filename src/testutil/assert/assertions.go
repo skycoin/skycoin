@@ -61,10 +61,10 @@ func PanicsWithCondition(t assert.TestingT, condition TestValuePredicate, f asse
 func PanicsWithLogMessage(t assert.TestingT, expectedMessage string, f assert.PanicTestFunc, msgAndArgs ...interface{}) bool {
 	return PanicsWithCondition(t, func(logValue interface{}) bool {
 		gotMessage, gotIt := "", false
-		if entry, isEntry := logValue.(*logrus.Entry); isEntry {
+		if entry, ok := logValue.(*logrus.Entry); ok {
 			gotMessage, gotIt = entry.Message, true
 		} else {
-			if msg, isString := logValue.(string); isString {
+			if msg, ok := logValue.(string); ok {
 				gotMessage, gotIt = msg, true
 			}
 		}

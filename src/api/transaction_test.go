@@ -1541,8 +1541,8 @@ func TestTransactionsHandlerV2(t *testing.T) {
 					}
 					flts = append(flts, visor.AddrsFilter{Addrs: addrs})
 				case "confirmed":
-					isConfirmed, _ := strconv.ParseBool(kv[1]) // nolint:errcheck
-					flts = append(flts, visor.NewConfirmedTxFilter(isConfirmed))
+					confirmed, _ := strconv.ParseBool(kv[1]) // nolint:errcheck
+					flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 				case "page":
 					page, _ = strconv.ParseUint(kv[1], 10, 64) // nolint:errcheck
 				case "limit":
@@ -1597,13 +1597,13 @@ type transactionAndInputs struct {
 	inputs []visor.TransactionInput
 }
 
-func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []visor.TransactionInput, isTxnConfirmed, isUnsigned bool) VerifyTransactionResponse {
+func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []visor.TransactionInput, txnConfirmed, unsigned bool) VerifyTransactionResponse {
 	ctxn, err := newCreatedTransactionFuzzy(txn, inputs)
 	require.NoError(t, err)
 	return VerifyTransactionResponse{
 		Transaction: *ctxn,
-		Confirmed:   isTxnConfirmed,
-		Unsigned:    isUnsigned,
+		Confirmed:   txnConfirmed,
+		Unsigned:    unsigned,
 	}
 }
 

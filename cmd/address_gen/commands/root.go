@@ -18,7 +18,7 @@ import (
 
 var (
 	genCount    int
-	isBitcoin   bool
+	bitcoin     bool
 	hexSeed     bool
 	hideSecrets bool
 	seed        string
@@ -29,7 +29,7 @@ var (
 func init() {
 	logging.Disable()
 	RootCmd.Flags().IntVarP(&genCount, "number", "n", 1, "Number of addresses to generate")
-	RootCmd.Flags().BoolVarP(&isBitcoin, "bitcoin", "b", false, "Print address as a bitcoin address")
+	RootCmd.Flags().BoolVarP(&bitcoin, "bitcoin", "b", false, "Print address as a bitcoin address")
 	RootCmd.Flags().BoolVarP(&hexSeed, "hex-seed", "x", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if seed is not provided")
 	RootCmd.Flags().BoolVar(&hideSecrets, "hide-secrets", false, "Hide seed and secret key")
 	RootCmd.Flags().StringVar(&seed, "seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
@@ -48,7 +48,7 @@ var RootCmd = &cobra.Command{
 	generate public keys and addresses`,
 	Run: func(_ *cobra.Command, _ []string) {
 		var coinType wallet.CoinType
-		if isBitcoin {
+		if bitcoin {
 			coinType = wallet.CoinTypeBitcoin
 		} else {
 			coinType = wallet.CoinTypeSkycoin

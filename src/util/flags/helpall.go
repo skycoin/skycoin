@@ -152,10 +152,10 @@ func printTreeChildren(c *cobra.Command, prefix string) {
 		visible = append(visible, child)
 	}
 	for i, child := range visible {
-		isLast := i == len(visible)-1
+		last := i == len(visible)-1
 		branch := "├── "
 		nextPrefix := prefix + "│   "
-		if isLast {
+		if last {
 			branch = "└── "
 			nextPrefix = prefix + "    "
 		}

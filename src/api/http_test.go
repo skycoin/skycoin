@@ -199,8 +199,8 @@ func TestAPISetDisabled(t *testing.T) {
 		req, err := http.NewRequest(method, endpoint, nil)
 		require.NoError(t, err)
 
-		isAPIV2 := strings.HasPrefix(endpoint, "/api/v2/")
-		if isAPIV2 {
+		apiV2 := strings.HasPrefix(endpoint, "/api/v2/")
+		if apiV2 {
 			req.Header.Set("Content-Type", ContentTypeJSON)
 		}
 
@@ -218,7 +218,7 @@ func TestAPISetDisabled(t *testing.T) {
 			require.Equal(t, http.StatusOK, rr.Code)
 		default:
 			require.Equal(t, http.StatusForbidden, rr.Code)
-			if isAPIV2 {
+			if apiV2 {
 				require.Equal(t, "{\n    \"error\": {\n        \"message\": \"Endpoint is disabled\",\n        \"code\": 403\n    }\n}", rr.Body.String())
 			} else {
 				require.Equal(t, "403 Forbidden - Endpoint is disabled", strings.TrimSpace(rr.Body.String()))
@@ -278,8 +278,8 @@ func TestCORS(t *testing.T) {
 
 					setCSRFParameters(t, tokenValid, req)
 
-					isAPIV2 := strings.HasPrefix(e, "/api/v2/")
-					if isAPIV2 {
+					apiV2 := strings.HasPrefix(e, "/api/v2/")
+					if apiV2 {
 						req.Header.Set("Content-Type", ContentTypeJSON)
 					}
 

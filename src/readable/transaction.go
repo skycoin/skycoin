@@ -103,18 +103,18 @@ type Transaction struct {
 }
 
 // NewTransaction creates a readable transaction
-func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) {
-	if isGenesis && len(txn.In) != 0 {
-		return nil, errors.New("NewTransaction: isGenesis=true but Transaction.In is not empty")
+func NewTransaction(txn coin.Transaction, genesis bool) (*Transaction, error) {
+	if genesis && len(txn.In) != 0 {
+		return nil, errors.New("NewTransaction: genesis=true but Transaction.In is not empty")
 	}
-	if !isGenesis && len(txn.In) == 0 {
-		return nil, errors.New("NewTransaction: isGenesis=false but Transaction.In is empty")
+	if !genesis && len(txn.In) == 0 {
+		return nil, errors.New("NewTransaction: genesis=false but Transaction.In is empty")
 	}
 
 	// Genesis transaction uses empty SHA256 as the txid for its outputs [FIXME: requires hardfork]
 	txID := txn.Hash()
 	txnOutputTxID := cipher.SHA256{}
-	if !isGenesis {
+	if !genesis {
 		txnOutputTxID = txID
 	}
 
@@ -152,8 +152,8 @@ func NewTransaction(txn coin.Transaction, isGenesis bool) (*Transaction, error) 
 }
 
 // NewTransactionWithTimestamp creates a readable transaction with its timestamp set
-func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp uint64) (*Transaction, error) {
-	newTxn, err := NewTransaction(txn, isGenesis)
+func NewTransactionWithTimestamp(txn coin.Transaction, genesis bool, timestamp uint64) (*Transaction, error) {
+	newTxn, err := NewTransaction(txn, genesis)
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +172,8 @@ type UnconfirmedTransactions struct {
 
 // NewUnconfirmedTransaction creates a readable unconfirmed transaction
 func NewUnconfirmedTransaction(unconfirmed *visor.UnconfirmedTransaction) (*UnconfirmedTransactions, error) {
-	isGenesis := false // unconfirmed transactions are never the genesis transaction
-	txn, err := NewTransaction(unconfirmed.Transaction, isGenesis)
+	genesis := false // unconfirmed transactions are never the genesis transaction
+	txn, err := NewTransaction(unconfirmed.Transaction, genesis)
 	if err != nil {
 		return nil, err
 	}
@@ -212,8 +212,8 @@ func NewTransactionWithStatus(txn *visor.Transaction) (*TransactionWithStatus, e
 		return nil, nil
 	}
 
-	isGenesis := txn.Status.BlockSeq == 0 && txn.Status.Confirmed
-	rbTxn, err := NewTransactionWithTimestamp(txn.Transaction, isGenesis, txn.Time)
+	genesis := txn.Status.BlockSeq == 0 && txn.Status.Confirmed
+	rbTxn, err := NewTransactionWithTimestamp(txn.Transaction, genesis, txn.Time)
 	if err != nil {
 		return nil, err
 	}

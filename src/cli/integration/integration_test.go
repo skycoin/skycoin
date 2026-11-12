@@ -630,7 +630,7 @@ func TestWalletAddAddresses(t *testing.T) {
 		name         string
 		setupWallet  func(t *testing.T) *api.WalletResponse
 		args         []string
-		isUsageErr   bool
+		usageFail    bool
 		expectOutput []byte
 		goldenFile   string
 	}{
@@ -677,7 +677,7 @@ func TestWalletAddAddresses(t *testing.T) {
 				})
 			},
 			args:         []string{"-n", "-2", "-j"},
-			isUsageErr:   true,
+			usageFail:    true,
 			expectOutput: []byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
 		},
 		{
@@ -704,7 +704,7 @@ func TestWalletAddAddresses(t *testing.T) {
 			},
 			args:         []string{"-p", "invalid password", "-j"},
 			expectOutput: []byte("invalid password\n"),
-			isUsageErr:   true,
+			usageFail:    true,
 		},
 	}
 
@@ -721,7 +721,7 @@ func TestWalletAddAddresses(t *testing.T) {
 				return
 			}
 
-			if tc.isUsageErr {
+			if tc.usageFail {
 				require.True(t, bytes.Contains(output, tc.expectOutput))
 				return
 			}

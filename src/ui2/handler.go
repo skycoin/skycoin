@@ -14,6 +14,9 @@ type Options struct {
 	// The pages also take the favicon and the CSRF endpoint from there.
 	// Empty means "../".
 	Classic string
+	// Coins, when set, is a host serving several coins, as skycoin web does.
+	// The pages then offer a coin picker and the coins' own pages.
+	Coins *CoinHost
 }
 
 // Handler serves the pages, reading the node through n. It expects the mount
@@ -23,6 +26,14 @@ func Handler(n Node, o Options) http.Handler {
 	if o.Classic == "" {
 		o.Classic = "../"
 	}
+	if o.Coins != nil {
+		return newMultiCoin(n, o)
+	}
+	return coinHandler(n, o)
+}
+
+// coinHandler serves the pages of one Skycoin or fiber coin, read through n.
+func coinHandler(n Node, o Options) http.Handler {
 	mux := http.NewServeMux()
 	sendForm := func(r *http.Request) SendForm {
 		f := ParseSendForm(r.PostFormValue)
@@ -372,11 +383,15 @@ func render(w http.ResponseWriter, r *http.Request, o Options, c templ.Component
 	if ck, err := r.Cookie(LangCookie); err == nil {
 		lang = ck.Value
 	}
-	ctx := with(r.Context(), Page{
+	p := Page{
 		Base:    BaseFor(r.URL.Path),
 		Lang:    PickLang(lang, r.Header.Get("Accept-Language")),
 		Classic: o.Classic,
-	})
+	}
+	if cs, ok := r.Context().Value(coinsKey{}).(*coinState); ok {
+		p.Coin, p.Coins = cs.cur, cs.all
+	}
+	ctx := with(r.Context(), p)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// The pages show balances and addresses, so no cache may keep them.
 	w.Header().Set("Cache-Control", "no-store")

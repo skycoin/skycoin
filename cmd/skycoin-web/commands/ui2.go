@@ -12,5 +12,5 @@ import (
 // node through the same proxy, node choice and dialer as the Angular wallet.
 func mountUI2(mux *http.ServeMux) {
 	client := api.HandlerClient(mux, "localhost")
-	mux.Handle("/ui2/", http.StripPrefix("/ui2", ui2.Handler(client, ui2.Options{})))
+	mux.Handle("/ui2/", http.StripPrefix("/ui2", ui2.Handler(client, ui2.Options{Coins: ui2.NewCoinHost(mux, "localhost")})))
 }

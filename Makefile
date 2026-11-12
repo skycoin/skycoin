@@ -152,9 +152,7 @@ vet: ## Run go vet (the non-golangci-lint half of 'lint')
 	go vet -all ./...
 
 check-newcoin: newcoin ## Check that make newcoin succeeds and no templated files are changed.
-	@if [ "$(shell git diff ./cmd/skycoin/skycoin.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
-	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
-	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+	@git diff --exit-code --stat -- ./cmd/skycoin/skycoin.go ./cmd/skycoin/skycoin_test.go ./cmd/skycoin/commands/root.go ./src/params/params.go || { echo 'Changes detected after make newcoin'; exit 2; }
 
 check-newcoin-templates: ## Verify newcoin templates export and round-trip with --template-dir
 	@TMPDIR=$$(mktemp -d) && \

@@ -1,5 +1,6 @@
 //go:build tinygo
 
+// Package wasmassets cmd/skycoin-web/wasmassets/wasmassets_tinygo.go c4-ui-wallet
 package wasmassets
 
 import (

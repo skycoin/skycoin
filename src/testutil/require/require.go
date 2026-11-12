@@ -1,3 +1,5 @@
+// Package require src/testutil/require/require.go c0-com-test
+//
 // Package require provides test requirement helpers.
 package require
 

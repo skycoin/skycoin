@@ -1,3 +1,5 @@
+// Package commands cmd/skycoin-web/commands/webctx.go c4-ui-wallet
+//
 // Package commands provides commands for the skycoin web interface.
 //
 // This file provides a tiny net/http request-context shim used by all of the

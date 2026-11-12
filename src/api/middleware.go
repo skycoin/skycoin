@@ -1,3 +1,4 @@
+// Package api src/api/middleware.go c3-coin-api
 package api
 
 import (

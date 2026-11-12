@@ -1,3 +1,4 @@
+// Package cli src/hardware-wallet/cli/set_pin_code.go c2-app-hw
 package cli
 
 import (

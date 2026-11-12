@@ -1,3 +1,5 @@
+// Package readable src/readable/block.go c2-coin-api
+//
 /*
 Package readable defines JSON-tagged struct representations of internal binary data structures,
 for use by the API and CLI.

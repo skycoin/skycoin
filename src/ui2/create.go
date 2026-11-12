@@ -1,3 +1,4 @@
+// Package ui2 src/ui2/create.go c3-ui-wallet
 package ui2
 
 import (

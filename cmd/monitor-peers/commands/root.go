@@ -1,4 +1,4 @@
-// Package commands cmd/monitor-peers/commands/root.go
+// Package commands cmd/monitor-peers/commands/root.go c4-coin-tool
 /*
 monitor-peers checks the status of peers.
 

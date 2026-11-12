@@ -1,4 +1,4 @@
-// Package commands cmd/apps/skydex-market/commands/api.go
+// Package commands cmd/skydex-market/commands/api.go c4-app-dex
 //
 // Operator API consumed by the market's local dashboard. It exposes the
 // market's configuration (explorers, SKY fullnode, escrow wallet, ban rules)

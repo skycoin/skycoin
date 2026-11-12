@@ -1,3 +1,5 @@
+// Package commands cmd/cipher-testdata/commands/root.go c4-coin-tool
+//
 // Package commands generates test data for the cipher testsuite
 package commands
 

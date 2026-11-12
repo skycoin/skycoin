@@ -1,3 +1,4 @@
+// Package btc src/btc/transaction.go c1-coin-wallet
 package btc
 
 import (

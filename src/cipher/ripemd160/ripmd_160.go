@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package ripemd160 src/cipher/ripemd160/ripmd_160.go c0-com-crypto
+//
 // Package ripemd160 implements the RIPEMD-160 hash algorithm.
 package ripemd160
 

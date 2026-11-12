@@ -1,3 +1,4 @@
+// Package api src/hardware-wallet-daemon/api/apply_settings.go c2-app-hw
 package api
 
 import (

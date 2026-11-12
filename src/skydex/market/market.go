@@ -1,3 +1,5 @@
+// Package market src/skydex/market/market.go c1-app-dex
+//
 // Package market is the skydex-client's transport-agnostic connection to an
 // skydex-market.
 //

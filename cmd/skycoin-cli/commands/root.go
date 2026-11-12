@@ -1,3 +1,5 @@
+// Package commands cmd/skycoin-cli/commands/root.go c4-coin-cli
+//
 // Package commands provides CLI commands for interacting with skycoin.
 package commands
 

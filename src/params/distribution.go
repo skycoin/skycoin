@@ -1,3 +1,5 @@
+// Package params src/params/distribution.go c1-coin-chain
+//
 // Package params defines blockchain parameters and distribution configuration.
 package params
 

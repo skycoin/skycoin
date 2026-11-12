@@ -3,6 +3,7 @@
 
 // shim for linux and freebsd so that daemon.go builds
 
+// Package usb src/hardware-wallet/skywallet/usb/hidapi_shim.go c1-app-hw
 package usb
 
 // HIDUse indicates whether HID is available on this platform.

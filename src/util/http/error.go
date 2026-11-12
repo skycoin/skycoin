@@ -1,3 +1,5 @@
+// Package httphelper src/util/http/error.go c0-com-util
+//
 // Package httphelper provides HTTP related utility methods
 package httphelper
 

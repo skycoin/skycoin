@@ -1,4 +1,4 @@
-// Package flags internal/flags/flags.go
+// Package flags src/util/flags/flags.go c0-com-util
 package flags
 
 import (

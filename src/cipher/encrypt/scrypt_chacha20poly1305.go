@@ -1,3 +1,5 @@
+// Package encrypt src/cipher/encrypt/scrypt_chacha20poly1305.go c0-com-crypto
+//
 /*
 Package encrypt provides encryption methods.
 

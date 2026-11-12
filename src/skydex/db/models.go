@@ -1,4 +1,4 @@
-// Package db internal/db/models.go
+// Package db src/skydex/db/models.go c1-app-dex
 package db
 
 import "time"

@@ -1,3 +1,4 @@
+// Package commands cmd/newcoin/commands/templates.go c4-coin-tool
 package commands
 
 import (

@@ -1,3 +1,4 @@
+// Package api src/api/network.go c3-coin-api
 package api
 
 // APIs for network-related information

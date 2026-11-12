@@ -1,3 +1,4 @@
+// Package skycoin src/skycoin/config.go c3-coin-node
 package skycoin
 
 import (

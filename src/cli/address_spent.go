@@ -1,3 +1,4 @@
+// Package cli src/cli/address_spent.go c3-coin-cli
 package cli
 
 import (

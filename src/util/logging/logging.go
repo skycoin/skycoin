@@ -1,3 +1,5 @@
+// Package logging src/util/logging/logging.go c0-com-util
+//
 /*
 Package logging provides application logging utilities
 */

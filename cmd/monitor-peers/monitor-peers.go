@@ -1,3 +1,5 @@
+// Package main cmd/monitor-peers/monitor-peers.go c4-coin-tool
+//
 // Package main monitors the status of peers by connecting and checking their introduction packets.
 package main
 

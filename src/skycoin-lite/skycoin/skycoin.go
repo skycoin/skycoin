@@ -1,4 +1,6 @@
-// Package main provides the GopherJS skycoin-lite browser implementation
+// Package main src/skycoin-lite/skycoin/skycoin.go c2-app-lite
+//
+// Package main provides the GopherJS skycoin-lite browser implementation.
 //
 // The functions published here mirror the wasm build in
 // src/skycoin-lite/wasm/main_wasm.go: on failure they return {error: string}

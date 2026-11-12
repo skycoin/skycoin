@@ -6,6 +6,7 @@
 // In its own file so that a faster assembly or C version
 // can be substituted easily.
 
+// Package ripemd160 src/cipher/ripemd160/ripemd160block.go c0-com-crypto
 package ripemd160
 
 // work buffer indices and roll amounts for one line

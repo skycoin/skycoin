@@ -1,3 +1,5 @@
+// Package libusb src/hardware-wallet/usb/lowlevel/libusb/libusb.go c1-app-hw
+//
 // Package libusb provides a wrapper around github.com/google/gousb for compatibility.
 // This package uses system-installed libusb-1.0.
 package libusb

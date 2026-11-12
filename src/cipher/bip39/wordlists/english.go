@@ -1,3 +1,4 @@
+// Package wordlists src/cipher/bip39/wordlists/english.go c0-com-crypto
 package wordlists
 
 import (

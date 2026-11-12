@@ -1,3 +1,5 @@
+// Package wallet src/wallet/wallet.go c1-coin-wallet
+//
 /*
 Package wallet implements wallets and the wallet database service
 

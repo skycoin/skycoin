@@ -1,3 +1,5 @@
+// Package secp256k1go src/cipher/secp256k1-go/secp256k1-go2/secp256k1.go c0-com-crypto
+//
 /*
 Package secp256k1go implements the underlying secp256k1 primitives
 */

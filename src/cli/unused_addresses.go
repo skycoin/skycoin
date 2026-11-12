@@ -1,3 +1,4 @@
+// Package cli src/cli/unused_addresses.go c3-coin-cli
 package cli
 
 import (

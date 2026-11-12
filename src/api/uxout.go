@@ -1,3 +1,4 @@
+// Package api src/api/uxout.go c3-coin-api
 package api
 
 import (

@@ -1,3 +1,5 @@
+// Package mathutil src/util/mathutil/mathutil.go c0-com-util
+//
 // Package mathutil provides math utilities
 package mathutil
 

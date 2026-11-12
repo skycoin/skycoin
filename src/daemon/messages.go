@@ -1,3 +1,4 @@
+// Package daemon src/daemon/messages.go c2-coin-daemon
 package daemon
 
 import (

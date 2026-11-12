@@ -1,3 +1,5 @@
+// Package timeutil src/util/timeutil/timeutil.go c0-com-util
+//
 /*
 Package timeutil provides time related utility methods
 */

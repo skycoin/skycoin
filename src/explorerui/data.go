@@ -1,3 +1,4 @@
+// Package explorerui src/explorerui/data.go c3-ui-explorer
 package explorerui
 
 import (

@@ -66,6 +66,9 @@ jobs:
       - name: Check newcoin Template
         run: make check-newcoin
 
+      - name: Check Go File Descriptors
+        run: make check-descriptors
+
       - name: Check newcoin Templates Round-Trip
         run: make check-newcoin-templates
 

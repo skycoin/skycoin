@@ -1,3 +1,4 @@
+// Package bip32 src/cipher/bip32/path.go c0-com-crypto
 package bip32
 
 import (

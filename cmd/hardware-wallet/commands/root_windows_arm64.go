@@ -1,6 +1,8 @@
 //go:build windows && arm64
 // +build windows,arm64
 
+// Package commands cmd/hardware-wallet/commands/root_windows_arm64.go c4-app-hw
+//
 // Package commands provides a stub for Windows ARM64 architecture.
 //
 // Hardware wallet support is disabled on Windows ARM64 due to

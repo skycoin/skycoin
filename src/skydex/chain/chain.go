@@ -1,3 +1,4 @@
+// Package chain src/skydex/chain/chain.go c3-app-dex
 package chain
 
 import (

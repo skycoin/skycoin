@@ -1,3 +1,4 @@
+// Package gnet src/daemon/gnet/message.go c1-coin-daemon
 package gnet
 
 import (

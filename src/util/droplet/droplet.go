@@ -1,3 +1,5 @@
+// Package droplet src/util/droplet/droplet.go c0-com-util
+//
 /*
 Package droplet provides methods for handling droplet integers and string.
 

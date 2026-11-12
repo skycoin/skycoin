@@ -1,3 +1,4 @@
+// Package usb src/hardware-wallet/skywallet/usb/libusb.go c1-app-hw
 package usb
 
 import (

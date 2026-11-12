@@ -1,3 +1,5 @@
+// Package skycoin src/skycoin/skycoin.go c3-coin-node
+//
 /*
 Package skycoin implements the main daemon cmd's configuration and setup
 */

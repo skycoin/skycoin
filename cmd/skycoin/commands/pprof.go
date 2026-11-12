@@ -1,5 +1,6 @@
 //go:build !tinygo
 
+// Package commands cmd/skycoin/commands/pprof.go c4-coin-node
 package commands
 
 // net/http/pprof registers debug profiling handlers on the default

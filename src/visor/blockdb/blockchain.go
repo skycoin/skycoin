@@ -1,3 +1,5 @@
+// Package blockdb src/visor/blockdb/blockchain.go c1-coin-visor
+//
 /*
 Package blockdb is the core blockchain database wrapper
 */

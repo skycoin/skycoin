@@ -1,5 +1,6 @@
 //go:build cgo && !386 && !windows
 
+// Package commands cmd/release/commands/root_cgo.go c4-coin-tool
 package commands
 
 import (

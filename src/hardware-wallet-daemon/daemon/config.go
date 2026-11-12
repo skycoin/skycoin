@@ -1,3 +1,5 @@
+// Package daemon src/hardware-wallet-daemon/daemon/config.go c2-app-hw
+//
 // Package daemon provides the hardware wallet daemon server.
 package daemon
 

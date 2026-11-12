@@ -1,3 +1,5 @@
+// Package explorer explorer/explorer.go c0-ui-explorer
+//
 // Package explorer provides explorer functionality.
 package explorer
 

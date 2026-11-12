@@ -1,3 +1,4 @@
+// Package electrum src/electrum/socks5.go c1-coin-wallet
 package electrum
 
 import (

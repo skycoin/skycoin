@@ -1,3 +1,5 @@
+// Package base58fuzz src/cipher/base58/fuzz/base58fuzz.go c0-com-crypto
+//
 // Package base58fuzz provides fuzz testing for base58 encoding.
 package base58fuzz
 

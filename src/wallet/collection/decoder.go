@@ -1,3 +1,5 @@
+// Package collection src/wallet/collection/decoder.go c1-coin-wallet
+//
 // Package collection provides wallet collection management.
 package collection
 

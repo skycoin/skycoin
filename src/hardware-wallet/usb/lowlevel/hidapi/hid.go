@@ -9,6 +9,7 @@
 //go:build (darwin && !ios && cgo) || (windows && cgo)
 // +build darwin,!ios,cgo windows,cgo
 
+// Package hidapi src/hardware-wallet/usb/lowlevel/hidapi/hid.go c1-app-hw
 package hidapi
 
 /*

@@ -1,3 +1,4 @@
+// Package api src/api/https_default.go c3-coin-api
 package api
 
 import "crypto/tls"

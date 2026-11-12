@@ -1,3 +1,5 @@
+// Package bip44 src/cipher/bip44/bip44.go c0-com-crypto
+//
 /*
 Package bip44 implements the bip44 spec https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 */

@@ -1,3 +1,4 @@
+// Package wire src/hardware-wallet/skywallet/wire/v1.go c1-app-hw
 package wire
 
 import (

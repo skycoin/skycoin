@@ -1,3 +1,4 @@
+// Package commands cmd/explorer/commands/angular.go c4-ui-explorer
 package commands
 
 import (

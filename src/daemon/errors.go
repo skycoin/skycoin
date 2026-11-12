@@ -1,3 +1,4 @@
+// Package daemon src/daemon/errors.go c2-coin-daemon
 package daemon
 
 import (

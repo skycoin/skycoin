@@ -1,3 +1,4 @@
+// Package secp256k1go src/cipher/secp256k1-go/secp256k1-go2/field.go c0-com-crypto
 package secp256k1go
 
 import (

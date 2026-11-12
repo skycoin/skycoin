@@ -1,5 +1,6 @@
 //go:build tinygo
 
+// Package iputil src/util/iputil/iputil_tinygo.go c0-com-util
 package iputil
 
 // LocalhostIP returns the address for localhost on the machine.

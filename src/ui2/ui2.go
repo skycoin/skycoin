@@ -1,3 +1,5 @@
+// Package ui2 src/ui2/ui2.go c3-ui-wallet
+//
 // Package ui2 is a server rendered wallet GUI built with templ and htmx. It
 // sits beside the Angular wallet and reads the node through its REST API
 // client, so any host holding an api.Client can serve it.

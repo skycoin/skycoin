@@ -1,3 +1,4 @@
+// Package params src/params/verify_txn.go c1-coin-chain
 package params
 
 import (

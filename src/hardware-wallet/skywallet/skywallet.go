@@ -1,3 +1,4 @@
+// Package skywallet src/hardware-wallet/skywallet/skywallet.go c1-app-hw
 package skywallet
 
 import (

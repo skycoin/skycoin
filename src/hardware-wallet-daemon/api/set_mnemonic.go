@@ -1,3 +1,4 @@
+// Package api src/hardware-wallet-daemon/api/set_mnemonic.go c2-app-hw
 package api
 
 import (

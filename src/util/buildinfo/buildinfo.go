@@ -1,4 +1,4 @@
-// Package buildinfo src/util/buildinfo/buildinfo.go
+// Package buildinfo src/util/buildinfo/buildinfo.go c0-com-util
 package buildinfo
 
 import (

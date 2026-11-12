@@ -1,3 +1,5 @@
+// Package main cmd/skydex-market/skydex-market.go c4-app-dex
+//
 /*
 skydex-market — the SkyDEX decentralized-exchange backend (standalone server).
 */

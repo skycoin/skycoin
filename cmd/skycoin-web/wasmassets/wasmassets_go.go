@@ -1,5 +1,7 @@
 //go:build !tinygo
 
+// Package wasmassets cmd/skycoin-web/wasmassets/wasmassets_go.go c4-ui-wallet
+//
 // Package wasmassets registers the skycoin-lite cipher wasm with the web
 // wallet, for `skycoin web` and the node's -web-wallet, by being imported:
 //

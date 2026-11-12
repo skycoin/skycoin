@@ -1,3 +1,5 @@
+// Package daemon src/daemon/daemon.go c2-coin-daemon
+//
 /*
 Package daemon controls the networking layer of the skycoin daemon
 */

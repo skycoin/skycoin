@@ -1,3 +1,4 @@
+// Package api src/api/blockchain.go c3-coin-api
 package api
 
 // APIs for blockchain related information

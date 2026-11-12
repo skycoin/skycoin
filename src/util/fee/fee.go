@@ -1,3 +1,5 @@
+// Package fee src/util/fee/fee.go c1-com-util
+//
 /*
 Package fee provides methods to calculate and verify transaction fees
 */

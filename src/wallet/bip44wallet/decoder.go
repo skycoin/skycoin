@@ -1,3 +1,4 @@
+// Package bip44wallet src/wallet/bip44wallet/decoder.go c1-coin-wallet
 package bip44wallet
 
 import (

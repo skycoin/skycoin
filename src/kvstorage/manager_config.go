@@ -1,3 +1,4 @@
+// Package kvstorage src/kvstorage/manager_config.go c1-coin-visor
 package kvstorage
 
 // Config is a configuration for storage manager

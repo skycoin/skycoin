@@ -1,3 +1,5 @@
+// Package xpubwallet src/wallet/xpubwallet/decoder.go c1-coin-wallet
+//
 // Package xpubwallet implements extended public key wallet functionality
 package xpubwallet
 

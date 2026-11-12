@@ -1,3 +1,5 @@
+// Package commands cmd/release/commands/root.go c4-coin-tool
+//
 // Package commands implements the skycoin release commands.
 //
 // Hardware wallet support is included when building with CGO enabled

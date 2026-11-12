@@ -1,3 +1,4 @@
+// Package wallet src/wallet/scan.go c1-coin-wallet
 package wallet
 
 import "github.com/skycoin/skycoin/src/cipher"

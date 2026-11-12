@@ -1,3 +1,5 @@
+// Package server src/skydex/server/server.go c2-app-dex
+//
 // Package server implements the skydex-market side of the client<->market
 // protocol.
 //

@@ -1,3 +1,5 @@
+// Package commands cmd/newcoin/commands/root.go c4-coin-tool
+//
 // Package commands implements the newcoin template generator.
 package commands
 

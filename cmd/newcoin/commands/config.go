@@ -1,3 +1,5 @@
+// Package commands cmd/newcoin/commands/config.go c4-coin-tool
+//
 // Package commands implements the config printer.
 package commands
 

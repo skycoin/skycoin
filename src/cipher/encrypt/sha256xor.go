@@ -1,3 +1,4 @@
+// Package encrypt src/cipher/encrypt/sha256xor.go c0-com-crypto
 package encrypt
 
 import (

@@ -1,3 +1,4 @@
+// Package api src/api/wallet.go c3-coin-api
 package api
 
 // APIs for wallet-related information

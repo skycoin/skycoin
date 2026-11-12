@@ -1,3 +1,4 @@
+// Package api src/api/explorer.go c3-coin-api
 package api
 
 import (

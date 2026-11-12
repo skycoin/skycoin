@@ -1,3 +1,4 @@
+// Package pqwallet src/wallet/pqwallet/decoder.go c1-coin-wallet
 package pqwallet
 
 import (

@@ -1,3 +1,5 @@
+// Package commands cmd/skydex-market/commands/ui.go c4-app-dex
+//
 // Package commands operator UI for the skydex-market app.
 package commands
 

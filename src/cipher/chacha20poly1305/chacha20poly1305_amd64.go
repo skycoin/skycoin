@@ -5,6 +5,7 @@
 //go:build go1.7 && amd64 && !gccgo && !appengine && !tinygo
 // +build go1.7,amd64,!gccgo,!appengine,!tinygo
 
+// Package chacha20poly1305 src/cipher/chacha20poly1305/chacha20poly1305_amd64.go c0-com-crypto
 package chacha20poly1305
 
 import "encoding/binary"

@@ -1,3 +1,5 @@
+// Package protocol src/skydex/protocol/protocol.go c1-app-dex
+//
 // Package protocol is the single source of truth for the exchange wire
 // protocol spoken between skydex-client and skydex-market over a Skywire
 // dmsg transport.

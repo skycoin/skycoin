@@ -1,4 +1,4 @@
-// Package commands cmd/apps/skydex-market/commands/auth.go
+// Package commands cmd/skydex-market/commands/auth.go c4-app-dex
 package commands
 
 import (

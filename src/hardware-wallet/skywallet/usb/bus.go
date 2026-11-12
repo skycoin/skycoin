@@ -1,3 +1,5 @@
+// Package usb src/hardware-wallet/skywallet/usb/bus.go c1-app-hw
+//
 // Package usb provides hardware wallet USB device communication.
 package usb
 

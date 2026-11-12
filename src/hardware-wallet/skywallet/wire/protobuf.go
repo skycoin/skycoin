@@ -1,3 +1,5 @@
+// Package wire src/hardware-wallet/skywallet/wire/protobuf.go c1-app-hw
+//
 // Package wire implements the hardware wallet wire protocol.
 package wire
 

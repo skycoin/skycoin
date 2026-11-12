@@ -1,3 +1,5 @@
+// Package bip32 src/cipher/bip32/bip32.go c0-com-crypto
+//
 /*
 Package bip32 implements the bip32 spec https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 */

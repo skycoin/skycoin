@@ -1,3 +1,4 @@
+// Package blockdb src/visor/blockdb/blockpqsigs.go c1-coin-visor
 package blockdb
 
 import (

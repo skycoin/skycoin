@@ -1,3 +1,5 @@
+// Package main cmd/skycoin/skycoin.go c4-coin-node
+//
 /*
 skycoin daemon
 */

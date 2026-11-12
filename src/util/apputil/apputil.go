@@ -1,3 +1,5 @@
+// Package apputil src/util/apputil/apputil.go c0-com-util
+//
 /*
 Package apputil provides utility methods for cmd applications
 */

@@ -1,3 +1,5 @@
+// Package secp256k1 src/cipher/secp256k1-go/secp256k1.go c0-com-crypto
+//
 /*
 Package secp256k1 provides private and public key generation with the secp256k1 elliptic curve.
 */

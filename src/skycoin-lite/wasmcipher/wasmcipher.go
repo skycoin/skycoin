@@ -1,5 +1,7 @@
 //go:build wasm
 
+// Package wasmcipher src/skycoin-lite/wasmcipher/wasmcipher.go c2-app-lite
+//
 // Package wasmcipher publishes the skycoin browser cipher on the JavaScript
 // global object.
 //

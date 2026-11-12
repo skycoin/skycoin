@@ -1,3 +1,5 @@
+// Package main cmd/address_gen/address_gen.go c4-coin-tool
+//
 // Package main generates public keys and addresses.
 package main
 

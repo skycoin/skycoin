@@ -1,3 +1,5 @@
+// Package firmware src/hardware-wallet/firmware/embed.go c1-app-hw
+//
 // Package firmware provides embedded firmware binaries for the Skycoin hardware wallet.
 // This package embeds multiple firmware versions that can be flashed to the device.
 package firmware

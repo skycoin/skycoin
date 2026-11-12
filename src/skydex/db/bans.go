@@ -1,4 +1,4 @@
-// Package db internal/db/bans.go
+// Package db src/skydex/db/bans.go c1-app-dex
 package db
 
 import (

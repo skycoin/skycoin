@@ -1,3 +1,4 @@
+// Package transaction src/transaction/hours.go c1-coin-chain
 package transaction
 
 import (

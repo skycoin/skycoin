@@ -1,3 +1,4 @@
+// Package readable src/readable/fiber.go c2-coin-api
 package readable
 
 import "github.com/skycoin/skycoin/src/cipher/bip44"

@@ -1,3 +1,4 @@
+// Package deterministic src/wallet/deterministic/wallet.go c1-coin-wallet
 package deterministic
 
 import (

@@ -1,3 +1,5 @@
+// Package main src/skycoin-lite/cmd/gen/gen.go c1-app-lite
+//
 // Package main provides wasm generation tool.
 package main
 

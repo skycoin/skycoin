@@ -1,3 +1,5 @@
+// Package main src/skycoin-lite/main.go c2-app-lite
+//
 // Package main provides a lightweight Skycoin client implementation
 package main
 

@@ -1,4 +1,6 @@
-// Package liteclient implements a lightweight Skycoin client
+// Package liteclient src/skycoin-lite/liteclient/client.go c2-app-lite
+//
+// Package liteclient implements a lightweight Skycoin client.
 //
 // Every exported function reports failure by returning an error. It used to
 // panic instead, which the wasm entry points turned back into an error with

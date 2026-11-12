@@ -1,3 +1,5 @@
+// Package walletaddr src/skydex/walletaddr/walletaddr.go c1-app-dex
+//
 // Package walletaddr validates user-supplied cryptocurrency payout addresses by
 // currency. The exchange never learns an address is wrong until it tries to pay
 // out to it; validating at registration turns a silent typo into an immediate,

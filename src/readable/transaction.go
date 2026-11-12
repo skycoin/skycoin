@@ -1,3 +1,4 @@
+// Package readable src/readable/transaction.go c2-coin-api
 package readable
 
 import (

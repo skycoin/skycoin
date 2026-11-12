@@ -1,3 +1,5 @@
+// Package eth src/eth/eth.go c1-coin-wallet
+//
 // Package eth implements what a wallet needs to hold Ether and ERC-20 tokens:
 // BIP44 keys, EIP-55 addresses, and signed EIP-1559 transactions.
 package eth

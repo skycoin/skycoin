@@ -1,3 +1,4 @@
+// Package cli src/cli/check_balance.go c3-coin-cli
 package cli
 
 import (

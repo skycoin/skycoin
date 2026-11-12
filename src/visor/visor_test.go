@@ -2376,13 +2376,13 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	require.NoError(t, err)
 
 	type testCase struct {
-		name        string
-		txn         coin.Transaction
-		isConfirmed bool
-		isUnsigned  bool
-		signed      transaction.TxnSignedFlag
-		inputs      []TransactionInput
-		err         error
+		name      string
+		txn       coin.Transaction
+		confirmed bool
+		unsigned  bool
+		signed    transaction.TxnSignedFlag
+		inputs    []TransactionInput
+		err       error
 
 		maxUserTransactionSize uint32
 
@@ -2401,11 +2401,11 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 	baseCases := []testCase{
 		{
-			name:        "transaction has been spent",
-			txn:         txn,
-			isConfirmed: true,
-			signed:      transaction.TxnSigned,
-			inputs:      spentInputs[:],
+			name:      "transaction has been spent",
+			txn:       txn,
+			confirmed: true,
+			signed:    transaction.TxnSigned,
+			inputs:    spentInputs[:],
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
 			getHistoryTxnRet: &historydb.Transaction{
@@ -2422,12 +2422,12 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			},
 		},
 		{
-			name:        "transaction has been spent, get previous block error",
-			txn:         txn,
-			isConfirmed: true,
-			signed:      transaction.TxnSigned,
-			inputs:      nil,
-			err:         errors.New("GetSignedBlockBySeq failed"),
+			name:      "transaction has been spent, get previous block error",
+			txn:       txn,
+			confirmed: true,
+			signed:    transaction.TxnSigned,
+			inputs:    nil,
+			err:       errors.New("GetSignedBlockBySeq failed"),
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
 			getHistoryTxnRet: &historydb.Transaction{
@@ -2438,12 +2438,12 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			getSignedBlocksBySeqErr: errors.New("GetSignedBlockBySeq failed"),
 		},
 		{
-			name:        "transaction has been spent, previous block not found",
-			txn:         txn,
-			isConfirmed: true,
-			signed:      transaction.TxnSigned,
-			inputs:      nil,
-			err:         fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", 9),
+			name:      "transaction has been spent, previous block not found",
+			txn:       txn,
+			confirmed: true,
+			signed:    transaction.TxnSigned,
+			inputs:    nil,
+			err:       fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", 9),
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
 			getHistoryTxnRet: &historydb.Transaction{
@@ -2455,21 +2455,21 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			getSignedBlocksBySeqErr: nil,
 		},
 		{
-			name:        "transaction does not exist in either unspents or historydb",
-			txn:         txn,
-			isConfirmed: false,
-			signed:      transaction.TxnSigned,
-			err:         transaction.NewErrTxnViolatesHardConstraint(fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", inputs[0].Hash().Hex())),
+			name:      "transaction does not exist in either unspents or historydb",
+			txn:       txn,
+			confirmed: false,
+			signed:    transaction.TxnSigned,
+			err:       transaction.NewErrTxnViolatesHardConstraint(fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", inputs[0].Hash().Hex())),
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
 		},
 		{
-			name:        "transaction violate user constratins, send to null address",
-			txn:         toNullAddrTxn,
-			isConfirmed: false,
-			signed:      transaction.TxnSigned,
-			err:         transaction.NewErrTxnViolatesUserConstraint(errors.New("Transaction output is sent to the null address")),
-			inputs:      toNullAddrSpentUxBalances[:],
+			name:      "transaction violate user constratins, send to null address",
+			txn:       toNullAddrTxn,
+			confirmed: false,
+			signed:    transaction.TxnSigned,
+			err:       transaction.NewErrTxnViolatesUserConstraint(errors.New("Transaction output is sent to the null address")),
+			inputs:    toNullAddrSpentUxBalances[:],
 
 			getArrayRet: inputs[:1],
 		},
@@ -2537,7 +2537,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		{
 			name:        "TxnSignedFlag=TxnSigned transaction violate hard constraints, fully unsigned",
 			signed:      transaction.TxnSigned,
-			isUnsigned:  true,
+			unsigned:    true,
 			txn:         fullyUnsignedTxn,
 			err:         transaction.NewErrTxnViolatesHardConstraint(errors.New("Unsigned input in transaction")),
 			inputs:      fullyUnsignedSpentInputs[:],
@@ -2546,7 +2546,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		{
 			name:        "TxnSignedFlag=TxnSigned transaction violate hard constraints, partially unsigned",
 			signed:      transaction.TxnSigned,
-			isUnsigned:  true,
+			unsigned:    true,
 			txn:         partiallyUnsignedTxn,
 			err:         transaction.NewErrTxnViolatesHardConstraint(errors.New("Unsigned input in transaction")),
 			inputs:      partiallyUnsignedSpentInputs[:],
@@ -2565,7 +2565,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		{
 			name:        "TxnSignedFlag=TxnUnsigned ok, fully unsigned",
 			signed:      transaction.TxnUnsigned,
-			isUnsigned:  true,
+			unsigned:    true,
 			txn:         fullyUnsignedTxn,
 			inputs:      fullyUnsignedSpentInputs,
 			getArrayRet: inputs[:2],
@@ -2573,7 +2573,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		{
 			name:        "TxnSignedFlag=TxnUnsigned ok, partially unsigned",
 			signed:      transaction.TxnUnsigned,
-			isUnsigned:  true,
+			unsigned:    true,
 			txn:         partiallyUnsignedTxn,
 			inputs:      partiallyUnsignedSpentInputs,
 			getArrayRet: inputs[:2],
@@ -2602,7 +2602,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		c.txn.Sigs = make([]cipher.Sig, len(c.txn.Sigs))
 		copy(c.txn.Sigs, tc.txn.Sigs)
 		c.txn.Sigs[0] = cipher.Sig{}
-		c.isUnsigned = true
+		c.unsigned = true
 		cases = append(cases, c)
 	}
 
@@ -2649,24 +2649,24 @@ func TestVerifyTxnVerbose(t *testing.T) {
 				params.UserVerifyTxn.MaxTransactionSize = tc.maxUserTransactionSize
 			}
 
-			var isConfirmed bool
+			var confirmed bool
 			var inputs []TransactionInput
 			err := v.db.View("VerifyTxnVerbose", func(_ *dbutil.Tx) error {
 				var err error
-				inputs, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn, tc.signed)
+				inputs, confirmed, err = v.VerifyTxnVerbose(&tc.txn, tc.signed)
 				return err
 			})
 
-			require.Equal(t, tc.isConfirmed, isConfirmed)
+			require.Equal(t, tc.confirmed, confirmed)
 			require.Equal(t, tc.inputs, inputs)
 
 			require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
 
-			if tc.isUnsigned && tc.signed == transaction.TxnSigned {
+			if tc.unsigned && tc.signed == transaction.TxnSigned {
 				require.Error(t, err)
 			}
 
-			if !tc.isUnsigned && tc.signed == transaction.TxnUnsigned {
+			if !tc.unsigned && tc.signed == transaction.TxnUnsigned {
 				require.Error(t, err)
 			}
 		})

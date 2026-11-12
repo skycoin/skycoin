@@ -105,9 +105,9 @@ func (p PageIndex) PageNum() uint64 {
 }
 
 type txnHashConfirm struct {
-	hash        cipher.SHA256
-	seq         uint64
-	isConfirmed bool
+	hash      cipher.SHA256
+	seq       uint64
+	confirmed bool
 }
 
 type txnHashesContainer struct {
@@ -121,7 +121,7 @@ func newTxnHashesContainer() *txnHashesContainer {
 	}
 }
 
-func (s *txnHashesContainer) Add(hash cipher.SHA256, isConfirmed bool, seq uint64) {
+func (s *txnHashesContainer) Add(hash cipher.SHA256, confirmed bool, seq uint64) {
 	// check if the hashes already exists
 	if _, exist := s.m[hash]; exist {
 		return
@@ -129,9 +129,9 @@ func (s *txnHashesContainer) Add(hash cipher.SHA256, isConfirmed bool, seq uint6
 
 	s.m[hash] = struct{}{}
 	s.items = append(s.items, txnHashConfirm{
-		hash:        hash,
-		isConfirmed: isConfirmed,
-		seq:         seq,
+		hash:      hash,
+		confirmed: confirmed,
+		seq:       seq,
 	})
 }
 
@@ -513,7 +513,7 @@ func (ft fullTxnsGetter) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order S
 	}
 
 	getTxn := func(tx *dbutil.Tx, item txnHashConfirm) (*Transaction, error) {
-		if item.isConfirmed {
+		if item.confirmed {
 			return ft.confirmedTxnsGetter.getTransaction(tx, item.hash)
 		}
 		return ft.unconfirmedTxnsGetter.getTransaction(tx, item.hash)

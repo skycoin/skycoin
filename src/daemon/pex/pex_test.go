@@ -1237,11 +1237,11 @@ func TestPexSetTrusted(t *testing.T) {
 
 func TestPexSetHasIncomingPort(t *testing.T) {
 	tt := []struct {
-		name            string
-		initPeers       []Peer
-		peer            string
-		hasIncomingPort bool
-		err             error
+		name      string
+		initPeers []Peer
+		peer      string
+		portOpen  bool
+		err       error
 	}{
 		{
 			"set has incoming port true",
@@ -1274,7 +1274,7 @@ func TestPexSetHasIncomingPort(t *testing.T) {
 
 			pex.peerlist.setPeers(tc.initPeers)
 
-			err := pex.SetHasIncomingPort(tc.peer, tc.hasIncomingPort)
+			err := pex.SetHasIncomingPort(tc.peer, tc.portOpen)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -1282,7 +1282,7 @@ func TestPexSetHasIncomingPort(t *testing.T) {
 
 			p, ok := pex.peerlist.peers[tc.peer]
 			require.True(t, ok)
-			require.Equal(t, tc.hasIncomingPort, p.HasIncomingPort)
+			require.Equal(t, tc.portOpen, p.HasIncomingPort)
 		})
 	}
 }

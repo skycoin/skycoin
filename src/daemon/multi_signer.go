@@ -332,12 +332,12 @@ func (dm *Daemon) signerTick() {
 	newRound := round != dm.multiSigner.lastRound
 	dm.multiSigner.lastRound = round
 
-	voted, hasVote, err := dm.visor.BlockVote(h)
+	voted, found, err := dm.visor.BlockVote(h)
 	if err != nil {
 		logger.WithError(err).Error("signerTick: read block vote")
 		return
 	}
-	if hasVote {
+	if found {
 		if newRound {
 			dm.resendVote(h, voted)
 		}

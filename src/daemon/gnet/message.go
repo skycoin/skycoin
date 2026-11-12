@@ -101,11 +101,11 @@ func VerifyMessages() {
 			logger.Panic("No empty message prefixes allowed")
 		}
 		// No non-null bytes allowed after a nul byte
-		hasEmpty := false
+		emptyFound := false
 		for _, b := range k {
 			if b == 0x00 {
-				hasEmpty = true
-			} else if hasEmpty {
+				emptyFound = true
+			} else if emptyFound {
 				logger.Panic("No non-null bytes allowed after a nul byte")
 			}
 		}

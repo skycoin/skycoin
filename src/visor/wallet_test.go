@@ -1625,9 +1625,9 @@ func unconfirmedForEachMockRun(t *testing.T, unconfirmedTxns []coin.Transaction,
 			// If any of the input hashes are in an unconfirmed transaction,
 			// the callback handler should have returned ErrSpendingUnconfirmed
 			// unless IgnoreUnconfirmed is true
-			hasUnconfirmedHash := hashesIntersect(u.In, uxOuts)
+			intersects := hashesIntersect(u.In, uxOuts)
 
-			if hasUnconfirmedHash {
+			if intersects {
 				if ignoreUnconfirmed {
 					require.NoError(t, err)
 				} else {

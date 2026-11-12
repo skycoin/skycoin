@@ -79,12 +79,12 @@ func NewService(c Config) (*Service, error) {
 	}
 
 	// Abort if there are duplicate wallets (identified by fingerprint) on disk
-	if wltID, fp, hasDup := w.containsDuplicate(); hasDup {
+	if wltID, fp, dup := w.containsDuplicate(); dup {
 		return nil, fmt.Errorf("duplicate wallet found with fingerprint %s in file %q", fp, wltID)
 	}
 
 	// Abort if there are empty deterministic wallets on disk
-	if wltID, hasEmpty := w.containsEmpty(); hasEmpty {
+	if wltID, emptyFound := w.containsEmpty(); emptyFound {
 		return nil, fmt.Errorf("empty wallet file found: %q", wltID)
 	}
 

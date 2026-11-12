@@ -69,7 +69,7 @@ func Handler(m Market) http.Handler {
 			mux.HandleFunc("GET /"+t.ID, h.tab(t.ID))
 		}
 	}
-	return sameOriginWrites(mux)
+	return SameOriginWrites(mux)
 }
 
 type handler struct{ m Market }
@@ -238,10 +238,10 @@ func render(w http.ResponseWriter, r *http.Request, c templ.Component) {
 	}
 }
 
-// sameOriginWrites refuses requests that can change state when a browser says
+// SameOriginWrites refuses requests that can change state when a browser says
 // they come from another site, so no other page can place or cancel orders.
 // It follows net/http's CrossOriginProtection, which TinyGo's net/http lacks.
-func sameOriginWrites(next http.Handler) http.Handler {
+func SameOriginWrites(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if crossOriginWrite(r) {
 			http.Error(w, "cross-origin request refused", http.StatusForbidden)

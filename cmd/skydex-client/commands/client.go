@@ -52,10 +52,36 @@ func Run(ctx context.Context, cfg Config, dialer MarketDialer, log logrus.FieldL
 // is canceled. Any path that isn't a real asset falls back to index.html so
 // client-side routes resolve.
 func serveUI(ctx context.Context, log logrus.FieldLogger, sess *session, addr string) {
-	distFS, err := fs.Sub(uiFS, "static")
+	handler, err := uiHandler(sess)
 	if err != nil {
 		log.Errorf("skydex-client: failed to open embedded UI: %v", err)
 		return
+	}
+
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	go func() { //nolint
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx) //nolint:errcheck
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Errorf("skydex-client: UI server stopped: %v", err)
+	}
+}
+
+// uiHandler is the embedded SPA, the /ui2 client and the local control API.
+// Writes from another site are refused on all of them, so no other page can
+// place or cancel orders through the API.
+func uiHandler(sess *session) (http.Handler, error) {
+	distFS, err := fs.Sub(uiFS, "static")
+	if err != nil {
+		return nil, err
 	}
 	fileServer := http.FileServer(http.FS(distFS))
 
@@ -74,19 +100,5 @@ func serveUI(ctx context.Context, log logrus.FieldLogger, sess *session, addr st
 		fileServer.ServeHTTP(w, r)
 	})
 
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	go func() { //nolint
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		_ = srv.Shutdown(shutdownCtx) //nolint:errcheck
-	}()
-
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Errorf("skydex-client: UI server stopped: %v", err)
-	}
+	return skydexui.SameOriginWrites(mux), nil
 }

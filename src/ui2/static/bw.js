@@ -67,13 +67,21 @@
 		try { locked = localStorage.getItem(LOCKED); } catch (_) { return Promise.reject(new Error(msg('error'))); }
 		if (locked) {
 			if (appPassword === null) return Promise.resolve(null);
-			return decrypt(locked, appPassword).then(JSON.parse);
+			return decrypt(locked, appPassword).then(function (s) { return JSON.parse(s).concat(readTemp()); });
 		}
 		var plain = localStorage.getItem(WALLETS);
-		return Promise.resolve(plain ? JSON.parse(plain) : []);
+		return Promise.resolve((plain ? JSON.parse(plain) : []).concat(readTemp()));
+	}
+	// Temporary wallets live in this tab's sessionStorage, still encrypted,
+	// and are gone when the tab closes. The Angular wallet keeps them in
+	// memory only, so it never sees them.
+	var TEMP = 'ui2TempWallets';
+	function readTemp() {
+		try { return JSON.parse(sessionStorage.getItem(TEMP) || '[]'); } catch (_) { return []; }
 	}
 	function writeStored(list) {
-		var s = JSON.stringify(list);
+		try { sessionStorage.setItem(TEMP, JSON.stringify(list.filter(function (w) { return w.temporary; }))); } catch (_) { /* private mode */ }
+		var s = JSON.stringify(list.filter(function (w) { return !w.temporary; }));
 		if (localStorage.getItem(LOCKED)) {
 			return encrypt(s, appPassword).then(function (c) {
 				localStorage.setItem(LOCKED, c);
@@ -113,6 +121,7 @@
 	// summary is the public part of a stored wallet, as ui2.BrowserWallet.
 	function summary(w) {
 		var s = { label: w.label || '', encrypted: !!w.encryptedSeed, addresses: [] };
+		if (w.temporary) s.temporary = true;
 		if (isBip44(w)) {
 			var a = w.accounts[0];
 			s.type = 'bip44';
@@ -153,6 +162,20 @@
 		if (r === null || r === undefined) throw new Error('the cipher could not ' + name);
 		if (r.error) throw new Error(r.error);
 		return r;
+	}
+	// initialState is what the first address of a deterministic or
+	// post-quantum wallet with seed comes from, in the Angular wallet's form:
+	// the seed's hex, or pq:<hex>:<index> for a post-quantum wallet.
+	function initialState(seed, type) {
+		return type === 'pq' ? 'pq:' + asciiToHex(seed) + ':0' : asciiToHex(seed);
+	}
+	// step derives the address of state, its key and the state after it.
+	function step(c, state) {
+		var pq = /^pq:([0-9a-f]*):(\d+)$/.exec(state);
+		if (!pq) return call(c, 'generateAddress', [state]);
+		var i = parseInt(pq[2], 10);
+		var a = call(c, 'generatePQAddress', [pq[1], i]);
+		return { address: a.address, secret: a.secret, nextSeed: 'pq:' + pq[1] + ':' + (i + 1) };
 	}
 	function asciiToHex(s) {
 		var out = '';
@@ -287,8 +310,9 @@
 			var label = $('bw-label').value.trim();
 			var pw = $('bw-password').value, pw2 = $('bw-password2').value;
 			var seed = load ? normalize($('bw-seed').value) : generated;
-			var type = load ? $('bw-type').value : 'bip44';
-			var passphrase = load ? $('bw-passphrase').value : '';
+			var type = $('bw-type').value;
+			var passphrase = type === 'bip44' ? $('bw-passphrase').value : '';
+			var temp = load && $('bw-temp').checked;
 			if (!label) return setError(msg('label'));
 			if (!seed) return setError(msg('seed'));
 			if (!load && normalize($('bw-seed-confirm').value) !== seed) return setError(msg('seed-confirm'));
@@ -316,13 +340,13 @@
 						});
 					});
 				}
-				// A deterministic wallet: each address's seed is the next
-				// seed of the one before, from the hex of the seed text.
+				// A deterministic or post-quantum wallet: each address comes
+				// from the state the one before it leaves.
 				var chain = [];
-				var next = asciiToHex(seed);
+				var next = initialState(seed, type);
 				var derive = function (start, n) {
 					while (chain.length < start + n) {
-						var a = call(c, 'generateAddress', [next]);
+						var a = step(c, next);
 						chain.push({ address: a.address, nextSeed: a.nextSeed });
 						next = a.nextSeed;
 					}
@@ -331,14 +355,17 @@
 				return scan(derive, 1).then(function (kept) {
 					var after = kept[kept.length - 1].nextSeed;
 					return Promise.all([encrypt(seed, pw), encrypt(after, pw)]).then(function (secrets) {
-						return {
+						return Object.assign({
 							coinId: 0, needSeedConfirmation: false, label: label,
 							addresses: kept.map(function (a) { return { address: a.address }; }),
 							encryptedSeed: secrets[0], encryptedNextSeed: secrets[1],
-						};
+						}, type === 'pq' ? { walletType: 'pq' } : {});
 					});
 				});
-			}).then(save).catch(function (err) {
+			}).then(function (w) {
+				if (temp) w.temporary = true;
+				return save(w);
+			}).catch(function (err) {
 				setStatus('');
 				setError(err && err.message ? err.message : String(err));
 				btn.disabled = false;
@@ -365,7 +392,7 @@
 				if (!sec.seed) throw new Error(msg('wrong-password'));
 				if (isBip44(w)) {
 					if (call(c, 'bip44AccountXPub', [sec.seed, sec.passphrase]) !== w.accounts[0].accountXpubKey) throw new Error(msg('wrong-password'));
-				} else if (call(c, 'generateAddress', [asciiToHex(sec.seed)]).address !== w.addresses[0].address) {
+				} else if (step(c, initialState(sec.seed, w.walletType)).address !== w.addresses[0].address) {
 					throw new Error(msg('wrong-password'));
 				}
 				return sec;
@@ -375,9 +402,9 @@
 	// deterministicChain is the wallet's addresses with their secret keys,
 	// one more after them, and the seed that comes after that one.
 	function deterministicChain(c, w, sec) {
-		var out = [], next = asciiToHex(sec.seed);
+		var out = [], next = initialState(sec.seed, w.walletType);
 		for (var i = 0; i <= w.addresses.length; i++) {
-			var a = call(c, 'generateAddress', [next]);
+			var a = step(c, next);
 			out.push({ address: a.address, secret: a.secret });
 			next = a.nextSeed;
 		}
@@ -599,11 +626,11 @@
 		});
 	}
 
-	// nextSeedAfter is the seed after the first count addresses of a
-	// deterministic wallet with seed.
-	function nextSeedAfter(c, seed, count) {
-		var next = asciiToHex(seed);
-		for (var i = 0; i < count; i++) next = call(c, 'generateAddress', [next]).nextSeed;
+	// nextSeedAfter is the state after the first count addresses of a
+	// deterministic or post-quantum wallet of type with seed.
+	function nextSeedAfter(c, seed, count, type) {
+		var next = initialState(seed, type);
+		for (var i = 0; i < count; i++) next = step(c, next).nextSeed;
 		return next;
 	}
 
@@ -632,10 +659,10 @@
 			return withList(function (list) {
 				var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
 				if (!w) throw new Error(msg('missing'));
-				if (w.walletType === 'pq') throw new Error(msg('unsupported'));
 				return Promise.resolve(f(w, list)).then(function () { return writeStored(list); });
 			}).then(function () {
-				window.location.href = done === 'deleted' ? './' : 'bw/wallet?id=' + encodeURIComponent(id) + '&done=' + done;
+				if (typeof done === 'function') done = done();
+				window.location.href = 'bw/wallet?id=' + encodeURIComponent(id) + '&done=' + done;
 			});
 		}
 		var ops = {
@@ -659,9 +686,9 @@
 						}
 						var pw = field(form, 'password');
 						return secretsOf(c, w, pw).then(function (sec) {
-							var next = nextSeedAfter(c, sec.seed, w.addresses.length);
+							var next = nextSeedAfter(c, sec.seed, w.addresses.length, w.walletType);
 							for (var i = 0; i < n; i++) {
-								var g = call(c, 'generateAddress', [next]);
+								var g = step(c, next);
 								w.addresses.push({ address: g.address });
 								next = g.nextSeed;
 							}
@@ -672,6 +699,50 @@
 							return encrypt(next, pw).then(function (e) { w.encryptedNextSeed = e; });
 						});
 					}, 'added&n=' + n);
+				});
+			},
+			scan: function (form) {
+				return cipher().then(function (c) {
+					var found = 0;
+					return change(function (w) {
+						// More is the used addresses after the wallet's last ones,
+						// derived from start until a batch of 20 has none in use.
+						var more = function (derive, start) {
+							return scan(function (s, n) { return derive(start + s, n); }, 0);
+						};
+						if (isBip44(w)) {
+							var a = w.accounts[0];
+							var xp = function (chain) {
+								return function (s, n) { return call(c, 'bip44XPubAddresses', [a.accountXpubKey, chain, s, n]); };
+							};
+							return Promise.all([more(xp(0), a.externalAddresses.length), more(xp(1), a.changeAddresses.length)]).then(function (r) {
+								r[0].forEach(function (x) { a.externalAddresses.push({ address: x.address }); });
+								r[1].forEach(function (x) { a.changeAddresses.push({ address: x.address }); });
+								w.addresses = a.externalAddresses.concat(a.changeAddresses);
+								found = r[0].length + r[1].length;
+							});
+						}
+						var pw = field(form, 'password');
+						return secretsOf(c, w, pw).then(function (sec) {
+							var chain = [], next = nextSeedAfter(c, sec.seed, w.addresses.length, w.walletType);
+							var derive = function (s, n) {
+								while (chain.length < s + n) {
+									var g = step(c, next);
+									chain.push({ address: g.address, nextSeed: g.nextSeed });
+									next = g.nextSeed;
+								}
+								return chain.slice(s, s + n);
+							};
+							return more(derive, 0).then(function (kept) {
+								found = kept.length;
+								if (!found) return null;
+								kept.forEach(function (x) { w.addresses.push({ address: x.address }); });
+								var after = kept[kept.length - 1].nextSeed;
+								if (!w.encryptedSeed) { w.nextSeed = after; return null; }
+								return encrypt(after, pw).then(function (e) { w.encryptedNextSeed = e; });
+							});
+						});
+					}, function () { return 'scanned&n=' + found; });
 				});
 			},
 			seed: function (form) {
@@ -695,7 +766,7 @@
 				return cipher().then(function (c) {
 					return change(function (w) {
 						return secretsOf(c, w, pw).then(function (sec) {
-							if (!isBip44(w) && !sec.nextSeed) sec.nextSeed = nextSeedAfter(c, sec.seed, w.addresses.length);
+							if (!isBip44(w) && !sec.nextSeed) sec.nextSeed = nextSeedAfter(c, sec.seed, w.addresses.length, w.walletType);
 							return sealSecrets(w, sec, nw);
 						});
 					}, 'reset');
@@ -711,8 +782,8 @@
 						if (isBip44(w)) {
 							if (call(c, 'bip44AccountXPub', [seed, sec.passphrase]) !== w.accounts[0].accountXpubKey) throw new Error(msg('wrong-seed'));
 						} else {
-							if (call(c, 'generateAddress', [asciiToHex(seed)]).address !== w.addresses[0].address) throw new Error(msg('wrong-seed'));
-							sec.nextSeed = nextSeedAfter(c, seed, w.addresses.length);
+							if (step(c, initialState(seed, w.walletType)).address !== w.addresses[0].address) throw new Error(msg('wrong-seed'));
+							sec.nextSeed = nextSeedAfter(c, seed, w.addresses.length, w.walletType);
 						}
 						return sealSecrets(w, sec, nw);
 					}, 'reset');
@@ -781,7 +852,7 @@
 	function txFlow() {
 		var sel = $('bw-tx-wallet'), wallets = {};
 		withList(function (list) {
-			list.filter(ours).filter(function (w) { return w.walletType !== 'pq'; }).forEach(function (w) {
+			list.filter(ours).forEach(function (w) {
 				var id = firstAddress(w);
 				wallets[id] = w;
 				var o = document.createElement('option');
@@ -820,6 +891,67 @@
 		});
 	}
 
+	// appPasswordFlow sets, changes or removes the app password that
+	// encrypts the whole stored list, as the Angular wallet's app password
+	// page does (lockedWallets holds the list encrypted, wallets holds it
+	// when there is none). The wallets inside stay encrypted either way.
+	function appPasswordFlow() {
+		var locked = !!localStorage.getItem(LOCKED);
+		document.querySelectorAll('[data-bw-app]').forEach(function (f) {
+			var op = f.getAttribute('data-bw-app');
+			f.closest('details').hidden = locked ? op === 'set' : op !== 'set';
+		});
+		function val(f, n) { var e = f.querySelector('[data-f="' + n + '"]'); return e ? e.value : ''; }
+		var ops = {
+			set: function (f) {
+				var nw = val(f, 'new');
+				if (!nw) throw new Error(msg('new-password'));
+				if (nw !== val(f, 'new2')) throw new Error(msg('password-confirm'));
+				var plain = localStorage.getItem(WALLETS) || '[]';
+				return encrypt(plain, nw).then(function (c) {
+					localStorage.setItem(LOCKED, c);
+					localStorage.removeItem(WALLETS);
+				});
+			},
+			change: function (f) {
+				var nw = val(f, 'new');
+				if (!nw) throw new Error(msg('new-password'));
+				if (nw !== val(f, 'new2')) throw new Error(msg('password-confirm'));
+				return decrypt(localStorage.getItem(LOCKED), val(f, 'current')).catch(function () {
+					throw new Error(msg('wrong-password'));
+				}).then(function (s) { return encrypt(s, nw); }).then(function (c) { localStorage.setItem(LOCKED, c); });
+			},
+			remove: function (f) {
+				return decrypt(localStorage.getItem(LOCKED), val(f, 'current')).catch(function () {
+					throw new Error(msg('wrong-password'));
+				}).then(function (s) {
+					localStorage.setItem(WALLETS, s);
+					localStorage.removeItem(LOCKED);
+				});
+			},
+		};
+		document.addEventListener('submit', function (e) {
+			var f = e.target.closest && e.target.closest('form[data-bw-app]');
+			if (!f) return;
+			e.preventDefault();
+			var out = f.querySelector('.op-error');
+			out.textContent = '';
+			Promise.resolve().then(function () { return ops[f.getAttribute('data-bw-app')](f); }).then(function () {
+				window.location.href = 'bw/app-password?done=' + f.getAttribute('data-bw-app');
+			}).catch(function (err) { out.textContent = err && err.message ? err.message : msg('error'); });
+		});
+	}
+
+	// The unlock form can erase a locked list whose password is lost, as
+	// the Angular wallet's lock screen does.
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest && e.target.closest('[data-bw-erase]');
+		if (!b || !window.confirm(b.getAttribute('data-bw-erase'))) return;
+		localStorage.removeItem(LOCKED);
+		localStorage.removeItem(WALLETS);
+		window.location.reload();
+	});
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var fail = function (err) {
 			var e = $('bw-page-error') || $('bw-error');
@@ -841,6 +973,8 @@
 			sendFlow(page.getAttribute('data-bw-id'));
 		} else if (mode === 'tx') {
 			txFlow();
+		} else if (mode === 'app-password') {
+			appPasswordFlow();
 		}
 	});
 })();

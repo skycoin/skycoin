@@ -131,3 +131,32 @@ func TestBrowserOptionsHaveNoNames(t *testing.T) {
 	require.Contains(t, page, "Password successfully changed.")
 	require.Contains(t, page, `data-msg-wrong-seed=`)
 }
+
+func TestBrowserCreateOptionsAndAppPassword(t *testing.T) {
+	x := sendNode(t)
+	x.n.browser = true
+	h := Handler(x.n, Options{})
+	load := get(t, h, "/bw/load").Body.String()
+	for _, want := range []string{`<option value="pq">`, `id="bw-temp"`, `id="bw-passphrase"`} {
+		require.Contains(t, load, want)
+	}
+	create := get(t, h, "/bw/new").Body.String()
+	require.Contains(t, create, `id="bw-passphrase"`, "a passphrase on create too")
+	require.NotContains(t, create, `id="bw-temp"`)
+	require.Contains(t, create, `data-bw-erase=`)
+
+	page := get(t, h, "/bw/app-password?done=remove").Body.String()
+	require.Contains(t, page, "The app password was removed.")
+	for _, op := range []string{"set", "change", "remove"} {
+		require.Contains(t, page, `data-bw-app="`+op+`"`)
+	}
+	require.NotRegexp(t, regexp.MustCompile(`<(input|textarea|select)[^>]*\sname=`), page)
+	require.Contains(t, get(t, h, "/settings").Body.String(), `href="bw/app-password"`)
+
+	w := browserWallet(x)
+	w.Temporary = true
+	body := postForm(h, "/bw/list", url.Values{"wallets": {jsonOf(t, []BrowserWallet{w})}}).Body.String()
+	require.Contains(t, body, ">Temporary<")
+	body = postForm(h, "/bw/wallet/view", url.Values{"wallet": {jsonOf(t, w)}}).Body.String()
+	require.Contains(t, body, `data-bw-op="scan"`)
+}

@@ -21,6 +21,12 @@ templ bwOptions(w Wallet) {
 					@bwPassword("password", T(ctx, "send.password"))
 				}
 			}
+			@bwOp("scan", "search", T(ctx, "wallet.scan")) {
+				<p class="small dim">{ T(ctx, "wallet.scan-help") }</p>
+				if w.Meta.Type != "bip44" {
+					@bwPassword("password", T(ctx, "send.password"))
+				}
+			}
 			@bwOp("seed", "vpn_key", T(ctx, "backup.show-seed")) {
 				<div class="alert warn"><p>{ T(ctx, "backup.seed-warning") }</p></div>
 				@bwPassword("password", T(ctx, "send.password"))
@@ -69,4 +75,51 @@ templ bwPassword(field, label string) {
 		{ label }
 		<input type="password" data-f={ field } autocomplete="off"/>
 	</label>
+}
+
+// BrowserAppPasswordPage sets, changes or removes the app password that
+// encrypts the list of wallets kept in this browser. bw.js shows the forms
+// that apply.
+templ BrowserAppPasswordPage(n Notice) {
+	@Layout(T(ctx, "bw.app-password-title"), "settings") {
+		@noticeBox(n)
+		<section
+			class="card"
+			data-bw-page="app-password"
+			data-bw-root={ From(ctx).Classic }
+			data-msg-error={ T(ctx, "bw.err-storage") }
+			data-msg-new-password={ T(ctx, "bw.err-password") }
+			data-msg-password-confirm={ T(ctx, "create.err-password-confirm") }
+			data-msg-wrong-password={ T(ctx, "bw.err-wrong-password") }
+		>
+			<h1>{ T(ctx, "bw.app-password-title") }</h1>
+			<p class="small dim">{ T(ctx, "bw.app-password-help") }</p>
+			<div class="ops">
+				@bwApp("set", "lock", T(ctx, "bw.app-set")) {
+					@bwPassword("new", T(ctx, "wallet.password-new"))
+					@bwPassword("new2", T(ctx, "create.password2"))
+				}
+				@bwApp("change", "create", T(ctx, "bw.app-change")) {
+					@bwPassword("current", T(ctx, "bw.current-password"))
+					@bwPassword("new", T(ctx, "wallet.password-new"))
+					@bwPassword("new2", T(ctx, "create.password2"))
+				}
+				@bwApp("remove", "lock_open", T(ctx, "bw.app-remove")) {
+					<p class="small dim">{ T(ctx, "bw.app-remove-help") }</p>
+					@bwPassword("current", T(ctx, "bw.current-password"))
+				}
+			</div>
+		</section>
+	}
+}
+
+templ bwApp(op, icon, title string) {
+	<details class="fold op" open>
+		<summary><span class="mi">{ icon }</span>{ title }</summary>
+		<form class="form" data-bw-app={ op } autocomplete="off">
+			{ children... }
+			<div class="bar"><button class="btn primary" type="submit">{ title }</button></div>
+			<p class="error op-error" role="alert"></p>
+		</form>
+	</details>
 }

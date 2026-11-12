@@ -140,17 +140,17 @@ templ TxReviewView(v TxView) {
 						<p class="error" id="bw-tx-error" role="alert"></p>
 					</div>
 				} else {
-				<form class="form" hx-post="tx/sign" hx-target="#tx-review" hx-swap="innerHTML show:#tx-review:top" hx-disabled-elt="find button" autocomplete="off">
-					<input type="hidden" name="id" value={ v.WalletID }/>
-					<input type="hidden" name="rawtx" value={ v.Raw }/>
-					if v.Encrypted {
-						<label>
-							{ T(ctx, "send.password") }
-							<input type="password" name="password" required autocomplete="current-password"/>
-						</label>
-					}
-					<div class="bar"><button class="btn primary" type="submit"><span class="mi">create</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
-				</form>
+					<form class="form" hx-post="tx/sign" hx-target="#tx-review" hx-swap="innerHTML show:#tx-review:top" hx-disabled-elt="find button" autocomplete="off">
+						<input type="hidden" name="id" value={ v.WalletID }/>
+						<input type="hidden" name="rawtx" value={ v.Raw }/>
+						if v.Encrypted {
+							<label>
+								{ T(ctx, "send.password") }
+								<input type="password" name="password" required autocomplete="current-password"/>
+							</label>
+						}
+						<div class="bar"><button class="btn primary" type="submit"><span class="mi">create</span>{ T(ctx, "tx.sign", "count", itoa(v.ToSign)) }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+					</form>
 				}
 			} else if (v.WalletID != "" || v.Browser != "") && !v.Full {
 				if v.Owns {
@@ -185,53 +185,53 @@ templ JointPage(p TxPage) {
 				@bwUnlock()
 			}
 			<p class="small dim">{ T(ctx, "joint.create-text") }</p>
-				if !p.Disabled {
-					@ErrorBox(p.Err)
-				}
-				<form id="joint" class="form" hx-post="joint/create" hx-target="#joint-out" hx-swap="innerHTML show:#joint-out:top" hx-disabled-elt="find button[type=submit]" autocomplete="off">
-					if p.Disabled {
-						@bwWalletSelect(T(ctx, "joint.your-wallet"))
-					} else {
-						<label>
-							{ T(ctx, "joint.your-wallet") }
-							<select name="id" hx-get="joint/outputs" hx-target="#own-outputs" hx-trigger="change, load" hx-swap="innerHTML">
+			if !p.Disabled {
+				@ErrorBox(p.Err)
+			}
+			<form id="joint" class="form" hx-post="joint/create" hx-target="#joint-out" hx-swap="innerHTML show:#joint-out:top" hx-disabled-elt="find button[type=submit]" autocomplete="off">
+				if p.Disabled {
+					@bwWalletSelect(T(ctx, "joint.your-wallet"))
+				} else {
+					<label>
+						{ T(ctx, "joint.your-wallet") }
+						<select name="id" hx-get="joint/outputs" hx-target="#own-outputs" hx-trigger="change, load" hx-swap="innerHTML">
 							<option value="">{ T(ctx, "tx.no-wallet") }</option>
 							for _, w := range p.Wallets {
 								<option value={ w.ID } selected?={ w.ID == p.Wallet }>{ w.Label }</option>
 							}
-							</select>
-						</label>
+						</select>
+					</label>
+				}
+				<fieldset>
+					<legend>{ T(ctx, "joint.your-outputs") }</legend>
+					if p.Disabled {
+						<div id="own-outputs" hx-post="bw/joint/outputs" hx-trigger="bw-wallet from:body" hx-include="#bw-data" hx-target="this" hx-swap="innerHTML"></div>
+					} else {
+						<div id="own-outputs"></div>
 					}
-					<fieldset>
-						<legend>{ T(ctx, "joint.your-outputs") }</legend>
-						if p.Disabled {
-							<div id="own-outputs" hx-post="bw/joint/outputs" hx-trigger="bw-wallet from:body" hx-include="#bw-data" hx-target="this" hx-swap="innerHTML"></div>
-						} else {
-							<div id="own-outputs"></div>
-						}
-					</fieldset>
-					<label>
-						{ T(ctx, "joint.their-outputs") }
-						<textarea name="theirs" class="mono" rows="3" spellcheck="false" autocapitalize="off" placeholder={ T(ctx, "joint.their-outputs-hint") }></textarea>
-					</label>
-					<fieldset>
-						<legend>{ T(ctx, "tx.outputs") }</legend>
-						<div id="joint-rows">
-							@JointRowInputs()
-							@JointRowInputs()
-						</div>
-						<div class="bar">
-							<button class="btn sm" type="button" hx-get="joint/row" hx-target="#joint-rows" hx-swap="beforeend"><span class="mi">add</span>{ T(ctx, "joint.add-output") }</button>
-						</div>
-					</fieldset>
-					<label>
-						{ T(ctx, "joint.change-address") }
-						<input name="change" class="mono" spellcheck="false" autocapitalize="off"/>
-					</label>
-					<p class="small dim">{ T(ctx, "joint.change-hint") }</p>
-					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "joint.create") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
-				</form>
-				<div id="joint-out"></div>
+				</fieldset>
+				<label>
+					{ T(ctx, "joint.their-outputs") }
+					<textarea name="theirs" class="mono" rows="3" spellcheck="false" autocapitalize="off" placeholder={ T(ctx, "joint.their-outputs-hint") }></textarea>
+				</label>
+				<fieldset>
+					<legend>{ T(ctx, "tx.outputs") }</legend>
+					<div id="joint-rows">
+						@JointRowInputs()
+						@JointRowInputs()
+					</div>
+					<div class="bar">
+						<button class="btn sm" type="button" hx-get="joint/row" hx-target="#joint-rows" hx-swap="beforeend"><span class="mi">add</span>{ T(ctx, "joint.add-output") }</button>
+					</div>
+				</fieldset>
+				<label>
+					{ T(ctx, "joint.change-address") }
+					<input name="change" class="mono" spellcheck="false" autocapitalize="off"/>
+				</label>
+				<p class="small dim">{ T(ctx, "joint.change-hint") }</p>
+				<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "joint.create") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+			</form>
+			<div id="joint-out"></div>
 		</section>
 	}
 }

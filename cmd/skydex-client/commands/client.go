@@ -102,11 +102,12 @@ func uiHandler(sess *session) (http.Handler, error) {
 	})
 	// /ui2/ held the server rendered client while it sat beside the React one.
 	mux.HandleFunc("/ui2/", func(w http.ResponseWriter, r *http.Request) {
-		to := strings.TrimPrefix(r.URL.Path, "/ui2")
+		// Clean, so /ui2//host cannot become a redirect to another site.
+		to := path.Clean("/" + strings.TrimPrefix(r.URL.Path, "/ui2"))
 		if r.URL.RawQuery != "" {
 			to += "?" + r.URL.RawQuery
 		}
-		http.Redirect(w, r, to, http.StatusMovedPermanently)
+		http.Redirect(w, r, to, http.StatusMovedPermanently) //nolint:gosec // to is a cleaned path on this host
 	})
 
 	return skydexui.SameOriginWrites(mux), nil

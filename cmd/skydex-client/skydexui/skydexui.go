@@ -1,6 +1,6 @@
 // Package skydexui is the SkyDEX trading client rendered on the server with
-// templ, with htmx for the parts the React client polls. It is served beside
-// the React client at /ui2/ until it reaches parity.
+// templ, with htmx for the parts the React client polls. It is served at the
+// root, with the React client at /angular/.
 //
 // Never use html/template or text/template here: they panic under TinyGo.
 package skydexui

@@ -38,7 +38,7 @@ templ header(p *Page) {
 			if p.Ref != "" {
 				<span class="market-pubkey" title={ p.Ref }>{ shortKey(p.Ref, 8, 6) }</span>
 			}
-			<a class="classic-link" href="../" hx-boost="false">Classic UI</a>
+			<a class="classic-link" href="angular/" hx-boost="false">Classic UI</a>
 			if p.Connected {
 				<form method="post" action="disconnect">
 					<button class="btn btn-outline-light btn-sm">Disconnect</button>
@@ -107,7 +107,7 @@ templ readinessBody(p *Page) {
 // ClassicTab stands in for a tab not ported yet.
 templ ClassicTab(p *Page) {
 	<div class="alert alert-secondary">
-		This tab is not in the new UI yet. Open it in the <a href="../" hx-boost="false">classic UI</a>.
+		This tab is not in the new UI yet. Open it in the <a href="angular/" hx-boost="false">classic UI</a>.
 	</div>
 }
 

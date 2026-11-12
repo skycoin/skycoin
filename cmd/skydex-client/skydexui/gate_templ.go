@@ -81,7 +81,7 @@ func GatePage(p *Page, ref, errMsg string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<button type=\"submit\" class=\"btn btn-connect w-100\"><span class=\"idle\">Connect</span><span class=\"busy\">Connecting…</span></button></form><div id=\"recent\" hx-post=\"recent\" hx-trigger=\"load, recent-changed from:body\" data-local=\"exchange:markets\"></div><p class=\"text-center mt-3 mb-0 small\"><a class=\"classic-link\" href=\"../\" hx-boost=\"false\">Classic UI</a></p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<button type=\"submit\" class=\"btn btn-connect w-100\"><span class=\"idle\">Connect</span><span class=\"busy\">Connecting…</span></button></form><div id=\"recent\" hx-post=\"recent\" hx-trigger=\"load, recent-changed from:body\" data-local=\"exchange:markets\"></div><p class=\"text-center mt-3 mb-0 small\"><a class=\"classic-link\" href=\"angular/\" hx-boost=\"false\">Classic UI</a></p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

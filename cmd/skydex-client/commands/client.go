@@ -75,29 +75,38 @@ func serveUI(ctx context.Context, log logrus.FieldLogger, sess *session, addr st
 	}
 }
 
-// uiHandler is the embedded SPA, the /ui2 client and the local control API.
-// Writes from another site are refused on all of them, so no other page can
-// place or cancel orders through the API.
+// reactPrefix is where the React client is served beside the server
+// rendered one. Its build expects this base (vite.config.js).
+const reactPrefix = "/angular"
+
+// uiHandler is the server rendered client, the React client at
+// reactPrefix and the local control API. Writes from another site are
+// refused on all of them, so no other page can place or cancel orders
+// through the API.
 func uiHandler(sess *session) (http.Handler, error) {
 	distFS, err := fs.Sub(uiFS, "static")
 	if err != nil {
 		return nil, err
 	}
-	fileServer := http.FileServer(http.FS(distFS))
+	fileServer := http.StripPrefix(reactPrefix, http.FileServer(http.FS(distFS)))
 
 	mux := http.NewServeMux()
 	registerAPI(mux, sess)
-	// The server rendered client, beside the React one until it reaches parity.
-	mux.Handle("/ui2/", http.StripPrefix("/ui2", skydexui.Handler(uiMarket{sess})))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
-		if name == "" {
-			name = "index.html"
-		}
-		if _, statErr := fs.Stat(distFS, name); statErr != nil {
-			r.URL.Path = "/"
+	mux.Handle("/", skydexui.Handler(uiMarket{sess}))
+	mux.HandleFunc(reactPrefix+"/", func(w http.ResponseWriter, r *http.Request) {
+		name := strings.TrimPrefix(path.Clean(strings.TrimPrefix(r.URL.Path, reactPrefix)), "/")
+		if st, statErr := fs.Stat(distFS, name); statErr != nil || st.IsDir() {
+			r.URL.Path = reactPrefix + "/"
 		}
 		fileServer.ServeHTTP(w, r)
+	})
+	// /ui2/ held the server rendered client while it sat beside the React one.
+	mux.HandleFunc("/ui2/", func(w http.ResponseWriter, r *http.Request) {
+		to := strings.TrimPrefix(r.URL.Path, "/ui2")
+		if r.URL.RawQuery != "" {
+			to += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, to, http.StatusMovedPermanently)
 	})
 
 	return skydexui.SameOriginWrites(mux), nil

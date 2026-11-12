@@ -3,6 +3,7 @@ package commands
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -50,5 +51,34 @@ func TestUIHandlerRefusesCrossSiteWrites(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code == http.StatusForbidden {
 		t.Errorf("GET /api/status cross-site refused, reads should pass")
+	}
+}
+
+// The server rendered client has the root, the React one /angular/, and the
+// /ui2/ paths the server rendered one was tried at move to the root.
+func TestUIHandlerPaths(t *testing.T) {
+	sess := newSession(fakeDialer{srv: newTestMarket(t)}, testMarketRef)
+	t.Cleanup(sess.close)
+	h, err := uiHandler(sess)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		path, want, location string
+		code                 int
+	}{
+		{path: "/", want: `href="angular/"`, code: http.StatusOK},
+		{path: "/angular/", want: `src="/angular/assets/index.js"`, code: http.StatusOK},
+		{path: "/angular/orders", want: `src="/angular/assets/index.js"`, code: http.StatusOK},
+		{path: "/angular/assets/", want: `src="/angular/assets/index.js"`, code: http.StatusOK},
+		{path: "/angular/assets/index.js", code: http.StatusOK},
+		{path: "/ui2/market?new=1", location: "/market?new=1", code: http.StatusMovedPermanently},
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tc.path, nil))
+		if rec.Code != tc.code || !strings.Contains(rec.Body.String(), tc.want) || rec.Header().Get("Location") != tc.location {
+			t.Errorf("GET %s: %d Location %q, want %d Location %q and a body with %q", tc.path, rec.Code, rec.Header().Get("Location"), tc.code, tc.location, tc.want)
+		}
 	}
 }

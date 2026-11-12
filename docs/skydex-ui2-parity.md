@@ -1,12 +1,13 @@
 # skydex-client ui2 parity
 
-The SkyDEX trading client serves two UIs. The React one (`cmd/skydex-client/src`,
-built into `commands/static`) is at the root. The server rendered one
-(`cmd/skydex-client/skydexui`, templ and htmx) is at `/ui2/`. The React UI
-stays the default until `/ui2/` does everything it does. Each PR that ports an
-area updates this table.
+The SkyDEX trading client serves two UIs. The server rendered one
+(`cmd/skydex-client/skydexui`, templ and htmx) is the default, at the root. The
+React one (`cmd/skydex-client/src`, built into `commands/static` with its base
+at `/angular/`) is kept at `/angular/`. The `/ui2/` paths the server rendered
+one was first served at redirect to the root. Each PR that ports an area
+updates this table.
 
-What the React UI keeps in the browser's localStorage, `/ui2/` keeps there too
+What the React UI keeps in the browser's localStorage, ui2 keeps there too
 under the same keys (`exchange:markets`, `exchange:wallets`,
 `exchange:history`), so both UIs share it. The browser posts the list to the
 server, which renders it.
@@ -44,15 +45,13 @@ say what is not. missing: not started.
 
 - Writes from another site are refused, so no other page can drive the client.
 - Forms work without JavaScript. Polling and the browser kept lists need it.
-- Links both ways: "Classic UI" in the `/ui2/` header, "New UI (preview)" in
+- Links both ways: "Classic UI" in the ui2 header, "New UI" in
   the React UI's corner.
 - Each tab is a URL, and on a phone the open tab is scrolled into view.
 
-## Before ui2 becomes the default
+## Not yet checked
 
-- Try it against a live market over skywire. So far it is tested against an
-  in-process market only.
-- Check the copy buttons by hand. Headless browsers refuse the clipboard
-  without a real click.
-- Then serve `skydexui` at the root, and drop the React sources, the npm build
-  and the `check-skydex-ui` CI step.
+- A live market over skywire. So far ui2 is tested against an in-process
+  market only.
+- The copy buttons by hand. Headless browsers refuse the clipboard without a
+  real click.

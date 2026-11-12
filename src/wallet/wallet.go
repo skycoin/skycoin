@@ -538,17 +538,17 @@ func ValidateMeta(m Meta) error {
 		return errors.New("coin field not set")
 	}
 
-	var isEncrypted bool
+	var encrypted bool
 	if encStr, ok := m[MetaEncrypted]; ok {
 		// validate the encrypted value
 		var err error
-		isEncrypted, err = strconv.ParseBool(encStr)
+		encrypted, err = strconv.ParseBool(encStr)
 		if err != nil {
 			return errors.New("encrypted field is not a valid bool")
 		}
 	}
 
-	if isEncrypted {
+	if encrypted {
 		if s := m[MetaSecrets]; s == "" {
 			return errors.New("wallet is encrypted, but secrets field not set")
 		}

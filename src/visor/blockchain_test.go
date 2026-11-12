@@ -223,10 +223,10 @@ func TestBlockchainTime(t *testing.T) {
 func TestIsGenesisBlock(t *testing.T) {
 	bs := makeBlocks(t, 2)
 	tt := []struct {
-		name      string
-		store     chainStore
-		b         *coin.Block
-		isGenesis bool
+		name    string
+		store   chainStore
+		b       *coin.Block
+		genesis bool
 	}{
 		{
 			"genesis block",
@@ -258,9 +258,9 @@ func TestIsGenesisBlock(t *testing.T) {
 				store: tc.store,
 			}
 
-			isGenesis, err := bc.isGenesisBlock(nil, *tc.b)
+			genesis, err := bc.isGenesisBlock(nil, *tc.b)
 			require.NoError(t, err)
-			require.Equal(t, tc.isGenesis, isGenesis)
+			require.Equal(t, tc.genesis, genesis)
 		})
 	}
 }

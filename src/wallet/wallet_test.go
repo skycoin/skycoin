@@ -17,7 +17,7 @@ type fakeWalletForGuardView struct {
 	label     string
 	n         int //nolint:unused
 	encrypted bool
-	isTemp    bool
+	temp      bool
 }
 
 func (f fakeWalletForGuardView) Label() string {
@@ -43,11 +43,11 @@ func (f *fakeWalletForGuardView) Erase() {
 }
 
 func (f *fakeWalletForGuardView) IsTemp() bool {
-	return f.isTemp
+	return f.temp
 }
 
 func (f *fakeWalletForGuardView) SetTemp(tmp bool) {
-	f.isTemp = tmp
+	f.temp = tmp
 }
 
 func TestWalletGuard(t *testing.T) {

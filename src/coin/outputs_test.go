@@ -294,15 +294,15 @@ func TestUxArraySub(t *testing.T) {
 }
 
 func manualUxArrayIsSorted(uxa UxArray) bool {
-	isSorted := true
+	sorted := true
 	for i := 0; i < len(uxa)-1; i++ {
 		hi := uxa[i].Hash()
 		hj := uxa[i+1].Hash()
 		if bytes.Compare(hi[:], hj[:]) > 0 {
-			isSorted = false
+			sorted = false
 		}
 	}
-	return isSorted
+	return sorted
 }
 
 func TestUxArraySorting(t *testing.T) {
@@ -310,10 +310,10 @@ func TestUxArraySorting(t *testing.T) {
 	for i := 0; i < len(uxa); i++ {
 		uxa[i] = makeUxOut(t)
 	}
-	isSorted := manualUxArrayIsSorted(uxa)
-	assert.Equal(t, sort.IsSorted(uxa), isSorted)
+	sorted := manualUxArrayIsSorted(uxa)
+	assert.Equal(t, sort.IsSorted(uxa), sorted)
 	// Make sure uxa is not sorted
-	if isSorted {
+	if sorted {
 		uxa[0], uxa[1] = uxa[1], uxa[0]
 	}
 	assert.False(t, manualUxArrayIsSorted(uxa))

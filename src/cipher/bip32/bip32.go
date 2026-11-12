@@ -607,18 +607,18 @@ func deserialize(data []byte, wantPrivate bool) (*key, error) {
 	k.childNumber = data[9:13]
 	k.ChainCode = data[13:45]
 
-	isPrivate := bytes.Equal(k.Version, PrivateWalletVersion)
-	isPublic := bytes.Equal(k.Version, PublicWalletVersion)
+	private := bytes.Equal(k.Version, PrivateWalletVersion)
+	public := bytes.Equal(k.Version, PublicWalletVersion)
 
-	if !isPrivate && !isPublic {
+	if !private && !public {
 		return nil, ErrInvalidKeyVersion
 	}
 
-	if wantPrivate && !isPrivate {
+	if wantPrivate && !private {
 		return nil, ErrInvalidPrivateKeyVersion
 	}
 
-	if !wantPrivate && !isPublic {
+	if !wantPrivate && !public {
 		return nil, ErrInvalidPublicKeyVersion
 	}
 
@@ -635,7 +635,7 @@ func deserialize(data []byte, wantPrivate bool) (*key, error) {
 	}
 
 	// Private keys must have a 0 byte prefix padding
-	if isPrivate {
+	if private {
 		if data[45] != 0 {
 			return nil, ErrInvalidPrivateKey
 		}

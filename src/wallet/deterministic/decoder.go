@@ -69,7 +69,7 @@ func newReadableEntries(entries wallet.Entries, coinType wallet.CoinType) readab
 
 // toWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res readableEntries) toWalletEntries(coinType wallet.CoinType, isEncrypted bool) ([]wallet.Entry, error) {
+func (res readableEntries) toWalletEntries(coinType wallet.CoinType, encrypted bool) ([]wallet.Entry, error) {
 	entries := make([]wallet.Entry, len(res))
 	for i, re := range res {
 		e, err := newEntryFromReadable(coinType, &re)
@@ -78,7 +78,7 @@ func (res readableEntries) toWalletEntries(coinType wallet.CoinType, isEncrypted
 		}
 
 		// Verify the wallet if it's not encrypted
-		if !isEncrypted && re.Secret != "" {
+		if !encrypted && re.Secret != "" {
 			if err := e.Verify(); err != nil {
 				return nil, err
 			}

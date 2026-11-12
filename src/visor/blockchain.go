@@ -250,9 +250,9 @@ func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Sign
 	}
 
 	if length > 0 {
-		if isGenesis, err := bc.isGenesisBlock(tx, b.Block); err != nil {
+		if genesis, err := bc.isGenesisBlock(tx, b.Block); err != nil {
 			return coin.SignedBlock{}, err
-		} else if isGenesis {
+		} else if genesis {
 			err := errors.New("Attempted to process genesis block after blockchain has genesis block")
 			logger.Warning(err.Error())
 			return coin.SignedBlock{}, err

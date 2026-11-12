@@ -199,9 +199,9 @@ func (pl *peerlist) setAllUntrusted() {
 }
 
 // setHasIncomingPort marks the peer's port as being publicly accessible
-func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
+func (pl *peerlist) setHasIncomingPort(addr string, portOpen bool) error {
 	if p, ok := pl.peers[addr]; ok {
-		p.HasIncomingPort = hasIncomingPort
+		p.HasIncomingPort = portOpen
 		p.Seen()
 		return nil
 	}
@@ -355,11 +355,11 @@ func newPeerJSON(p Peer) PeerJSON {
 
 // newPeerFromJSON converts a PeerJSON to a Peer
 func newPeerFromJSON(p PeerJSON) (*Peer, error) {
-	hasIncomingPort := false
+	portOpen := false
 	if p.HasIncomingPort != nil {
-		hasIncomingPort = *p.HasIncomingPort
+		portOpen = *p.HasIncomingPort
 	} else if p.HasIncomePort != nil {
-		hasIncomingPort = *p.HasIncomePort
+		portOpen = *p.HasIncomePort
 	}
 
 	// LastSeen could be a RFC3339Nano timestamp or an int64 unix timestamp
@@ -391,7 +391,7 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 		Addr:            addr,
 		LastSeen:        lastSeen,
 		Trusted:         p.Trusted,
-		HasIncomingPort: hasIncomingPort,
+		HasIncomingPort: portOpen,
 		UserAgent:       p.UserAgent,
 	}, nil
 }

@@ -406,25 +406,25 @@ func TestWalletAddEntry(t *testing.T) {
 func TestWalletUnlock(t *testing.T) {
 	tt := []struct {
 		name      string
-		isLock    bool
+		locked    bool
 		opts      []wallet.Option
 		unlockPwd []byte
 		err       error
 	}{
 		{
 			name:      "ok",
-			isLock:    true,
+			locked:    true,
 			unlockPwd: []byte("pwd"),
 		},
 		{
 			name:      "unlock with nil password",
-			isLock:    true,
+			locked:    true,
 			unlockPwd: nil,
 			err:       wallet.ErrMissingPassword,
 		},
 		{
 			name:      "unlock with wrong password",
-			isLock:    true,
+			locked:    true,
 			unlockPwd: []byte("wrong_pwd"),
 			err:       wallet.ErrInvalidPassword,
 		},
@@ -469,7 +469,7 @@ func TestWalletUnlock(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				if tc.isLock {
+				if tc.locked {
 					err = w.Lock([]byte("pwd"))
 					require.NoError(t, err)
 				}

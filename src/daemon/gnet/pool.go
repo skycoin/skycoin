@@ -865,10 +865,10 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 		}).Debug("Disconnecting")
 
 		// checks if the address is default node address
-		isDefaultOutgoingConn := false
+		defaultOutgoingConn := false
 		if _, ok := pool.Config.defaultConnections[addr]; ok {
 			if _, ok := pool.outgoingConnections[addr]; ok {
-				isDefaultOutgoingConn = true
+				defaultOutgoingConn = true
 			}
 		}
 
@@ -878,7 +878,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			return errors.New("Disconnect: connection does not exist")
 		}
 
-		if isDefaultOutgoingConn {
+		if defaultOutgoingConn {
 			l := len(pool.defaultOutgoingConnections)
 			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}

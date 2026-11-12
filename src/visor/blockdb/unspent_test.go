@@ -549,9 +549,9 @@ func TestUnspentProcessBlock(t *testing.T) {
 				}
 
 				// check the new generate unspent
-				hasKey, err := up.Contains(tx, txOuts[0].Hash())
+				found, err := up.Contains(tx, txOuts[0].Hash())
 				require.NoError(t, err)
-				require.True(t, hasKey)
+				require.True(t, found)
 
 				// check uxHash
 				for _, in := range tc.inputs {

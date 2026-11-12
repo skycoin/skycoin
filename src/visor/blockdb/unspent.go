@@ -389,9 +389,9 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 
 	// Check that the uxout exists in the pool already, otherwise xorHash will be calculated wrong
 	for _, h := range txnUxHashes {
-		if hasKey, err := up.Contains(tx, h); err != nil {
+		if found, err := up.Contains(tx, h); err != nil {
 			return err
-		} else if hasKey {
+		} else if found {
 			return fmt.Errorf("attempted to insert uxout:%v twice into the unspent pool", h.Hex())
 		}
 	}

@@ -1070,8 +1070,8 @@ func (cf ConfirmedTxFilter) Match(tx *Transaction) bool {
 }
 
 // NewConfirmedTxFilter collects the transaction whose 'Confirmed' status matchs the parameter passed in.
-func NewConfirmedTxFilter(isConfirmed bool) TxFilter {
-	return ConfirmedTxFilter{Confirmed: isConfirmed}
+func NewConfirmedTxFilter(confirmed bool) TxFilter {
+	return ConfirmedTxFilter{Confirmed: confirmed}
 }
 
 // GetTransactions returns transactions that can pass the filters with page.
@@ -1197,11 +1197,11 @@ func (vs *Visor) GetUnconfirmedTransactionsVerbose(filter func(UnconfirmedTransa
 
 // SendsToAddresses represents a filter that check if tx has output to the given addresses
 func SendsToAddresses(addresses []cipher.Address) func(UnconfirmedTransaction) bool {
-	return func(tx UnconfirmedTransaction) (isRelated bool) {
+	return func(tx UnconfirmedTransaction) (related bool) {
 		for _, out := range tx.Transaction.Out {
 			for _, address := range addresses {
 				if out.Address == address {
-					isRelated = true
+					related = true
 					return
 				}
 			}
@@ -1917,7 +1917,7 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 // transaction is confirmed, and error if any
 func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnSignedFlag) ([]TransactionInput, bool, error) {
 	var uxa coin.UxArray
-	var isTxnConfirmed bool
+	var txnConfirmed bool
 	var feeCalcTime uint64
 
 	verifyErr := vs.db.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
@@ -1958,14 +1958,14 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnS
 
 			if historyTxn != nil {
 				// Transaction is confirmed
-				isTxnConfirmed = true
+				txnConfirmed = true
 			}
 
 			// For confirmed transactions, use the previous block time to calculate hours and fees,
 			// except for the genesis block which has no previous block and has no inputs nor fees.
 			feeCalcTime = 0
 			if historyTxn != nil && historyTxn.BlockSeq > 0 {
-				if isTxnConfirmed {
+				if txnConfirmed {
 					prevBlock, err := vs.blockchain.GetSignedBlockBySeq(tx, historyTxn.BlockSeq-1)
 					if err != nil {
 						return err
@@ -2001,11 +2001,11 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnS
 		var err error
 		inputs, err = NewTransactionInputs(uxa, feeCalcTime)
 		if err != nil {
-			return nil, isTxnConfirmed, err
+			return nil, txnConfirmed, err
 		}
 	}
 
-	return inputs, isTxnConfirmed, verifyErr
+	return inputs, txnConfirmed, verifyErr
 }
 
 // AddressCount returns the total number of addresses with unspents

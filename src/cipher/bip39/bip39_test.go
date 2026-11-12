@@ -206,8 +206,8 @@ func TestIsMnemonicChecksumValidForDifferentArrayLangths(t *testing.T) {
 			t.Errorf("%v", err)
 		}
 
-		isValid := isMnemonicChecksumValid(strings.Split(mnemonic, " "))
-		require.True(t, isValid)
+		valid := isMnemonicChecksumValid(strings.Split(mnemonic, " "))
+		require.True(t, valid)
 	}
 }
 
@@ -305,8 +305,8 @@ func TestIsMnemonicChecksumValidForZeroLeadingSeeds(t *testing.T) {
 		mnemonic, err := NewMnemonic(seed)
 		require.NoError(t, err)
 
-		isValid := isMnemonicChecksumValid(strings.Split(mnemonic, " "))
-		require.True(t, isValid)
+		valid := isMnemonicChecksumValid(strings.Split(mnemonic, " "))
+		require.True(t, valid)
 	}
 }
 

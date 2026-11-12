@@ -416,9 +416,9 @@ func (utp *UnconfirmedTransactionPool) FilterKnown(tx *dbutil.Tx, txns []cipher.
 	var unknown []cipher.SHA256
 
 	for _, h := range txns {
-		if hasKey, err := utp.txns.hasKey(tx, h); err != nil {
+		if found, err := utp.txns.hasKey(tx, h); err != nil {
 			return nil, err
-		} else if !hasKey {
+		} else if !found {
 			unknown = append(unknown, h)
 		}
 	}

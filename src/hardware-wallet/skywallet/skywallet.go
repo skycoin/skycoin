@@ -814,25 +814,7 @@ func (d *Device) TransactionSign(inputs []*messages.SkycoinTransactionInput, out
 	}
 	defer func() { _ = d.Disconnect() }() //nolint:errcheck
 
-	var transactionInputs []*messages.TxAck_TransactionType_TxInputType
-	var transactionOutputs []*messages.TxAck_TransactionType_TxOutputType
-
-	for _, input := range inputs {
-		transactionInputs = append(transactionInputs, &messages.TxAck_TransactionType_TxInputType{
-			AddressN: make([]uint32, *input.Index),
-			HashIn:   input.HashIn,
-		})
-	}
-	for _, output := range outputs {
-		transactionOutputs = append(transactionOutputs, &messages.TxAck_TransactionType_TxOutputType{
-			Address: output.Address,
-			Coins:   output.Coin,
-			Hours:   output.Hour,
-		})
-		if output.AddressIndex != nil {
-			transactionOutputs[len(transactionOutputs)-1].AddressN = make([]uint32, *output.AddressIndex)
-		}
-	}
+	transactionInputs, transactionOutputs := txAckTypes(inputs, outputs)
 	signer := SkycoinTransactionSigner{
 		Device:   d,
 		Inputs:   transactionInputs,
@@ -856,6 +838,32 @@ func (d *Device) TransactionSign(inputs []*messages.SkycoinTransactionInput, out
 		Kind: uint16(messages.MessageType_MessageType_ResponseTransactionSign),
 		Data: data,
 	}, nil
+}
+
+// txAckTypes converts the inputs and outputs to the TxAck types. The firmware
+// takes address_n[0] as the address index and an empty address_n as none.
+func txAckTypes(inputs []*messages.SkycoinTransactionInput, outputs []*messages.SkycoinTransactionOutput) ([]*messages.TxAck_TransactionType_TxInputType, []*messages.TxAck_TransactionType_TxOutputType) {
+	ins := make([]*messages.TxAck_TransactionType_TxInputType, 0, len(inputs))
+	for _, input := range inputs {
+		in := &messages.TxAck_TransactionType_TxInputType{HashIn: input.HashIn}
+		if input.Index != nil {
+			in.AddressN = []uint32{*input.Index}
+		}
+		ins = append(ins, in)
+	}
+	outs := make([]*messages.TxAck_TransactionType_TxOutputType, 0, len(outputs))
+	for _, output := range outputs {
+		out := &messages.TxAck_TransactionType_TxOutputType{
+			Address: output.Address,
+			Coins:   output.Coin,
+			Hours:   output.Hour,
+		}
+		if output.AddressIndex != nil {
+			out.AddressN = []uint32{*output.AddressIndex}
+		}
+		outs = append(outs, out)
+	}
+	return ins, outs
 }
 
 // GeneralTransactionSign Ask the device to sign a transaction using the given TransactionSigner

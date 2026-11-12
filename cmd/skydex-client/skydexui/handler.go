@@ -58,6 +58,10 @@ func Handler(m Market) http.Handler {
 	mux.HandleFunc("GET /market/products", h.productGrid)
 	mux.HandleFunc("POST /market/buy", h.buy)
 	mux.HandleFunc("POST /market/listing", h.createListing)
+	mux.HandleFunc("GET /orders/table", h.table(func() templ.Component { return OrdersTable(h.orders()) }))
+	mux.HandleFunc("POST /orders/cancel", h.cancel("orders"))
+	mux.HandleFunc("GET /listings/table", h.table(func() templ.Component { return ListingsTable(h.listings()) }))
+	mux.HandleFunc("POST /listings/cancel", h.cancel("listings"))
 	mux.HandleFunc("POST /settings", h.register)
 	for _, t := range Tabs {
 		if t.ID != "settings" {
@@ -112,6 +116,8 @@ func (h *handler) tabBody(r *http.Request, p *Page) templ.Component {
 		v := h.products()
 		v.Open = r.URL.Query().Get("new") != ""
 		return MarketTab(p, v)
+	case "orders", "listings":
+		return h.tabBodyWith(p, nil)
 	}
 	return ClassicTab(p)
 }

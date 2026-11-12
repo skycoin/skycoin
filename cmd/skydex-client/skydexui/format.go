@@ -65,3 +65,11 @@ func amountText(amount float64, coin string) string {
 	}
 	return num(amount) + " " + coin
 }
+
+// shortID keeps the head of a long id, as the React tables do.
+func shortID(id string) string {
+	if len(id) <= 12 {
+		return id
+	}
+	return id[:8] + "…"
+}

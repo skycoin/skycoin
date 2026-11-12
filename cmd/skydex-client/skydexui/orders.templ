@@ -1,0 +1,384 @@
+package skydexui
+
+import (
+	"strconv"
+
+	"github.com/skycoin/skycoin/src/skydex/protocol"
+)
+
+var statusLabels = map[string]string{
+	"pending_payment": "Pending Payment",
+	"paid":            "Paid",
+	"confirmed":       "Confirmed",
+	"active":          "Active",
+	"completed":       "Completed",
+	"cancelled":       "Cancelled",
+	"canceled":        "Cancelled",
+	"expired":         "Expired",
+	"pending":         "Pending",
+}
+
+templ statusBadge(status string) {
+	if l, ok := statusLabels[status]; ok {
+		<span class={ "badge", status }>{ l }</span>
+	} else {
+		<span class="badge disabled">{ status }</span>
+	}
+}
+
+templ typeBadge(t string) {
+	if t == "buy" {
+		<span class="badge buy">Buy</span>
+	} else {
+		<span class="badge sell">Sell</span>
+	}
+}
+
+templ dash() {
+	<span class="text-muted">—</span>
+}
+
+// notice is the message of the last cancel. skydex.js hides it after a while.
+templ notice(id string, f *Flash, oob bool) {
+	<div
+		id={ id }
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		if f != nil {
+			<div
+				class={ "alert", "alert-" + f.Kind }
+				role="status"
+				if f.Kind == "info" {
+					data-autohide="6000"
+				}
+			>{ f.Text }</div>
+		}
+	</div>
+}
+
+// cancelReply is a cancel's answer to htmx: the table, and the notice out of
+// band.
+templ cancelReply(f *Flash, table templ.Component) {
+	@table
+	@notice("tab-notice", f, true)
+}
+
+// OrdersTab follows src/components/Orders.jsx.
+templ OrdersTab(v OrdersView, f *Flash) {
+	<div class="page-head"><h2>My Orders</h2></div>
+	@notice("tab-notice", f, false)
+	@OrdersTable(v)
+}
+
+// OrdersTable is polled every 5 s.
+templ OrdersTable(v OrdersView) {
+	<div id="orders" hx-get="orders/table" hx-trigger="every 5s" hx-swap="outerHTML">
+		if v.Error != "" {
+			<div class="alert alert-danger">{ v.Error }</div>
+		}
+		if len(v.Orders) == 0 {
+			if v.Error == "" {
+				<div class="alert alert-secondary">You don't have any orders yet.</div>
+			}
+		} else {
+			<div class="panel table-wrap">
+				<table class="table table-hover align-middle">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Type</th>
+							<th>Amount</th>
+							<th>Price</th>
+							<th>Pay to (seller wallet)</th>
+							<th>Status</th>
+							<th>Progress</th>
+							<th>Payment Tx</th>
+							<th>Created</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, o := range v.Orders {
+							<tr>
+								<td><code title={ o.ID }>{ shortID(o.ID) }</code></td>
+								<td>
+									@typeBadge(o.Type)
+								</td>
+								<td>{ num(o.Amount) } { o.SellCoin }</td>
+								<td>{ num(o.Price) } { o.PaymentCurrency }</td>
+								<td>
+									@payCell(v, o)
+								</td>
+								<td>
+									@statusBadge(v.status(o))
+								</td>
+								<td>
+									@progressCell(v, o)
+								</td>
+								<td>
+									if s := v.Live[o.ID]; s.PaymentTxHash != "" {
+										<code title={ s.PaymentTxHash }>{ shortID(s.PaymentTxHash) }</code>
+									} else {
+										@dash()
+									}
+								</td>
+								<td>
+									if o.CreatedAt != "" {
+										@localTime(o.CreatedAt, true)
+									} else {
+										-
+									}
+								</td>
+								<td>
+									if v.cancelable(o) {
+										<form method="post" action="orders/cancel" hx-post="orders/cancel" hx-target="#orders" hx-swap="outerHTML" hx-confirm="Cancel this buy? You will not be able to buy this product again." hx-disabled-elt="find button">
+											<input type="hidden" name="id" value={ o.ID }/>
+											<button class="btn btn-sm btn-outline-danger"><span class="idle">Cancel</span><span class="busy">Canceling…</span></button>
+										</form>
+									} else {
+										@dash()
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</div>
+}
+
+// payCell is what a buyer still has to pay, and where.
+templ payCell(v OrdersView, o protocol.OrderView) {
+	if o.Type == "buy" && v.status(o) == "pending_payment" && o.SellerWallet != "" {
+		<div>
+			<div><strong>{ num(o.ExpectedPaymentAmount) }</strong> { o.PaymentCurrency }</div>
+			<div class="copy-row mt-1">
+				<code class="addr-box addr-sm" title={ o.SellerWallet }>{ o.SellerWallet }</code>
+				@copyButton(o.SellerWallet, "Copy")
+				@qrButton(o.SellerWallet, o.ExpectedPaymentAmount, o.PaymentCurrency, "Pay the seller", "Pay the exact amount so the market can match your payment.")
+			</div>
+		</div>
+	} else {
+		@dash()
+	}
+}
+
+func confirmations(s protocol.GetOrderStatusResponse) (have, need, pct int) {
+	need = s.RequiredConfirmations
+	if need <= 0 {
+		need = defaultConfirmations
+	}
+	have = s.Confirmations
+	return have, need, min(100, int(float64(have)/float64(need)*100+0.5))
+}
+
+templ progressCell(v OrdersView, o protocol.OrderView) {
+	if o.Type != "buy" {
+		@dash()
+	} else if v.status(o) == "completed" {
+		<span class="text-success">Delivered</span>
+	} else if s, ok := v.Live[o.ID]; !ok || !inFlight[v.status(o)] {
+		@dash()
+	} else if v.status(o) == "pending_payment" {
+		<span class="text-muted">Awaiting payment…</span>
+	} else {
+		{{ have, need, pct := confirmations(s) }}
+		<div style="min-width: 120px">
+			<div class="d-flex justify-content-between small mb-1">
+				<span>Confirmations</span>
+				<span>{ strconv.Itoa(have) }/{ strconv.Itoa(need) }</span>
+			</div>
+			<div class="progress" style="height: 6px">
+				<div class="progress-bar bg-info" role="progressbar" style={ "width: " + strconv.Itoa(pct) + "%" } aria-valuenow={ strconv.Itoa(have) } aria-valuemin="0" aria-valuemax={ strconv.Itoa(need) }></div>
+			</div>
+		</div>
+	}
+}
+
+// ListingsTab follows src/components/MyListings.jsx.
+templ ListingsTab(v ListingsView, f *Flash) {
+	<div class="page-head"><h2>My Listings</h2></div>
+	@notice("tab-notice", f, false)
+	@ListingsTable(v)
+}
+
+var lifecycleLabels = []string{"Pending deposit", "Confirmed", "Listed as product"}
+
+// lifecycleClass colors step i: done, current or ahead. A confirmed listing
+// is already a product, so its current step is the last one.
+func lifecycleClass(status string, i int) string {
+	cur := 2
+	if status == "pending" {
+		cur = 0
+	}
+	switch {
+	case i < cur:
+		return "bg-success"
+	case i == cur:
+		return "bg-info"
+	}
+	return "bg-secondary"
+}
+
+var productStates = map[string][2]string{
+	"frozen":    {"Buyer selected — awaiting payment", "pending"},
+	"sold":      {"Sold", "completed"},
+	"cancelled": {"Cancelled", "cancelled"},
+}
+
+templ productState(l protocol.ListingView) {
+	if l.Status == "confirmed" && l.ProductStatus != "" && l.ProductStatus != "active" {
+		if s, ok := productStates[l.ProductStatus]; ok {
+			<span class={ "badge", s[1] }>{ s[0] }</span>
+		} else {
+			<span class="badge disabled">{ l.ProductStatus }</span>
+		}
+	}
+}
+
+func listingNote(l protocol.ListingView) string {
+	switch {
+	case l.Status == "confirmed" && l.ProductStatus == "frozen":
+		return "Buyer paying…"
+	case l.Status == "confirmed" && l.ProductStatus == "sold":
+		return "Sold"
+	}
+	return "—"
+}
+
+func cancelListingPrompt(l protocol.ListingView) string {
+	if l.Status == "pending" {
+		return "Cancel this listing?"
+	}
+	coin := l.SellCoin
+	if coin == "" {
+		coin = "coin"
+	}
+	return "Cancel this offer? Your escrowed " + coin + " will be returned shortly after cancellation."
+}
+
+func anyPending(ls []protocol.ListingView) bool {
+	for _, l := range ls {
+		if l.Status == "pending" {
+			return true
+		}
+	}
+	return false
+}
+
+// ListingsTable is polled every 5 s.
+templ ListingsTable(v ListingsView) {
+	<div id="listings" hx-get="listings/table" hx-trigger="every 5s" hx-swap="outerHTML">
+		if v.Error != "" {
+			<div class="alert alert-danger">{ v.Error }</div>
+		}
+		if len(v.Listings) == 0 {
+			if v.Error == "" {
+				<div class="alert alert-secondary">
+					You have no active sell listings. Create one from the Market tab.
+				</div>
+			}
+		} else {
+			<div class="panel table-wrap">
+				<table class="table table-hover align-middle">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Coin</th>
+							<th>Amount</th>
+							<th>Price</th>
+							<th>Deposit</th>
+							<th>Send to (escrow address)</th>
+							<th>Lifecycle</th>
+							<th>Deposit Tx</th>
+							<th>Expires</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, l := range v.Listings {
+							<tr>
+								<td><code title={ l.ID }>{ shortID(l.ID) }</code></td>
+								<td>{ l.SellCoin }</td>
+								<td>{ num(l.Amount) } { l.SellCoin }</td>
+								<td>{ num(l.Price) } { l.PaymentCurrency }</td>
+								<td>
+									if l.Status == "pending" {
+										<span>
+											<strong>{ num(l.ExpectedAmount) }</strong> { l.SellCoin }
+											if l.ExpectedAmount > l.Amount {
+												<div class="small text-muted">{ num(l.Amount) } + { strconv.FormatFloat(l.ExpectedAmount-l.Amount, 'f', 3, 64) } fee</div>
+											}
+										</span>
+									} else {
+										<span class="text-muted">received</span>
+									}
+								</td>
+								<td>
+									if l.Status == "pending" && l.MarketWallet != "" {
+										<div class="copy-row">
+											<code class="addr-box addr-sm" title={ l.MarketWallet }>{ l.MarketWallet }</code>
+											@copyButton(l.MarketWallet, "Copy")
+											@qrButton(l.MarketWallet, l.ExpectedAmount, l.SellCoin, "Fund your sell order", "This is the market escrow address, not the buyer's.")
+										</div>
+									} else {
+										@dash()
+									}
+								</td>
+								<td>
+									<div class="d-flex align-items-center gap-2 flex-wrap">
+										<div class="d-flex align-items-center gap-2 flex-wrap">
+											for i, label := range lifecycleLabels {
+												<span class="d-flex align-items-center gap-2">
+													<span class={ "badge", lifecycleClass(l.Status, i) }>{ label }</span>
+													if i < len(lifecycleLabels)-1 {
+														<span class="text-muted">→</span>
+													}
+												</span>
+											}
+										</div>
+										@productState(l)
+									</div>
+								</td>
+								<td>
+									if l.TxHash != "" {
+										<code title={ l.TxHash }>{ shortID(l.TxHash) }</code>
+									} else {
+										@dash()
+									}
+								</td>
+								<td>
+									if l.Status == "pending" && l.ExpiresAt != "" {
+										@localTime(l.ExpiresAt, false)
+									} else {
+										-
+									}
+								</td>
+								<td>
+									if l.Cancelable {
+										<form method="post" action="listings/cancel" hx-post="listings/cancel" hx-target="#listings" hx-swap="outerHTML" hx-confirm={ cancelListingPrompt(l) } hx-disabled-elt="find button">
+											<input type="hidden" name="id" value={ l.ID }/>
+											<button class="btn btn-sm btn-outline-danger"><span class="idle">Cancel</span><span class="busy">Canceling…</span></button>
+										</form>
+									} else {
+										<span class="text-muted">{ listingNote(l) }</span>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		if anyPending(v.Listings) {
+			<div class="alert alert-info mt-3">
+				For each pending listing, transfer the exact <strong>Deposit</strong> amount to the
+				<strong>Send to</strong> escrow address before it expires. The offer becomes a
+				purchasable product once the deposit is confirmed on-chain.
+			</div>
+		}
+	</div>
+}

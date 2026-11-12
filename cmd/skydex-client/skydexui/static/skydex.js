@@ -68,6 +68,11 @@
 			el.textContent = el.getAttribute('data-local-time') === 'time' ? d.toLocaleTimeString() : d.toLocaleString();
 		});
 		if (!root || root.querySelector('#create-form')) createForm();
+		document.querySelectorAll('[data-autohide]').forEach(function (el) {
+			var ms = +el.getAttribute('data-autohide');
+			el.removeAttribute('data-autohide');
+			setTimeout(function () { el.remove(); }, ms);
+		});
 	}
 
 	// Elements with data-local post that localStorage key as "saved", so the

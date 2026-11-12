@@ -1,3 +1,4 @@
+// Package readable src/readable/version.go c2-coin-api
 package readable
 
 import "github.com/blang/semver"

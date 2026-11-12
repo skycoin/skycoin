@@ -1,3 +1,4 @@
+// Package secp256k1go src/cipher/secp256k1-go/secp256k1-go2/z_consts.go c0-com-crypto
 package secp256k1go
 
 var fin = XY{X: Field{[10]uint32{0x035871aa, 0x002dc101, 0x0059ab0f, 0x02cb297e, 0x00684bb5, 0x02585764, 0x02f3cceb, 0x002bdca3, 0x03dcb7cc, 0x0013cd56}}, Y: Field{[10]uint32{0x044d069d, 0x0603c088, 0x07541d4e, 0x04a4074d, 0x045fcba8, 0x05f00c34, 0x04bab268, 0x05fd8d65, 0x04e47151, 0x0071e924}}}

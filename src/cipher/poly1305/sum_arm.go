@@ -5,6 +5,7 @@
 //go:build arm && !gccgo && !appengine && !nacl && !tinygo
 // +build arm,!gccgo,!appengine,!nacl,!tinygo
 
+// Package poly1305 src/cipher/poly1305/sum_arm.go c0-com-crypto
 package poly1305
 
 // This function is implemented in sum_arm.s

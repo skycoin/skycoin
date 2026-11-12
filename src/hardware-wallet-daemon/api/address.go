@@ -1,3 +1,5 @@
+// Package api src/hardware-wallet-daemon/api/address.go c2-app-hw
+//
 // Package api provides the hardware wallet daemon HTTP API.
 package api
 

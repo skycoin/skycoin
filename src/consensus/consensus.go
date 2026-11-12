@@ -1,3 +1,5 @@
+// Package consensus src/consensus/consensus.go c1-coin-chain
+//
 // nolint
 // 20160901 - Initial version by user johnstuartmill,
 // public key 02fb4acf944c84d48341e3c1cb14d707034a68b7f931d6be6d732bec03597d6ff6

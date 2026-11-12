@@ -1,3 +1,4 @@
+// Package api src/api/version.go c3-coin-api
 package api
 
 import (

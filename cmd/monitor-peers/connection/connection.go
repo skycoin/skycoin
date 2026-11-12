@@ -1,3 +1,5 @@
+// Package connection cmd/monitor-peers/connection/connection.go c4-coin-tool
+//
 // Package connection provides connection handling for peer monitoring.
 package connection
 

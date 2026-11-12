@@ -1,3 +1,5 @@
+// Package fiber src/fiber/config.go c1-coin-chain
+//
 /*
 Package fiber provides configuration definitions and utilities for managing fiber coins
 */

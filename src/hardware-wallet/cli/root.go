@@ -1,3 +1,4 @@
+// Package cli src/hardware-wallet/cli/root.go c2-app-hw
 package cli
 
 import (

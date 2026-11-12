@@ -1,3 +1,4 @@
+// Package cli src/cli/pq_keygen.go c3-coin-cli
 package cli
 
 import (

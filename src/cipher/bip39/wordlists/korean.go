@@ -1,3 +1,4 @@
+// Package wordlists src/cipher/bip39/wordlists/korean.go c0-com-crypto
 package wordlists
 
 import (

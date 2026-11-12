@@ -1,3 +1,5 @@
+// Package strand src/daemon/strand/strand.go c1-coin-daemon
+//
 /*
 Package strand is a utility for linearizing method calls, similar to locking.
 

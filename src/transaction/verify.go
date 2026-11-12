@@ -1,3 +1,4 @@
+// Package transaction src/transaction/verify.go c1-coin-chain
 package transaction
 
 import (

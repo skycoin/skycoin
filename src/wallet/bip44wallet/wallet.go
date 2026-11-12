@@ -1,6 +1,7 @@
 // This file is still under refactoring, once it gets done, we will replace the
 // old bip44_wallet.go.
 
+// Package bip44wallet src/wallet/bip44wallet/wallet.go c1-coin-wallet
 package bip44wallet
 
 import (

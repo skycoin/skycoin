@@ -1,3 +1,4 @@
+// Package cli src/cli/create_rawtx.go c3-coin-cli
 package cli
 
 import (

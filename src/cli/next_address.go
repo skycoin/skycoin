@@ -1,3 +1,4 @@
+// Package cli src/cli/next_address.go c3-coin-cli
 package cli
 
 import (

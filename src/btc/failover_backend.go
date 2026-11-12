@@ -1,3 +1,4 @@
+// Package btc src/btc/failover_backend.go c1-coin-wallet
 package btc
 
 import (

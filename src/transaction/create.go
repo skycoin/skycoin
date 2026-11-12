@@ -1,3 +1,5 @@
+// Package transaction src/transaction/create.go c1-coin-chain
+//
 /*
 Package transaction provides methods for creating transactions
 

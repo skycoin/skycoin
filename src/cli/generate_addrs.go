@@ -1,3 +1,4 @@
+// Package cli src/cli/generate_addrs.go c3-coin-cli
 package cli
 
 import (

@@ -1,3 +1,4 @@
+// Package liteclient src/skycoin-lite/liteclient/bip44.go c2-app-lite
 package liteclient
 
 import (

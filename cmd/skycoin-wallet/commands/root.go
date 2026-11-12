@@ -1,3 +1,5 @@
+// Package commands cmd/skycoin-wallet/commands/root.go c4-coin-tool
+//
 // Package commands implements the skycoin wallet commands.
 package commands
 

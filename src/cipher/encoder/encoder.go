@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package encoder binary implements translation between struct data and byte sequences
+// Package encoder src/cipher/encoder/encoder.go c0-com-crypto
+//
+// Package encoder binary implements translation between struct data and byte sequences.
 //
 // Fields can be ignored with the struct tag `enc:"-"` .
 // Unexported struct fields are ignored by default .

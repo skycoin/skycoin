@@ -1,3 +1,5 @@
+// Package main cmd/release/skycoin.go c4-coin-tool
+//
 /*
 skycoin release binary with hardware wallet support
 

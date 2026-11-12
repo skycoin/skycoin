@@ -1,3 +1,4 @@
+// Package visor src/visor/db.go c2-coin-visor
 package visor
 
 import (

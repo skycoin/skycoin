@@ -1,3 +1,5 @@
+// Package commands cmd/skydex-market/commands/market.go c4-app-dex
+//
 // Package commands is the skydex-market app: the SkyDEX exchange backend.
 //
 // The exchange engine (SQLite store, matching/escrow, background jobs, the

@@ -1,3 +1,5 @@
+// Package main cmd/skycoin-cli/skycoin-cli.go c4-coin-cli
+//
 // Package main provides the skycoin-cli tool.
 package main
 

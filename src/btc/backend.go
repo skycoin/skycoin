@@ -1,3 +1,5 @@
+// Package btc src/btc/backend.go c1-coin-wallet
+//
 // Package btc provides Bitcoin backend support for the skycoin-web wallet.
 package btc
 

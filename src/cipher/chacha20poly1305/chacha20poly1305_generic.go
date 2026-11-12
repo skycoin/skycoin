@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package chacha20poly1305 src/cipher/chacha20poly1305/chacha20poly1305_generic.go c0-com-crypto
 package chacha20poly1305
 
 import (

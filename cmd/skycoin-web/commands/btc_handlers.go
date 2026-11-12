@@ -1,3 +1,4 @@
+// Package commands cmd/skycoin-web/commands/btc_handlers.go c4-ui-wallet
 package commands
 
 import (

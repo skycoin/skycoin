@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package chacha20poly1305 src/cipher/chacha20poly1305/chacha20poly1305.go c0-com-crypto
+//
 // Package chacha20poly1305 implements the ChaCha20-Poly1305 AEAD as specified in RFC 7539.
 package chacha20poly1305 // import "github.com/skycoin/skycoin/src/cipher/chacha20poly1305"
 

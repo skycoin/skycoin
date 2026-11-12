@@ -1,3 +1,4 @@
+// Package daemon src/daemon/pq_sigs.go c2-coin-daemon
 package daemon
 
 import (

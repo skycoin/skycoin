@@ -1,3 +1,4 @@
+// Package api src/hardware-wallet-daemon/api/check_message_signature.go c2-app-hw
 package api
 
 import (

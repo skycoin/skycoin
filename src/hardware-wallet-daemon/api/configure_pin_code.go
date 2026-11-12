@@ -1,3 +1,4 @@
+// Package api src/hardware-wallet-daemon/api/configure_pin_code.go c2-app-hw
 package api
 
 import (

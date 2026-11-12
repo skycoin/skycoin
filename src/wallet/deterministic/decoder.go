@@ -1,3 +1,5 @@
+// Package deterministic src/wallet/deterministic/decoder.go c1-coin-wallet
+//
 // Package deterministic implements deterministic wallets.
 package deterministic
 

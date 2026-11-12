@@ -1,3 +1,4 @@
+// Package visor src/visor/richlist.go c2-coin-visor
 package visor
 
 import (

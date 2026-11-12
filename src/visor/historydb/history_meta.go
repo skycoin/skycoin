@@ -1,3 +1,4 @@
+// Package historydb src/visor/historydb/history_meta.go c1-coin-visor
 package historydb
 
 import (

@@ -1,3 +1,5 @@
+// Package iputil src/util/iputil/iputil.go c0-com-util
+//
 /*
 Package iputil provides IP address related utility methods
 */

@@ -1,3 +1,4 @@
+// Package readable src/readable/page.go c2-coin-api
 package readable
 
 // PageInfo represents the pagination info

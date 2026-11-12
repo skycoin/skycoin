@@ -1,3 +1,4 @@
+// Package kvstorage src/kvstorage/map.go c1-coin-visor
 package kvstorage
 
 // Copy copies the map contents to the new map

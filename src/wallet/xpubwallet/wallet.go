@@ -1,3 +1,4 @@
+// Package xpubwallet src/wallet/xpubwallet/wallet.go c1-coin-wallet
 package xpubwallet
 
 import (

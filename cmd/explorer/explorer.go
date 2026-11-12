@@ -1,3 +1,5 @@
+// Package main cmd/explorer/explorer.go c4-ui-explorer
+//
 /*
 skycoin explorer
 */

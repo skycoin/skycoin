@@ -1,3 +1,4 @@
+// Package historydb src/visor/historydb/output.go c1-coin-visor
 package historydb
 
 import (

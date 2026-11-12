@@ -1,3 +1,4 @@
+// Package gnet src/daemon/gnet/dispatcher.go c1-coin-daemon
 package gnet
 
 import (

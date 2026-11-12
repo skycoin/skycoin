@@ -1,3 +1,5 @@
+// Package bip44wallet src/wallet/bip44wallet/account.go c1-coin-wallet
+//
 // Package bip44wallet implements BIP44 hierarchical deterministic wallets.
 package bip44wallet
 

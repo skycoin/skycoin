@@ -1,3 +1,5 @@
+// Package testsuite src/cipher/testsuite/testsuite.go c0-com-crypto
+//
 /*
 Package testsuite is the cipher testdata testsuite
 */

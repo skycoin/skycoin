@@ -1,3 +1,4 @@
+// Package daemon src/daemon/multi_signer.go c2-coin-daemon
 package daemon
 
 import (

@@ -1,3 +1,4 @@
+// Package daemon src/daemon/pq_witnesses.go c2-coin-daemon
 package daemon
 
 import (

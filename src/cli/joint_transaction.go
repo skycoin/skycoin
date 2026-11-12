@@ -1,3 +1,4 @@
+// Package cli src/cli/joint_transaction.go c3-coin-cli
 package cli
 
 import (

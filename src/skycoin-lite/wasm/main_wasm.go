@@ -1,5 +1,7 @@
 //go:build wasm
 
+// Package main src/skycoin-lite/wasm/main_wasm.go c2-app-lite
+//
 // Package main provides the wasm build of the browser cipher: the entry points
 // src/skycoin-web calls to derive addresses and sign transactions, plus the
 // verification helpers its cipher spec checks them with.

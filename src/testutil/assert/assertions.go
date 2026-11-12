@@ -1,3 +1,5 @@
+// Package testutil src/testutil/assert/assertions.go c0-com-test
+//
 // Package testutil provides test utilities and helpers.
 package testutil
 

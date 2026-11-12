@@ -1,3 +1,5 @@
+// Package bip39 src/cipher/bip39/bip39.go c0-com-crypto
+//
 // Package bip39 is the Golang implementation of the BIP39 spec.
 //
 // The official BIP39 spec can be found at

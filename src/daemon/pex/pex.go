@@ -1,3 +1,5 @@
+// Package pex src/daemon/pex/pex.go c1-coin-daemon
+//
 // Package pex is a toolkit for implementing a peer exchange system
 package pex
 

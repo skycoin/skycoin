@@ -1,3 +1,4 @@
+// Package transaction src/transaction/params.go c1-coin-chain
 package transaction
 
 import (

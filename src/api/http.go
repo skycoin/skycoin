@@ -1,3 +1,5 @@
+// Package api src/api/http.go c3-coin-api
+//
 /*
 Package api implements the REST API interface
 */

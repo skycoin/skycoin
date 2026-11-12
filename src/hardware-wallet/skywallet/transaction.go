@@ -1,3 +1,4 @@
+// Package skywallet src/hardware-wallet/skywallet/transaction.go c1-app-hw
 package skywallet
 
 import (

@@ -1,3 +1,5 @@
+// Package pqwallet src/wallet/pqwallet/wallet.go c1-coin-wallet
+//
 // Package pqwallet implements post-quantum wallets. Key i is the ML-DSA-44 seed
 // pqsig.DeriveSecKey(seed, i), and its address is a version 1 Skycoin address.
 package pqwallet

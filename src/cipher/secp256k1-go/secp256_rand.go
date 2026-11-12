@@ -1,3 +1,4 @@
+// Package secp256k1 src/cipher/secp256k1-go/secp256_rand.go c0-com-crypto
 package secp256k1
 
 import (

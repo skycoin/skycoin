@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package chacha20 src/cipher/chacha20poly1305/chacha20/chacha_generic.go c0-com-crypto
+//
 // Package chacha20 implements the core ChaCha20 function as specified in https://tools.ietf.org/html/rfc7539#section-2.3.
 package chacha20
 

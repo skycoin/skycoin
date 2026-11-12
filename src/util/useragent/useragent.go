@@ -1,3 +1,5 @@
+// Package useragent src/util/useragent/useragent.go c0-com-util
+//
 // Package useragent implements methods for managing Skycoin user agents.
 //
 // A skycoin user agent has the following format:

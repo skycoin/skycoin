@@ -1,3 +1,4 @@
+// Package cli src/cli/verify_xpub.go c3-coin-cli
 package cli
 
 import (

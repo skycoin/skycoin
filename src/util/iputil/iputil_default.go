@@ -1,5 +1,6 @@
 //go:build !tinygo
 
+// Package iputil src/util/iputil/iputil_default.go c0-com-util
 package iputil
 
 import "net"

@@ -1,6 +1,7 @@
 //go:build (darwin && !ios && cgo) || (windows && cgo)
 // +build darwin,!ios,cgo windows,cgo
 
+// Package usb src/hardware-wallet/skywallet/usb/hidapi.go c1-app-hw
 package usb
 
 import (

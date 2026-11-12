@@ -1,3 +1,5 @@
+// Package coin src/coin/block.go c1-coin-chain
+//
 /*
 Package coin defines the core blockchain datastructures.
 

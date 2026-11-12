@@ -1,3 +1,4 @@
+// Package cli src/cli/sweep.go c3-coin-cli
 package cli
 
 import (

@@ -1,3 +1,5 @@
+// Package bech32 src/cipher/bech32/bech32.go c0-com-crypto
+//
 // Package bech32 implements BIP173 bech32 encoding for segwit addresses.
 package bech32
 

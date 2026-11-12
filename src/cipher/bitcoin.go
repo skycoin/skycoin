@@ -1,3 +1,4 @@
+// Package cipher src/cipher/bitcoin.go c0-com-crypto
 package cipher
 
 import (

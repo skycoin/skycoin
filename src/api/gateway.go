@@ -1,3 +1,4 @@
+// Package api src/api/gateway.go c3-coin-api
 package api
 
 import (

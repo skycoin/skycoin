@@ -1,3 +1,5 @@
+// Package skywallet src/hardware-wallet/skywallet/bit_encoded_flags.go c1-app-hw
+//
 // Package skywallet provides hardware wallet device communication.
 package skywallet
 

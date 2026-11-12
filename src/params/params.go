@@ -1,3 +1,4 @@
+// Package params src/params/params.go c1-coin-chain
 package params
 
 /*

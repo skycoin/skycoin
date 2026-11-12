@@ -1,3 +1,5 @@
+// Package encoderfuzz src/cipher/encoder/fuzz/encoderfuzz.go c0-com-crypto
+//
 // Package encoderfuzz provides fuzz testing for the encoder package.
 package encoderfuzz
 

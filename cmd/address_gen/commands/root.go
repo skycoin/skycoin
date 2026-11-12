@@ -1,3 +1,5 @@
+// Package commands cmd/address_gen/commands/root.go c4-coin-tool
+//
 // Package commands provides address generation functionality.
 package commands
 

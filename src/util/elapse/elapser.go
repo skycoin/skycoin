@@ -1,3 +1,5 @@
+// Package elapse src/util/elapse/elapser.go c0-com-util
+//
 /*
 Package elapse provides time measuring instruments
 */

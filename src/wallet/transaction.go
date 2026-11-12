@@ -1,3 +1,4 @@
+// Package wallet src/wallet/transaction.go c1-coin-wallet
 package wallet
 
 import (

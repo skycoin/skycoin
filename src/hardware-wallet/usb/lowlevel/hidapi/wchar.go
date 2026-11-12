@@ -10,6 +10,7 @@
 // +build !ios
 // +build linux freebsd darwin windows
 
+// Package hidapi src/hardware-wallet/usb/lowlevel/hidapi/wchar.go c1-app-hw
 package hidapi
 
 /*

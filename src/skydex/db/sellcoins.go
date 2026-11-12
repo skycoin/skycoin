@@ -1,4 +1,6 @@
-// Package db internal/db/sellcoins.go — the sell-side coin registry.
+// Package db src/skydex/db/sellcoins.go c1-app-dex
+//
+// The sell-side coin registry.
 //
 // The market sells SKY and any operator-added Skycoin fibercoins. Each is a row
 // in the sell_coins table with its own fullnode URL and escrow hot wallet

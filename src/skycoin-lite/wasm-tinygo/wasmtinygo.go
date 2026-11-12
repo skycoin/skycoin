@@ -1,3 +1,5 @@
+// Package wasmtinygo src/skycoin-lite/wasm-tinygo/wasmtinygo.go c1-app-lite
+//
 // Package wasmtinygo provides the TinyGo-compiled WebAssembly cipher.
 //
 // The wasm is committed gzipped, and stays that way through //go:embed.

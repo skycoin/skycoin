@@ -1,3 +1,4 @@
+// Package cli src/cli/address_gen.go c3-coin-cli
 package cli
 
 import (

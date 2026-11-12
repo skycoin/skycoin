@@ -1,3 +1,4 @@
+// Package eth src/eth/keys.go c1-coin-wallet
 package eth
 
 import (

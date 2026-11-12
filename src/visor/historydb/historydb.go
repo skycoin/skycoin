@@ -1,3 +1,5 @@
+// Package historydb src/visor/historydb/historydb.go c1-coin-visor
+//
 /*
 Package historydb stores historical blockchain data.
 */

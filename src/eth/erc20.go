@@ -1,3 +1,4 @@
+// Package eth src/eth/erc20.go c1-coin-wallet
 package eth
 
 import (

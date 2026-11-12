@@ -1,3 +1,4 @@
+// Package kvstorage src/kvstorage/error.go c1-coin-visor
 package kvstorage
 
 // Error wraps key-value storage related errors.

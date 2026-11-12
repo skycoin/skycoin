@@ -1,3 +1,4 @@
+// Package liteclient src/skycoin-lite/liteclient/extras.go c2-app-lite
 package liteclient
 
 import (

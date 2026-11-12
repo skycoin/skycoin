@@ -1,3 +1,5 @@
+// Package dbutil src/visor/dbutil/dbutil.go c1-coin-visor
+//
 /*
 Package dbutil provides boltdb utility methods
 */

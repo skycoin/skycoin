@@ -1,3 +1,4 @@
+// Package cli src/hardware-wallet/cli/cancel.go c2-app-hw
 package cli
 
 import (

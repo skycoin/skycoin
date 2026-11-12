@@ -1,3 +1,5 @@
+// Package wasmgz src/skycoin-lite/wasmgz/wasmgz.go c1-app-lite
+//
 // Package wasmgz decompresses the gzipped wasm blobs committed under
 // src/skycoin-lite.
 //

@@ -1,3 +1,5 @@
+// Package gnet src/daemon/gnet/pool.go c1-coin-daemon
+//
 /*
 Package gnet is the core networking library
 */

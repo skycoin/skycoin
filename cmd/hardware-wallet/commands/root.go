@@ -2,6 +2,8 @@
 // +build !386
 // +build !windows !arm64
 
+// Package commands cmd/hardware-wallet/commands/root.go c4-app-hw
+//
 // Package commands implements the skycoin hardware wallet daemon and CLI.
 //
 // Note: Hardware wallet support is disabled on 386 architecture due to

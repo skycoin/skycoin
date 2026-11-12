@@ -1,5 +1,6 @@
 //go:build tinygo
 
+// Package commands cmd/explorer/commands/docs_tinygo.go c4-ui-explorer
 package commands
 
 // renderDocs: TinyGo's reflect does not implement func-signature introspection

@@ -1,3 +1,5 @@
+// Package templates templates/templates.go c0-coin-tool
+//
 // Package templates provides embedded template files for fibercoin generation
 package templates
 

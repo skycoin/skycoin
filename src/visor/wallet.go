@@ -1,3 +1,4 @@
+// Package visor src/visor/wallet.go c2-coin-visor
 package visor
 
 // This file contains Visor method that require wallet access

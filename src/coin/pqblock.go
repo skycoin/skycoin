@@ -1,3 +1,4 @@
+// Package coin src/coin/pqblock.go c1-coin-chain
 package coin
 
 import (

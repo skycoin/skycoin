@@ -3,6 +3,8 @@
 Generates testdata for the cipher test suite
 */
 
+// Package main cmd/cipher-testdata/cipher-testdata.go c4-coin-tool
+//
 // Package main provides the cipher testdata generator.
 package main
 

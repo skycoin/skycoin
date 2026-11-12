@@ -1,3 +1,5 @@
+// Package mobile src/skycoin-lite/mobile/api.go c2-app-lite
+//
 // Package mobile provides mobile API bindings for Skycoin
 package mobile
 

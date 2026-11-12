@@ -1,3 +1,4 @@
+// Package cli src/cli/add_private_key.go c3-coin-cli
 package cli
 
 import (

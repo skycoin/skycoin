@@ -1,5 +1,6 @@
 //go:build !tinygo
 
+// Package commands cmd/explorer/commands/docs_default.go c4-ui-explorer
 package commands
 
 import (

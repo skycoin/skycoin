@@ -1,4 +1,4 @@
-// Package message pkg/skychat/message/message.go c4-app-chat
+// Package message src/skydex/message/message.go c1-app-dex
 // format: length-prefixed frames and the chat-msg/chat-ack envelope.
 //
 // Before this package the same framing (a 4-byte big-endian length followed by

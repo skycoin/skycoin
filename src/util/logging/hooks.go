@@ -1,3 +1,4 @@
+// Package logging src/util/logging/hooks.go c0-com-util
 package logging
 
 import (

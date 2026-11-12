@@ -1,3 +1,5 @@
+// Package electrum src/electrum/client.go c1-coin-wallet
+//
 // Package electrum implements a JSON-RPC client for Electrum protocol servers (ElectrumX, Fulcrum).
 package electrum
 

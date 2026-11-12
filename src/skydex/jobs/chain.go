@@ -1,3 +1,5 @@
+// Package jobs src/skydex/jobs/chain.go c1-app-dex
+//
 // Package jobs implements the skydex-market background jobs (see
 // skydex-design.md §7.8): escrow/listing verification, expiry handling,
 // cleanup and ban enforcement.

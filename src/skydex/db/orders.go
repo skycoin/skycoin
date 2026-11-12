@@ -1,4 +1,4 @@
-// Package db internal/db/orders.go
+// Package db src/skydex/db/orders.go c1-app-dex
 package db
 
 import (

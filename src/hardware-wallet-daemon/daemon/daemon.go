@@ -1,3 +1,4 @@
+// Package daemon src/hardware-wallet-daemon/daemon/daemon.go c2-app-hw
 package daemon
 
 import (

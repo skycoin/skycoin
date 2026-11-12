@@ -1,3 +1,5 @@
+// Package pqsig src/cipher/pqsig/pqsig.go c0-com-crypto
+//
 // Package pqsig signs and verifies with ML-DSA-44 (FIPS 204), the post-quantum
 // signature the block publisher adds beside its secp256k1 signature.
 package pqsig

@@ -1,3 +1,4 @@
+// Package electrum src/electrum/servers.go c1-coin-wallet
 package electrum
 
 // DefaultServers are public Bitcoin Electrum servers, tried in this order. The

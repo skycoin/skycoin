@@ -1,3 +1,4 @@
+// Package kvstorage src/kvstorage/kvstorage.go c1-coin-visor
 package kvstorage
 
 import (

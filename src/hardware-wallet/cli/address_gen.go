@@ -1,3 +1,5 @@
+// Package cli src/hardware-wallet/cli/address_gen.go c2-app-hw
+//
 // Package cli provides the hardware wallet CLI commands.
 package cli
 

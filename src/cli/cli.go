@@ -1,3 +1,5 @@
+// Package cli src/cli/cli.go c3-coin-cli
+//
 /*
 Package cli implements the CLI cmd's methods.
 

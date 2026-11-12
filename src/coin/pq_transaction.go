@@ -1,3 +1,4 @@
+// Package coin src/coin/pq_transaction.go c1-coin-chain
 package coin
 
 import (

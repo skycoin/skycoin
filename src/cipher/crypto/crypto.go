@@ -1,3 +1,5 @@
+// Package crypto src/cipher/crypto/crypto.go c0-com-crypto
+//
 // Package crypto provides cryptographic types and operations for Skycoin
 package crypto
 

@@ -1,6 +1,8 @@
 //go:build 386
 // +build 386
 
+// Package commands cmd/hardware-wallet/commands/root_386.go c4-app-hw
+//
 // Package commands provides a stub for 386 architecture.
 //
 // Hardware wallet support is disabled on 386 architecture due to

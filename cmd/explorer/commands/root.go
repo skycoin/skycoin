@@ -1,3 +1,5 @@
+// Package commands cmd/explorer/commands/root.go c4-ui-explorer
+//
 // Package commands implements the skycoin explorer.
 package commands
 

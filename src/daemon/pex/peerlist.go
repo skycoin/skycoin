@@ -1,3 +1,4 @@
+// Package pex src/daemon/pex/peerlist.go c1-coin-daemon
 package pex
 
 import (

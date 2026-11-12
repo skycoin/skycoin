@@ -1,4 +1,6 @@
-// Package chain sky.go implements the Skycoin fullnode client used for SKY
+// Package chain src/skydex/chain/sky.go c3-app-dex
+//
+// Package chain implements the Skycoin fullnode client used for SKY
 // deposit verification and for spending SKY out of the market's escrow wallet.
 //
 // Spending is done with LOCAL signing: the node we talk to has its wallet API

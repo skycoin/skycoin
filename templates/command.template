@@ -1,3 +1,5 @@
+// Package main cmd/{{.CoinName}}/{{.CoinName}}.go c4-coin-node
+//
 /*
 {{.CoinName}} daemon
 */

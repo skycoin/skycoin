@@ -1,3 +1,4 @@
+// Package hidapi src/hardware-wallet/usb/lowlevel/hidapi/log.go c1-app-hw
 package hidapi
 
 import (

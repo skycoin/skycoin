@@ -1,3 +1,5 @@
+// Package visor src/visor/visor.go c2-coin-visor
+//
 /*
 Package visor manages the blockchain database and wallets
 

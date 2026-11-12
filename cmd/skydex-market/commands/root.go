@@ -1,3 +1,4 @@
+// Package commands cmd/skydex-market/commands/root.go c4-app-dex
 package commands
 
 import (

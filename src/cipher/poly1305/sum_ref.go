@@ -5,6 +5,7 @@
 //go:build (!amd64 && !arm) || gccgo || appengine || nacl || tinygo
 // +build !amd64,!arm gccgo appengine nacl tinygo
 
+// Package poly1305 src/cipher/poly1305/sum_ref.go c0-com-crypto
 package poly1305
 
 import "encoding/binary"

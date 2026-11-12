@@ -5,6 +5,7 @@
 //go:build !amd64 || !go1.7 || gccgo || appengine || tinygo
 // +build !amd64 !go1.7 gccgo appengine tinygo
 
+// Package chacha20poly1305 src/cipher/chacha20poly1305/chacha20poly1305_noasm.go c0-com-crypto
 package chacha20poly1305
 
 func (c *chacha20poly1305) seal(dst, nonce, plaintext, additionalData []byte) []byte {

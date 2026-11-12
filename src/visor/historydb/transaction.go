@@ -1,3 +1,4 @@
+// Package historydb src/visor/historydb/transaction.go c1-coin-visor
 package historydb
 
 // transaction.go mainly provides transaction corresponding buckets and apis,

@@ -3,6 +3,8 @@
 newcoin generates a new coin cmd from a toml configuration file
 */
 
+// Package main cmd/newcoin/newcoin.go c4-coin-tool
+//
 // Package main implements the newcoin template generator.
 package main
 

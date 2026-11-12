@@ -1,6 +1,8 @@
 //go:build !386
 // +build !386
 
+// Package main cmd/hardware-wallet/skyhw.go c4-app-hw
+//
 /*
 skycoin hardware wallet daemon & cli
 

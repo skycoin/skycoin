@@ -1,3 +1,5 @@
+// Package config config/config.go c1-coin-chain
+//
 // Package config provides embedded configuration files
 package config
 

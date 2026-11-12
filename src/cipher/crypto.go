@@ -1,3 +1,5 @@
+// Package cipher src/cipher/crypto.go c0-com-crypto
+//
 /*
 Package cipher implements cryptographic methods.
 

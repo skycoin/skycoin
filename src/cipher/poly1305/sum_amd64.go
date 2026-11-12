@@ -5,6 +5,7 @@
 //go:build amd64 && !gccgo && !appengine && !tinygo
 // +build amd64,!gccgo,!appengine,!tinygo
 
+// Package poly1305 src/cipher/poly1305/sum_amd64.go c0-com-crypto
 package poly1305
 
 // This function is implemented in sum_amd64.s

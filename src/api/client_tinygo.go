@@ -1,5 +1,6 @@
 //go:build tinygo
 
+// Package api src/api/client_tinygo.go c3-coin-api
 package api
 
 import "net/http"

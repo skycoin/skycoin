@@ -1,3 +1,5 @@
+// Package wordlists src/cipher/bip39/wordlists/chinese_simplified.go c0-com-crypto
+//
 // Package wordlists provides BIP39 wordlists in various languages.
 package wordlists
 

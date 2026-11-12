@@ -1,3 +1,4 @@
+// Package commands cmd/skycoin-web/commands/wasm.go c4-ui-wallet
 package commands
 
 import "github.com/skycoin/skycoin/src/skycoin-web/src/gui"

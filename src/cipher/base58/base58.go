@@ -1,3 +1,4 @@
+// Package base58 src/cipher/base58/base58.go c0-com-crypto
 package base58
 
 import (

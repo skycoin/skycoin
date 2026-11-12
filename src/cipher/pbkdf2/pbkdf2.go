@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package pbkdf2 src/cipher/pbkdf2/pbkdf2.go c0-com-crypto
+//
 /*
 Package pbkdf2 implements the key derivation function PBKDF2 as defined in RFC
 2898 / PKCS #5 v2.0.

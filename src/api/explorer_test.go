@@ -153,7 +153,7 @@ func TestCoinSupply(t *testing.T) {
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsResult: &visor.UnspentOutputsSummary{
 				Confirmed: []visor.UnspentOutput{
-					visor.UnspentOutput{
+					{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
 								Coins:   9223372036854775807,
@@ -161,7 +161,7 @@ func TestCoinSupply(t *testing.T) {
 							},
 						},
 					},
-					visor.UnspentOutput{
+					{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
 								Coins:   1000000,
@@ -180,7 +180,7 @@ func TestCoinSupply(t *testing.T) {
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsResult: &visor.UnspentOutputsSummary{
 				Confirmed: []visor.UnspentOutput{
-					visor.UnspentOutput{
+					{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
 								Coins:   0,
@@ -188,7 +188,7 @@ func TestCoinSupply(t *testing.T) {
 							},
 						},
 					},
-					visor.UnspentOutput{
+					{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
 								Coins:   0,

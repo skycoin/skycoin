@@ -168,7 +168,7 @@ func (self *BlockStat) Clear() {
 	self.frozen = false
 	self.accept_count = 0
 	//
-	for i, _ := range self.debug_pubkey2count {
+	for i := range self.debug_pubkey2count {
 		delete(self.debug_pubkey2count, i)
 	}
 	self.debug_count = 0

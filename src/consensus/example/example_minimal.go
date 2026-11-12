@@ -156,7 +156,7 @@ func main() {
 	//
 	// Print the state of each node for a review or debugging.
 	//
-	for i, _ := range X {
+	for i := range X {
 		fmt.Printf("FILE_FinalState.txt|NODE i=%d ", i)
 		X[i].GetNode().Print()
 		fmt.Printf("\n")

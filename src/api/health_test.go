@@ -80,8 +80,8 @@ func TestHealthHandler(t *testing.T) {
 				disableCSP:  false,
 				webWallet:   http.NotFoundHandler(),
 				enabledAPISets: map[string]struct{}{
-					EndpointsStatus: struct{}{},
-					EndpointsRead:   struct{}{},
+					EndpointsStatus: {},
+					EndpointsRead:   {},
 				},
 			},
 			walletAPIEnabled: false,

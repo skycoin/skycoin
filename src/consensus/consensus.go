@@ -211,7 +211,7 @@ func (self *HashCandidate) ObserveSigAndPubkey(
 			fmt.Printf("HashCandidate %p pubkey2sig: pubkey=%s sig=%s\n",
 				self, k.Hex()[:8], v.Hex()[:8])
 		}
-		for k, _ := range self.sig2none {
+		for k := range self.sig2none {
 			fmt.Printf("HashCandidate %p sig2none: sig=%s\n", self, k.Hex()[:8])
 		}
 	}
@@ -230,10 +230,10 @@ func (self *HashCandidate) ObserveSigAndPubkey(
 
 // //////////////////////////////////////////////////////////////////////////////
 func (self *HashCandidate) Clear() {
-	for i, _ := range self.pubkey2sig {
+	for i := range self.pubkey2sig {
 		delete(self.pubkey2sig, i)
 	}
-	for i, _ := range self.sig2none {
+	for i := range self.sig2none {
 		delete(self.sig2none, i)
 	}
 }

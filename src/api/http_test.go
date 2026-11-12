@@ -13,14 +13,14 @@ import (
 const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
-	EndpointsRead:               struct{}{},
-	EndpointsTransaction:        struct{}{},
-	EndpointsStatus:             struct{}{},
-	EndpointsWallet:             struct{}{},
-	EndpointsInsecureWalletSeed: struct{}{},
-	EndpointsNetCtrl:            struct{}{},
-	EndpointsStorage:            struct{}{},
-	EndpointsExplorer:           struct{}{},
+	EndpointsRead:               {},
+	EndpointsTransaction:        {},
+	EndpointsStatus:             {},
+	EndpointsWallet:             {},
+	EndpointsInsecureWalletSeed: {},
+	EndpointsNetCtrl:            {},
+	EndpointsStorage:            {},
+	EndpointsExplorer:           {},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -33,151 +33,151 @@ func defaultMuxConfig() muxConfig {
 }
 
 var endpointsMethods = map[string][]string{
-	"/api/v1/address_uxouts": []string{
+	"/api/v1/address_uxouts": {
 		http.MethodGet,
 	},
-	"/api/v1/addresscount": []string{
+	"/api/v1/addresscount": {
 		http.MethodGet,
 	},
-	"/api/v1/balance": []string{
-		http.MethodGet,
-		http.MethodPost,
-	},
-	"/api/v1/block": []string{
-		http.MethodGet,
-	},
-	"/api/v1/blockchain/metadata": []string{
-		http.MethodGet,
-	},
-	"/api/v1/blockchain/progress": []string{
-		http.MethodGet,
-	},
-	"/api/v1/blocks": []string{
+	"/api/v1/balance": {
 		http.MethodGet,
 		http.MethodPost,
 	},
-	"/api/v1/coinSupply": []string{
+	"/api/v1/block": {
 		http.MethodGet,
 	},
-	"/api/v1/explorer/address": []string{
+	"/api/v1/blockchain/metadata": {
 		http.MethodGet,
 	},
-	"/api/v1/health": []string{
+	"/api/v1/blockchain/progress": {
 		http.MethodGet,
 	},
-	"/api/v1/injectTransaction": []string{
-		http.MethodPost,
-	},
-	"/api/v1/last_blocks": []string{
-		http.MethodGet,
-	},
-	"/api/v1/version": []string{
-		http.MethodGet,
-	},
-	"/api/v1/network/connection": []string{
-		http.MethodGet,
-	},
-	"/api/v1/network/connections": []string{
-		http.MethodGet,
-	},
-	"/api/v1/network/connections/exchange": []string{
-		http.MethodGet,
-	},
-	"/api/v1/network/connections/trust": []string{
-		http.MethodGet,
-	},
-	"/api/v1/network/defaultConnections": []string{
-		http.MethodGet,
-	},
-	"/api/v1/network/connection/disconnect": []string{
-		http.MethodPost,
-	},
-	"/api/v1/outputs": []string{
+	"/api/v1/blocks": {
 		http.MethodGet,
 		http.MethodPost,
 	},
-	"/api/v1/pendingTxs": []string{
+	"/api/v1/coinSupply": {
 		http.MethodGet,
 	},
-	"/api/v1/rawtx": []string{
+	"/api/v1/explorer/address": {
 		http.MethodGet,
 	},
-	"/api/v1/richlist": []string{
+	"/api/v1/health": {
 		http.MethodGet,
 	},
-	"/api/v1/resendUnconfirmedTxns": []string{
+	"/api/v1/injectTransaction": {
 		http.MethodPost,
 	},
-	"/api/v1/transaction": []string{
+	"/api/v1/last_blocks": {
 		http.MethodGet,
 	},
-	"/api/v1/transactions": []string{
+	"/api/v1/version": {
+		http.MethodGet,
+	},
+	"/api/v1/network/connection": {
+		http.MethodGet,
+	},
+	"/api/v1/network/connections": {
+		http.MethodGet,
+	},
+	"/api/v1/network/connections/exchange": {
+		http.MethodGet,
+	},
+	"/api/v1/network/connections/trust": {
+		http.MethodGet,
+	},
+	"/api/v1/network/defaultConnections": {
+		http.MethodGet,
+	},
+	"/api/v1/network/connection/disconnect": {
+		http.MethodPost,
+	},
+	"/api/v1/outputs": {
 		http.MethodGet,
 		http.MethodPost,
 	},
-	"/api/v1/uxout": []string{
+	"/api/v1/pendingTxs": {
 		http.MethodGet,
 	},
-	"/api/v1/wallet": []string{
+	"/api/v1/rawtx": {
 		http.MethodGet,
 	},
-	"/api/v1/wallet/balance": []string{
+	"/api/v1/richlist": {
 		http.MethodGet,
 	},
-	"/api/v1/wallet/create": []string{
+	"/api/v1/resendUnconfirmedTxns": {
 		http.MethodPost,
 	},
-	"/api/v1/wallet/newAddress": []string{
-		http.MethodPost,
-	},
-	"/api/v1/wallet/newSeed": []string{
+	"/api/v1/transaction": {
 		http.MethodGet,
 	},
-	"/api/v1/wallet/seed": []string{
+	"/api/v1/transactions": {
+		http.MethodGet,
 		http.MethodPost,
 	},
-	"/api/v1/wallet/transaction": []string{
-		http.MethodPost,
-	},
-	"/api/v1/wallet/transactions": []string{
+	"/api/v1/uxout": {
 		http.MethodGet,
 	},
-	"/api/v1/wallet/unload": []string{
-		http.MethodPost,
-	},
-	"/api/v1/wallet/newAccount": []string{
-		http.MethodPost,
-	},
-	"/api/v1/wallet/update": []string{
-		http.MethodPost,
-	},
-	"/api/v1/wallets": []string{
+	"/api/v1/wallet": {
 		http.MethodGet,
 	},
-	"/api/v1/wallets/folderName": []string{
+	"/api/v1/wallet/balance": {
+		http.MethodGet,
+	},
+	"/api/v1/wallet/create": {
+		http.MethodPost,
+	},
+	"/api/v1/wallet/newAddress": {
+		http.MethodPost,
+	},
+	"/api/v1/wallet/newSeed": {
+		http.MethodGet,
+	},
+	"/api/v1/wallet/seed": {
+		http.MethodPost,
+	},
+	"/api/v1/wallet/transaction": {
+		http.MethodPost,
+	},
+	"/api/v1/wallet/transactions": {
+		http.MethodGet,
+	},
+	"/api/v1/wallet/unload": {
+		http.MethodPost,
+	},
+	"/api/v1/wallet/newAccount": {
+		http.MethodPost,
+	},
+	"/api/v1/wallet/update": {
+		http.MethodPost,
+	},
+	"/api/v1/wallets": {
+		http.MethodGet,
+	},
+	"/api/v1/wallets/folderName": {
 		http.MethodGet,
 	},
 
-	"/api/v2/transaction/verify": []string{
+	"/api/v2/transaction/verify": {
 		http.MethodPost,
 	},
-	"/api/v2/address/verify": []string{
+	"/api/v2/address/verify": {
 		http.MethodPost,
 	},
-	"/api/v2/wallet/recover": []string{
+	"/api/v2/wallet/recover": {
 		http.MethodPost,
 	},
-	"/api/v2/wallet/seed/verify": []string{
+	"/api/v2/wallet/seed/verify": {
 		http.MethodPost,
 	},
-	"/api/v2/wallet/transaction/sign": []string{
+	"/api/v2/wallet/transaction/sign": {
 		http.MethodPost,
 	},
-	"/api/v2/transaction": []string{
+	"/api/v2/transaction": {
 		http.MethodPost,
 	},
 
-	"/api/v2/data": []string{
+	"/api/v2/data": {
 		http.MethodGet,
 		http.MethodPost,
 		http.MethodDelete,

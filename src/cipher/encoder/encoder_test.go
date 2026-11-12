@@ -588,7 +588,7 @@ func TestEncodeDictNested(t *testing.T) {
 		X: 0x01234567,
 		Y: 0x0123456789ABCDEF,
 		M: map[uint8]TestStruct{
-			0x01: TestStruct{
+			0x01: {
 				X: 0x01234567,
 				Y: 0x0123456789ABCDEF,
 				Z: 0x01,
@@ -600,7 +600,7 @@ func TestEncodeDictNested(t *testing.T) {
 					17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
 				},
 			},
-			0x23: TestStruct{
+			0x23: {
 				X: 0x01234567,
 				Y: 0x0123456789ABCDEF,
 				Z: 0x01,

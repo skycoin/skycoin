@@ -543,8 +543,8 @@ func TestNewMasterKey(t *testing.T) {
 	// NewMasterKey requires a seed length >=16 and <=64 bytes
 	badSeeds := [][]byte{
 		nil,
-		[]byte{},
-		[]byte{1},
+		{},
+		{1},
 		make([]byte, 15),
 		make([]byte, 65),
 	}

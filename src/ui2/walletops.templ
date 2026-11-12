@@ -127,9 +127,11 @@ templ accountsSection(w Wallet) {
 				</h2>
 				<span class="badge">m/44'/…/{ utoa(uint64(a.Index)) }'</span>
 				<span class="spacer"></span>
-				<span class="nowrap">@Money(a.Balance) {
-	T(ctx, "balance.coins") 
-}</span>
+				<span class="nowrap">
+					@Money(a.Balance) {
+						T(ctx, "balance.coins") 
+					}
+				</span>
 			</div>
 			@ErrorBox(a.Err)
 			if len(a.Addrs) > 0 {

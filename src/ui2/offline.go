@@ -1,6 +1,7 @@
 package ui2
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"sort"
@@ -99,9 +100,13 @@ type TxView struct {
 	// ToSign are the unsigned inputs the wallet owns.
 	ToSign int
 	// Owns is whether the wallet owns any input.
-	Owns   bool
-	Notice string
-	Err    string
+	Owns bool
+	// Browser is the id of the browser wallet whose inputs bw.js signs.
+	Browser string
+	// InnerHash is what each input signature covers, with the input.
+	InnerHash string
+	Notice    string
+	Err       string
 }
 
 var (
@@ -113,6 +118,19 @@ var (
 // outputs node wallet id owns, as the Angular joint transaction page does
 // (src/skycoin-web/src/app/services/wallet/joint-transaction.service.ts).
 func ReviewTx(n Node, id, raw string) TxView {
+	return reviewTx(n, id, raw, nil)
+}
+
+// ReviewBrowserTx is ReviewTx for browser wallet w, whose inputs bw.js signs.
+func ReviewBrowserTx(n Node, w BrowserWallet, raw string) TxView {
+	v := reviewTx(n, "", raw, w.addrs())
+	v.Browser = w.ID
+	return v
+}
+
+// reviewTx reviews raw for node wallet id, or for the wallet that owns
+// addrs when they are given.
+func reviewTx(n Node, id, raw string, addrs []string) TxView {
 	v := TxView{Raw: strings.TrimSpace(raw), WalletID: id}
 	fail := func(err error) TxView {
 		v.Err = err.Error()
@@ -128,8 +146,12 @@ func ReviewTx(n Node, id, raw string) TxView {
 		}
 	}
 	v.Full = v.Signed == len(txn.In)
+	v.InnerHash = txn.InnerHash.Hex()
 
 	mine := map[string]bool{}
+	for _, a := range addrs {
+		mine[a] = true
+	}
 	if id != "" {
 		w, err := n.Wallet(id)
 		if err != nil {
@@ -351,6 +373,12 @@ func LoadOwnOutputs(n Node, id string) OwnOutputs {
 	for _, e := range w.Entries {
 		addrs = append(addrs, e.Address)
 	}
+	return LoadOwnOutputsOf(n, addrs)
+}
+
+// LoadOwnOutputsOf reads the confirmed unspent outputs of addrs.
+func LoadOwnOutputsOf(n Node, addrs []string) OwnOutputs {
+	var out OwnOutputs
 	s, err := n.OutputsForAddresses(addrs)
 	if err != nil {
 		out.Err = err.Error()
@@ -365,4 +393,34 @@ func LoadOwnOutputs(n Node, id string) OwnOutputs {
 
 func txPageURL(id, raw string) string {
 	return "tx?id=" + url.QueryEscape(id) + "&tx=" + url.QueryEscape(raw)
+}
+
+// BrowserSignJob is what bw.js needs to sign a browser wallet's inputs of
+// a transaction: SHA256(InnerHash, input hash) signed into each index.
+type BrowserSignJob struct {
+	Raw    string        `json:"raw"`
+	Inner  string        `json:"inner"`
+	Inputs []BrowserSign `json:"inputs"`
+}
+
+// BrowserSign is one input bw.js signs.
+type BrowserSign struct {
+	Index   int    `json:"index"`
+	Hash    string `json:"hash"`
+	Address string `json:"address"`
+}
+
+// SignJob is the signing job of v's unsigned inputs that its wallet owns.
+func (v TxView) SignJob() string {
+	j := BrowserSignJob{Raw: v.Raw, Inner: v.InnerHash}
+	for _, in := range v.Inputs {
+		if in.Mine && !in.Signed {
+			j.Inputs = append(j.Inputs, BrowserSign{Index: in.Index, Hash: in.Hash, Address: in.Address})
+		}
+	}
+	b, err := json.Marshal(j)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
 }

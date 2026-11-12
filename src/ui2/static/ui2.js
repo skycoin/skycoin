@@ -231,7 +231,7 @@ document.addEventListener('click', function (e) {
 		toastMsg(box.getAttribute('data-msg-invalid'), true);
 		return;
 	}
-	var f = document.getElementById('send');
+	var f = document.getElementById('send-rows').closest('form');
 	f.querySelector('#send-rows [name=to]').value = addr;
 	if (amount !== null) f.querySelector('#send-rows [name=coins]').value = amount;
 	if (hours !== null) {

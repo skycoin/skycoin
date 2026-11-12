@@ -47,20 +47,20 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | wallet password at send | password-dialog | present | present | |
 | change address | send-form-advanced | present | present | |
 | warnings for spent, reused and own destinations | send-verify | present | present | a ui2 addition |
-| several destinations | send-form-advanced | present | missing | |
-| pick source addresses or outputs | send-form-advanced | present | missing | |
-| hours allocation (auto share factor, manual) | send-form-advanced | present | missing | browser: auto, share 0.5 |
+| several destinations | send-form-advanced | present | present | |
+| pick source addresses or outputs | send-form-advanced | present | present | |
+| hours allocation (auto share factor, manual) | send-form-advanced | present | present | |
 | fee presets slow, normal, fast | send-form | n/a | n/a | BTC and ETH sends only, see multi-coin |
-| send all available coins | send-form | present | missing | |
-| personal note | send-form | present | missing | |
-| fill from a `skycoin:` link | enter-link | present | missing | |
+| send all available coins | send-form | present | present | |
+| personal note | send-form | present | present | |
+| fill from a `skycoin:` link | enter-link | present | present | |
 | scan a QR code | qr-scan-dialog | missing | missing | |
 | USD value | send-form, history | missing | missing | price source on hold |
-| bulk send from CSV | bulk-send | present | missing | lines pasted into the form |
-| unsigned transaction | offline-tx | present | missing | |
-| sign a transaction | offline-tx | present | missing | |
+| bulk send from CSV | bulk-send | present | present | lines pasted into the form |
+| unsigned transaction | offline-tx | present | present | |
+| sign a transaction | offline-tx | present | present | |
 | broadcast a raw transaction | offline-tx | present | present | the transactions page needs no wallet to broadcast |
-| joint transactions, create and co-sign | joint-transaction | present | missing | |
+| joint transactions, create and co-sign | joint-transaction | present | present | |
 
 ## History
 

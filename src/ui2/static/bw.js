@@ -420,19 +420,57 @@
 		return keys;
 	}
 
-	// checkSign fails unless the outputs pay exactly the reviewed amount to
-	// the reviewed address, and everything else comes back to the wallet.
-	function checkSign(s, w, fresh, to) {
+	// droplets reads a coin amount as millionths, or NaN.
+	function droplets(s) {
+		var m = /^(\d*)(?:\.(\d{0,6}))?$/.exec((s || '').trim());
+		if (!m || (m[1] === '' && !m[2])) return NaN;
+		return parseInt(m[1] || '0', 10) * 1e6 + parseInt(((m[2] || '') + '000000').slice(0, 6), 10);
+	}
+
+	// formDests are the destinations the form asks for, read here rather
+	// than taken from the server: bulk lines when there are any, else the rows.
+	function formDests(form) {
+		var out = [];
+		var bulk = form.elements.bulk ? form.elements.bulk.value.trim() : '';
+		if (bulk) {
+			bulk.split('\n').forEach(function (line) {
+				var f = line.split(',').map(function (x) { return x.trim(); });
+				if (f.length >= 2 && f[0]) out.push({ to: f[0], coins: droplets(f[1]) });
+			});
+			return out;
+		}
+		var to = form.querySelectorAll('#send-rows [name=to]'), coins = form.querySelectorAll('#send-rows [name=coins]');
+		for (var i = 0; i < to.length; i++) {
+			if (to[i].value.trim()) out.push({ to: to[i].value.trim(), coins: droplets(coins[i].value) });
+		}
+		return out;
+	}
+
+	// checkSign fails unless the outputs pay each destination the form asked
+	// for exactly what it asked, and everything else comes back to the
+	// wallet. A move has no form destination: it goes to the fresh address.
+	function checkSign(s, w, fresh, want) {
 		var own = {};
 		summary(w).addresses.forEach(function (a) { own[a.address] = true; });
 		own[fresh.change] = true;
-		if (s.to !== to) throw new Error(msg('mismatch'));
-		var paid = 0;
+		if (!want) {
+			if (s.dests.length !== 1 || s.dests[0].to !== fresh.receive) throw new Error(msg('mismatch'));
+			want = s.dests;
+		}
+		var asked = {}, paid = {};
+		want.forEach(function (d) {
+			if (!(d.coins > 0)) throw new Error(msg('mismatch'));
+			asked[d.to] = (asked[d.to] || 0) + d.coins;
+		});
 		s.outputs.forEach(function (o) {
-			if (o.address === to) paid += o.coins;
+			if (asked[o.address] !== undefined) paid[o.address] = (paid[o.address] || 0) + o.coins;
 			else if (!own[o.address]) throw new Error(msg('mismatch'));
 		});
-		if (paid !== s.coins || !s.inputs.length) throw new Error(msg('mismatch'));
+		Object.keys(asked).forEach(function (a) {
+			var p = paid[a] || 0;
+			if (own[a] ? p < asked[a] : p !== asked[a]) throw new Error(msg('mismatch'));
+		});
+		if (!s.inputs.length) throw new Error(msg('mismatch'));
 	}
 
 	// remember stores the fresh addresses the transaction pays, before it is
@@ -475,8 +513,10 @@
 			var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
 			if (!w) throw new Error(msg('missing'));
 			$('bw-data').value = JSON.stringify(summary(w));
+			document.body.dispatchEvent(new CustomEvent('bw-ready'));
 			form.addEventListener('submit', function (e) {
 				e.preventDefault();
+				if (e.submitter) $('bw-unsigned').value = '';
 				setError('');
 				var pw = $('bw-send-password').value;
 				cipher().then(function (c) {
@@ -500,8 +540,7 @@
 			btn.disabled = true;
 			try {
 				var s = JSON.parse(box.getAttribute('data-bw-sign'));
-				var to = form.elements.to ? form.elements.to.value.trim() : session.fresh.receive;
-				checkSign(s, session.w, session.fresh, to);
+				checkSign(s, session.w, session.fresh, form.elements.from ? null : formDests(form));
 				var keys = keysOf(session.c, session.w, session.sec, s.inputs.map(function (i) { return i.address; }));
 				var inputs = s.inputs.map(function (i) { return { hash: i.hash, secret: keys[i.address], address: i.address }; });
 				var raw = call(session.c, 'prepareTransaction', [JSON.stringify(inputs), JSON.stringify(s.outputs)]);
@@ -518,6 +557,32 @@
 				});
 			} catch (err) {
 				btn.disabled = false;
+				setError(err.message);
+			}
+		});
+
+		// Unsigned asks for the same review without signing. The fresh change
+		// address it pays is stored before the transaction is shown.
+		document.addEventListener('click', function (e) {
+			if (!e.target.closest || !e.target.closest('[data-bw-unsigned]')) return;
+			$('bw-unsigned').value = '1';
+			form.requestSubmit();
+		});
+		document.addEventListener('htmx:afterSwap', function (e) {
+			if (!e.detail.target || e.detail.target.id !== 'review' || !session) return;
+			var box = document.querySelector('[data-bw-unsigned-tx]');
+			if (!box) return;
+			var done = session;
+			session = null;
+			try {
+				var s = JSON.parse(box.getAttribute('data-bw-unsigned-tx'));
+				checkSign(s, done.w, done.fresh, formDests(form));
+				remember(id, done.fresh, s, done.pw).catch(function (err) {
+					box.hidden = true;
+					setError(err && err.message ? err.message : msg('error'));
+				});
+			} catch (err) {
+				box.hidden = true;
 				setError(err.message);
 			}
 		});
@@ -675,6 +740,86 @@
 		});
 	}
 
+	// hexBytes and bytesHex convert between hex and bytes.
+	function hexBytes(h) {
+		var out = new Uint8Array(h.length / 2);
+		for (var i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+		return out;
+	}
+	function bytesHex(b) {
+		var s = '';
+		for (var i = 0; i < b.length; i++) s += ('0' + b[i].toString(16)).slice(-2);
+		return s;
+	}
+
+	// signInputs signs job's inputs with keys, as the Angular wallet's joint
+	// transaction service does: each signature covers SHA256(inner hash ||
+	// input hash) and goes in the input's slot of the encoded transaction
+	// (src/coin/transactions.go: length u32, type u8, inner hash, then the
+	// u32 counted 65 byte signatures).
+	function signInputs(job, keys) {
+		var extras = window.SkycoinCipherExtras;
+		if (!extras || typeof extras.signHash !== 'function') return Promise.reject(new Error(msg('error')));
+		var raw = job.raw;
+		return job.inputs.reduce(function (p, input) {
+			return p.then(function () {
+				var data = new Uint8Array(64);
+				data.set(hexBytes(job.inner), 0);
+				data.set(hexBytes(input.hash), 32);
+				return crypto.subtle.digest('SHA-256', data).then(function (d) {
+					var sig = extras.signHash(bytesHex(new Uint8Array(d)), keys[input.address]);
+					if (!sig || sig.error || !/^[0-9a-f]{130}$/i.test(sig)) throw new Error(msg('mismatch'));
+					var start = (4 + 1 + 32 + 4 + input.index * 65) * 2;
+					raw = raw.substring(0, start) + sig.toLowerCase() + raw.substring(start + 130);
+				});
+			});
+		}, Promise.resolve()).then(function () { return raw; });
+	}
+
+	// txFlow lets a browser wallet review, sign and make joint transactions.
+	// The chosen wallet's public part goes in #bw-data; its keys stay here.
+	function txFlow() {
+		var sel = $('bw-tx-wallet'), wallets = {};
+		withList(function (list) {
+			list.filter(ours).filter(function (w) { return w.walletType !== 'pq'; }).forEach(function (w) {
+				var id = firstAddress(w);
+				wallets[id] = w;
+				var o = document.createElement('option');
+				o.value = id;
+				o.textContent = w.label || id;
+				sel.appendChild(o);
+			});
+		}).catch(function (err) { setError(err && err.message ? err.message : msg('error')); });
+		sel.addEventListener('change', function () {
+			var w = wallets[sel.value];
+			$('bw-data').value = w ? JSON.stringify(summary(w)) : '';
+			document.body.dispatchEvent(new CustomEvent('bw-wallet'));
+		});
+		document.addEventListener('click', function (e) {
+			if (!e.target.closest || !e.target.closest('#bw-tx-sign')) return;
+			var box = document.querySelector('[data-bw-tx-sign]');
+			var w = box && wallets[box.getAttribute('data-bw-wallet')];
+			var out = $('bw-tx-error');
+			if (!w) { out.textContent = msg('missing'); return; }
+			var job = JSON.parse(box.getAttribute('data-bw-tx-sign'));
+			var btn = $('bw-tx-sign');
+			btn.disabled = true;
+			out.textContent = '';
+			var pw = $('bw-tx-password').value;
+			cipher().then(function (c) {
+				return secretsOf(c, w, pw).then(function (sec) {
+					$('bw-tx-password').value = '';
+					return signInputs(job, keysOf(c, w, sec, job.inputs.map(function (i) { return i.address; })));
+				});
+			}).then(function (raw) {
+				htmx.ajax('POST', 'tx/review', { target: '#tx-review', swap: 'innerHTML', values: { rawtx: raw, wallet: $('bw-data').value } });
+			}).catch(function (err) {
+				btn.disabled = false;
+				out.textContent = err && err.message ? err.message : msg('error');
+			});
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var fail = function (err) {
 			var e = $('bw-page-error') || $('bw-error');
@@ -694,6 +839,8 @@
 			createFlow(mode === 'load');
 		} else if (mode === 'send') {
 			sendFlow(page.getAttribute('data-bw-id'));
+		} else if (mode === 'tx') {
+			txFlow();
 		}
 	});
 })();

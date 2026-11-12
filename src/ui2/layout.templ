@@ -27,13 +27,25 @@ templ Layout(title, nav string) {
 				<div class="menu-items" id="top-menu">
 					<nav class="home">
 						<a href="./" class={ templ.KV("active", nav == "wallets") }>{ T(ctx, "nav.wallets") }</a>
-						<a href="history" class={ templ.KV("active", nav == "history") }>{ T(ctx, "nav.history") }</a>
-						<a href="tx" class={ templ.KV("active", nav == "tx") }>{ T(ctx, "nav.tx") }</a>
-						<a href="status" class={ templ.KV("active", nav == "status") }>{ T(ctx, "nav.status") }</a>
-						<a href="settings" class={ templ.KV("active", nav == "settings") }>{ T(ctx, "nav.settings") }</a>
+						if From(ctx).Gateway() == "" {
+							<a href="history" class={ templ.KV("active", nav == "history") }>{ T(ctx, "nav.history") }</a>
+							<a href="tx" class={ templ.KV("active", nav == "tx") }>{ T(ctx, "nav.tx") }</a>
+							<a href="status" class={ templ.KV("active", nav == "status") }>{ T(ctx, "nav.status") }</a>
+							<a href="settings" class={ templ.KV("active", nav == "settings") }>{ T(ctx, "nav.settings") }</a>
+						}
+						if len(From(ctx).Coins) > 0 {
+							<a href="coins" class={ templ.KV("active", nav == "coins") }>{ T(ctx, "nav.coins") }</a>
+						}
 					</nav>
 					<span class="spacer"></span>
 					<div class="tools">
+						if len(From(ctx).Coins) > 1 {
+							<select class="lang coin-pick" aria-label={ T(ctx, "coins.pick") } data-coin>
+								for _, c := range From(ctx).Coins {
+									<option value={ itoa(c.ID) } selected?={ From(ctx).Coin != nil && From(ctx).Coin.ID == c.ID }>{ c.Label() }</option>
+								}
+							</select>
+						}
 						<select class="lang" aria-label={ T(ctx, "ui2.language") } data-lang>
 							for _, l := range Langs {
 								<option value={ l.Code } selected?={ l.Code == From(ctx).Lang }>{ l.Name }</option>

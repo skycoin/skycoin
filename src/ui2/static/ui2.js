@@ -27,9 +27,11 @@
 		e.preventDefault();
 		if (e.detail.question && !window.confirm(e.detail.question)) return;
 		fetch(document.body.getAttribute('data-csrf'), { credentials: 'same-origin' })
-			.then(function (r) { return r.status === 404 ? {} : r.json(); })
-			.then(function (j) { token = j.csrf_token || ''; e.detail.issueRequest(true); })
-			.catch(function (err) { toast('csrf: ' + err, true); });
+			.then(function (r) { return r.ok ? r.json() : {}; })
+			// A host that hands out no token, or cannot, gets the request without
+			// one; a host that checks tokens then refuses it.
+			.catch(function () { return {}; })
+			.then(function (j) { token = (j && j.csrf_token) || ''; e.detail.issueRequest(true); });
 	});
 	document.addEventListener('htmx:configRequest', function (e) {
 		if (e.detail.verb !== 'get' && token) e.detail.headers['X-CSRF-Token'] = token;
@@ -400,3 +402,11 @@ function fillPayment(addr, amount, hours) {
 		});
 	});
 })();
+
+// The coin picker keeps the chosen coin in a cookie the server reads, and
+// opens that coin's wallets.
+document.addEventListener('change', function (e) {
+	if (!e.target.matches || !e.target.matches('[data-coin]')) return;
+	document.cookie = 'ui2-coin=' + e.target.value + ';path=/;max-age=31536000;samesite=strict';
+	window.location.href = document.querySelector('base').href;
+});

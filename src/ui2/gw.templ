@@ -1,0 +1,368 @@
+package ui2
+
+// GwWalletsPage lists the server wallets of a Bitcoin or Ethereum coin.
+templ GwWalletsPage(w GwWallets) {
+	@Layout(w.Coin.CoinName, "wallets") {
+		<section class="card">
+			<div class="head">
+				<h1>{ w.Coin.Label() }</h1>
+				<span class="spacer"></span>
+				if w.Err == "" {
+					<div class="total">
+						<span class="dim small">{ T(ctx, "balance.total") }</span>
+						<span class="big">{ w.Total } <span class="unit">{ w.Coin.CoinSymbol }</span></span>
+					</div>
+				}
+			</div>
+			<p class="small dim">{ T(ctx, "gw.help") }</p>
+			@ErrorBox(w.Err)
+			<div class="bar">
+				<a class="btn primary" href="new"><span class="mi">add</span>{ T(ctx, "create.new-title") }</a>
+				<a class="btn" href="load"><span class="mi">file_download</span>{ T(ctx, "create.load-title") }</a>
+			</div>
+			if w.Err == "" && len(w.Rows) == 0 {
+				@onboarding(false)
+			}
+			if len(w.Rows) > 0 {
+				<div class="table-wrap">
+					<table class="list">
+						<thead>
+							<tr>
+								<th>{ T(ctx, "wallets.label") }</th>
+								<th class="num">{ T(ctx, "wallets.addresses") }</th>
+								<th class="num">{ w.Coin.CoinSymbol }</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, r := range w.Rows {
+								<tr>
+									<td class="name">
+										<a href={ templ.URL(walletURL(r.ID)) }>
+											if r.Label != "" {
+												{ r.Label }
+											} else {
+												{ r.ID }
+											}
+										</a>
+										if r.Encrypted {
+											<span class="mi small-icon" title={ T(ctx, "wallet.encrypted") }>lock</span>
+										}
+									</td>
+									<td class="num" data-label={ T(ctx, "wallets.addresses") }>{ itoa(r.Addresses) }</td>
+									if r.Err != "" {
+										<td class="error">{ r.Err }</td>
+									} else {
+										<td class="num" data-label={ w.Coin.CoinSymbol }>{ r.Balance }</td>
+									}
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</section>
+	}
+}
+
+// GwWalletPage is one server wallet of a gateway coin: its balance, its
+// addresses, its options and its history.
+templ GwWalletPage(w GwWallet) {
+	@Layout(w.Label, "wallets") {
+		<div class="page-head">
+			<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			<h1>
+				if w.Label != "" {
+					{ w.Label }
+				} else {
+					{ w.ID }
+				}
+			</h1>
+			<span class="badge">{ w.Coin.CoinSymbol }</span>
+			if w.Encrypted {
+				<span class="badge on"><span class="mi small-icon">lock</span>{ T(ctx, "wallet.encrypted") }</span>
+			}
+			if w.Err == "" {
+				<span class="spacer"></span>
+				<a class="btn primary" href={ templ.URL(sendURL(w.ID, "")) }><span class="mi">send</span>{ T(ctx, "send.title") }</a>
+			}
+		</div>
+		@noticeBox(w.Notice)
+		<section class="card">
+			@ErrorBox(w.Err)
+			<div class="ov">
+				<div class="ov-card">
+					<span class="ov-title">{ w.Coin.CoinSymbol }</span>
+					<span class="ov-big">{ w.Balance }</span>
+				</div>
+			</div>
+		</section>
+		if w.Err == "" {
+			@walletOptions(Wallet{ID: w.ID, Meta: gwMeta(w)})
+			<section class="card">
+				<h2>{ T(ctx, "wallet.addresses") }</h2>
+				<div class="table-wrap">
+					<table class="list">
+						<thead>
+							<tr>
+								<th>{ T(ctx, "wallet.address") }</th>
+								<th class="num">{ w.Coin.CoinSymbol }</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, a := range w.Addrs {
+								<tr class={ templ.KV("empty", a.Empty) }>
+									<td class="name mono">
+										<span class="key" data-copy={ a.Address } title={ T(ctx, "ui2.copy") }>{ a.Address }</span>
+										<span class="addr-tools">
+											<button class="icon-btn sm" type="button" data-qr={ a.Address } data-qr-coin={ qrScheme(w.Coin) } title={ T(ctx, "qr.show") } aria-label={ T(ctx, "qr.show") }><span class="mi">crop_free</span></button>
+										</span>
+									</td>
+									<td class="num" data-label={ w.Coin.CoinSymbol }>{ a.Balance }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</section>
+			<section class="card">
+				<h2>{ T(ctx, "wallet.history") }</h2>
+				<div id="txns" hx-get={ "gw/txns?id=" + w.ID } hx-trigger="load" hx-swap="outerHTML">
+					<p class="dim">{ T(ctx, "ui2.loading") }</p>
+				</div>
+			</section>
+		}
+	}
+}
+
+// GwTxnList is a gateway wallet's history.
+templ GwTxnList(t GwTxns) {
+	<div id="txns">
+		@ErrorBox(t.Err)
+		if t.Err == "" && len(t.Rows) == 0 {
+			<p class="dim">{ T(ctx, "wallet.no-history") }</p>
+		}
+		if len(t.Rows) > 0 {
+			<div class="table-wrap">
+				<table class="list">
+					<thead>
+						<tr>
+							<th>{ T(ctx, "tx.kind") }</th>
+							<th class="num">{ t.Coin.CoinSymbol }</th>
+							<th>{ T(ctx, "tx.time") }</th>
+							<th>{ T(ctx, "tx.status") }</th>
+							<th>{ T(ctx, "tx.id") }</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, r := range t.Rows {
+							<tr>
+								<td class="name"><span class={ "kind", r.Kind }><span class="mi">{ kindIcon(r.Kind) }</span>{ T(ctx, "tx.kind-" + r.Kind) }</span></td>
+								<td class="num" data-label={ t.Coin.CoinSymbol }>
+									{ r.Amount }
+									if r.Fee != "" {
+										<span class="small dim nowrap">{ T(ctx, "gw.fee", "fee", r.Fee) }</span>
+									}
+								</td>
+								<td class="nowrap" data-label={ T(ctx, "tx.time") }>{ r.Time }</td>
+								<td data-label={ T(ctx, "tx.status") }>
+									switch  {
+										case r.Failed:
+											<span class="badge err">{ T(ctx, "gw.failed") }</span>
+										case r.Confirmed:
+											<span class="badge on">{ T(ctx, "tx.confirmed") }</span>
+										default:
+											<span class="badge warn-text">{ T(ctx, "tx.pending") }</span>
+									}
+								</td>
+								<td class="mono small" data-label={ T(ctx, "tx.id") }><span class="key txid" data-copy={ r.Txid } title={ r.Txid }>{ r.Txid }</span></td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</div>
+}
+
+// GwSendPage sends from a gateway wallet. The host signs and broadcasts,
+// so the review asks for the password.
+templ GwSendPage(v GwSendView) {
+	@Layout(T(ctx, "send.title"), "wallets") {
+		<div class="page-head">
+			<a class="icon-btn" href={ templ.URL(walletURL(v.ID)) } aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
+			<h1>{ T(ctx, "send.title") }</h1>
+			<span class="badge">{ v.Label }</span>
+		</div>
+		<section class="card">
+			@ErrorBox(v.Err)
+			<p class="dim">{ T(ctx, "send.available") } <strong>{ v.Balance }</strong> { v.Coin.CoinSymbol }</p>
+			<form id="gw-send" class="form" hx-post="send/review" hx-target="#review" hx-swap="innerHTML show:#review:top" hx-disabled-elt="find button" autocomplete="off">
+				<input type="hidden" name="id" value={ v.ID }/>
+				<label>
+					{ T(ctx, "send.to") }
+					<input name="to" class="mono" required spellcheck="false" autocapitalize="off"/>
+				</label>
+				<label>
+					{ T(ctx, "gw.amount", "symbol", v.Coin.CoinSymbol) }
+					<input name="amount" inputmode="decimal" required/>
+				</label>
+				<fieldset>
+					<legend>{ T(ctx, "gw.fee-speed") }</legend>
+					for _, name := range presetNames {
+						if p, ok := v.Fees[name]; ok {
+							<label class="check">
+								<input type="radio" name="preset" value={ name } checked?={ name == v.Preset }/>
+								{ T(ctx, "gw.speed-" + name) } <span class="small dim">{ feeText(v.Coin, p) }</span>
+							</label>
+						}
+					}
+				</fieldset>
+				<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "send.review") }</button><span class="busy dim small">{ T(ctx, "ui2.working") }</span></div>
+			</form>
+			<div id="review"></div>
+		</section>
+	}
+}
+
+// GwReview confirms a gateway send and asks for the password, which goes
+// only with the request that sends.
+templ GwReview(v GwSendView) {
+	<div class="card sub">
+		<h2>{ T(ctx, "send.review-title") }</h2>
+		<dl class="kv">
+			<dt>{ T(ctx, "send.to") }</dt>
+			<dd class="mono">{ v.To }</dd>
+			<dt>{ T(ctx, "gw.amount", "symbol", v.Coin.CoinSymbol) }</dt>
+			<dd><strong>{ v.Amount }</strong></dd>
+			<dt>{ T(ctx, "send.fee") }</dt>
+			<dd>{ T(ctx, "gw.speed-" + v.Preset) } · { v.FeeText }</dd>
+		</dl>
+		<form class="form" hx-post="send/do" hx-target="#review" hx-swap="innerHTML show:#review:top" hx-disabled-elt="find button" autocomplete="off">
+			<input type="hidden" name="id" value={ v.ID }/>
+			<input type="hidden" name="to" value={ v.To }/>
+			<input type="hidden" name="amount" value={ v.Amount }/>
+			<input type="hidden" name="preset" value={ v.Preset }/>
+			if v.Encrypted {
+				<label>
+					{ T(ctx, "send.password") }
+					<input type="password" name="password" required autocomplete="current-password"/>
+				</label>
+			}
+			<div class="bar">
+				<button class="btn primary" type="submit"><span class="mi">send</span>{ T(ctx, "send.send") }</button>
+				<button class="btn" type="button" data-clear="#review">{ T(ctx, "send.cancel") }</button>
+				<span class="busy dim small">{ T(ctx, "ui2.working") }</span>
+			</div>
+		</form>
+	</div>
+}
+
+// CoinsPage lists the coins, adds a fiber coin or an ERC-20 token, and
+// removes added ones.
+templ CoinsPage(v CoinsView) {
+	@Layout(T(ctx, "nav.coins"), "coins") {
+		@noticeBox(v.Notice)
+		<section class="card">
+			<div class="head">
+				<h1>{ T(ctx, "nav.coins") }</h1>
+				<span class="spacer"></span>
+				<a class="btn" href="coins/endpoints"><span class="mi">dns</span>{ T(ctx, "coins.endpoints") }</a>
+			</div>
+			@ErrorBox(v.Err)
+			<div class="table-wrap">
+				<table class="list">
+					<thead>
+						<tr>
+							<th>{ T(ctx, "coins.name") }</th>
+							<th>{ T(ctx, "coins.kind") }</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, c := range v.Coins {
+							<tr>
+								<td class="name">{ c.Label() }</td>
+								<td data-label={ T(ctx, "coins.kind") }><span class="badge">{ c.CoinType }</span></td>
+								<td class="num">
+									if c.CustomID != "" {
+										<button class="btn sm" type="button" hx-post="coins" hx-vals={ removeVals(c.CustomID) } hx-confirm={ T(ctx, "coins.remove-confirm") } hx-target="#coin-error" hx-swap="innerHTML">{ T(ctx, "coins.remove") }</button>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			<div id="coin-error" role="alert"></div>
+		</section>
+		<section class="card">
+			<h2>{ T(ctx, "coins.add-title") }</h2>
+			<form class="form" hx-post="coins" hx-target="#add-error" hx-swap="innerHTML" autocomplete="off">
+				<label>
+					{ T(ctx, "coins.kind") }
+					<select name="kind">
+						<option value="fiber">{ T(ctx, "coins.kind-fiber") }</option>
+						<option value="erc20">{ T(ctx, "coins.kind-erc20") }</option>
+					</select>
+				</label>
+				<label>
+					{ T(ctx, "coins.name") }
+					<input name="name" maxlength="60"/>
+				</label>
+				<label>
+					{ T(ctx, "coins.ticker") }
+					<input name="ticker" maxlength="12"/>
+				</label>
+				<label>
+					{ T(ctx, "coins.node-url") }
+					<input name="node_url" class="mono" spellcheck="false" autocapitalize="off" placeholder="https://"/>
+				</label>
+				<label>
+					{ T(ctx, "coins.contract") }
+					<input name="contract" class="mono" spellcheck="false" autocapitalize="off" placeholder="0x"/>
+				</label>
+				<label>
+					{ T(ctx, "coins.decimals") }
+					<input name="decimals" inputmode="numeric"/>
+				</label>
+				<p class="small dim">{ T(ctx, "coins.add-help") }</p>
+				<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "coins.add") }</button></div>
+				<div id="add-error" role="alert"></div>
+			</form>
+		</section>
+	}
+}
+
+// EndpointsPage edits the Ethereum RPC servers and indexer every Ethereum
+// coin shares.
+templ EndpointsPage(v EndpointsView) {
+	@Layout(T(ctx, "coins.endpoints"), "coins") {
+		<div class="page-head">
+			<a class="icon-btn" href="coins" aria-label={ T(ctx, "nav.coins") }><span class="mi">arrow_back</span></a>
+			<h1>{ T(ctx, "coins.endpoints") }</h1>
+		</div>
+		@noticeBox(v.Notice)
+		<section class="card">
+			@ErrorBox(v.Err)
+			if v.None {
+				<p class="dim">{ T(ctx, "coins.no-eth") }</p>
+			}
+			if v.Endpoints != nil {
+				<p class="small dim">{ T(ctx, "coins.endpoints-help") }</p>
+				<form class="form" hx-post="coins/endpoints" hx-target="#ep-error" hx-swap="innerHTML" autocomplete="off">
+					<label>
+						{ T(ctx, "coins.rpc-urls") }
+						<textarea name="rpc_urls" class="mono" rows="4" spellcheck="false" autocapitalize="off">{ joinLines(v.Endpoints.RPCURLs) }</textarea>
+					</label>
+					<label>
+						{ T(ctx, "coins.indexer-url") }
+						<input name="indexer_url" class="mono" value={ v.Endpoints.IndexerURL } spellcheck="false" autocapitalize="off"/>
+					</label>
+					<p class="small dim">{ T(ctx, "coins.defaults", "rpc", joinComma(v.Endpoints.DefaultRPCURLs), "indexer", v.Endpoints.DefaultIndexerURL) }</p>
+					<div class="bar"><button class="btn primary" type="submit">{ T(ctx, "coins.save") }</button></div>
+					<div id="ep-error" role="alert"></div>
+				</form>
+			}
+		</section>
+	}
+}

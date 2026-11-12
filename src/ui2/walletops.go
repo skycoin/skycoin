@@ -15,16 +15,20 @@ import (
 // Notices a wallet page shows after a change, as catalog keys. The page
 // shows only these, so a link cannot put other text on it.
 var notices = map[string]string{
-	"renamed":   "wallet.done-renamed",
-	"added":     "wallet.done-added",
-	"scanned":   "wallet.done-scanned",
-	"encrypted": "wallet.done-encrypted",
-	"decrypted": "wallet.done-decrypted",
-	"reset":     "wallet.done-reset",
-	"account":   "wallet.done-account",
-	"set":       "bw.done-app-set",
-	"change":    "bw.done-app-change",
-	"remove":    "bw.done-app-remove",
+	"renamed":      "wallet.done-renamed",
+	"added":        "wallet.done-added",
+	"scanned":      "wallet.done-scanned",
+	"encrypted":    "wallet.done-encrypted",
+	"decrypted":    "wallet.done-decrypted",
+	"reset":        "wallet.done-reset",
+	"account":      "wallet.done-account",
+	"coin-added":   "coins.done-added",
+	"coin-removed": "coins.done-removed",
+	"endpoints":    "coins.done-endpoints",
+	"sent":         "gw.done-sent",
+	"set":          "bw.done-app-set",
+	"change":       "bw.done-app-change",
+	"remove":       "bw.done-app-remove",
 }
 
 // Notice is the message a wallet page opens with, empty for none.

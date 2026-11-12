@@ -53,6 +53,18 @@ type Page struct {
 	Base    string
 	Lang    string
 	Classic string
+	// Coin is the coin the pages are about, and Coins every coin the host
+	// offers, when it serves several.
+	Coin  *Coin
+	Coins []Coin
+}
+
+// Gateway is the gateway of the page's coin, empty for a Skycoin or fiber coin.
+func (p *Page) Gateway() string {
+	if p.Coin == nil {
+		return ""
+	}
+	return p.Coin.Gateway()
 }
 
 type pageKey struct{}

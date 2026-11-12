@@ -47,7 +47,7 @@ templ walletOptions(w Wallet) {
 				}
 				@walletPassword(w)
 			}
-			if w.Meta.Type == "bip44" {
+			if w.Meta.Type == "bip44" && From(ctx).Gateway() == "" {
 				@walletOpForm(w, "account", "add", T(ctx, "wallet.add-account")) {
 					<label>
 						{ T(ctx, "wallet.account-name") }
@@ -56,13 +56,15 @@ templ walletOptions(w Wallet) {
 					@walletPassword(w)
 				}
 			}
-			@walletOpForm(w, "scan", "search", T(ctx, "wallet.scan")) {
-				<p class="small dim">{ T(ctx, "wallet.scan-help") }</p>
-				<label>
-					{ T(ctx, "wallet.scan-gap") }
-					<input type="number" name="num" value="20" min="1" max={ itoa(MaxNewAddresses) } required/>
-				</label>
-				@walletPassword(w)
+			if From(ctx).Gateway() == "" {
+				@walletOpForm(w, "scan", "search", T(ctx, "wallet.scan")) {
+					<p class="small dim">{ T(ctx, "wallet.scan-help") }</p>
+					<label>
+						{ T(ctx, "wallet.scan-gap") }
+						<input type="number" name="num" value="20" min="1" max={ itoa(MaxNewAddresses) } required/>
+					</label>
+					@walletPassword(w)
+				}
 			}
 			if w.Meta.Encrypted {
 				<a class="op-link" href={ templ.URL(resetURL(w.ID)) }><span class="mi">restore</span>{ T(ctx, "reset.title") }</a>

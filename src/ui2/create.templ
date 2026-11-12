@@ -24,31 +24,41 @@ templ CreatePage(load bool) {
 					{ T(ctx, "create.label") }
 					<input name="label" required maxlength="100"/>
 				</label>
-				<label>
-					{ T(ctx, "create.type") }
-					<select name="type">
-						<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
-						<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
-						<option value="pq">{ T(ctx, "create.type-pq") }</option>
-					</select>
-				</label>
-				<p class="small dim">{ T(ctx, "create.type-pq-info") }</p>
+				if From(ctx).Gateway() == "" {
+					<label>
+						{ T(ctx, "create.type") }
+						<select name="type">
+							<option value="bip44" selected>{ T(ctx, "create.type-bip44") }</option>
+							<option value="deterministic">{ T(ctx, "create.type-deterministic") }</option>
+							<option value="pq">{ T(ctx, "create.type-pq") }</option>
+						</select>
+					</label>
+					<p class="small dim">{ T(ctx, "create.type-pq-info") }</p>
+				} else if From(ctx).Gateway() == "btc" {
+					<label class="check">
+						<input type="checkbox" name="legacy" value="1"/>
+						{ T(ctx, "gw.legacy") }
+					</label>
+					<p class="small dim">{ T(ctx, "gw.legacy-help") }</p>
+				}
 				if load {
 					<label>
 						{ T(ctx, "create.seed") }
 						<textarea name="seed" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
 					</label>
-					<label class="check">
-						<input type="checkbox" name="nonstandard" value="1"/>
-						{ T(ctx, "create.nonstandard") }
-					</label>
+					if From(ctx).Gateway() == "" {
+						<label class="check">
+							<input type="checkbox" name="nonstandard" value="1"/>
+							{ T(ctx, "create.nonstandard") }
+						</label>
+					}
 				}
 				<label>
 					{ T(ctx, "create.passphrase") }
 					<input type="password" name="passphrase" autocomplete="off"/>
 				</label>
 				<p class="small dim">{ T(ctx, "create.passphrase-help") }</p>
-				if load {
+				if load && From(ctx).Gateway() == "" {
 					<label class="check">
 						<input type="checkbox" name="temp" value="1"/>
 						{ T(ctx, "create.temp") }

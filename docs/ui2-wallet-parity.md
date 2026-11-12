@@ -50,7 +50,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | several destinations | send-form-advanced | present | present | |
 | pick source addresses or outputs | send-form-advanced | present | present | |
 | hours allocation (auto share factor, manual) | send-form-advanced | present | present | |
-| fee presets slow, normal, fast | send-form | n/a | n/a | BTC and ETH sends only, see multi-coin |
+| fee presets slow, normal, fast | send-form | present | n/a | BTC and ETH sends only, see multi-coin |
 | send all available coins | send-form | present | present | |
 | personal note | send-form | present | present | |
 | fill from a `skycoin:` link | enter-link | present | present | |
@@ -85,11 +85,11 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | unspent outputs | outputs | present | present | |
 | backup, show seed | backup | present | present | node: needs INSECURE_WALLET_SEED; browser: on the wallet page, decrypted in bw.js |
 | wallet directory, save addresses | backup | present | missing | |
-| node URL per coin | nodes | n/a | missing | ui2 reads the node that serves it |
-| ETH and BTC endpoints | nodes | missing | missing | |
+| node URL per coin | nodes | n/a | missing | ui2 reads the nodes of the host that serves it; Angular can point the browser at another node |
+| Ethereum RPC servers and indexer | nodes | present | n/a | skycoin web |
 | app password set, change, remove | app-password | n/a | present | the wallets inside stay encrypted with their own passwords |
 | lock screen, erase | app-lock | n/a | present | |
-| custom coins, ERC-20 | coins | missing | missing | |
+| custom coins: fiber coins and ERC-20 tokens | coins | present | n/a | skycoin web with --wallet-dir |
 | Skywallet | hardware-wallet | missing | missing | |
 | onboarding wizard on first run | onboarding | present | present | the wallet list opens on a create or load choice while there are none; the password is set in the create form, not a second step |
 | node errors: unreachable, CSRF, no peers, syncing, pending | header | present | present | a strip under the top bar |
@@ -98,11 +98,20 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 
 ## Multi-coin
 
+Multi-coin is skycoin web's: the coins it lists at `/api/v1/coins`, with Bitcoin
+and Ethereum wallets kept by its wallet service (`--wallet-dir`). In ui2 the
+"node" column is those server wallets; Angular keeps no Bitcoin or Ethereum
+wallet in the browser either. The Bitcoin and Ethereum pages were checked only
+with the repo's Go fakes (`cmd/skycoin-web/commands/ui2_coins_test.go`): a fake
+`btc.Backend` and an httptest JSON-RPC node and indexer. A live check needs an
+Electrum server or Bitcoin Core (testnet or regtest) and an Ethereum JSON-RPC
+node with an Etherscan-style indexer, such as a local devnet.
+
 | feature | Angular | node | browser | notes |
 |---|---|---|---|---|
-| coin picker | select-coin | missing | missing | |
-| BTC wallets | electrum backend | missing | missing | |
-| ETH and ERC-20 wallets | eth backend | missing | missing | |
+| coin picker | select-coin | present | n/a | |
+| BTC wallets: create, load, legacy or segwit, balance, history, send with a fee preset | electrum backend | present | n/a | checked against a fake backend only |
+| ETH and ERC-20 wallets: create, load, balance, history, send with a fee preset | eth backend | present | n/a | checked against a fake RPC node and indexer only |
 
 ## Out of scope
 

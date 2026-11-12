@@ -331,3 +331,66 @@ func TestUI2MarketListing(t *testing.T) {
 	}
 	mustContain(t, body, "<!doctype html>", `class="tab-link active" href="market"`)
 }
+
+// TestUI2Orders shows a buy in flight and cancels it.
+func TestUI2Orders(t *testing.T) {
+	srv, database := newReadyMarket(t)
+	seedProduct(t, srv, database, "prod-ui2")
+	ts, c := newUI2Server(t, srv, "")
+	connectUI2(t, ts, c)
+	registerUI2(t, ts, c)
+
+	_, body := send(t, c, "GET", ts.URL+"/ui2/orders", nil)
+	mustContain(t, body, "My Orders", "have any orders yet.", `hx-get="orders/table"`)
+
+	send(t, c, "POST", ts.URL+"/ui2/market/buy", url.Values{"product_id": {"prod-ui2"}}, "HX-Request", "true")
+	_, body = send(t, c, "GET", ts.URL+"/ui2/orders/table", nil)
+	mustContain(t, body, `id="orders"`, "badge buy", "Pending Payment", "Awaiting payment…", "19wiPpvWPxHEmcANKzwUjiRgABQk8wZzCp",
+		`hx-post="orders/cancel"`, "hx-confirm=", "data-local-time=\"datetime\"")
+	i := strings.Index(body, `name="id" value="`)
+	if i < 0 {
+		t.Fatal("no cancel form")
+	}
+	id := body[i+len(`name="id" value="`):]
+	id = id[:strings.Index(id, `"`)]
+
+	_, body = send(t, c, "POST", ts.URL+"/ui2/orders/cancel", url.Values{"id": {id}}, "HX-Request", "true")
+	mustContain(t, body, `id="orders"`, `id="tab-notice" hx-swap-oob="true"`, "alert-info", "Cancelled") //nolint:misspell // the label React shows
+	if strings.Contains(body, `hx-post="orders/cancel"`) {
+		t.Error("a canceled buy can still be canceled")
+	}
+
+	_, body = send(t, c, "POST", ts.URL+"/ui2/orders/cancel", url.Values{"id": {"nope"}}, "HX-Request", "true")
+	mustContain(t, body, "alert-danger")
+}
+
+// TestUI2Listings shows a pending listing and cancels it.
+func TestUI2Listings(t *testing.T) {
+	srv, _ := newReadyMarket(t)
+	ts, c := newUI2Server(t, srv, "")
+	connectUI2(t, ts, c)
+	registerUI2(t, ts, c)
+
+	_, body := send(t, c, "GET", ts.URL+"/ui2/listings", nil)
+	mustContain(t, body, "My Listings", "You have no active sell listings.")
+
+	send(t, c, "POST", ts.URL+"/ui2/market/listing", url.Values{
+		"sell_coin": {"SKY"}, "amount": {"10"}, "price": {"0.001"}, "payment_currency": {"BTC"},
+	}, "HX-Request", "true")
+	_, body = send(t, c, "GET", ts.URL+"/ui2/listings/table", nil)
+	mustContain(t, body, `id="listings"`, "sky-market-wallet", "Pending deposit", `class="badge bg-info">Pending deposit`,
+		"fee", "Cancel this listing?", "For each pending listing")
+	i := strings.Index(body, `name="id" value="`)
+	if i < 0 {
+		t.Fatal("no cancel form")
+	}
+	id := body[i+len(`name="id" value="`):]
+	id = id[:strings.Index(id, `"`)]
+
+	// Without htmx the whole tab comes back with the notice.
+	res, body := send(t, c, "POST", ts.URL+"/ui2/listings/cancel", url.Values{"id": {id}})
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("plain cancel = %d", res.StatusCode)
+	}
+	mustContain(t, body, "<!doctype html>", `id="tab-notice"`, "alert-info")
+}

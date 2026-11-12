@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/0magnet/logrus"
+
+	"github.com/skycoin/skycoin/cmd/skydex-client/skydexui"
 )
 
 //go:embed static
@@ -59,6 +61,8 @@ func serveUI(ctx context.Context, log logrus.FieldLogger, sess *session, addr st
 
 	mux := http.NewServeMux()
 	registerAPI(mux, sess)
+	// The server rendered client, beside the React one until it reaches parity.
+	mux.Handle("/ui2/", http.StripPrefix("/ui2", skydexui.Handler(uiMarket{sess})))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 		if name == "" {

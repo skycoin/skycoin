@@ -11,6 +11,7 @@ templ SettingsPage(browser bool) {
 				<li><a href="status"><span class="mi">dns</span>{ T(ctx, "nav.status") }</a><span class="small dim">{ T(ctx, "settings.status-help") }</span></li>
 				<li><a href="pending"><span class="mi">hourglass_empty</span>{ T(ctx, "nav.pending") }</a><span class="small dim">{ T(ctx, "settings.pending-help") }</span></li>
 				<li><a href="outputs"><span class="mi">toll</span>{ T(ctx, "nav.outputs") }</a><span class="small dim">{ T(ctx, "settings.outputs-help") }</span></li>
+				<li><a href="hw"><span class="mi">memory</span>{ T(ctx, "hw.title") }</a><span class="small dim">{ T(ctx, "hw.settings-help") }</span></li>
 				if !browser {
 					<li><a href="backup"><span class="mi">save</span>{ T(ctx, "nav.backup") }</a><span class="small dim">{ T(ctx, "settings.backup-help") }</span></li>
 				}

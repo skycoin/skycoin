@@ -280,6 +280,14 @@ func coinHandler(n Node, o Options) http.Handler {
 		}
 		return BrowserList(LoadBrowserWallets(n, ws))
 	}))
+	mux.HandleFunc("/hw", page(func(*http.Request) templ.Component { return SkywalletPage() }))
+	mux.HandleFunc("/hw/list", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		ws, err := ParseBrowserWallets(r.PostFormValue("wallets"))
+		if err != nil {
+			return ErrorBox(T(r.Context(), err.Error()))
+		}
+		return HWList(LoadBrowserWallets(n, ws))
+	}))
 	mux.HandleFunc("/bw/wallet/view", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		w, err := ParseBrowserWallet(r.PostFormValue("wallet"))
 		if err != nil {

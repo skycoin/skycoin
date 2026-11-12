@@ -117,6 +117,9 @@
 
 	function isBip44(w) { return w.walletType === 'bip44' && !w.filename && w.accounts && w.accounts.length > 0; }
 	function ours(w) { return !w.isHardware && !w.coinId; }
+	// A Skywallet's wallet holds addresses only. static/hw.js has the device sign.
+	function isHw(w) { return !!w.isHardware && !w.coinId; }
+	function shown(w) { return ours(w) || isHw(w); }
 
 	// summary is the public part of a stored wallet, as ui2.BrowserWallet.
 	function summary(w) {
@@ -129,7 +132,7 @@
 			a.externalAddresses.forEach(function (e, i) { s.addresses.push({ address: e.address, chain: 'external', index: i }); });
 			a.changeAddresses.forEach(function (e, i) { s.addresses.push({ address: e.address, chain: 'change', index: i }); });
 		} else {
-			s.type = w.walletType || 'deterministic';
+			s.type = isHw(w) ? 'skywallet' : w.walletType || 'deterministic';
 			w.addresses.forEach(function (e, i) { s.addresses.push({ address: e.address, index: i }); });
 		}
 		s.id = s.addresses.length ? s.addresses[0].address : '';
@@ -513,8 +516,9 @@
 			return true;
 		};
 		return withList(function (list) {
-			var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+			var w = list.filter(shown).find(function (x) { return firstAddress(x) === id; });
 			if (!w) throw new Error(msg('missing'));
+			if (isHw(w)) return add(w.addresses, fresh.change, fresh.changeAt) ? writeStored(list) : null;
 			if (isBip44(w)) {
 				var a = w.accounts[0];
 				var changed = add(a.changeAddresses, fresh.change, fresh.changeAt);
@@ -534,18 +538,55 @@
 		});
 	}
 
+	// hwSign has the Skywallet sign s, as the Angular wallet's
+	// signWithHardwareWallet: inputs by address index, and outputs to the
+	// wallet's own addresses marked so the device does not ask about them.
+	function hwSign(session, s) {
+		var w = session.w, index = {};
+		w.addresses.forEach(function (e, i) { index[e.address] = i; });
+		index[session.fresh.change] = session.fresh.changeAt;
+		var inputs = s.inputs.map(function (i) {
+			if (index[i.address] === undefined) throw new Error(msg('mismatch'));
+			return { hash: i.hash, index: index[i.address] };
+		});
+		var outputs = s.outputs.map(function (o) {
+			// The daemon reads coins as a decimal amount, not droplets.
+			var c = String(o.coins).padStart(7, '0');
+			var out = { address: o.address, coins: c.slice(0, -6) + '.' + c.slice(-6), hours: String(o.hours) };
+			if (index[o.address] !== undefined) out.address_index = index[o.address];
+			return out;
+		});
+		return window.SkyHW.sign(firstAddress(w), inputs, outputs).then(function (sigs) {
+			var ins = s.inputs.map(function (i) { return { hash: i.hash, address: i.address, secret: '' }; });
+			return call(session.c, 'prepareTransactionWithSignatures', [JSON.stringify(ins), JSON.stringify(s.outputs), JSON.stringify(sigs)]);
+		});
+	}
+
 	function sendFlow(id) {
 		var form = $('bw-send'), session = null;
 		withList(function (list) {
-			var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+			var w = list.filter(shown).find(function (x) { return firstAddress(x) === id; });
 			if (!w) throw new Error(msg('missing'));
 			$('bw-data').value = JSON.stringify(summary(w));
 			document.body.dispatchEvent(new CustomEvent('bw-ready'));
+			if (isHw(w)) $('bw-send-password').closest('label').hidden = true;
 			form.addEventListener('submit', function (e) {
 				e.preventDefault();
 				if (e.submitter) $('bw-unsigned').value = '';
 				setError('');
 				var pw = $('bw-send-password').value;
+				if (isHw(w)) {
+					// The change goes to the device's next address, kept once it is paid.
+					var at = w.addresses.length;
+					Promise.all([cipher(), window.SkyHW.addresses(at, 1)]).then(function (r) {
+						var fresh = { change: r[1][0], receive: r[1][0], changeAt: at, receiveAt: at };
+						$('bw-fresh-change').value = fresh.change;
+						$('bw-fresh-receive').value = fresh.receive;
+						session = { c: r[0], w: w, fresh: fresh, pw: '' };
+						htmx.trigger(form, 'bw-review');
+					}).catch(function (err) { setError(err.message); });
+					return;
+				}
 				cipher().then(function (c) {
 					return secretsOf(c, w, pw).then(function (sec) {
 						var fresh = freshOf(c, w, sec);
@@ -568,6 +609,18 @@
 			try {
 				var s = JSON.parse(box.getAttribute('data-bw-sign'));
 				checkSign(s, session.w, session.fresh, form.elements.from ? null : formDests(form));
+				if (isHw(session.w)) {
+					hwSign(session, s).then(function (raw) {
+						return remember(id, session.fresh, s, '').then(function () {
+							sent = true;
+							htmx.ajax('POST', 'bw/send/inject', { target: '#review', swap: 'innerHTML', values: { id: id, rawtx: raw } });
+						});
+					}).catch(function (err) {
+						btn.disabled = false;
+						setError(err && err.message ? err.message : msg('error'));
+					});
+					return;
+				}
 				var keys = keysOf(session.c, session.w, session.sec, s.inputs.map(function (i) { return i.address; }));
 				var inputs = s.inputs.map(function (i) { return { hash: i.hash, secret: keys[i.address], address: i.address }; });
 				var raw = call(session.c, 'prepareTransaction', [JSON.stringify(inputs), JSON.stringify(s.outputs)]);
@@ -657,7 +710,7 @@
 		function field(form, name) { var e = form.querySelector('[data-f="' + name + '"]'); return e ? e.value : ''; }
 		function change(f, done) {
 			return withList(function (list) {
-				var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+				var w = list.filter(shown).find(function (x) { return firstAddress(x) === id; });
 				if (!w) throw new Error(msg('missing'));
 				return Promise.resolve(f(w, list)).then(function () { return writeStored(list); });
 			}).then(function () {
@@ -789,10 +842,36 @@
 					}, 'reset');
 				});
 			},
+			// hw-address asks the Skywallet for the next addresses of its wallet.
+			'hw-address': function (form) {
+				var n = parseInt(field(form, 'num'), 10);
+				if (!(n >= 1 && n <= 100)) return Promise.reject(new Error(msg('num')));
+				return withList(function (list) {
+					var w = list.filter(isHw).find(function (x) { return firstAddress(x) === id; });
+					if (!w) throw new Error(msg('missing'));
+					return window.SkyHW.addresses(0, 1).then(function (a) {
+						if (a[0] !== id) throw new Error(msg('wrong-device'));
+						return window.SkyHW.addresses(w.addresses.length, n);
+					});
+				}).then(function (got) {
+					return change(function (w) { got.forEach(function (a) { w.addresses.push({ address: a }); }); }, 'added&n=' + got.length);
+				});
+			},
+			// hw-confirm shows an address on the Skywallet's screen to compare.
+			'hw-confirm': function (form) {
+				var i = parseInt(field(form, 'index'), 10);
+				return window.SkyHW.addresses(0, 1).then(function (a) {
+					if (a[0] !== id) throw new Error(msg('wrong-device'));
+					return window.SkyHW.confirm(i);
+				}).then(function () {
+					form.querySelector('.op-error').textContent = '';
+					form.querySelector('[data-f="confirmed"]').hidden = false;
+				});
+			},
 			delete: function () {
 				if (!window.confirm(msg('delete'))) return Promise.resolve();
 				return withList(function (list) {
-					var kept = list.filter(function (x) { return !(ours(x) && firstAddress(x) === id); });
+					var kept = list.filter(function (x) { return !(shown(x) && firstAddress(x) === id); });
 					return writeStored(kept);
 				}).then(function () { window.location.href = './'; });
 			},
@@ -952,17 +1031,24 @@
 		window.location.reload();
 	});
 
+	// static/hw.js keeps a Skywallet's wallet in the same list.
+	window.SkyBW = { withList: withList, writeStored: writeStored, firstAddress: firstAddress, isHw: isHw };
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var fail = function (err) {
 			var e = $('bw-page-error') || $('bw-error');
 			if (e) e.textContent = err && err.message ? err.message : msg('error');
 		};
 		if (mode === 'list') {
-			withList(function (list) { ready(list.filter(ours).map(summary)); }).catch(fail);
+			withList(function (list) { ready(list.filter(shown).map(summary)); }).catch(fail);
+		} else if (mode === 'hw') {
+			var hwList = function () { withList(function (l) { ready(l.filter(isHw).map(summary)); }).catch(fail); };
+			document.body.addEventListener('hw-changed', hwList);
+			hwList();
 		} else if (mode === 'wallet') {
 			var id = page.getAttribute('data-bw-id');
 			withList(function (list) {
-				var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+				var w = list.filter(shown).find(function (x) { return firstAddress(x) === id; });
 				if (!w) throw new Error(msg('missing'));
 				ready(summary(w));
 			}).catch(fail);

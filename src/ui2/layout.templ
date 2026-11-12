@@ -15,6 +15,7 @@ templ Layout(title, nav string) {
 			<link rel="stylesheet" href={ Asset("ui2.css") }/>
 			<script src={ Asset("htmx.min.js") } defer></script>
 			<script src={ Asset("ui2.js") } defer></script>
+			<script src={ Asset("hw.js") } defer></script>
 			<script src={ Asset("bw.js") } defer></script>
 		</head>
 		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-cached={ T(ctx, "history.cached") } data-insecure={ T(ctx, "bw.insecure") } data-csrf={ From(ctx).Root + "api/v1/csrf" }>

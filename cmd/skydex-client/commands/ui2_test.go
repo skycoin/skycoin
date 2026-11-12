@@ -82,7 +82,7 @@ func send(t *testing.T, c *http.Client, method, u string, form url.Values, hdr .
 	if err != nil {
 		t.Fatalf("%s %s: %v", method, u, err)
 	}
-	defer res.Body.Close() //nolint
+	defer res.Body.Close()       //nolint
 	b, _ := io.ReadAll(res.Body) //nolint
 	return res, string(b)
 }

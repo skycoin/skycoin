@@ -333,3 +333,4 @@ dialog.qr-dialog h2 { margin: 0; }
 .onboarding .choice:hover { background: rgba(var(--fg), 0.06); }
 .onboarding .choice .mi { font-size: 32px; color: var(--link); }
 .cached-note { margin-bottom: 8px; }
+.scan-video { width: 100%; max-height: 50vh; border-radius: 8px; background: #000; }

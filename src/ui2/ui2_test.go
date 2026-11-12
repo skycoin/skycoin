@@ -2,9 +2,11 @@ package ui2
 
 import (
 	"errors"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -558,4 +560,16 @@ func TestOnboardingAndHistoryCache(t *testing.T) {
 	require.Contains(t, get(t, h, "/history?filter=w%3Aa.wlt").Body.String(), `data-history-cache="history|w:a.wlt"`)
 	require.Contains(t, get(t, h, "/history/list?q=x").Body.String(), `data-history-cache=""`, "a search is not kept")
 	require.Contains(t, get(t, h, "/").Body.String(), `data-cached="The history could not be refreshed`)
+}
+
+func TestQRScanDialog(t *testing.T) {
+	x := sendNode(t)
+	h := Handler(x.n, Options{})
+	body := get(t, h, "/send?id=s.wlt").Body.String()
+	require.Contains(t, body, `data-qr-scan`)
+	m := regexp.MustCompile(`data-jsqr="([^"]+)"`).FindStringSubmatch(body)
+	require.Len(t, m, 2)
+	rr := get(t, h, "/"+html.UnescapeString(m[1]))
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Contains(t, rr.Body.String(), "jsQR")
 }

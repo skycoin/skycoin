@@ -1,3 +1,5 @@
+// Package file src/util/file/file.go c0-com-util
+//
 // Package file provides filesystem related utilities
 package file
 
@@ -185,33 +187,15 @@ func ResolveResourceDirectory(path string) string {
 	if err != nil {
 		logger.Panic(err)
 	}
-	fmt.Println("abs path:", pathAbs)
-
-	fmt.Printf("runtime.Caller= %s \n", rtFilename)
-	//fmt.Printf("Filepath Raw= %s \n")
-	fmt.Printf("Filepath Directory= %s \n", filepath.Dir(path))
-	fmt.Printf("Filepath Absolute Directory= %s \n", pathAbs)
-
-	fmt.Printf("Working Directory= %s \n", workDir)
-	fmt.Printf("Runtime Filename= %s \n", rtFilename)
-	fmt.Printf("Runtime Directory= %s \n", rtDirectory)
-
-	//dir1 := filepath.Join(workDir, filepath.Dir(path))
-	//fmt.Printf("Dir1= %s \n", dir1)
 
 	dirs := []string{
 		pathAbs, //try direct path first
 		filepath.Join(workDir, filepath.Dir(path)), //default
-		//filepath.Join(rt_directory, "./", filepath.Dir(path)),
 		filepath.Join(rtDirectory, "./", filepath.Dir(path)),
 		filepath.Join(rtDirectory, "../", filepath.Dir(path)),
 		filepath.Join(rtDirectory, "../../", filepath.Dir(path)),
 		filepath.Join(rtDirectory, "../../../", filepath.Dir(path)),
 	}
-
-	//for i, dir := range dirs {
-	//	fmt.Printf("Dir[%d]= %s \n", i, dir)
-	//}
 
 	//must be an absolute path
 	//error and problem and crash if not absolute path

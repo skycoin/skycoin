@@ -1,3 +1,4 @@
+// Package ui2 src/ui2/paging.go c3-ui-wallet
 package ui2
 
 import (

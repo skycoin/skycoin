@@ -1,3 +1,5 @@
+// Package skydexui cmd/skydex-client/skydexui/skydexui.go c3-ui-dex
+//
 // Package skydexui is the SkyDEX trading client rendered on the server with
 // templ, with htmx for the parts the React client polls. It is served at the
 // root, with the React client at /angular/.

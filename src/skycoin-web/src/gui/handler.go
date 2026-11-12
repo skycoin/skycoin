@@ -1,3 +1,4 @@
+// Package gui src/skycoin-web/src/gui/handler.go c1-ui-wallet
 package gui
 
 import (

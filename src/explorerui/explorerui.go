@@ -1,3 +1,5 @@
+// Package explorerui src/explorerui/explorerui.go c3-ui-explorer
+//
 // Package explorerui is the blockchain explorer rendered on the server with
 // templ, with htmx only for paging and refreshing in place. Every page works
 // without JavaScript, so crawlers see the same content people do. It shares

@@ -1,4 +1,4 @@
-// cmd/skycoin-web/skycoin-web.go
+// Package main src/skycoin-web/main.go c4-ui-wallet
 /*
 skycoin-web thin client
 */

@@ -1,3 +1,5 @@
+// Package gui src/skycoin-web/src/gui/gui.go c1-ui-wallet
+//
 // Package gui provides embedded web UI assets.
 package gui
 

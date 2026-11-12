@@ -1,3 +1,5 @@
+// Package main cmd/skydex-client/skydex-client.go c4-app-dex
+//
 /*
 skydex-client — the SkyDEX decentralized-exchange trading UI (standalone).
 */

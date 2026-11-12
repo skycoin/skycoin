@@ -1,4 +1,4 @@
-// Package commands cmd/apps/skydex-client/commands/api.go
+// Package commands cmd/skydex-client/commands/api.go c4-app-dex
 //
 // Local control API consumed by the embedded trading UI. It exposes the
 // configured default market public key and drives the manual connect/disconnect

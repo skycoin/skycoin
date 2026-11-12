@@ -1,3 +1,5 @@
+// Package commands cmd/skydex-client/commands/client.go c4-app-dex
+//
 // Package commands is the skydex-client app: the SkyDEX trading UI.
 //
 // It serves the embedded single-page trading client and a small local control

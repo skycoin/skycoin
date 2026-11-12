@@ -54,7 +54,7 @@ notes say what is not. missing: not started. n/a: does not apply in that mode.
 | send all available coins | send-form | present | present | |
 | personal note | send-form | present | present | |
 | fill from a `skycoin:` link | enter-link | present | present | |
-| scan a QR code | qr-scan-dialog | missing | missing | |
+| scan a QR code | qr-scan-dialog | present | present | camera or image, decoded with vendored jsQR 1.4.0; the camera path is untested here, the image path is |
 | USD value | send-form, history | missing | missing | price source on hold |
 | bulk send from CSV | bulk-send | present | present | lines pasted into the form |
 | unsigned transaction | offline-tx | present | present | |

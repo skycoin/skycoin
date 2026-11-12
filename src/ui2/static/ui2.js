@@ -279,3 +279,124 @@ function toastMsg(msg, isErr) {
 	document.addEventListener('DOMContentLoaded', function () { sync(document); });
 	document.addEventListener('htmx:afterSettle', function () { sync(document); });
 })();
+
+// fillPayment puts a scanned or pasted address and amount in the send
+// form's first destination.
+function fillPayment(addr, amount, hours) {
+	var rows = document.getElementById('send-rows');
+	if (!rows) return false;
+	var f = rows.closest('form');
+	rows.querySelector('[name=to]').value = addr;
+	if (amount) rows.querySelector('[name=coins]').value = amount;
+	if (hours) {
+		rows.querySelector('[name=hours]').value = hours;
+		var manual = f.querySelector('[name=hours_mode][value=manual]');
+		if (manual) manual.checked = true;
+	}
+	return true;
+}
+
+// The QR scan dialog. A scanned text is a bare address or a payment URI
+// such as skycoin:ADDR?amount=1, read as the Angular wallet's
+// parseScannedPayment does (src/skycoin-web/src/app/utils/qr.ts).
+(function () {
+	'use strict';
+	var dlg = document.getElementById('scan-dialog');
+	if (!dlg) return;
+	var video = document.getElementById('scan-video'), status = document.getElementById('scan-status');
+	var canvas = document.createElement('canvas'), stream = null, timer = 0, loading = null;
+	function lib() {
+		if (window.jsQR) return Promise.resolve();
+		if (!loading) {
+			loading = new Promise(function (resolve, reject) {
+				var s = document.createElement('script');
+				s.src = dlg.getAttribute('data-jsqr');
+				s.onload = resolve;
+				s.onerror = reject;
+				document.head.appendChild(s);
+			});
+		}
+		return loading;
+	}
+	function decode(src, w, h) {
+		var scale = Math.min(1, 640 / Math.max(w, h));
+		canvas.width = Math.max(1, Math.round(w * scale));
+		canvas.height = Math.max(1, Math.round(h * scale));
+		var ctx = canvas.getContext('2d', { willReadFrequently: true });
+		ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
+		var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		var code = window.jsQR(img.data, img.width, img.height);
+		return code ? code.data : null;
+	}
+	function parsed(text) {
+		var rest = text.trim(), scheme = /^([a-z][a-z0-9+.-]*):/i.exec(rest);
+		if (scheme) rest = rest.substring(scheme[0].length).replace(/^\/\//, '');
+		var parts = rest.split('?'), addr = parts[0].split('@')[0].split('/')[0], amount = null, hours = null;
+		if (parts[1] && !(scheme && scheme[1].toLowerCase() === 'ethereum')) {
+			var q = new URLSearchParams(parts[1]);
+			amount = q.get('amount');
+			if (amount && !/^\d*\.?\d+$/.test(amount)) amount = null;
+			hours = q.get('hours');
+			if (hours && !/^\d+$/.test(hours)) hours = null;
+		}
+		return { addr: addr, amount: amount, hours: hours };
+	}
+	function stop() {
+		clearInterval(timer);
+		if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+		stream = null;
+		video.hidden = true;
+	}
+	function found(text) {
+		var p = parsed(text);
+		if (!p.addr || !fillPayment(p.addr, p.amount, p.hours)) return false;
+		stop();
+		dlg.close();
+		if (typeof toastMsg === 'function') toastMsg(dlg.getAttribute('data-msg-done'), false);
+		return true;
+	}
+	dlg.addEventListener('close', stop);
+	document.getElementById('scan-file').addEventListener('change', function (e) {
+		var file = e.target.files && e.target.files[0];
+		if (!file) return;
+		// A data URL, since the page's CSP allows data: images and not blob: ones.
+		var img = new Image(), reader = new FileReader();
+		var none = function () { status.textContent = dlg.getAttribute('data-msg-no-code'); };
+		img.onerror = none;
+		img.onload = function () {
+			lib().then(function () {
+				var text = decode(img, img.naturalWidth, img.naturalHeight);
+				if (!text || !found(text)) none();
+			}, none);
+		};
+		reader.onload = function () { img.src = reader.result; };
+		reader.onerror = none;
+		reader.readAsDataURL(file);
+		e.target.value = '';
+	});
+	document.addEventListener('click', function (e) {
+		if (!e.target.closest || !e.target.closest('[data-qr-scan]')) return;
+		status.textContent = '';
+		dlg.showModal();
+		lib();
+		if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+			status.textContent = dlg.getAttribute('data-msg-insecure');
+			return;
+		}
+		navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (s) {
+			stream = s;
+			video.srcObject = s;
+			video.hidden = false;
+			return video.play();
+		}).then(function () {
+			timer = setInterval(function () {
+				if (!window.jsQR || !video.videoWidth) return;
+				var text = decode(video, video.videoWidth, video.videoHeight);
+				if (text) found(text);
+			}, 250);
+		}).catch(function () {
+			stop();
+			status.textContent = dlg.getAttribute('data-msg-no-camera');
+		});
+	});
+})();

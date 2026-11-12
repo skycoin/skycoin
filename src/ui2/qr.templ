@@ -47,6 +47,37 @@ templ payLink() {
 		<div class="bar">
 			<input id="pay-link-text" class="mono filter" spellcheck="false" autocapitalize="off" aria-label={ T(ctx, "send.link") }/>
 			<button class="btn sm" type="button" data-fill-link>{ T(ctx, "send.link-use") }</button>
+			<button class="btn sm" type="button" data-qr-scan><span class="mi">photo_camera</span>{ T(ctx, "scan.title") }</button>
 		</div>
 	</details>
+}
+
+// scanDialog reads a payment QR code from the camera or an image, with the
+// vendored jsQR (static/jsQR.js, jsQR 1.4.0, Apache 2.0), as the Angular
+// wallet's QR scan dialog does.
+templ scanDialog() {
+	<dialog
+		id="scan-dialog"
+		class="qr-dialog"
+		data-jsqr={ Asset("jsQR.js") }
+		data-msg-no-code={ T(ctx, "scan.no-code") }
+		data-msg-insecure={ T(ctx, "scan.insecure") }
+		data-msg-no-camera={ T(ctx, "scan.no-camera") }
+		data-msg-done={ T(ctx, "send.link-done") }
+		aria-labelledby="scan-title"
+	>
+		<form method="dialog" class="form">
+			<div class="head">
+				<h2 id="scan-title">{ T(ctx, "scan.title") }</h2>
+				<span class="spacer"></span>
+				<button class="icon-btn" value="close" aria-label={ T(ctx, "qr.close") }><span class="mi">close</span></button>
+			</div>
+			<video id="scan-video" class="scan-video" muted playsinline hidden></video>
+			<p class="small warn-text" id="scan-status" role="status"></p>
+			<label>
+				{ T(ctx, "scan.image") }
+				<input type="file" id="scan-file" accept="image/*"/>
+			</label>
+		</form>
+	</dialog>
 }

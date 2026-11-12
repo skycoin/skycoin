@@ -162,8 +162,8 @@ var RootCmd = &cobra.Command{
 			if uiFilesFolder != "" {
 				log.Printf("Serving the Angular explorer from local folder: %s", uiFilesFolder)
 			}
-			classic := classicHandler()
-			ui := explorerui.Handler(explorerui.NewClient(skycoinAddr.String()), explorerui.Options{Classic: "classic/"})
+			angular := angularHandler()
+			ui := explorerui.Handler(explorerui.NewClient(skycoinAddr.String()), explorerui.Options{Classic: "angular/"})
 
 			// The server rendered explorer has / and the Angular paths. Other
 			// paths are Angular files, kept where its absolute links expect them.
@@ -172,23 +172,25 @@ var RootCmd = &cobra.Command{
 					ui.ServeHTTP(w, r)
 					return
 				}
-				classic.files.ServeHTTP(w, r)
+				angular.files.ServeHTTP(w, r)
 			}))
 			gzipHandle("/app/", ui)
 			gzipHandle("/static/", ui)
-
-			// The Angular explorer stays reachable at /classic/ for one release.
-			gzipHandle("/classic/", classic)
+			gzipHandle(angularPrefix, angular)
 
 			// /ui2/ held the server rendered explorer while it sat beside the
-			// Angular one.
-			gzipHandle("/ui2/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				to := strings.TrimPrefix(r.URL.Path, "/ui2")
-				if r.URL.RawQuery != "" {
-					to += "?" + r.URL.RawQuery
-				}
-				http.Redirect(w, r, to, http.StatusMovedPermanently)
-			}))
+			// Angular one, and /classic/ held the Angular one after.
+			movePrefix := func(from, to string) {
+				gzipHandle(from+"/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					p := to + strings.TrimPrefix(r.URL.Path, from)
+					if r.URL.RawQuery != "" {
+						p += "?" + r.URL.RawQuery
+					}
+					http.Redirect(w, r, p, http.StatusMovedPermanently)
+				}))
+			}
+			movePrefix("/ui2", "")
+			movePrefix("/classic", "/angular")
 
 			// Backwards compatibility redirects
 			gzipHandle("/blocks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

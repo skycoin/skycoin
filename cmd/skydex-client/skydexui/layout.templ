@@ -1,0 +1,117 @@
+package skydexui
+
+// Layout is the whole document around a page.
+templ Layout(p *Page) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<base href={ p.Base }/>
+			<title>SkyDEX - Client</title>
+			<link rel="stylesheet" href={ Asset("skydex.css") }/>
+			<script src={ Asset("htmx.min.js") } defer></script>
+			<script src={ Asset("skydex.js") } defer></script>
+		</head>
+		<body hx-boost="true">
+			{ children... }
+		</body>
+	</html>
+}
+
+// header follows src/components/Header.jsx.
+templ header(p *Page) {
+	<header class="header" data-market-pk={ p.Ref } data-market-name={ p.Name }>
+		<div class="brand">Skywire <span>Exchange</span></div>
+		<div class="header-right">
+			<div class="status-indicator">
+				<span class={ "status-dot", templ.KV("connected", p.Connected) }></span>
+				<span class="status-text">
+					if p.Connected {
+						Connected
+					} else {
+						Disconnected
+					}
+				</span>
+			</div>
+			<span id="market-name" class="market-name" title={ p.Ref } hidden?={ p.Name == "" }>{ p.Name }</span>
+			if p.Ref != "" {
+				<span class="market-pubkey" title={ p.Ref }>{ shortKey(p.Ref, 8, 6) }</span>
+			}
+			<a class="classic-link" href="../" hx-boost="false">Classic UI</a>
+			if p.Connected {
+				<form method="post" action="disconnect">
+					<button class="btn btn-outline-light btn-sm">Disconnect</button>
+				</form>
+			}
+		</div>
+	</header>
+}
+
+// TabPage is a connected page: header, tab bar, banners and the tab's body.
+templ TabPage(p *Page, body templ.Component) {
+	@Layout(p) {
+		<div class="app-container">
+			@header(p)
+			<nav class="tabbar">
+				<div class="tabbar-inner">
+					for _, t := range Tabs {
+						<a class={ "tab-link", templ.KV("active", p.Tab == t.ID) } href={ templ.SafeURL(t.ID) }>{ t.Label }</a>
+					}
+				</div>
+			</nav>
+			<main class="content">
+				if p.Tab != "settings" {
+					<div class="banner banner-info" data-register-banner hidden>
+						<span>
+							<strong>Set your wallet addresses first.</strong> You need a Skycoin address (and a
+							BTC/LTC payout address to sell) before you can trade.
+						</span>
+						<a class="btn btn-sm" href="settings">Open Settings</a>
+					</div>
+				}
+				<div id="readiness" hx-get={ "readiness?tab=" + p.Tab } hx-trigger="every 8s" hx-swap="outerHTML">
+					@Readiness(p, false)
+				</div>
+				@body
+			</main>
+		</div>
+	}
+}
+
+// Readiness warns while the market has no sell coin enabled, on the tabs
+// where that matters. Polled, it also refreshes the market's name.
+templ Readiness(p *Page, poll bool) {
+	if poll {
+		<div id="readiness" hx-get={ "readiness?tab=" + p.Tab } hx-trigger="every 8s" hx-swap="outerHTML">
+			@readinessBody(p)
+		</div>
+		if p.Name != "" {
+			<span id="market-name" class="market-name" title={ p.Ref } hx-swap-oob="true">{ p.Name }</span>
+		}
+	} else {
+		@readinessBody(p)
+	}
+}
+
+templ readinessBody(p *Page) {
+	if ready, known := p.Ready(); known && !ready && (p.Tab == "market" || p.Tab == "listings") {
+		<div class="banner banner-warn">
+			This market isn’t accepting trades yet — the operator hasn’t enabled any sell coin.
+			Check back later.
+		</div>
+	}
+}
+
+// ClassicTab stands in for a tab not ported yet.
+templ ClassicTab(p *Page) {
+	<div class="alert alert-secondary">
+		This tab is not in the new UI yet. Open it in the <a href="../" hx-boost="false">classic UI</a>.
+	</div>
+}
+
+templ FlashBox(f *Flash) {
+	if f != nil {
+		<div class={ "alert", "alert-" + f.Kind, "mt-3", "mb-0" } role="status">{ f.Text }</div>
+	}
+}

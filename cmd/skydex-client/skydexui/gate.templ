@@ -1,0 +1,70 @@
+package skydexui
+
+import "time"
+
+// GatePage is the first screen, as src/components/ConnectGate.jsx: the
+// market key, pre-filled but never dialed until the user clicks Connect, and
+// the recent markets kept in the browser.
+templ GatePage(p *Page, ref, errMsg string) {
+	@Layout(p) {
+		<div class="app-container gate">
+			<div class="connect-card">
+				<h3 class="mb-1 text-center">Skywire Exchange</h3>
+				<p class="text-center text-muted mb-4">Connect to a market to start trading</p>
+				<form method="post" action="connect" data-connect hx-disabled-elt="find button, find input">
+					<label class="form-label" for="market-pk">Market Public Key</label>
+					<input
+						id="market-pk"
+						type="text"
+						name="market_pk"
+						class="form-control mb-2"
+						placeholder="Enter the skydex-market public key"
+						value={ ref }
+						autocomplete="off"
+						spellcheck="false"
+						autofocus
+					/>
+					if errMsg != "" {
+						<div class="alert alert-danger py-2" role="alert">{ errMsg }</div>
+					}
+					<button type="submit" class="btn btn-connect w-100">
+						<span class="idle">Connect</span><span class="busy">Connecting…</span>
+					</button>
+				</form>
+				<div id="recent" hx-post="recent" hx-trigger="load, recent-changed from:body" data-local="exchange:markets"></div>
+				<p class="text-center mt-3 mb-0 small"><a class="classic-link" href="../" hx-boost="false">Classic UI</a></p>
+			</div>
+		</div>
+	}
+}
+
+// RecentMarkets lists the markets this browser joined, newest first.
+templ RecentMarkets(list []RecentMarket) {
+	if len(list) > 0 {
+		<div class="recent-markets">
+			<div class="recent-head">
+				<span class="recent-title">Recent markets</span>
+				<button type="button" class="link-btn" data-clear-markets>Clear history</button>
+			</div>
+			<ul class="recent-list">
+				for _, m := range list {
+					<li class="recent-item">
+						<form method="post" action="connect" class="recent-form" hx-disabled-elt="find button">
+							<input type="hidden" name="market_pk" value={ m.PK }/>
+							<button type="submit" class="recent-connect" title={ "Connect to " + m.PK }>
+								<span class="recent-main">
+									if m.Name != "" {
+										<span class="recent-name">{ m.Name }</span>
+									}
+									<code class="recent-pk">{ shortKey(m.PK, 10, 6) }</code>
+								</span>
+								<span class="recent-time">{ timeAgo(m.TS, time.Now()) }</span>
+							</button>
+						</form>
+						<button type="button" class="recent-del" data-remove-market={ m.PK } aria-label="Remove from history" title="Remove from history">✕</button>
+					</li>
+				}
+			</ul>
+		</div>
+	}
+}

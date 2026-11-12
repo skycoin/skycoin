@@ -1,0 +1,54 @@
+package skydexui
+
+// SettingsTab follows src/components/Settings.jsx. skydex.js fills the
+// inputs from the addresses saved in the browser and saves them again once
+// the market accepts them.
+templ SettingsTab(p *Page, msg *Flash) {
+	<div class="page-head">
+		<h2>Settings</h2>
+	</div>
+	<div class="panel">
+		<h4 class="panel-title">Your wallet addresses</h4>
+		<p class="text-muted mb-3">
+			Your <strong>Skycoin</strong> address receives every purchased sell coin (SKY and any
+			fibercoin share the format) and any refund. To <strong>sell</strong>, add a payout address for
+			each payment coin you’ll accept — that’s where buyers pay you directly.
+		</p>
+		<form method="post" action="settings" id="wallets-form" hx-post="settings" hx-target="#settings-msg" hx-swap="innerHTML" hx-disabled-elt="find button">
+			<div class="field-grid">
+				<div>
+					<label class="form-label" for="wallet-sky">Skycoin address <span class="req">*</span></label>
+					<input id="wallet-sky" type="text" name="wallet_sky" data-wallet="SKY" class="form-control" placeholder="Skycoin-family address (receives SKY + all fibercoins)" autocomplete="off" spellcheck="false"/>
+				</div>
+				for _, cur := range currencies(p) {
+					<div>
+						<label class="form-label" for={ "wallet-" + cur }>{ cur } payout address</label>
+						<input id={ "wallet-" + cur } type="text" name={ "wallet_" + cur } data-wallet={ cur } class="form-control" placeholder={ cur + " address (to be paid when selling for " + cur + ")" } autocomplete="off" spellcheck="false"/>
+					</div>
+				}
+			</div>
+			if len(currencies(p)) == 0 {
+				<div class="hint mt-2">This market has no external payment coins enabled yet.</div>
+			}
+			<div id="settings-msg">
+				@FlashBox(msg)
+			</div>
+			<button type="submit" class="btn btn-connect mt-3">
+				<span class="idle">Save addresses</span><span class="busy">Saving…</span>
+			</button>
+		</form>
+	</div>
+	<div class="panel">
+		<h4 class="panel-title">Market connection</h4>
+		<label class="form-label" for="market-ref">Connected market public key</label>
+		<input id="market-ref" type="text" class="form-control" value={ p.Ref } readonly/>
+		<div class="hint mt-1">Use Disconnect in the top bar to switch markets.</div>
+	</div>
+}
+
+func currencies(p *Page) []string {
+	if p.Coins == nil {
+		return nil
+	}
+	return p.Coins.Currencies
+}

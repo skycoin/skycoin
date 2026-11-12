@@ -249,3 +249,33 @@ function toastMsg(msg, isErr) {
 	t.className = 'show' + (isErr ? ' err' : '');
 	setTimeout(function () { t.className = ''; }, 3000);
 }
+
+// History lists keep their last good copy in this browser. When the node
+// cannot answer, the copy is shown with the time it was saved, as the
+// Angular history does.
+(function () {
+	'use strict';
+	var PREFIX = 'ui2History:';
+	function sync(root) {
+		var lists = root.matches && root.matches('[data-history-cache]') ? [root] : root.querySelectorAll('[data-history-cache]');
+		Array.prototype.forEach.call(lists, function (el) {
+			var key = el.getAttribute('data-history-cache');
+			if (!key) return;
+			try {
+				if (!el.querySelector('.error')) {
+					localStorage.setItem(PREFIX + key, JSON.stringify({ at: Date.now(), html: el.innerHTML }));
+					return;
+				}
+				var saved = JSON.parse(localStorage.getItem(PREFIX + key) || 'null');
+				if (!saved) return;
+				var note = document.createElement('p');
+				note.className = 'alert warn cached-note';
+				note.textContent = (document.body.getAttribute('data-cached') || '').replace('{{ time }}', new Date(saved.at).toLocaleString());
+				el.innerHTML = saved.html;
+				el.insertBefore(note, el.firstChild);
+			} catch (_) { /* storage blocked */ }
+		});
+	}
+	document.addEventListener('DOMContentLoaded', function () { sync(document); });
+	document.addEventListener('htmx:afterSettle', function () { sync(document); });
+})();

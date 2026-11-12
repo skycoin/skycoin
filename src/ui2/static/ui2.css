@@ -321,3 +321,15 @@ dialog.qr-dialog h2 { margin: 0; }
 .statusbar .sb.warn .mi { color: rgb(var(--amber)); }
 .statusbar .sb.err { color: rgb(var(--rose)); }
 .statusbar a.sb:hover { text-decoration: underline; }
+
+/* first run */
+.onboarding { max-width: 640px; margin: 8px auto; text-align: center; }
+.onboarding h2 { margin-top: 8px; }
+.onboarding .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+.onboarding .choice {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 12px; border-radius: 10px;
+  border: 1px solid var(--card-border); color: inherit; text-decoration: none;
+}
+.onboarding .choice:hover { background: rgba(var(--fg), 0.06); }
+.onboarding .choice .mi { font-size: 32px; color: var(--link); }
+.cached-note { margin-bottom: 8px; }

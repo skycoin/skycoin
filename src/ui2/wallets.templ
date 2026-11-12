@@ -24,7 +24,7 @@ templ WalletsPage(w Wallets) {
 					<a class="btn" href="load"><span class="mi">file_download</span>{ T(ctx, "create.load-title") }</a>
 				</div>
 				if w.Err == "" && len(w.Rows) == 0 {
-					<p class="dim">{ T(ctx, "wallets.none") }</p>
+					@onboarding(false)
 				}
 				@walletsTable(w)
 			}

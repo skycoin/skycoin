@@ -66,6 +66,8 @@ type Txns struct {
 	// as a POST carrying the browser wallets' addresses.
 	URL  string
 	Post bool
+	// History is the history page's list rather than one wallet's.
+	History bool
 }
 
 // TxnPageSize is how many transactions a history page shows.
@@ -96,7 +98,7 @@ func selected(ws []HistWallet, filter string) []string {
 
 // LoadHistory is the history of every wallet the node keeps.
 func LoadHistory(n Node, filter string, q ListQuery) Txns {
-	out := Txns{Filter: filter, URL: "history/list"}
+	out := Txns{Filter: filter, URL: "history/list", History: true}
 	hw, err := nodeWallets(n)
 	if err != nil {
 		out.Err = err.Error()
@@ -302,4 +304,19 @@ func historyURL(filter string) string {
 		return "history"
 	}
 	return "history?filter=" + url.QueryEscape(filter)
+}
+
+// cacheKey names the browser's saved copy of this list, which ui2.js shows
+// when the node cannot answer, as the Angular history does. Only an
+// unsearched first page is kept.
+func (t Txns) cacheKey() string {
+	if t.Pager.Page > 1 || t.Pager.Q != "" {
+		return ""
+	}
+	// The key leaves out the mode: a node that cannot answer cannot say
+	// whether it keeps the wallets.
+	if t.History {
+		return "history|" + t.Filter
+	}
+	return "wallet|" + t.ID
 }

@@ -666,7 +666,9 @@ func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distr
 		}
 	}
 
-	txn.SignInputs([]cipher.SecKey{genesisSecKey})
+	if err := txn.SignInputs([]cipher.SecKey{genesisSecKey}); err != nil {
+		return coin.Transaction{}, err
+	}
 
 	if err := txn.UpdateHeader(); err != nil {
 		return coin.Transaction{}, err

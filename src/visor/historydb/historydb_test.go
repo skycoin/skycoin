@@ -416,7 +416,9 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 	}
 
 	sigKey := cipher.MustSecKeyFromHex(td.Vin.SigKey)
-	txn.SignInputs([]cipher.SecKey{sigKey})
+	if err := txn.SignInputs([]cipher.SecKey{sigKey}); err != nil {
+		return nil, nil, err
+	}
 	if err := txn.UpdateHeader(); err != nil {
 		return nil, nil, err
 	}

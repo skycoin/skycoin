@@ -12,7 +12,6 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"math/big"
 	"strings"
 	"sync"
@@ -163,7 +162,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 		index, found := wordMap[v]
 		if !found {
 			// This should have been caught by splitMnemonicWords()
-			panic(fmt.Sprintf("word %q not found in reverse map", v))
+			return nil, ErrUnknownWord
 		}
 		var wordBytes [2]byte
 		binary.BigEndian.PutUint16(wordBytes[:], uint16(index)) //nolint:gosec
@@ -322,7 +321,7 @@ func splitMnemonicWords(mnemonic string) ([]string, error) {
 // isMnemonicChecksumValid validates the checksum value of a mnemonic
 func isMnemonicChecksumValid(words []string) bool {
 	if len(words)%3 != 0 || len(words) < 12 || len(words) > 24 {
-		panic("invalid number of words") // caller should validate words before passing to this function
+		return false // caller should validate words before passing to this function
 	}
 
 	var (

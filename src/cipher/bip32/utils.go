@@ -4,8 +4,8 @@ package bip32
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
@@ -69,7 +69,7 @@ func publicKeyForPrivateKey(key []byte) ([]byte, error) {
 
 	b := secp256k1.PubkeyFromSeckey(key)
 	if b == nil {
-		log.Panic("publicKeyForPrivateKey: invalid private key")
+		return nil, errors.New("publicKeyForPrivateKey: invalid private key")
 	}
 
 	// From bip32: If Ki == 0 fail
@@ -91,10 +91,10 @@ func addPublicKeys(key, keyPar []byte) ([]byte, error) {
 	// expandPublicKey
 	var pk1, pk2 secp256k1go.XY
 	if err := pk1.ParsePubkey(key); err != nil {
-		log.Panicf("addPublicKeys: invalid pubkey1: %v", err)
+		return nil, fmt.Errorf("addPublicKeys: invalid pubkey1: %w", err)
 	}
 	if err := pk2.ParsePubkey(keyPar); err != nil {
-		log.Panicf("addPublicKeys: invalid pubkey1: %v", err)
+		return nil, fmt.Errorf("addPublicKeys: invalid pubkey2: %w", err)
 	}
 
 	// add public keys

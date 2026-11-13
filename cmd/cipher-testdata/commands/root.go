@@ -218,7 +218,9 @@ func writeBip32SeedTestDataFiles(outputDir string, inputs *testsuite.InputTestDa
 		var i int
 		for data := range seedTestData {
 			filename := filepath.Join(outputDir, fmt.Sprintf(bip32SeedFilenameFormat, i))
-			if err := file.SaveJSON(filename, data.ToJSON(), 0644); err != nil {
+			dj, err := data.ToJSON()
+			exitOnErr(err)
+			if err := file.SaveJSON(filename, dj, 0644); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}

@@ -169,7 +169,7 @@ func makeTransaction(t *testing.T) Transaction {
 	require.NoError(t, err)
 	err = txn.Txn.PushOutput(makeAddress(), 5e6, 50)
 	require.NoError(t, err)
-	txn.Txn.SignInputs([]cipher.SecKey{s})
+	require.NoError(t, txn.Txn.SignInputs([]cipher.SecKey{s}))
 	err = txn.Txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn

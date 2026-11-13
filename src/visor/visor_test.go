@@ -653,7 +653,7 @@ func makeOverflowCoinsSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.Sec
 	err = spendTxn.PushOutput(toAddr, totalCoins, hours)
 	require.NoError(t, err)
 
-	spendTxn.SignInputs(keys)
+	require.NoError(t, spendTxn.SignInputs(keys))
 	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
 	return spendTxn
@@ -678,7 +678,7 @@ func makeOverflowHoursSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.Sec
 	err = spendTxn.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
 	require.NoError(t, err)
 
-	spendTxn.SignInputs(keys)
+	require.NoError(t, spendTxn.SignInputs(keys))
 	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
 	return spendTxn
@@ -2233,7 +2233,7 @@ func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.
 		Out: outputs,
 	}
 
-	txn.SignInputs(keys)
+	require.NoError(t, txn.SignInputs(keys))
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 

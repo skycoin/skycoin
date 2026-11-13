@@ -8,6 +8,7 @@ This package should not have any dependencies except for go stdlib and cipher.
 package coin
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -88,7 +89,10 @@ func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transac
 	}
 
 	body := BlockBody{txns}
-	head := NewBlockHeader(prev.Head, uxHash, currentTime, fee, body)
+	head, err := NewBlockHeader(prev.Head, uxHash, currentTime, fee, body)
+	if err != nil {
+		return nil, err
+	}
 	return &Block{
 		Head: head,
 		Body: body,
@@ -142,9 +146,9 @@ func (b Block) Size() (uint32, error) {
 }
 
 // NewBlockHeader creates block header
-func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body BlockBody) BlockHeader {
+func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body BlockBody) (BlockHeader, error) {
 	if currentTime <= prev.Time {
-		log.Panic("Time can only move forward")
+		return BlockHeader{}, errors.New("Time can only move forward")
 	}
 	bodyHash := body.Hash()
 	prevHash := prev.Hash()
@@ -156,7 +160,7 @@ func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uin
 		BkSeq:    prev.BkSeq + 1,
 		Fee:      fee,
 		UxHash:   uxHash,
-	}
+	}, nil
 }
 
 // Hash return hash of block header

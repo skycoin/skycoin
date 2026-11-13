@@ -247,14 +247,14 @@ func (utp *UnconfirmedTransactionPool) SetTransactionsAnnounced(tx *dbutil.Tx, h
 // If the transaction violates hard constraints, it is rejected.
 // Soft constraints violations mark a txn as invalid, but the txn is inserted. The soft violation is returned.
 func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn) (bool, *transaction.ErrTxnViolatesSoftConstraint, error) {
-	var isValid int8 = 1
+	var valid int8 = 1
 	var softErr *transaction.ErrTxnViolatesSoftConstraint
 	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, distParams, verifyParams, transaction.TxnSigned); err != nil {
 		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.Hash().Hex(), err)
 		switch e := err.(type) {
 		case transaction.ErrTxnViolatesSoftConstraint:
 			softErr = &e
-			isValid = 0
+			valid = 0
 		case transaction.ErrTxnViolatesHardConstraint:
 			return false, nil, err
 		default:
@@ -275,7 +275,7 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 			now := time.Now().UTC().UnixNano()
 			utxn.Received = now
 			utxn.Checked = now
-			utxn.IsValid = isValid
+			utxn.Valid = valid
 			return nil
 		}); err != nil {
 			logger.Errorf("InjectTransaction update known txn failed: %v", err)
@@ -286,7 +286,7 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 	}
 
 	utx := NewUnconfirmedTransaction(txn)
-	utx.IsValid = isValid
+	utx.Valid = valid
 
 	// add txn to index
 	if err := utp.txns.put(tx, &utx); err != nil {
@@ -363,12 +363,12 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, d
 
 		switch err.(type) {
 		case transaction.ErrTxnViolatesSoftConstraint, transaction.ErrTxnViolatesHardConstraint:
-			utxn.IsValid = 0
+			utxn.Valid = 0
 		case nil:
-			if utxn.IsValid == 0 {
+			if utxn.Valid == 0 {
 				nowValid = append(nowValid, utxn.Transaction.Hash())
 			}
-			utxn.IsValid = 1
+			utxn.Valid = 1
 		default:
 			return nil, err
 		}
@@ -562,7 +562,7 @@ func (utp *UnconfirmedTransactionPool) GetUnspentsOfAddr(tx *dbutil.Tx, addr cip
 
 // IsValid can be used as filter function
 func IsValid(tx UnconfirmedTransaction) bool {
-	return tx.IsValid == 1
+	return tx.Valid == 1
 }
 
 // All use as return all filter

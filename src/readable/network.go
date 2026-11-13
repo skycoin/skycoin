@@ -20,7 +20,7 @@ type Connection struct {
 	ListenPort           uint16                 `json:"listen_port"`
 	Height               uint64                 `json:"height"`
 	UserAgent            useragent.Data         `json:"user_agent"`
-	IsTrustedPeer        bool                   `json:"is_trusted_peer"`
+	TrustedPeer          bool                   `json:"is_trusted_peer"`
 	UnconfirmedVerifyTxn VerifyTxn              `json:"unconfirmed_verify_transaction"`
 }
 
@@ -52,7 +52,7 @@ func NewConnection(c *daemon.Connection) Connection {
 		ListenPort:           c.ListenPort,
 		Height:               c.Height,
 		UserAgent:            c.UserAgent,
-		IsTrustedPeer:        c.Pex.Trusted,
+		TrustedPeer:          c.Pex.Trusted,
 		UnconfirmedVerifyTxn: NewVerifyTxn(c.UnconfirmedVerifyTxn),
 	}
 }

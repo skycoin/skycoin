@@ -712,9 +712,9 @@ func TestPexRandomExchangeable(t *testing.T) {
 		{
 			name: "n=0 exchangeable=0",
 			peers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: false},
-				{Addr: testPeers[1], HasIncomingPort: false},
-				{Addr: testPeers[2], HasIncomingPort: false},
+				{Addr: testPeers[0], IncomingPortOpen: false},
+				{Addr: testPeers[1], IncomingPortOpen: false},
+				{Addr: testPeers[2], IncomingPortOpen: false},
 			},
 			n:           0,
 			expectN:     0,
@@ -723,36 +723,36 @@ func TestPexRandomExchangeable(t *testing.T) {
 		{
 			name: "n=0 exchangeable=1",
 			peers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
-				{Addr: testPeers[1], HasIncomingPort: false},
-				{Addr: testPeers[2], HasIncomingPort: false},
+				{Addr: testPeers[0], IncomingPortOpen: true},
+				{Addr: testPeers[1], IncomingPortOpen: false},
+				{Addr: testPeers[2], IncomingPortOpen: false},
 			},
 			n:       0,
 			expectN: 1,
 			expectPeers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
+				{Addr: testPeers[0], IncomingPortOpen: true},
 			},
 		},
 		{
 			name: "n=0 exchangeable=2",
 			peers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
-				{Addr: testPeers[1], HasIncomingPort: true},
-				{Addr: testPeers[2], HasIncomingPort: false},
+				{Addr: testPeers[0], IncomingPortOpen: true},
+				{Addr: testPeers[1], IncomingPortOpen: true},
+				{Addr: testPeers[2], IncomingPortOpen: false},
 			},
 			n:       0,
 			expectN: 2,
 			expectPeers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
-				{Addr: testPeers[1], HasIncomingPort: true},
+				{Addr: testPeers[0], IncomingPortOpen: true},
+				{Addr: testPeers[1], IncomingPortOpen: true},
 			},
 		},
 		{
 			name: "n=1 exchangeable=0",
 			peers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: false},
-				{Addr: testPeers[1], HasIncomingPort: false},
-				{Addr: testPeers[2], HasIncomingPort: false},
+				{Addr: testPeers[0], IncomingPortOpen: false},
+				{Addr: testPeers[1], IncomingPortOpen: false},
+				{Addr: testPeers[2], IncomingPortOpen: false},
 			},
 			n:           1,
 			expectN:     0,
@@ -761,28 +761,28 @@ func TestPexRandomExchangeable(t *testing.T) {
 		{
 			name: "n=1 exchangeable=1",
 			peers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
-				{Addr: testPeers[1], HasIncomingPort: false},
-				{Addr: testPeers[2], HasIncomingPort: false},
+				{Addr: testPeers[0], IncomingPortOpen: true},
+				{Addr: testPeers[1], IncomingPortOpen: false},
+				{Addr: testPeers[2], IncomingPortOpen: false},
 			},
 			n:       1,
 			expectN: 1,
 			expectPeers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
+				{Addr: testPeers[0], IncomingPortOpen: true},
 			},
 		},
 		{
 			name: "n=1 exchangeable=2",
 			peers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
-				{Addr: testPeers[1], HasIncomingPort: true},
-				{Addr: testPeers[2], HasIncomingPort: false},
+				{Addr: testPeers[0], IncomingPortOpen: true},
+				{Addr: testPeers[1], IncomingPortOpen: true},
+				{Addr: testPeers[2], IncomingPortOpen: false},
 			},
 			n:       1,
 			expectN: 1,
 			expectPeers: []Peer{
-				{Addr: testPeers[0], HasIncomingPort: true},
-				{Addr: testPeers[1], HasIncomingPort: true},
+				{Addr: testPeers[0], IncomingPortOpen: true},
+				{Addr: testPeers[1], IncomingPortOpen: true},
 			},
 		},
 	}
@@ -1262,7 +1262,7 @@ func TestPexSetHasIncomingPort(t *testing.T) {
 			[]Peer{*NewPeer(testPeers[1])},
 			testPeers[0],
 			false,
-			fmt.Errorf("set peer.HasIncomingPort failed: %v does not exist in peer list", testPeers[0]),
+			fmt.Errorf("set peer.IncomingPortOpen failed: %v does not exist in peer list", testPeers[0]),
 		},
 	}
 
@@ -1282,7 +1282,7 @@ func TestPexSetHasIncomingPort(t *testing.T) {
 
 			p, ok := pex.peerlist.peers[tc.peer]
 			require.True(t, ok)
-			require.Equal(t, tc.portOpen, p.HasIncomingPort)
+			require.Equal(t, tc.portOpen, p.IncomingPortOpen)
 		})
 	}
 }

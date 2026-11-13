@@ -373,7 +373,7 @@ func LoadStatus(n Node) Status {
 				Outgoing: x.Outgoing,
 				Height:   x.Height,
 				Agent:    agent(x.UserAgent.Coin, x.UserAgent.Version),
-				Trusted:  x.IsTrustedPeer,
+				Trusted:  x.TrustedPeer,
 				Sent:     ago(now, x.LastSent),
 				Received: ago(now, x.LastReceived),
 			})

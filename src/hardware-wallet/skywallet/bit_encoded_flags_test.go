@@ -23,16 +23,16 @@ func TestFirmwareFeaturesMarshal(t *testing.T) {
 			wantBits: 1, // bit 0
 		},
 		{
-			name: "IsGetEntropyEnabled only",
+			name: "GetEntropyEnabled only",
 			features: FirmwareFeatures{
-				IsGetEntropyEnabled: true,
+				GetEntropyEnabled: true,
 			},
 			wantBits: 2, // bit 1
 		},
 		{
-			name: "IsEmulator only",
+			name: "Emulator only",
 			features: FirmwareFeatures{
-				IsEmulator: true,
+				Emulator: true,
 			},
 			wantBits: 4, // bit 2
 		},
@@ -61,8 +61,8 @@ func TestFirmwareFeaturesMarshal(t *testing.T) {
 			name: "all flags set with RDP level 2",
 			features: FirmwareFeatures{
 				RequireGetEntropyConfirm: true,
-				IsGetEntropyEnabled:      true,
-				IsEmulator:               true,
+				GetEntropyEnabled:        true,
+				Emulator:                 true,
 				FirmwareFeaturesRdpLevel: 2,
 			},
 			wantBits: 1 + 2 + 4 + 16, // 23
@@ -151,11 +151,11 @@ func TestFirmwareFeaturesUnmarshal(t *testing.T) {
 			if ff.RequireGetEntropyConfirm != tt.wantRequireEntropy {
 				t.Errorf("RequireGetEntropyConfirm = %v, want %v", ff.RequireGetEntropyConfirm, tt.wantRequireEntropy)
 			}
-			if ff.IsGetEntropyEnabled != tt.wantEntropyEnabled {
-				t.Errorf("IsGetEntropyEnabled = %v, want %v", ff.IsGetEntropyEnabled, tt.wantEntropyEnabled)
+			if ff.GetEntropyEnabled != tt.wantEntropyEnabled {
+				t.Errorf("GetEntropyEnabled = %v, want %v", ff.GetEntropyEnabled, tt.wantEntropyEnabled)
 			}
-			if ff.IsEmulator != tt.wantEmulator {
-				t.Errorf("IsEmulator = %v, want %v", ff.IsEmulator, tt.wantEmulator)
+			if ff.Emulator != tt.wantEmulator {
+				t.Errorf("Emulator = %v, want %v", ff.Emulator, tt.wantEmulator)
 			}
 			if ff.FirmwareFeaturesRdpLevel != tt.wantRdpLevel {
 				t.Errorf("FirmwareFeaturesRdpLevel = %v, want %v", ff.FirmwareFeaturesRdpLevel, tt.wantRdpLevel)
@@ -169,15 +169,15 @@ func TestFirmwareFeaturesRoundTrip(t *testing.T) {
 	tests := []FirmwareFeatures{
 		{},
 		{RequireGetEntropyConfirm: true},
-		{IsGetEntropyEnabled: true},
-		{IsEmulator: true},
+		{GetEntropyEnabled: true},
+		{Emulator: true},
 		{FirmwareFeaturesRdpLevel: 1},
 		{FirmwareFeaturesRdpLevel: 2},
 		{FirmwareFeaturesRdpLevel: 3},
 		{
 			RequireGetEntropyConfirm: true,
-			IsGetEntropyEnabled:      true,
-			IsEmulator:               true,
+			GetEntropyEnabled:        true,
+			Emulator:                 true,
 			FirmwareFeaturesRdpLevel: 2,
 		},
 	}
@@ -200,11 +200,11 @@ func TestFirmwareFeaturesRoundTrip(t *testing.T) {
 		if original.RequireGetEntropyConfirm != restored.RequireGetEntropyConfirm {
 			t.Errorf("RequireGetEntropyConfirm mismatch: %v vs %v", original.RequireGetEntropyConfirm, restored.RequireGetEntropyConfirm)
 		}
-		if original.IsGetEntropyEnabled != restored.IsGetEntropyEnabled {
-			t.Errorf("IsGetEntropyEnabled mismatch: %v vs %v", original.IsGetEntropyEnabled, restored.IsGetEntropyEnabled)
+		if original.GetEntropyEnabled != restored.GetEntropyEnabled {
+			t.Errorf("GetEntropyEnabled mismatch: %v vs %v", original.GetEntropyEnabled, restored.GetEntropyEnabled)
 		}
-		if original.IsEmulator != restored.IsEmulator {
-			t.Errorf("IsEmulator mismatch: %v vs %v", original.IsEmulator, restored.IsEmulator)
+		if original.Emulator != restored.Emulator {
+			t.Errorf("Emulator mismatch: %v vs %v", original.Emulator, restored.Emulator)
 		}
 		if original.FirmwareFeaturesRdpLevel != restored.FirmwareFeaturesRdpLevel {
 			t.Errorf("FirmwareFeaturesRdpLevel mismatch: %v vs %v", original.FirmwareFeaturesRdpLevel, restored.FirmwareFeaturesRdpLevel)
@@ -248,8 +248,8 @@ func TestNewFirmwareFeatures(t *testing.T) {
 func TestFirmwareFeaturesString(t *testing.T) {
 	ff := FirmwareFeatures{
 		RequireGetEntropyConfirm: true,
-		IsGetEntropyEnabled:      true,
-		IsEmulator:               false,
+		GetEntropyEnabled:        true,
+		Emulator:                 false,
 		FirmwareFeaturesRdpLevel: 2,
 	}
 

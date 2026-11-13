@@ -30,7 +30,7 @@ func newPQTestVisor(t *testing.T, rule coin.PQBlockRule, pqSeckey pqsig.SecKey) 
 	cfg.GenesisAddress = genAddress
 	cfg.PQBlocks = rule
 	if pqSeckey != nil {
-		cfg.IsBlockPublisher = true
+		cfg.BlockPublisher = true
 		cfg.BlockchainSeckey = genSecret
 		cfg.BlockchainPQSeckey = pqSeckey
 	}
@@ -146,7 +146,7 @@ func TestConfigVerifyPQ(t *testing.T) {
 	cfg.Distribution = params.MainNetDistribution
 	cfg.BlockchainPubkey = genPublic
 	cfg.BlockchainSeckey = genSecret
-	cfg.IsBlockPublisher = true
+	cfg.BlockPublisher = true
 	cfg.PQBlocks = coin.PQBlockRule{Pubkey: pqPubkey, ForkSeq: 10}
 	require.ErrorContains(t, cfg.Verify(), "post-quantum secret key is not set")
 
@@ -156,7 +156,7 @@ func TestConfigVerifyPQ(t *testing.T) {
 	cfg.BlockchainPQSeckey = pqSeckey
 	require.NoError(t, cfg.Verify())
 
-	cfg.IsBlockPublisher = false
+	cfg.BlockPublisher = false
 	cfg.PQBlocks.Pubkey = pqPubkey[:100]
 	require.ErrorContains(t, cfg.Verify(), "invalid post-quantum blockchain pubkey")
 }

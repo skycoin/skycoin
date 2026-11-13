@@ -278,7 +278,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.IsBlockPublisher = false
+	cfg.BlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -297,7 +297,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	})
 	require.Equal(t, errNotBlockPublisher, err)
 
-	v.Config.IsBlockPublisher = true
+	v.Config.BlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -501,7 +501,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.IsBlockPublisher = false
+	cfg.BlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
@@ -520,7 +520,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	})
 	require.Equal(t, errNotBlockPublisher, err)
 
-	v.Config.IsBlockPublisher = true
+	v.Config.BlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
 
 	addGenesisBlockToVisor(t, v)
@@ -1986,7 +1986,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.IsBlockPublisher = true
+	cfg.BlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
@@ -2119,7 +2119,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.IsBlockPublisher = true
+	cfg.BlockPublisher = true
 	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress

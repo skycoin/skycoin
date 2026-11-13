@@ -24,8 +24,8 @@ type BitEncodedFlags interface {
 type FirmwareFeatures struct {
 	flags                    uint64
 	RequireGetEntropyConfirm bool
-	IsGetEntropyEnabled      bool
-	IsEmulator               bool
+	GetEntropyEnabled        bool `json:"IsGetEntropyEnabled"`
+	Emulator                 bool `json:"IsEmulator"`
 	FirmwareFeaturesRdpLevel uint8
 }
 
@@ -40,8 +40,8 @@ func (ff *FirmwareFeatures) Marshal() (uint64, error) {
 	ff.flags = 0
 	bs := make([]byte, 8)
 	setBitInByte(&bs[7], ff.RequireGetEntropyConfirm, 0)
-	setBitInByte(&bs[7], ff.IsGetEntropyEnabled, 1)
-	setBitInByte(&bs[7], ff.IsEmulator, 2)
+	setBitInByte(&bs[7], ff.GetEntropyEnabled, 1)
+	setBitInByte(&bs[7], ff.Emulator, 2)
 	setBitInByte(&bs[7], ff.FirmwareFeaturesRdpLevel == 1 || ff.FirmwareFeaturesRdpLevel == 3, 3)
 	setBitInByte(&bs[7], ff.FirmwareFeaturesRdpLevel == 2 || ff.FirmwareFeaturesRdpLevel == 3, 4)
 	ff.flags = binary.BigEndian.Uint64(bs)
@@ -53,8 +53,8 @@ func (ff *FirmwareFeatures) Unmarshal() error {
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, ff.flags)
 	ff.RequireGetEntropyConfirm = bitStatusInByte(bs[7], 0)
-	ff.IsGetEntropyEnabled = bitStatusInByte(bs[7], 1)
-	ff.IsEmulator = bitStatusInByte(bs[7], 2)
+	ff.GetEntropyEnabled = bitStatusInByte(bs[7], 1)
+	ff.Emulator = bitStatusInByte(bs[7], 2)
 	setBitInByte(&ff.FirmwareFeaturesRdpLevel, bitStatusInByte(bs[7], 3), 0)
 	setBitInByte(&ff.FirmwareFeaturesRdpLevel, bitStatusInByte(bs[7], 4), 1)
 	return nil

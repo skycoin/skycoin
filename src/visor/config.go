@@ -15,7 +15,7 @@ import (
 // Config configuration parameters for the Visor
 type Config struct {
 	// Is this a block publishing node
-	IsBlockPublisher bool
+	BlockPublisher bool
 
 	// Public key of the blockchain
 	BlockchainPubkey cipher.PubKey
@@ -66,7 +66,7 @@ type Config struct {
 // NewConfig creates Config
 func NewConfig() Config {
 	c := Config{
-		IsBlockPublisher: false,
+		BlockPublisher: false,
 
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
@@ -86,7 +86,7 @@ func NewConfig() Config {
 
 // Verify verifies the configuration
 func (c Config) Verify() error {
-	if c.IsBlockPublisher {
+	if c.BlockPublisher {
 		if c.BlockchainSeckey.Null() {
 			return errors.New("Cannot run as block publisher: the blockchain secret key is not set, use -blockchain-secret-key or blockchain_seckey_str in a fiber.toml loaded with FIBER_TOML")
 		}

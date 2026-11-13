@@ -30,7 +30,7 @@ func TestConfigVerifyBlockPublisher(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := NewConfig()
 			c.Distribution = params.MainNetDistribution
-			c.IsBlockPublisher = tc.publisher
+			c.BlockPublisher = tc.publisher
 			c.BlockchainPubkey = tc.pubkey
 			c.BlockchainSeckey = tc.seckey
 

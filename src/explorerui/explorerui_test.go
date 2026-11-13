@@ -339,8 +339,8 @@ func (s *stubNode) PendingTransactionsVerbose() ([]readable.UnconfirmedTransacti
 	older := t
 	older.Hash = "aa04"
 	return []readable.UnconfirmedTransactionVerbose{
-		{Transaction: older, Received: time.Unix(5000, 0), IsValid: true},
-		{Transaction: t, Received: time.Unix(6000, 0), IsValid: true},
+		{Transaction: older, Received: time.Unix(5000, 0), Valid: true},
+		{Transaction: t, Received: time.Unix(6000, 0), Valid: true},
 	}, nil
 }
 

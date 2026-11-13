@@ -1477,8 +1477,8 @@ func RichlistPage(r Richlist) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if len(r.Rows) > 0 && (r.Page > 1 || r.HasNext) {
-				templ_7745c5c3_Err = Pages("app/richlist/", r.Page, r.Last, r.HasNext).Render(ctx, templ_7745c5c3_Buffer)
+			if len(r.Rows) > 0 && (r.Page > 1 || r.NextPage) {
+				templ_7745c5c3_Err = Pages("app/richlist/", r.Page, r.Last, r.NextPage).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

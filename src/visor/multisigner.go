@@ -42,7 +42,7 @@ func verifyBlockSignatures(b coin.SignedBlock, pubkey cipher.PubKey, pq coin.PQB
 // SignerIndex returns this node's index in the block signer list, or -1 if it
 // is not a signer of a multi-signer chain.
 func (vs *Visor) SignerIndex() int {
-	if !vs.Config.IsBlockPublisher || !vs.Config.MultiSigner.Enabled() {
+	if !vs.Config.BlockPublisher || !vs.Config.MultiSigner.Enabled() {
 		return -1
 	}
 	pk, err := cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey)

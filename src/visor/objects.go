@@ -155,7 +155,7 @@ type UnconfirmedTransaction struct {
 	// Last time we announced this txn
 	Announced int64
 	// If this txn is valid
-	IsValid int8
+	Valid int8
 	// PQWitness stores Transaction.PQ, which the transaction encoding leaves out
 	PQWitness []byte `enc:",omitempty"`
 }
@@ -168,7 +168,7 @@ func NewUnconfirmedTransaction(txn coin.Transaction) UnconfirmedTransaction {
 		Received:    now.UnixNano(),
 		Checked:     now.UnixNano(),
 		Announced:   time.Time{}.UnixNano(),
-		IsValid:     0,
+		Valid:       0,
 	}
 }
 

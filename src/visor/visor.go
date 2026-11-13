@@ -66,7 +66,7 @@ type richlistAtSeq struct {
 // New creates a Visor for managing the blockchain database
 func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 	logger.Info("Creating new visor")
-	if c.IsBlockPublisher {
+	if c.BlockPublisher {
 		logger.Info("Visor running in block publisher mode")
 	}
 
@@ -245,7 +245,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 	}
 
 	logger.Info("Create genesis block")
-	signsGenesis := vs.Config.IsBlockPublisher
+	signsGenesis := vs.Config.BlockPublisher
 	if vs.Config.MultiSigner.Enabled() {
 		// The genesis block is still signed by blockchain_pubkey_str, which a signer
 		// may or may not hold (docs/multi-signer-fiber.md, Configuration).
@@ -336,7 +336,7 @@ func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 
 // createBlock creates a SignedBlock from pending transactions
 func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, error) {
-	if !vs.Config.IsBlockPublisher {
+	if !vs.Config.BlockPublisher {
 		return coin.SignedBlock{}, errNotBlockPublisher
 	}
 
@@ -538,7 +538,7 @@ func (vs *Visor) executeSignedBlockUnsafe(tx *dbutil.Tx, b coin.SignedBlock) err
 
 // signBlock signs a block for a block publisher node
 func (vs *Visor) signBlock(b coin.Block) (coin.SignedBlock, error) {
-	if !vs.Config.IsBlockPublisher {
+	if !vs.Config.BlockPublisher {
 		return coin.SignedBlock{}, errors.New("only a block publisher node can sign blocks")
 	}
 

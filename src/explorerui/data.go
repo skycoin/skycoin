@@ -44,10 +44,10 @@ type Tx struct {
 	Out     []TxOut
 	Status  readable.TransactionStatus
 	Pending bool
-	// HasBalance marks a transaction seen from an address, Balance being
-	// what it changed there. HasRunning adds the balance before and after.
-	HasBalance, HasRunning bool
-	Balance, Before, After int64
+	// BalanceKnown marks a transaction seen from an address, Balance being
+	// what it changed there. RunningKnown adds the balance before and after.
+	BalanceKnown, RunningKnown bool
+	Balance, Before, After     int64
 }
 
 func txFrom(t readable.BlockTransactionVerbose) Tx {

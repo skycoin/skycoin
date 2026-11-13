@@ -393,7 +393,7 @@ func (c *Coin) ConfigureVisor() (visor.Config, error) {
 		vc.Distribution = params.MainNetDistribution
 	}
 
-	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
+	vc.BlockPublisher = c.config.Node.RunBlockPublisher
 	vc.Arbitrating = c.config.Node.RunBlockPublisher
 
 	vc.BlockchainPubkey = c.config.Node.blockchainPubkey

@@ -366,9 +366,13 @@ func (ct confirmedTxnsGetter) convertConfirmedTxn(tx *dbutil.Tx, hisTxn *history
 		return nil, fmt.Errorf("block seq=%d doesn't exist", hisTxn.BlockSeq)
 	}
 
+	status, err := NewConfirmedTransactionStatus(h, hisTxn.BlockSeq)
+	if err != nil {
+		return nil, err
+	}
 	return &Transaction{
 		Transaction: hisTxn.Txn,
-		Status:      NewConfirmedTransactionStatus(h, hisTxn.BlockSeq),
+		Status:      status,
 		Time:        bk.Time(),
 	}, nil
 }

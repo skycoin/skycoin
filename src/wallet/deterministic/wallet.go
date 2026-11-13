@@ -309,17 +309,28 @@ func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 
 // Fingerprint returns a unique ID fingerprint for this wallet, composed of its initial address
 // and wallet type
-func (w *Wallet) Fingerprint() string {
+func (w *Wallet) Fingerprint() (string, error) {
 	addr := ""
 	if len(w.entries) == 0 {
 		if !w.IsEncrypted() {
-			_, pk, _ := cipher.MustDeterministicKeyPairIterator([]byte(w.Meta.Seed()))
-			addr = wallet.AddressConstructor(w.Meta)(pk).String()
+			_, pk, _, err := cipher.DeterministicKeyPairIterator([]byte(w.Meta.Seed()))
+			if err != nil {
+				return "", fmt.Errorf("fingerprint key pair: %w", err)
+			}
+			makeAddress, err := wallet.AddressConstructor(w.Meta)
+			if err != nil {
+				return "", err
+			}
+			a, err := makeAddress(pk)
+			if err != nil {
+				return "", err
+			}
+			addr = a.String()
 		}
 	} else {
 		addr = w.entries[0].Address.String()
 	}
-	return fmt.Sprintf("%s-%s", w.Type(), addr)
+	return fmt.Sprintf("%s-%s", w.Type(), addr), nil
 }
 
 // Clone clones the wallet a new wallet object
@@ -439,32 +450,44 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 		return nil, nil
 	}
 
-	var seckeys []cipher.SecKey
-	var seed []byte
-	if len(w.entries) == 0 {
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.Meta.Seed()), int(num)) //nolint:gosec
-	} else {
-		sd, err := hex.DecodeString(w.Meta.LastSeed())
+	sd := []byte(w.Meta.Seed())
+	if len(w.entries) != 0 {
+		var err error
+		sd, err = hex.DecodeString(w.Meta.LastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num)) //nolint:gosec
+	}
+	seed, seckeys, err := cipher.GenerateDeterministicKeyPairsSeed(sd, int(num)) //nolint:gosec
+	if err != nil {
+		return nil, fmt.Errorf("generate key pairs: %w", err)
 	}
 
-	w.Meta.SetLastSeed(hex.EncodeToString(seed))
-
+	makeAddress, err := wallet.AddressConstructor(w.Meta)
+	if err != nil {
+		return nil, err
+	}
 	addrs := make([]cipher.Addresser, len(seckeys))
-	makeAddress := wallet.AddressConstructor(w.Meta)
+	entries := make(wallet.Entries, len(seckeys))
 	for i, s := range seckeys {
-		p := cipher.MustPubKeyFromSecKey(s)
-		a := makeAddress(p)
+		p, err := cipher.PubKeyFromSecKey(s)
+		if err != nil {
+			return nil, fmt.Errorf("pubkey from seckey: %w", err)
+		}
+		a, err := makeAddress(p)
+		if err != nil {
+			return nil, err
+		}
 		addrs[i] = a
-		w.entries = append(w.entries, wallet.Entry{
+		entries[i] = wallet.Entry{
 			Address: a,
 			Secret:  s,
 			Public:  p,
-		})
+		}
 	}
+
+	w.Meta.SetLastSeed(hex.EncodeToString(seed))
+	w.entries = append(w.entries, entries...)
 	return addrs, nil
 }
 

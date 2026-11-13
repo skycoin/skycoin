@@ -5,6 +5,7 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -421,7 +422,10 @@ func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p t
 		return nil, nil, err
 	}
 
-	inputs := NewTransactionInputsFromUxBalance(uxb)
+	inputs, err := NewTransactionInputsFromUxBalance(uxb)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return txn, inputs, nil
 }
@@ -470,7 +474,7 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 	case transaction.TxnUnsigned:
 		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time())
 	default:
-		logger.Panic("Invalid TxnSignedFlag")
+		err = fmt.Errorf("invalid TxnSignedFlag %d", signed)
 	}
 	if err != nil {
 		logger.Critical().WithError(err).Errorf("%s failed", methodName)
@@ -518,7 +522,10 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 		return nil, nil, err
 	}
 
-	inputs := NewTransactionInputsFromUxBalance(uxb)
+	inputs, err := NewTransactionInputsFromUxBalance(uxb)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return txn, inputs, nil
 }
@@ -591,7 +598,7 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 	}
 
 	if !ignoreUnconfirmed && len(unconfirmedHashesMap) != 0 {
-		logger.Panic("ignoreUnconfirmed is false but unconfirmedHashesMap is not empty")
+		return nil, errors.New("ignoreUnconfirmed is false but unconfirmedHashesMap is not empty")
 	}
 
 	// Filter unconfirmed spends

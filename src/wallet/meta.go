@@ -138,9 +138,8 @@ func (m Meta) SetCoin(ct CoinType) {
 	m[MetaCoin] = string(ct)
 }
 
-// Bip44Coin returns the bip44 coin type, please
-// check the second return value to see if it does
-// exist in the Meta data before using it.
+// Bip44Coin returns the bip44 coin type, or nil if it is not set.
+// Validate rejects an unparseable value, so one reads as unset here.
 func (m Meta) Bip44Coin() *bip44.CoinType {
 	c, ok := m[MetaBip44Coin]
 	if !ok {
@@ -148,7 +147,7 @@ func (m Meta) Bip44Coin() *bip44.CoinType {
 	}
 	x, err := strconv.ParseUint(c, 10, 32)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	t := bip44.CoinType(x)
 
@@ -187,11 +186,9 @@ func (m Meta) IsEncrypted() bool {
 
 	b, err := strconv.ParseBool(encStr)
 	if err != nil {
-		// This can't happen, the meta.encrypted value is either set by
-		// setEncrypted() method or converted in ReadableWallet.toWallet().
-		// toWallet() method will throw error if the meta.encrypted string is invalid.
-		// logger.Critical().WithError(err).Error("parse wallet.meta.encrypted string failed")
-		panic(err)
+		// Validate rejects this when a wallet loads. Read it as encrypted so
+		// nothing treats the secrets as plain text.
+		return true
 	}
 	return b
 }
@@ -232,23 +229,6 @@ func (m Meta) Timestamp() int64 {
 func (m Meta) SetTimestamp(t int64) {
 	m[MetaTimestamp] = strconv.FormatInt(t, 10)
 }
-
-// AddressConstructor returns a function to create a cipher.Addresser from a cipher.PubKey
-// func (m Meta) AddressConstructor() func(cipher.PubKey) cipher.Addresser {
-// 	switch m.Coin() {
-// 	case CoinTypeSkycoin:
-// 		return func(pk cipher.PubKey) cipher.Addresser {
-// 			return cipher.AddressFromPubKey(pk)
-// 		}
-// 	case CoinTypeBitcoin:
-// 		return func(pk cipher.PubKey) cipher.Addresser {
-// 			return cipher.BitcoinAddressFromPubKey(pk)
-// 		}
-// 	default:
-// 		logger.Panicf("Invalid wallet coin type %q", m.Coin())
-// 		return nil
-// 	}
-// }
 
 // SetXPub sets xpub
 func (m Meta) SetXPub(xpub string) {
@@ -319,9 +299,7 @@ func (m Meta) Validate() error {
 		}
 	}
 
-	// Validate the bip44 coin type here so that a malformed value returns an
-	// error instead of later panicking in Meta.Bip44Coin() (which is called on
-	// essentially every wallet operation).
+	// Validate the bip44 coin type here, Meta.Bip44Coin reads a malformed value as unset.
 	if c, ok := m[MetaBip44Coin]; ok {
 		if _, err := strconv.ParseUint(c, 10, 32); err != nil {
 			return errors.New("invalid bip44Coin value")

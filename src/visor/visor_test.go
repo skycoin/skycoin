@@ -23,7 +23,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
-	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/timeutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -291,14 +290,12 @@ func TestVisorCreateBlock(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not a block publisher
-	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
-		err := db.Update("", func(tx *dbutil.Tx) error {
-			_, err := v.createBlock(tx, when)
-			return err
-		})
-		require.NoError(t, err)
+	// CreateBlock fails if called when not a block publisher
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		_, err := v.createBlock(tx, when)
+		return err
 	})
+	require.Equal(t, errNotBlockPublisher, err)
 
 	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
@@ -516,14 +513,12 @@ func TestVisorInjectTransaction(t *testing.T) {
 		history:     his,
 	}
 
-	// CreateBlock panics if called when not a block publisher
-	_require.PanicsWithLogMessage(t, "Only a block publisher node can create blocks", func() {
-		err := db.Update("", func(tx *dbutil.Tx) error {
-			_, err := v.createBlock(tx, when)
-			return err
-		})
-		require.NoError(t, err)
+	// CreateBlock fails if called when not a block publisher
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		_, err := v.createBlock(tx, when)
+		return err
 	})
+	require.Equal(t, errNotBlockPublisher, err)
 
 	v.Config.IsBlockPublisher = true
 	v.Config.BlockchainSeckey = genSecret
@@ -754,9 +749,11 @@ func TestGetTransactions(t *testing.T) {
 	var lTxns []Transaction
 	for i := range txns {
 		height := headSeq - txns[i].BlockSeq + 1
+		status, err := NewConfirmedTransactionStatus(height, txns[i].BlockSeq)
+		require.NoError(t, err)
 		lTxns = append(lTxns, Transaction{
 			Transaction: txns[i].Txn,
-			Status:      NewConfirmedTransactionStatus(height, txns[i].BlockSeq),
+			Status:      status,
 			Time:        blocks[i].Time(),
 		})
 	}

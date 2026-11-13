@@ -2,6 +2,7 @@
 package visor
 
 import (
+	"errors"
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
@@ -35,17 +36,17 @@ func NewUnconfirmedTransactionStatus() TransactionStatus {
 }
 
 // NewConfirmedTransactionStatus creates confirmed transaction status
-func NewConfirmedTransactionStatus(height, blockSeq uint64) TransactionStatus {
+func NewConfirmedTransactionStatus(height, blockSeq uint64) (TransactionStatus, error) {
 	// Height starts at 1
 	// TODO -- height should start at 0?
 	if height == 0 {
-		logger.Panic("Invalid confirmed transaction height")
+		return TransactionStatus{}, errors.New("invalid confirmed transaction height")
 	}
 	return TransactionStatus{
 		Confirmed: true,
 		Height:    height,
 		BlockSeq:  blockSeq,
-	}
+	}, nil
 }
 
 // TransactionInput includes the UxOut spent in a transaction and the calculated hours of the output at spending time
@@ -90,7 +91,7 @@ func NewTransactionInputs(uxa []coin.UxOut, calculateHoursTime uint64) ([]Transa
 }
 
 // TransactionInputFromUxBalance converts transaction.UxBalance to TransactionInput
-func TransactionInputFromUxBalance(x transaction.UxBalance) TransactionInput {
+func TransactionInputFromUxBalance(x transaction.UxBalance) (TransactionInput, error) {
 	var t TransactionInput
 	t.CalculatedHours = x.Hours
 	t.UxOut.Head.BkSeq = x.BkSeq
@@ -101,24 +102,28 @@ func TransactionInputFromUxBalance(x transaction.UxBalance) TransactionInput {
 	t.UxOut.Body.SrcTransaction = x.SrcTransaction
 
 	if t.UxOut.Hash() != x.Hash {
-		logger.Panic("Reconstructed coin.UxOut from transaction.UxBalance hash does not match")
+		return TransactionInput{}, errors.New("reconstructed coin.UxOut from transaction.UxBalance hash does not match")
 	}
 
-	return t
+	return t, nil
 }
 
 // NewTransactionInputsFromUxBalance converts []transaction.UxBalance to []TransactionInput
-func NewTransactionInputsFromUxBalance(uxb []transaction.UxBalance) []TransactionInput {
+func NewTransactionInputsFromUxBalance(uxb []transaction.UxBalance) ([]TransactionInput, error) {
 	if len(uxb) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	inputs := make([]TransactionInput, len(uxb))
 	for i, x := range uxb {
-		inputs[i] = TransactionInputFromUxBalance(x)
+		in, err := TransactionInputFromUxBalance(x)
+		if err != nil {
+			return nil, err
+		}
+		inputs[i] = in
 	}
 
-	return inputs
+	return inputs, nil
 }
 
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain

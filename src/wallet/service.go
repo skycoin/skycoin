@@ -79,16 +79,26 @@ func NewService(c Config) (*Service, error) {
 	}
 
 	// Abort if there are duplicate wallets (identified by fingerprint) on disk
-	if wltID, fp, dup := w.containsDuplicate(); dup {
+	wltID, fp, dup, err := w.containsDuplicate()
+	if err != nil {
+		return nil, err
+	}
+	if dup {
 		return nil, fmt.Errorf("duplicate wallet found with fingerprint %s in file %q", fp, wltID)
 	}
 
 	// Abort if there are empty deterministic wallets on disk
-	if wltID, emptyFound := w.containsEmpty(); emptyFound {
+	wltID, emptyFound, err := w.containsEmpty()
+	if err != nil {
+		return nil, err
+	}
+	if emptyFound {
 		return nil, fmt.Errorf("empty wallet file found: %q", wltID)
 	}
 
-	serv.setWallets(w)
+	if err := serv.setWallets(w); err != nil {
+		return nil, err
+	}
 
 	fields := logrus.Fields{
 		"walletDir": serv.config.WalletDir,
@@ -252,7 +262,10 @@ func (serv *Service) loadWallet(wltName string, options Options) (Wallet, error)
 		return nil, err
 	}
 
-	fingerprint := w.Fingerprint()
+	fingerprint, err := w.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
 	// Note: collection wallets do not have fingerprints
 	if fingerprint != "" {
 		if _, ok := serv.fingerprints[fingerprint]; ok {
@@ -705,7 +718,11 @@ func (serv *Service) UnloadWallet(wltID string) error {
 
 	wlt := serv.wallets.get(wltID)
 	if wlt != nil {
-		if fp := wlt.Fingerprint(); fp != "" {
+		fp, err := wlt.Fingerprint()
+		if err != nil {
+			return err
+		}
+		if fp != "" {
 			delete(serv.fingerprints, fp)
 		}
 	}
@@ -714,14 +731,23 @@ func (serv *Service) UnloadWallet(wltID string) error {
 	return nil
 }
 
-func (serv *Service) setWallets(wlts Wallets) {
-	serv.wallets = wlts
-
+func (serv *Service) setWallets(wlts Wallets) error {
+	fingerprints := make(map[string]string, len(wlts))
 	for wltID, wlt := range wlts {
-		if fp := wlt.Fingerprint(); fp != "" {
-			serv.fingerprints[fp] = wltID
+		fp, err := wlt.Fingerprint()
+		if err != nil {
+			return fmt.Errorf("wallet %q: %w", wltID, err)
+		}
+		if fp != "" {
+			fingerprints[fp] = wltID
 		}
 	}
+
+	serv.wallets = wlts
+	for fp, wltID := range fingerprints {
+		serv.fingerprints[fp] = wltID
+	}
+	return nil
 }
 
 // GetWalletSeed returns seed and seed passphrase of encrypted wallet of given wallet id
@@ -898,7 +924,15 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
 		logger.Critical().WithError(err).Error()
 		return nil, err
 	}
-	if w.Fingerprint() != w2.Fingerprint() {
+	fp, err := w.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+	fp2, err := w2.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+	if fp != fp2 {
 		return nil, ErrWalletRecoverSeedWrong
 	}
 

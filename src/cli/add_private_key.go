@@ -75,7 +75,14 @@ func AddPrivateKey(wlt *collection.Wallet, key string) error {
 		return err
 	}
 
-	addr := wallet.AddressConstructor(wlt.Meta)(pk)
+	makeAddress, err := wallet.AddressConstructor(wlt.Meta)
+	if err != nil {
+		return err
+	}
+	addr, err := makeAddress(pk)
+	if err != nil {
+		return err
+	}
 
 	entry := wallet.Entry{
 		Address: addr,

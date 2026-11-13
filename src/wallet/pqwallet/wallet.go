@@ -312,18 +312,20 @@ func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 }
 
 // Fingerprint returns a unique ID for the wallet, made of its type and first address
-func (w *Wallet) Fingerprint() string {
+func (w *Wallet) Fingerprint() (string, error) {
 	addr := ""
 	if len(w.entries) == 0 {
 		if !w.IsEncrypted() {
-			if e, err := newEntry(w.Meta.Seed(), 0); err == nil {
-				addr = e.Address.String()
+			e, err := newEntry(w.Meta.Seed(), 0)
+			if err != nil {
+				return "", fmt.Errorf("fingerprint entry: %w", err)
 			}
+			addr = e.Address.String()
 		}
 	} else {
 		addr = w.entries[0].Address.String()
 	}
-	return fmt.Sprintf("%s-%s", w.Type(), addr)
+	return fmt.Sprintf("%s-%s", w.Type(), addr), nil
 }
 
 // Clone returns a copy of the wallet

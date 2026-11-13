@@ -2,6 +2,7 @@
 package wallet
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -92,27 +93,30 @@ func (wlts Wallets) set(w Wallet) {
 // the wallet's fingerprint. This is to detect duplicate generative wallets;
 // wallets with no defined generation method do not have a concept of being
 // a duplicate of another wallet
-func (wlts Wallets) containsDuplicate() (string, string, bool) {
+func (wlts Wallets) containsDuplicate() (string, string, bool, error) {
 	m := make(map[string]struct{}, len(wlts))
 	for wltID, wlt := range wlts {
-		fp := wlt.Fingerprint()
+		fp, err := wlt.Fingerprint()
+		if err != nil {
+			return "", "", false, fmt.Errorf("wallet %q: %w", wltID, err)
+		}
 		if fp == "" {
 			continue
 		}
 
 		if _, ok := m[fp]; ok {
-			return wltID, fp, true
+			return wltID, fp, true, nil
 		}
 
 		m[fp] = struct{}{}
 	}
 
-	return "", "", false
+	return "", "", false, nil
 }
 
 // containsEmpty returns true there is an empty wallet and the ID of that wallet if true.
 // Does not apply to collection wallets
-func (wlts Wallets) containsEmpty() (string, bool) {
+func (wlts Wallets) containsEmpty() (string, bool, error) {
 	for wltID, wlt := range wlts {
 		switch wlt.Type() {
 		case WalletTypeCollection:
@@ -123,24 +127,24 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 			for _, a := range wlt.Accounts() {
 				el, err := wlt.EntriesLen(OptionAccount(a.Index))
 				if err != nil {
-					panic(err)
+					return "", false, fmt.Errorf("wallet %q: %w", wltID, err)
 				}
 				l += el
 			}
 
 			if l == 0 {
-				return wltID, true
+				return wltID, true, nil
 			}
 		default:
 			l, err := wlt.EntriesLen()
 			if err != nil {
-				panic(err)
+				return "", false, fmt.Errorf("wallet %q: %w", wltID, err)
 			}
 
 			if l == 0 {
-				return wltID, true
+				return wltID, true, nil
 			}
 		}
 	}
-	return "", false
+	return "", false, nil
 }

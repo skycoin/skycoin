@@ -20,8 +20,10 @@ trap 'rm -f "$pairs"' EXIT
 
 while IFS= read -r f; do
 	[ -n "$f" ] || continue
-	# tr drops the CR of a CRLF checkout (git on Windows).
-	body=$(tr -d '\r' <"$f")
+	# The generated marker, descriptor and package clause sit in the header,
+	# so the whole file is never piped around. tr drops the CR of a CRLF
+	# checkout (git on Windows).
+	body=$(head -n 64 "$f" | tr -d '\r')
 	grep -qE '^// Code generated .* DO NOT EDIT\.$' <<<"$body" && continue
 	files=$((files + 1))
 	pkg=$(awk '/^package [A-Za-z_]/ { print $2; exit }' <<<"$body")

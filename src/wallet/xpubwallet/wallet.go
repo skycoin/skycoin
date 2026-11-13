@@ -175,21 +175,21 @@ func (w *Wallet) Unlock(_ []byte) (wallet.Wallet, error) {
 
 // Fingerprint returns a unique ID fingerprint for this wallet, using the first
 // child address of the xpub key
-func (w *Wallet) Fingerprint() string {
+func (w *Wallet) Fingerprint() (string, error) {
 	// Note: the xpub key is not used as the fingerprint, because it is
 	// partially sensitive data
 	addr := ""
 	if len(w.entries) == 0 {
 		entries, err := w.generateEntries(1, 0)
 		if err != nil {
-			logger.WithError(err).Panic("Fingerprint failed to generate initial entry for empty wallet")
+			return "", fmt.Errorf("fingerprint initial entry: %w", err)
 		}
 		addr = entries[0].Address.String()
 	} else {
 		addr = w.entries[0].Address.String()
 	}
 
-	return fmt.Sprintf("%s-%s", w.Type(), addr)
+	return fmt.Sprintf("%s-%s", w.Type(), addr), nil
 }
 
 func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Entries, error) {
@@ -243,9 +243,16 @@ func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Ent
 	entries := make(wallet.Entries, len(pubkeys))
 	addressFromPubKey := wallet.ResolveAddressDecoder(w.Coin()).AddressFromPubKey
 	for i, xp := range pubkeys {
-		pk := cipher.MustNewPubKey(xp.Key)
+		pk, err := cipher.NewPubKey(xp.Key)
+		if err != nil {
+			return nil, err
+		}
+		addr, err := addressFromPubKey(pk)
+		if err != nil {
+			return nil, err
+		}
 		entries[i] = wallet.Entry{
-			Address:     addressFromPubKey(pk),
+			Address:     addr,
 			Public:      pk,
 			ChildNumber: addressIndices[i],
 		}
@@ -356,7 +363,10 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 			return nil, err
 		}
 
-		addr := makeAddress.AddressFromPubKey(cpk)
+		addr, err := makeAddress.AddressFromPubKey(cpk)
+		if err != nil {
+			return nil, err
+		}
 		e := wallet.Entry{
 			Address:     addr,
 			Public:      cpk,
@@ -411,7 +421,11 @@ func checkEntries(key *bip32.PublicKey, entries wallet.Entries) error {
 		return fmt.Errorf("derive entry %d: %v", e.ChildNumber, err)
 	}
 
-	if cipher.MustNewPubKey(child.Key) != e.Public {
+	pk, err := cipher.NewPubKey(child.Key)
+	if err != nil {
+		return fmt.Errorf("derive entry %d: %w", e.ChildNumber, err)
+	}
+	if pk != e.Public {
 		return errors.New("stored entries were not derived from the wallet's xpub chain")
 	}
 

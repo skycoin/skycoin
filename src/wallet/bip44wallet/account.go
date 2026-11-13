@@ -294,7 +294,7 @@ type bip44Chain struct {
 
 // newAddresses generates addresses on the chain.
 // private key is optional, if not provided, addresses will be generated using the public key.
-func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey, addressFromPubKey func(key cipher.PubKey) cipher.Addresser) ([]cipher.Addresser, error) {
+func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey, addressFromPubKey func(key cipher.PubKey) (cipher.Addresser, error)) ([]cipher.Addresser, error) {
 	if c == nil {
 		return nil, errors.New("can not generate new addresses on nil chain")
 	}
@@ -317,7 +317,10 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey, addressF
 			return nil, err
 		}
 
-		addr := addressFromPubKey(cpk)
+		addr, err := addressFromPubKey(cpk)
+		if err != nil {
+			return nil, err
+		}
 		e := wallet.Entry{
 			Address:     addr,
 			Public:      cpk,

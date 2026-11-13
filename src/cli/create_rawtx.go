@@ -1016,7 +1016,10 @@ func makeChangeOut(outs []transaction.UxBalance, chgAddr string, toAddrs []SendA
 
 	haveChange := changeAmount > 0
 	nAddrs := uint64(len(toAddrs))
-	changeHours, addrHours, totalOutHours := transaction.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+	changeHours, addrHours, totalOutHours, err := transaction.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours, params.UserVerifyTxn.BurnFactor); err != nil {
 		return nil, err

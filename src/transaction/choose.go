@@ -175,9 +175,6 @@ func makeCmpUxOutByHours(uxa []UxBalance, hoursCmp func(a, b uint64) bool) func(
 
 func cmpUxBalanceByUxID(a, b UxBalance) bool {
 	cmp := bytes.Compare(a.Hash[:], b.Hash[:])
-	if cmp == 0 {
-		logger.Panic("Duplicate UxOut when sorting")
-	}
 	return cmp < 0
 }
 
@@ -194,11 +191,15 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 		return nil, ErrNoUnspents
 	}
 
+	seen := make(map[cipher.SHA256]struct{}, len(uxa))
 	for _, ux := range uxa {
 		if ux.Coins == 0 {
-			logger.Panic("UxOut coins are 0, can't spend")
 			return nil, errors.New("UxOut coins are 0, can't spend")
 		}
+		if _, ok := seen[ux.Hash]; ok {
+			return nil, errors.New("Duplicate UxBalance in array")
+		}
+		seen[ux.Hash] = struct{}{}
 	}
 
 	// Split UxBalances into those with and without hours
@@ -226,7 +227,6 @@ func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBa
 	// Use the first nonzero output. This output will have the least hours possible
 	firstNonzero := nonzero[0]
 	if firstNonzero.Hours == 0 {
-		logger.Panic("balance has zero hours unexpectedly")
 		return nil, errors.New("balance has zero hours unexpectedly")
 	}
 

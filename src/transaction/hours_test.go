@@ -208,7 +208,8 @@ func TestDistributeSpendHours(t *testing.T) {
 					params.UserVerifyTxn.BurnFactor = originalBurnFactor
 				}()
 
-				changeHours, addrHours, totalHours := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
+				changeHours, addrHours, totalHours, err := DistributeSpendHours(tc.inputHours, tc.nAddrs, tc.haveChange)
+				require.NoError(t, err)
 				require.Equal(t, tc.expectChangeHours, changeHours)
 				require.Equal(t, tc.expectAddrHours, addrHours)
 				require.Equal(t, tc.nAddrs, uint64(len(addrHours)))
@@ -239,7 +240,8 @@ func TestDistributeSpendHours(t *testing.T) {
 					for _, haveChange := range []bool{true, false} {
 						name := fmt.Sprintf("inputHours=%d nAddrs=%d haveChange=%v", inputHours, nAddrs, haveChange)
 						t.Run(name, func(t *testing.T) {
-							changeHours, addrHours, totalHours := DistributeSpendHours(inputHours, nAddrs, haveChange)
+							changeHours, addrHours, totalHours, err := DistributeSpendHours(inputHours, nAddrs, haveChange)
+							require.NoError(t, err)
 							require.Equal(t, nAddrs, uint64(len(addrHours)))
 
 							var sumAddrHours uint64

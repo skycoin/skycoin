@@ -236,7 +236,7 @@ func (bc Blockchain) NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime
 		}
 		txns, err := bc.processTransactions(tx, b.Body.Transactions)
 		if err != nil {
-			logger.Panicf("bc.processTransactions second verification call failed: %v", err)
+			return nil, fmt.Errorf("bc.processTransactions second verification call failed: %w", err)
 		}
 		b.Body.Transactions = txns
 	}
@@ -593,7 +593,7 @@ func (bc Blockchain) processTransactionsMode(tx *dbutil.Tx, txs coin.Transaction
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
 			case transaction.ErrTxnViolatesSoftConstraint:
-				logger.Critical().WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
+				logger.Critical().WithError(err).Error("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
 			case transaction.ErrTxnViolatesHardConstraint:
 				if arbitrating {
 					skip[i] = struct{}{}

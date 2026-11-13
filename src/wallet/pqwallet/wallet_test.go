@@ -52,7 +52,9 @@ func TestNewWalletDerivesPQAddresses(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, a1, a2)
 
-	require.Equal(t, "pq-"+entries[0].Address.String(), w.Fingerprint())
+	fp, err := w.Fingerprint()
+	require.NoError(t, err)
+	require.Equal(t, "pq-"+entries[0].Address.String(), fp)
 }
 
 func TestNewWalletRejectsOtherCoins(t *testing.T) {

@@ -269,18 +269,15 @@ func TestChooseSpendsMaximizeUxOuts(t *testing.T) {
 		return a.Coins <= b.Coins
 	})
 
-	// 0 coins in a UxBalance (panic)
+	// 0 coins in a UxBalance (error)
 	uxb = makeRandomUxBalances(t)
 	// Ensure we have at least 2 elements
 	for len(uxb) < 2 {
 		uxb = makeRandomUxBalances(t)
 	}
 	uxb[1].Coins = 0
-	require.Panics(t, func() {
-		verifyChosenCoins(t, uxb, 10, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
-			return a.Coins <= b.Coins
-		})
-	})
+	_, err := ChooseSpendsMaximizeUxOuts(uxb, 10, 0)
+	testutil.RequireError(t, err, "UxOut coins are 0, can't spend")
 
 	// MaxUint64 coins (error)
 	uxb = makeRandomUxBalances(t)
@@ -306,18 +303,15 @@ func TestChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 		return a.Coins >= b.Coins
 	})
 
-	// 0 coins in a UxBalance (panic)
+	// 0 coins in a UxBalance (error)
 	// Ensure we have at least 2 items before accessing index 1
 	uxb = makeRandomUxBalances(t)
 	for len(uxb) < 2 {
 		uxb = makeRandomUxBalances(t)
 	}
 	uxb[1].Coins = 0
-	require.Panics(t, func() {
-		verifyChosenCoins(t, uxb, 10, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
-			return a.Coins >= b.Coins
-		})
-	})
+	_, err := ChooseSpendsMaximizeUxOuts(uxb, 10, 0)
+	testutil.RequireError(t, err, "UxOut coins are 0, can't spend")
 
 	// MaxUint64 coins (error)
 	uxb = makeRandomUxBalances(t)
@@ -541,4 +535,10 @@ func verifySortedHoursLowToHigh(t *testing.T, uxb []UxBalance) {
 	verifySortedHours(t, uxb, func(a, b UxBalance) bool {
 		return a.Hours <= b.Hours
 	})
+}
+
+func TestChooseSpendsDuplicate(t *testing.T) {
+	ux := UxBalance{Hash: testutil.RandSHA256(t), Coins: 10e6, Hours: 10}
+	_, err := ChooseSpendsMaximizeUxOuts([]UxBalance{ux, ux}, 1e6, 0)
+	testutil.RequireError(t, err, "Duplicate UxBalance in array")
 }

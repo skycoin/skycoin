@@ -39,8 +39,7 @@ type readableWallet struct {
 }
 
 func (w readableWallet) toWallet() (*Wallet, error) {
-	// Validate the metadata before use so a malformed wallet file returns an
-	// error here instead of panicking later in Meta.IsEncrypted().
+	// Validate the metadata before use so a malformed wallet file returns an error here.
 	if err := w.Meta.Validate(); err != nil {
 		return nil, err
 	}

@@ -303,7 +303,7 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 			return err
 		}
 	default:
-		logger.Panic("Invalid TxnSignedFlag")
+		return fmt.Errorf("invalid TxnSignedFlag %d", signed)
 	}
 
 	uxOut := coin.CreateUnspents(head, txn)

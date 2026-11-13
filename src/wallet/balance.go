@@ -2,6 +2,8 @@
 package wallet
 
 import (
+	"errors"
+
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 )
@@ -65,16 +67,16 @@ func (bal Balance) Add(other Balance) (Balance, error) {
 	}, nil
 }
 
-// Sub subtracts other from self and returns the new Balance.  Will panic if
+// Sub subtracts other from self and returns the new Balance. It fails if
 // other is greater than balance, because Coins and Hours are unsigned.
-func (bal Balance) Sub(other Balance) Balance {
+func (bal Balance) Sub(other Balance) (Balance, error) {
 	if other.Coins > bal.Coins || other.Hours > bal.Hours {
-		logger.Panic("Cannot subtract balances, second balance is too large")
+		return Balance{}, errors.New("cannot subtract balances, second balance is too large")
 	}
 	return Balance{
 		Coins: bal.Coins - other.Coins,
 		Hours: bal.Hours - other.Hours,
-	}
+	}, nil
 }
 
 // Equals compares two Balances

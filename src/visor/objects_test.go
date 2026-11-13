@@ -47,8 +47,11 @@ func TestNewTransactionInputsFromUxBalance(t *testing.T) {
 	inputsFromUxa, err := NewTransactionInputs(uxa, headTime)
 	require.NoError(t, err)
 
-	inputsFromUxb := NewTransactionInputsFromUxBalance(uxb)
+	inputsFromUxb, err := NewTransactionInputsFromUxBalance(uxb)
+	require.NoError(t, err)
 	require.Equal(t, inputsFromUxa, inputsFromUxb)
 
-	require.Nil(t, NewTransactionInputsFromUxBalance([]transaction.UxBalance{}))
+	empty, err := NewTransactionInputsFromUxBalance([]transaction.UxBalance{})
+	require.NoError(t, err)
+	require.Nil(t, empty)
 }

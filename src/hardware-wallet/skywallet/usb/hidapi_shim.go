@@ -6,8 +6,12 @@
 // Package usb src/hardware-wallet/skywallet/usb/hidapi_shim.go c1-app-hw
 package usb
 
+import "errors"
+
 // HIDUse indicates whether HID is available on this platform.
 const HIDUse = false
+
+var errHIDNotImplemented = errors.New("HID is not implemented for linux and freebsd")
 
 // HIDAPI is a stub HID API for platforms where HID is not supported.
 type HIDAPI struct {
@@ -20,12 +24,12 @@ func InitHIDAPI() (*HIDAPI, error) {
 
 // Enumerate is not implemented on this platform.
 func (b *HIDAPI) Enumerate(_, _ uint16) ([]Info, error) {
-	panic("not implemented for linux and freebsd")
+	return nil, errHIDNotImplemented
 }
 
 // Has is not implemented on this platform.
 func (b *HIDAPI) Has(_ string) bool {
-	panic("not implemented for linux and freebsd")
+	return false
 }
 
 // Connect is not implemented on this platform.
@@ -39,20 +43,18 @@ type HID struct {
 
 // Close is not implemented on this platform.
 func (d *HID) Close(_ bool) error {
-	panic("not implemented for linux and freebsd")
+	return errHIDNotImplemented
 }
 
 // Write is not implemented on this platform.
 func (d *HID) Write(_ []byte) (int, error) {
-	panic("not implemented for linux and freebsd")
+	return 0, errHIDNotImplemented
 }
 
 // Read is not implemented on this platform.
 func (d *HID) Read(_ []byte) (int, error) {
-	panic("not implemented for linux and freebsd")
+	return 0, errHIDNotImplemented
 }
 
-// Close is not implemented on this platform.
-func (b *HIDAPI) Close() {
-	panic("not implemented for linux and freebsd")
-}
+// Close does nothing on this platform.
+func (b *HIDAPI) Close() {}

@@ -314,13 +314,13 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	forMethodAPISets := func(apiVersion string, f http.Handler, methodsAPISets map[string][]string) http.Handler {
 		if len(methodsAPISets) == 0 {
-			logger.Panic("methodsAPISets should not be empty")
+			return rejectAll(apiVersion, errors.New("methodsAPISets should not be empty"))
 		}
 
 		switch apiVersion {
 		case apiVersion1, apiVersion2:
 		default:
-			logger.Panicf("Invalid API version %q", apiVersion)
+			return rejectAll(apiVersion1, fmt.Errorf("invalid API version %q", apiVersion))
 		}
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

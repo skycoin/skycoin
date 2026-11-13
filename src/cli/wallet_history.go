@@ -135,7 +135,11 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput)
 		}
 
 		for i, his := range spentHis {
-			spentHis[i].Timestamp = time.Unix(getBlkTime(his.BlockSeq), 0).UTC()
+			t, err := getBlkTime(his.BlockSeq)
+			if err != nil {
+				return nil, err
+			}
+			spentHis[i].Timestamp = time.Unix(t, 0).UTC()
 		}
 	}
 
@@ -203,7 +207,7 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput)
 	return realHis, nil
 }
 
-func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) int64, error) {
+func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) (int64, error), error) {
 	// get spent blocks
 	blocks := make([]*readable.Block, 0, len(ss))
 	for _, s := range ss {
@@ -219,12 +223,12 @@ func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) int64, error)
 		return nil, fmt.Errorf("found no block")
 	}
 
-	return func(seq uint64) int64 {
+	return func(seq uint64) (int64, error) {
 		for _, b := range blocks {
 			if seq == b.Head.BkSeq {
-				return int64(b.Head.Time) //nolint:gosec
+				return int64(b.Head.Time), nil //nolint:gosec
 			}
 		}
-		panic("block not found")
+		return 0, fmt.Errorf("block %d not found", seq)
 	}, nil
 }

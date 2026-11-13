@@ -5,7 +5,7 @@ package daemon
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/hardware-wallet-daemon/api"
@@ -94,7 +94,9 @@ func (c *Config) postProcess() error {
 	var err error
 	home := file.UserHome()
 	c.App.DataDirectory, err = file.InitDataDir(replaceHome(c.App.DataDirectory, home))
-	panicIfError(err, "Invalid DataDirectory")
+	if err != nil {
+		return fmt.Errorf("invalid data directory: %w", err)
+	}
 
 	if c.App.HostWhitelist != "" {
 		if c.App.DisableHeaderCheck {
@@ -109,12 +111,6 @@ func (c *Config) postProcess() error {
 	}
 
 	return nil
-}
-
-func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
-	if err != nil {
-		log.Panicf(msg+": %v", append(args, err)...)
-	}
 }
 
 func replaceHome(path, home string) string {

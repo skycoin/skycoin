@@ -95,11 +95,11 @@ func NewConsensusParticipantPtr(pMan ConnectionManagerInterface) *ConsensusParti
 // SecKey, even in same process space.  2nd, functions Sign and
 // SignHash already exists, so want keep search/browse/jump-to-tag
 // unambiguous.
-func (self *ConsensusParticipant) SignatureOf(hash cipher.SHA256) cipher.Sig {
+func (self *ConsensusParticipant) SignatureOf(hash cipher.SHA256) (cipher.Sig, error) {
 
 	// PERFORMANCE: This is expensive when cipher.DebugLevel2 or
 	// cipher.DebugLevel1 are true:
-	return cipher.MustSignHash(hash, self.Seckey)
+	return cipher.SignHash(hash, self.Seckey)
 }
 
 // //////////////////////////////////////////////////////////////////////////////

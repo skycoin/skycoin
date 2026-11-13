@@ -174,10 +174,10 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 //TODO: require file named after application and then hashcode, in static directory
 
 // ResolveResourceDirectory searches locations for a research directory and returns absolute path
-func ResolveResourceDirectory(path string) string {
+func ResolveResourceDirectory(path string) (string, error) {
 	workDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		logger.Panic(err)
+		return "", fmt.Errorf("resolve executable directory: %w", err)
 	}
 
 	_, rtFilename, _, _ := runtime.Caller(1)
@@ -185,7 +185,7 @@ func ResolveResourceDirectory(path string) string {
 
 	pathAbs, err := filepath.Abs(path)
 	if err != nil {
-		logger.Panic(err)
+		return "", fmt.Errorf("resolve %s: %w", path, err)
 	}
 
 	dirs := []string{
@@ -211,11 +211,10 @@ func ResolveResourceDirectory(path string) string {
 	for _, dir := range dirs {
 		if _, err := os.Stat(dir); !os.IsNotExist(err) { //nolint:gosec // the data directory is chosen by the operator, not by request input
 			fmt.Printf("ResolveResourceDirectory: static resource dir= %s \n", dir)
-			return dir
+			return dir, nil
 		}
 	}
-	logger.Panic("GUI directory not found")
-	return ""
+	return "", fmt.Errorf("resource directory %s not found", path)
 }
 
 // DetermineResourcePath DEPRECATE

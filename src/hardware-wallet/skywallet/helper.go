@@ -2,11 +2,9 @@
 package skywallet
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"runtime"
 	"sync"
 	"time"
@@ -292,30 +290,22 @@ func sendToDevice(dev usb.Device, chunks [][64]byte) (result wire.Message, retEr
 	return *msg, err
 }
 
-func binaryWrite(message io.Writer, data interface{}) {
-	err := binary.Write(message, binary.BigEndian, data)
-	if err != nil {
-		log.Panic(err)
-	}
-}
-
 func makeSkyWalletMessage(data []byte, msgID messages.MessageType) [][64]byte {
-	message := new(bytes.Buffer)
-	binaryWrite(message, []byte("##"))
-	binaryWrite(message, uint16(msgID))     //nolint:gosec // protocol message IDs fit in uint16
-	binaryWrite(message, uint32(len(data))) //nolint:gosec // data length fits in uint32
-	binaryWrite(message, []byte("\n"))
+	message := []byte("##")
+	message = binary.BigEndian.AppendUint16(message, uint16(msgID))     //nolint:gosec // protocol message IDs fit in uint16
+	message = binary.BigEndian.AppendUint32(message, uint32(len(data))) //nolint:gosec // data length fits in uint32
+	message = append(message, '\n')
 	if len(data) > 0 {
-		binaryWrite(message, data[1:])
+		message = append(message, data[1:]...)
 	}
 
-	messageLen := message.Len()
+	messageLen := len(message)
 	var chunks [][64]byte
 	i := 0
 	for messageLen > 0 {
 		var chunk [64]byte
 		chunk[0] = '?'
-		copy(chunk[1:], message.Bytes()[63*i:63*(i+1)])
+		copy(chunk[1:], message[63*i:min(63*(i+1), len(message))])
 		chunks = append(chunks, chunk)
 		messageLen -= 63
 		i = i + 1

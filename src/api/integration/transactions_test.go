@@ -1904,6 +1904,9 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		return
 	}
 
+	maxDivisor, err := params.UserVerifyTxn.MaxDropletDivisor()
+	require.NoError(t, err)
+
 	debug := false
 	tLog := func(t *testing.T, args ...interface{}) {
 		if debug {
@@ -1964,10 +1967,10 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		spendableHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
 		tLog(t, "spendableHours", spendableHours)
 
-		coins := rand.Intn(int(totalCoins)) + 1                        //nolint:gosec
-		coins -= coins % int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
+		coins := rand.Intn(int(totalCoins)) + 1 //nolint:gosec
+		coins -= coins % int(maxDivisor)        //nolint:gosec
 		if coins == 0 {
-			coins = int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
+			coins = int(maxDivisor) //nolint:gosec
 		}
 		hours := rand.Intn(int(spendableHours + 1)) //nolint:gosec
 		nOutputs := rand.Intn(maxOutputs) + 1       //nolint:gosec
@@ -2001,10 +2004,10 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 				remainingCoins = 0
 				remainingHours = 0
 			} else {
-				receiverCoins := rand.Intn(remainingCoins) + 1                                 //nolint:gosec
-				receiverCoins -= receiverCoins % int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
+				receiverCoins := rand.Intn(remainingCoins) + 1   //nolint:gosec
+				receiverCoins -= receiverCoins % int(maxDivisor) //nolint:gosec
 				if receiverCoins == 0 {
-					receiverCoins = int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
+					receiverCoins = int(maxDivisor) //nolint:gosec
 				}
 
 				var err error

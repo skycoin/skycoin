@@ -73,7 +73,10 @@ type skySigner struct {
 // equal the seed-derived address (a guard against a seed/wallet_sky mismatch that
 // would otherwise silently spend from the wrong wallet).
 func newSigner(seed, wantAddr string) (*skySigner, error) {
-	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+	_, seckeys, err := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+	if err != nil {
+		return nil, fmt.Errorf("derive escrow key: %w", err)
+	}
 	sk := seckeys[0]
 	addr, err := cipher.AddressFromSecKey(sk)
 	if err != nil {

@@ -246,7 +246,8 @@ func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 		require.NoError(t, err)
 	}
 
-	maxDivisor := params.DropletPrecisionToDivisor(maxDroplets)
+	maxDivisor, err := params.DropletPrecisionToDivisor(maxDroplets)
+	require.NoError(t, err)
 
 	// Distribute coins and hours equally to all of the new outputs
 	coins := totalCoins / uint64(nUnspents) //nolint:gosec // Test data conversion
@@ -277,7 +278,7 @@ func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 
 	// Sign the transaction
 	spendTxn.SignInputs(keys)
-	err := spendTxn.UpdateHeader()
+	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
 
 	return spendTxn
@@ -592,7 +593,9 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 }
 
 func TestVerifyTransactionIsLocked(t *testing.T) {
-	for _, addr := range params.MainNetDistribution.LockedAddresses() {
+	locked, err := params.MainNetDistribution.LockedAddresses()
+	require.NoError(t, err)
+	for _, addr := range locked {
 		t.Run(fmt.Sprintf("IsLocked: %s", addr), func(t *testing.T) {
 			testVerifyTransactionAddressLocking(t, addr, errors.New("Transaction has locked address inputs"))
 		})

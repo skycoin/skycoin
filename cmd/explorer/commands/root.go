@@ -70,7 +70,10 @@ func init() {
 	RootCmd.Flags().BoolVarP(&verify, "verify", "v", false, "Run init() checks and quit")
 	RootCmd.Flags().StringVarP(&pprofMode, "pprofmode", "q", "", "[ cpu | mem | mutex | block | trace | http ]")
 	RootCmd.Flags().StringVarP(&pprofAddr, "pprofaddr", "r", "localhost:6060", "pprof http port")
+}
 
+// buildDocs parses the example responses and renders the API docs page.
+func buildDocs() error {
 	parsedJSONAPIEndpoints = make([]ParsedJSONAPIEndpoint, len(apiEndpoints)+1)
 
 	parsedJSONAPIEndpoints[len(apiEndpoints)] = ParsedJSONAPIEndpoint{
@@ -81,20 +84,16 @@ func init() {
 		parsedJSONAPIEndpoints[i].APIEndpoint = apiEndpoints[i]
 		resp := []byte(apiEndpoints[i].ExampleResponse)
 		if err := json.Unmarshal(resp, &parsedJSONAPIEndpoints[i].ParsedExampleResponse); err != nil {
-			log.Println("Error parsing example response JSON:", err)
-			log.Println("path:", apiEndpoints[i].ExplorerPath)
 			log.Println("Example response:")
 			log.Println(apiEndpoints[i].ExampleResponse)
-			log.Panic(err)
+			return fmt.Errorf("parse example response for %s: %w", apiEndpoints[i].ExplorerPath, err)
 		}
 		if apiEndpoints[i].ExampleVerboseResponse != "" {
 			resp = []byte(apiEndpoints[i].ExampleVerboseResponse)
 			if err := json.Unmarshal(resp, &parsedJSONAPIEndpoints[i].ParsedExampleVerboseResponse); err != nil {
-				log.Println("Error parsing example verbose response JSON:", err)
-				log.Println("path:", apiEndpoints[i].ExplorerPath)
 				log.Println("Example verbose response:")
 				log.Println(apiEndpoints[i].ExampleVerboseResponse)
-				log.Panic(err)
+				return fmt.Errorf("parse example verbose response for %s: %w", apiEndpoints[i].ExplorerPath, err)
 			}
 		}
 	}
@@ -102,7 +101,12 @@ func init() {
 	endpoints = append(endpoints, apiEndpoints...)
 	endpoints = append(endpoints, docEndpoint)
 
-	docTemplateBody = renderDocs(endpoints)
+	body, err := renderDocs(endpoints)
+	if err != nil {
+		return err
+	}
+	docTemplateBody = body
+	return nil
 }
 
 // RootCmd is skycoin blockchain explorer
@@ -131,6 +135,10 @@ var RootCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		stopPProf := initPProf(pprofMode, pprofAddr)
 		defer stopPProf()
+
+		if err := buildDocs(); err != nil {
+			log.Fatalln(err)
+		}
 
 		// Parse the node address flag
 		skycoinAddr = buildNodeURL(skycoinAddrString)

@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	_require "github.com/skycoin/skycoin/src/testutil/require"
 )
 
 func TestDropletPrecisionToDivisor(t *testing.T) {
@@ -26,12 +24,12 @@ func TestDropletPrecisionToDivisor(t *testing.T) {
 	for _, tc := range cases {
 		name := fmt.Sprintf("DropletPrecisionToDivisor(%d)=%d", tc.precision, tc.divisor)
 		t.Run(name, func(t *testing.T) {
-			divisor := DropletPrecisionToDivisor(tc.precision)
+			divisor, err := DropletPrecisionToDivisor(tc.precision)
+			require.NoError(t, err)
 			require.Equal(t, tc.divisor, divisor, "%d != %d", tc.divisor, divisor)
 		})
 	}
 
-	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
-		DropletPrecisionToDivisor(7)
-	})
+	_, err := DropletPrecisionToDivisor(7)
+	require.Equal(t, ErrInvalidMaxDropletPrecision, err)
 }

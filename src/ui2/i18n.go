@@ -30,10 +30,6 @@ func PickLang(cookie, accept string) string { return catalog.Pick(cookie, accept
 //go:embed i18n
 var i18nFS embed.FS
 
-var catalog = NewCatalog(func() fs.FS {
-	sub, err := fs.Sub(i18nFS, "i18n")
-	if err != nil {
-		panic(err)
-	}
-	return sub
-}(), Langs)
+var i18nSub, _ = fs.Sub(i18nFS, "i18n") //nolint:errcheck // fails only for an invalid path
+
+var catalog = NewCatalog(i18nSub, Langs)

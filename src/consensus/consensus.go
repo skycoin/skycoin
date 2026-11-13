@@ -204,7 +204,7 @@ func (self *HashCandidate) Init() {
 // //////////////////////////////////////////////////////////////////////////////
 func (self *HashCandidate) ObserveSigAndPubkey(
 	sig cipher.Sig,
-	pubkey cipher.PubKey) {
+	pubkey cipher.PubKey) error {
 
 	if Cfg_debug_HashCandidate {
 		for k, v := range self.pubkey2sig {
@@ -222,10 +222,9 @@ func (self *HashCandidate) ObserveSigAndPubkey(
 	n1 := len(self.pubkey2sig)
 	n2 := len(self.sig2none)
 	if n1 != n2 {
-		fmt.Printf("Inconsistent HashCandidate: n1=%d n2=%d\n", n1, n2)
-		panic("Oops")
+		return fmt.Errorf("inconsistent HashCandidate: n1=%d n2=%d", n1, n2)
 	}
-
+	return nil
 }
 
 // //////////////////////////////////////////////////////////////////////////////

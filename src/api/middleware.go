@@ -80,14 +80,14 @@ func hostCheck(apiVersion, host string, hostWhitelist []string, handler http.Han
 		var err error
 		addr, port, err = iputil.SplitAddr(host)
 		if err != nil {
-			logger.Panic(err)
+			return rejectAll(apiVersion, fmt.Errorf("invalid host %q: %w", host, err))
 		}
 	}
 
 	localhost := iputil.IsLocalhost(addr)
 
 	if localhost && port == 0 {
-		logger.Panic("localhost with no port specified is unsupported")
+		return rejectAll(apiVersion, fmt.Errorf("host %q: localhost with no port specified is unsupported", host))
 	}
 
 	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+2)
@@ -107,6 +107,14 @@ func hostCheck(apiVersion, host string, hostWhitelist []string, handler http.Han
 		}
 
 		handler.ServeHTTP(w, r)
+	})
+}
+
+// rejectAll stands in for a handler that cannot be built from a bad config.
+func rejectAll(apiVersion string, err error) http.Handler {
+	logger.WithError(err).Error("Rejecting all requests")
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writeError(w, apiVersion, http.StatusInternalServerError, "Invalid server host configuration")
 	})
 }
 

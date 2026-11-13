@@ -127,7 +127,11 @@ Connection made, introduction message received.
 			os.Exit(1)
 		}
 
-		report := getPeersReport(peers, connectDuration, readDuration)
+		report, err := getPeersReport(peers, connectDuration, readDuration)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 		fmt.Println(buildReport(report))
 	},
 }
@@ -208,7 +212,11 @@ func main() { //nolint:unused
 		os.Exit(1)
 	}
 
-	report := getPeersReport(peers, connectTimeout, readTimeout)
+	report, err := getPeersReport(peers, connectTimeout, readTimeout)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	logger.Infof("Report:\n%v", buildReport(report))
 }
 
@@ -250,9 +258,13 @@ func getPeersListFromFile(filePath string) ([]string, error) {
 
 // getPeersReport loops through `peers`, connects to each and tries to read the introduction
 // message. Builds and returns the report
-func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) Report {
+func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) (Report, error) {
 	dc := daemon.NewDaemonConfig()
-	dc.BlockchainPubkey = cipher.MustPubKeyFromHex(blockchainPubKey)
+	pk, err := cipher.PubKeyFromHex(blockchainPubKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid blockchain pubkey: %w", err)
+	}
+	dc.BlockchainPubkey = pk
 
 	report := make(Report, 0, len(peers))
 
@@ -288,7 +300,7 @@ func getPeersReport(peers []string, connectTimeout, readTimeout time.Duration) R
 		}
 	}
 
-	return report
+	return report, nil
 }
 
 // buildReport builds a report to a string output

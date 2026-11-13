@@ -113,7 +113,10 @@ func findNextAddress(c *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to derive child key at index %d: %w", childIdx, err)
 			}
 
-			pubKey := cipher.MustNewPubKey(pk.Key)
+			pubKey, err := cipher.NewPubKey(pk.Key)
+			if err != nil {
+				return fmt.Errorf("child key at index %d: %w", childIdx, err)
+			}
 			addr := cipher.AddressFromPubKey(pubKey)
 			addrStr := addr.String()
 

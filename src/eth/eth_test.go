@@ -121,9 +121,12 @@ func TestDynamicFeeTx(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			unsigned := append([]byte{dynamicFeeTxType}, tc.tx.fields().encode()...)
+			f, err := tc.tx.fields()
+			require.NoError(t, err)
+			unsigned := append([]byte{dynamicFeeTxType}, f.encode()...)
 			require.Equal(t, tc.unsigned, hex.EncodeToString(unsigned))
-			h := tc.tx.SigningHash()
+			h, err := tc.tx.SigningHash()
+			require.NoError(t, err)
 			require.Equal(t, tc.hash, hex.EncodeToString(h[:]))
 
 			sig, err := tc.tx.signature(sec)

@@ -32,18 +32,8 @@ var (
 	ErrTooLarge = errors.New("Droplet string conversion failed: Value is too large")
 
 	logger         = logging.MustGetLogger("convert")
-	maximumDecimal decimal.Decimal
+	maximumDecimal = decimal.NewFromInt(math.MaxInt64)
 )
-
-func init() {
-	maxInt64 := "9223372036854775807"
-	maximum, err := decimal.NewFromString(maxInt64)
-	if err != nil {
-		panic(err)
-	}
-
-	maximumDecimal = maximum
-}
 
 // FromString converts a skycoin balance string with decimal places to uint64 droplets.
 // For example, "123.000456" becomes 123000456

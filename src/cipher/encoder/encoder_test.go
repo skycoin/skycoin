@@ -529,22 +529,19 @@ func TestSerializeAtomicPanics(t *testing.T) {
 	})
 }
 
-func TestDeserializeAtomicPanics(t *testing.T) {
+func TestDeserializeAtomicUnhandled(t *testing.T) {
 	var y int8
-	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
-		_, _ = DeserializeAtomic(nil, y) //nolint:errcheck
-	})
+	_, err := DeserializeAtomic(nil, y)
+	require.EqualError(t, err, "DeserializeAtomic unhandled type")
 
 	var x float32
-	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
-		_, _ = DeserializeAtomic(nil, &x) //nolint:errcheck
-	})
+	_, err = DeserializeAtomic(nil, &x)
+	require.EqualError(t, err, "DeserializeAtomic unhandled type")
 
 	var tst TestStruct5a
 	d := make([]byte, 8)
-	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
-		_, _ = DeserializeAtomic(d, &tst) //nolint:errcheck
-	})
+	_, err = DeserializeAtomic(d, &tst)
+	require.EqualError(t, err, "DeserializeAtomic unhandled type")
 }
 
 func TestByteArray(t *testing.T) {

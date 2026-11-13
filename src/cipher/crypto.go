@@ -233,7 +233,7 @@ func MustSecKeyFromHex(s string) SecKey {
 	return MustNewSecKey(b)
 }
 
-// SecKeyFromHex decodes a hex encoded SecKey, or panics
+// SecKeyFromHex decodes a hex encoded SecKey
 func SecKeyFromHex(s string) (SecKey, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
@@ -255,7 +255,7 @@ func (sk SecKey) verify(debugLevel2Check bool) error {
 
 	if debugLevel2Check {
 		if err := CheckSecKey(sk); err != nil {
-			log.Panicf("DebugLevel2, WARNING CRYPTO ARMAGEDDON: %v", err)
+			return fmt.Errorf("DebugLevel2, WARNING CRYPTO ARMAGEDDON: %w", err)
 		}
 	}
 
@@ -386,13 +386,13 @@ func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 		// make sure that the signature is valid
 		pubkey, err := PubKeyFromSig(sig, hash)
 		if err != nil {
-			log.Panic("SignHash error: pubkey from sig recovery failure")
+			return Sig{}, errors.New("SignHash error: pubkey from sig recovery failure")
 		}
 		if VerifyPubKeySignedHash(pubkey, sig, hash) != nil {
-			log.Panic("SignHash error: secp256k1.Sign returned non-null invalid non-null signature")
+			return Sig{}, errors.New("SignHash error: secp256k1.Sign returned non-null invalid non-null signature")
 		}
 		if VerifyAddressSignedHash(AddressFromPubKey(pubkey), sig, hash) != nil {
-			log.Panic("SignHash error: VerifyAddressSignedHash failed for signature")
+			return Sig{}, errors.New("SignHash error: VerifyAddressSignedHash failed for signature")
 		}
 	}
 
@@ -448,7 +448,7 @@ func VerifyPubKeySignedHash(pubkey PubKey, sig Sig, hash SHA256) error {
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
 		if DebugLevel2 {
 			if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) == 1 {
-				log.Panic("VerifyPubKeySignedHash warning, invalid pubkey is valid for signature")
+				log.Print("CRITICAL: VerifyPubKeySignedHash warning, invalid pubkey is valid for signature")
 			}
 		}
 		return ErrInvalidSigInvalidPubKey
@@ -504,6 +504,21 @@ func GenerateKeyPair() (PubKey, SecKey) {
 	return pubKey, secKey
 }
 
+// checkKeyPair checks secKey and that pubKey belongs to it.
+func checkKeyPair(pubKey PubKey, secKey SecKey) error {
+	if err := CheckSecKey(secKey); err != nil {
+		return fmt.Errorf("CheckSecKey failed: %w", err)
+	}
+	pk, err := PubKeyFromSecKey(secKey)
+	if err != nil {
+		return err
+	}
+	if pk != pubKey {
+		return errors.New("public key does not match private key")
+	}
+	return nil
+}
+
 // GenerateDeterministicKeyPair generates deterministic key pair
 func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey, error) {
 	if len(seed) == 0 {
@@ -514,21 +529,17 @@ func GenerateDeterministicKeyPair(seed []byte) (PubKey, SecKey, error) {
 
 	secKey, err := NewSecKey(secret)
 	if err != nil {
-		log.Panicf("GenerateDeterministicKeyPair: secp256k1.GenerateDeterministicKeyPair returned invalid secKey: %v", err)
+		return PubKey{}, SecKey{}, fmt.Errorf("GenerateDeterministicKeyPair: secp256k1.GenerateDeterministicKeyPair returned invalid secKey: %w", err)
 	}
 
 	pubKey, err := NewPubKey(public)
 	if err != nil {
-		log.Panicf("GenerateDeterministicKeyPair: secp256k1.GenerateDeterministicKeyPair returned invalid pubKey: %v", err)
+		return PubKey{}, SecKey{}, fmt.Errorf("GenerateDeterministicKeyPair: secp256k1.GenerateDeterministicKeyPair returned invalid pubKey: %w", err)
 	}
 
 	if DebugLevel1 {
-		if err := CheckSecKey(secKey); err != nil {
-			log.Panicf("DebugLevel1, GenerateDeterministicKeyPair, CheckSecKey failed: %v", err)
-		}
-
-		if MustPubKeyFromSecKey(secKey) != pubKey {
-			log.Panic("DebugLevel1, GenerateDeterministicKeyPair, public key does not match private key")
+		if err := checkKeyPair(pubKey, secKey); err != nil {
+			return PubKey{}, SecKey{}, fmt.Errorf("DebugLevel1, GenerateDeterministicKeyPair: %w", err)
 		}
 	}
 
@@ -554,16 +565,18 @@ func DeterministicKeyPairIterator(seed []byte) ([]byte, PubKey, SecKey, error) {
 
 	hash, public, secret := secp256k1.DeterministicKeyPairIterator(seed)
 
-	secKey := MustNewSecKey(secret)
-	pubKey := MustNewPubKey(public)
+	secKey, err := NewSecKey(secret)
+	if err != nil {
+		return nil, PubKey{}, SecKey{}, fmt.Errorf("DeterministicKeyPairIterator: invalid secKey: %w", err)
+	}
+	pubKey, err := NewPubKey(public)
+	if err != nil {
+		return nil, PubKey{}, SecKey{}, fmt.Errorf("DeterministicKeyPairIterator: invalid pubKey: %w", err)
+	}
 
 	if DebugLevel1 {
-		if err := CheckSecKey(secKey); err != nil {
-			log.Panicf("DebugLevel1, DeterministicKeyPairIterator, CheckSecKey failed: %v", err)
-		}
-
-		if MustPubKeyFromSecKey(secKey) != pubKey {
-			log.Panic("DebugLevel1, DeterministicKeyPairIterator, public key does not match private key")
+		if err := checkKeyPair(pubKey, secKey); err != nil {
+			return nil, PubKey{}, SecKey{}, fmt.Errorf("DebugLevel1, DeterministicKeyPairIterator: %w", err)
 		}
 	}
 

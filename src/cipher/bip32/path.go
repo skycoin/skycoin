@@ -3,7 +3,6 @@ package bip32
 
 import (
 	"errors"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -97,7 +96,7 @@ func parseNode(x string) (PathNode, error) {
 
 		// Sanity check
 		if nnn < nn {
-			log.Panic("Unexpected overflow of path number when adjusting hardened child number")
+			return PathNode{}, errors.New("unexpected overflow of path number when adjusting hardened child number")
 		}
 		nn = nnn
 	}

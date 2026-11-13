@@ -179,8 +179,7 @@ func DeserializeAtomic(in []byte, data interface{}) (uint64, error) {
 		*v = leUint64(in[:8])
 		return 8, nil
 	default:
-		log.Panic("DeserializeAtomic unhandled type")
-		return 0, nil
+		return 0, errors.New("DeserializeAtomic unhandled type")
 	}
 }
 
@@ -843,7 +842,7 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
-				log.Panic(ErrInvalidOmitEmpty)
+				return ErrInvalidOmitEmpty
 			}
 
 			if len(tag) > 0 && tag[0] == '-' {
@@ -955,7 +954,7 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 		v.SetFloat(math.Float64frombits(u))
 
 	default:
-		log.Panicf("Decode error: kind %s not handled", v.Kind().String())
+		return fmt.Errorf("Decode error: kind %s not handled", v.Kind().String())
 	}
 
 	return nil

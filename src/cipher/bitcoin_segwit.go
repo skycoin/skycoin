@@ -3,7 +3,6 @@ package cipher
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher/bech32"
@@ -33,11 +32,6 @@ func BitcoinSegwitAddressFromSecKey(secKey SecKey) (BitcoinSegwitAddress, error)
 	return BitcoinSegwitAddressFromPubKey(p), nil
 }
 
-// MustBitcoinSegwitAddressFromSecKey generates a BitcoinSegwitAddress from SecKey, panics on error.
-func MustBitcoinSegwitAddressFromSecKey(secKey SecKey) BitcoinSegwitAddress {
-	return BitcoinSegwitAddressFromPubKey(MustPubKeyFromSecKey(secKey))
-}
-
 // DecodeBech32BitcoinAddress decodes a bech32 segwit address string into a BitcoinSegwitAddress.
 func DecodeBech32BitcoinAddress(addr string) (BitcoinSegwitAddress, error) {
 	hrp := "bc"
@@ -60,15 +54,6 @@ func DecodeBech32BitcoinAddress(addr string) (BitcoinSegwitAddress, error) {
 	a := BitcoinSegwitAddress{Version: version}
 	copy(a.Key[:], program)
 	return a, nil
-}
-
-// MustDecodeBech32BitcoinAddress decodes a bech32 segwit address, panics on error.
-func MustDecodeBech32BitcoinAddress(addr string) BitcoinSegwitAddress {
-	a, err := DecodeBech32BitcoinAddress(addr)
-	if err != nil {
-		log.Panicf("Invalid bech32 bitcoin address %s: %v", addr, err)
-	}
-	return a
 }
 
 // Null returns true if the address is null.
@@ -95,11 +80,11 @@ func (addr BitcoinSegwitAddress) Verify(key PubKey) error {
 	return nil
 }
 
-// String returns the bech32-encoded address (bc1q...).
+// String returns the bech32-encoded address (bc1q...), or "" for an invalid witness version.
 func (addr BitcoinSegwitAddress) String() string {
 	s, err := bech32.SegwitEncode("bc", addr.Version, addr.Key[:])
 	if err != nil {
-		log.Panicf("BitcoinSegwitAddress.String failed: %v", err)
+		return ""
 	}
 	return s
 }

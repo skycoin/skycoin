@@ -221,7 +221,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 			}
 			// clear the old signatures
 			txn.Sigs = []cipher.Sig{}
-			txn.SignInputs(keys)
+			require.NoError(t, txn.SignInputs(keys))
 			return nil
 		})
 		require.NoError(t, err)

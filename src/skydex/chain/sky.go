@@ -380,7 +380,9 @@ func (s *SkyNode) buildSignedTxn(dst cipher.Address, coins uint64, spendable rea
 		}
 		keys[i] = s.signer.secKey
 	}
-	txn.SignInputs(keys)
+	if err := txn.SignInputs(keys); err != nil {
+		return nil, fmt.Errorf("sky spend: sign txn: %w", err)
+	}
 	if err := txn.UpdateHeader(); err != nil {
 		return nil, fmt.Errorf("sky spend: finalize txn: %w", err)
 	}

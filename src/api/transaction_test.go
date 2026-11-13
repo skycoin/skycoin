@@ -75,7 +75,7 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	require.NoError(t, err)
 	err = txn.PushOutput(makeAddress(), 5e6, 50)
 	require.NoError(t, err)
-	txn.SignInputs([]cipher.SecKey{s})
+	require.NoError(t, txn.SignInputs([]cipher.SecKey{s}))
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
@@ -1617,7 +1617,7 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	require.NoError(t, err)
 	err = txn.PushOutput(makeAddress(), 5e6, 50)
 	require.NoError(t, err)
-	txn.SignInputs([]cipher.SecKey{s})
+	require.NoError(t, txn.SignInputs([]cipher.SecKey{s}))
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
@@ -1640,7 +1640,7 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	require.NoError(t, err)
 	err = txn.PushOutput(cipher.Address{}, 5e6, 50)
 	require.NoError(t, err)
-	txn.SignInputs([]cipher.SecKey{s})
+	require.NoError(t, txn.SignInputs([]cipher.SecKey{s}))
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 

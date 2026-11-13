@@ -181,9 +181,9 @@ func createDistributionTransaction(uxID string, genesisSecKey cipher.SecKey, p p
 		}
 	}
 
-	txn.SignInputs([]cipher.SecKey{
-		genesisSecKey,
-	})
+	if err := txn.SignInputs([]cipher.SecKey{genesisSecKey}); err != nil {
+		return nil, err
+	}
 
 	if err := txn.UpdateHeader(); err != nil {
 		return nil, err

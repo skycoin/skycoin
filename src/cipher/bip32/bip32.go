@@ -12,7 +12,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/skycoin/skycoin/src/cipher/base58"
 )
@@ -32,10 +31,10 @@ type Error struct {
 	impossibleChild bool
 }
 
-// NewError creates an Error
+// NewError creates an Error. It returns nil for a nil err.
 func NewError(err error) error {
 	if err == nil {
-		log.Panic("NewError called with nil error")
+		return nil
 	}
 	return Error{
 		error: err,
@@ -50,10 +49,10 @@ func (err Error) ImpossibleChild() bool {
 	return err.impossibleChild
 }
 
-// NewImpossibleChildError creates an Error flagged as an ImpossibleChild error
+// NewImpossibleChildError creates an Error flagged as an ImpossibleChild error. It returns nil for a nil err.
 func NewImpossibleChildError(err error, childNumber uint32) error {
 	if err == nil {
-		log.Panic("NewImpossibleChildError called with nil error")
+		return nil
 	}
 	return Error{
 		error:           fmt.Errorf("childNumber=%d %v", childNumber, err),

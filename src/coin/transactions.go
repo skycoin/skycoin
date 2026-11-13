@@ -252,7 +252,7 @@ func (txn Transaction) verifyInputSignaturesPrelude(uxIn UxArray) error {
 func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
 		if DebugLevel2 {
-			log.Panic(err)
+			log.Printf("CRITICAL: verifyInputSignaturesPrelude failed: %v", err)
 		}
 		return err
 	}
@@ -274,7 +274,7 @@ func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
 func (txn Transaction) VerifyPartialInputSignatures(uxIn UxArray) error {
 	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
 		if DebugLevel2 {
-			log.Panic(err)
+			log.Printf("CRITICAL: verifyInputSignaturesPrelude failed: %v", err)
 		}
 		return err
 	}
@@ -344,34 +344,44 @@ func (txn *Transaction) SignInput(key cipher.SecKey, index int) error {
 	}
 
 	h := cipher.AddSHA256(txn.InnerHash, txn.In[index])
-	txn.Sigs[index] = cipher.MustSignHash(h, key)
+	sig, err := cipher.SignHash(h, key)
+	if err != nil {
+		return err
+	}
+	txn.Sigs[index] = sig
 
 	return nil
 }
 
 // SignInputs signs all inputs in the transaction
-func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
+func (txn *Transaction) SignInputs(keys []cipher.SecKey) error {
 	if len(keys) != len(txn.In) {
-		log.Panic("Invalid number of keys")
+		return errors.New("Invalid number of keys")
 	}
 	if len(keys) > math.MaxUint16 {
-		log.Panic("Too many keys")
+		return errors.New("Too many keys")
 	}
 	if len(keys) == 0 {
-		log.Panic("No keys")
+		return errors.New("No keys")
 	}
 	if len(txn.Sigs) > 0 && txn.hasNonNullSignature() {
-		log.Panic("Transaction has been signed")
+		return errors.New("Transaction has been signed")
 	}
 
-	txn.InnerHash = txn.HashInner() // update hash
+	innerHash := txn.HashInner()
 
 	sigs := make([]cipher.Sig, len(txn.In))
 	for i, k := range keys {
-		h := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // hash to sign
-		sigs[i] = cipher.MustSignHash(h, k)
+		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
+		sig, err := cipher.SignHash(h, k)
+		if err != nil {
+			return err
+		}
+		sigs[i] = sig
 	}
+	txn.InnerHash = innerHash
 	txn.Sigs = sigs
+	return nil
 }
 
 // Size returns the encoded byte size of the transaction

@@ -204,7 +204,10 @@ func SeedTestDataFromJSON(d *SeedTestDataJSON) (*SeedTestData, error) {
 // ValidateSeedData validates the provided SeedTestData against the current cipher library.
 // inputData is required if SeedTestData contains signatures
 func ValidateSeedData(seedData *SeedTestData, inputData *InputTestData) error {
-	keys := cipher.MustGenerateDeterministicKeyPairs(seedData.Seed, len(seedData.Keys))
+	keys, err := cipher.GenerateDeterministicKeyPairs(seedData.Seed, len(seedData.Keys))
+	if err != nil {
+		return fmt.Errorf("cipher.GenerateDeterministicKeyPairs failed: %w", err)
+	}
 	if len(seedData.Keys) != len(keys) {
 		return errors.New("cipher.GenerateDeterministicKeyPairs generated an unexpected number of keys")
 	}
@@ -226,7 +229,10 @@ func validateKeyTestData(inputData *InputTestData, s cipher.SecKey, data KeysTes
 		return errors.New("generated secret key does not match provided secret key")
 	}
 
-	p := cipher.MustPubKeyFromSecKey(s)
+	p, err := cipher.PubKeyFromSecKey(s)
+	if err != nil {
+		return fmt.Errorf("cipher.PubKeyFromSecKey failed: %w", err)
+	}
 	if p == (cipher.PubKey{}) {
 		return errors.New("public key is null")
 	}
@@ -242,7 +248,10 @@ func validateKeyTestData(inputData *InputTestData, s cipher.SecKey, data KeysTes
 		return errors.New("derived address does not match provided address")
 	}
 
-	addr2 := cipher.MustAddressFromSecKey(s)
+	addr2, err := cipher.AddressFromSecKey(s)
+	if err != nil {
+		return fmt.Errorf("cipher.AddressFromSecKey failed: %w", err)
+	}
 	if addr1 != addr2 {
 		return errors.New("cipher.AddressFromPubKey and cipher.AddressFromSecKey generated different addresses")
 	}
@@ -255,7 +264,10 @@ func validateKeyTestData(inputData *InputTestData, s cipher.SecKey, data KeysTes
 		return errors.New("derived bitcoin address does not match provided bitcoin address")
 	}
 
-	btcAddr2 := cipher.MustBitcoinAddressFromSecKey(s)
+	btcAddr2, err := cipher.BitcoinAddressFromSecKey(s)
+	if err != nil {
+		return fmt.Errorf("cipher.BitcoinAddressFromSecKey failed: %w", err)
+	}
 	if btcAddr1 != btcAddr2 {
 		return errors.New("cipher.BitcoinAddressFromPubKey and cipher.BitcoinAddressFromSecKey generated different addresses")
 	}
@@ -309,7 +321,10 @@ func validateKeyTestData(inputData *InputTestData, s cipher.SecKey, data KeysTes
 				return errors.New("public key derived from signature does not match public key derived from secret")
 			}
 
-			sig2 := cipher.MustSignHash(h, s)
+			sig2, err := cipher.SignHash(h, s)
+			if err != nil {
+				return fmt.Errorf("cipher.SignHash failed: %w", err)
+			}
 			if sig2 == (cipher.Sig{}) {
 				return errors.New("created signature is null")
 			}
@@ -330,7 +345,7 @@ type Bip32KeysTestData struct {
 }
 
 // ToJSON converts Bip32KeysTestData to Bip32KeysTestDataJSON
-func (k *Bip32KeysTestData) ToJSON() *Bip32KeysTestDataJSON {
+func (k *Bip32KeysTestData) ToJSON() (*Bip32KeysTestDataJSON, error) {
 	sigs := make([]string, len(k.Signatures))
 	for i, s := range k.Signatures {
 		sigs[i] = s.Hex()
@@ -338,11 +353,11 @@ func (k *Bip32KeysTestData) ToJSON() *Bip32KeysTestDataJSON {
 
 	xPub, err := k.XPriv.PublicKey()
 	if err != nil {
-		panic(fmt.Sprintf("ToJSON PublicKey failed: %v", err))
+		return nil, fmt.Errorf("ToJSON PublicKey failed: %w", err)
 	}
 	xPrivIdentifier, err := k.XPriv.Identifier()
 	if err != nil {
-		panic(fmt.Sprintf("ToJSON Identifier failed: %v", err))
+		return nil, fmt.Errorf("ToJSON Identifier failed: %w", err)
 	}
 	return &Bip32KeysTestDataJSON{
 		Path:        k.Path,
@@ -359,7 +374,7 @@ func (k *Bip32KeysTestData) ToJSON() *Bip32KeysTestDataJSON {
 			Public:         k.Public.Hex(),
 			Signatures:     sigs,
 		},
-	}
+	}, nil
 }
 
 // Bip32KeysTestDataFromJSON converts Bip32KeysTestDataJSON to Bip32KeysTestData
@@ -458,10 +473,13 @@ type Bip32SeedTestData struct {
 }
 
 // ToJSON converts Bip32SeedTestData to Bip32SeedTestDataJSON
-func (s *Bip32SeedTestData) ToJSON() *Bip32SeedTestDataJSON {
+func (s *Bip32SeedTestData) ToJSON() (*Bip32SeedTestDataJSON, error) {
 	keys := make([]Bip32KeysTestDataJSON, len(s.Keys))
 	for i, k := range s.Keys {
-		kj := k.ToJSON()
+		kj, err := k.ToJSON()
+		if err != nil {
+			return nil, err
+		}
 		keys[i] = *kj
 	}
 
@@ -470,7 +488,7 @@ func (s *Bip32SeedTestData) ToJSON() *Bip32SeedTestDataJSON {
 		BasePath:     s.BasePath,
 		ChildNumbers: s.ChildNumbers,
 		Keys:         keys,
-	}
+	}, nil
 }
 
 // Bip32SeedTestDataFromJSON converts Bip32SeedTestDataJSON to Bip32SeedTestData
@@ -538,10 +556,19 @@ func validateBip32KeyTestData(inputData *InputTestData, basePath string, seed []
 	if err != nil {
 		return fmt.Errorf("PublicKey failed: %w", err)
 	}
-	pubKey := cipher.MustNewPubKey(sPub.Key)
-	secKey := cipher.MustNewSecKey(s.Key)
-
-	if cipher.MustPubKeyFromSecKey(secKey) != pubKey {
+	pubKey, err := cipher.NewPubKey(sPub.Key)
+	if err != nil {
+		return err
+	}
+	secKey, err := cipher.NewSecKey(s.Key)
+	if err != nil {
+		return err
+	}
+	derived, err := cipher.PubKeyFromSecKey(secKey)
+	if err != nil {
+		return err
+	}
+	if derived != pubKey {
 		return errors.New("pubkey derived from bip32 key does not match pubkey derived from bip32 key converted to cipher key")
 	}
 

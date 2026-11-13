@@ -96,7 +96,7 @@ func (c *msChain) nextTxn(t *testing.T, v *visor.Visor) coin.Transaction {
 	var txn coin.Transaction
 	require.NoError(t, txn.PushInput(ux.Hash()))
 	require.NoError(t, txn.PushOutput(c.genAddr, ux.Body.Coins, ux.Body.Hours/2))
-	txn.SignInputs([]cipher.SecKey{c.genSK})
+	require.NoError(t, txn.SignInputs([]cipher.SecKey{c.genSK}))
 	require.NoError(t, txn.UpdateHeader())
 	return txn
 }

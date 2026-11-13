@@ -152,7 +152,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 		require.NoError(t, err)
 	}
 
-	txn.SignInputs([]cipher.SecKey{sec})
+	require.NoError(t, txn.SignInputs([]cipher.SecKey{sec}))
 
 	require.Equal(t, len(txn.Sigs), 1)
 
@@ -192,7 +192,7 @@ func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 		require.NoError(t, err)
 	}
 
-	txn.SignInputs(keys)
+	require.NoError(t, txn.SignInputs(keys))
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
@@ -220,7 +220,7 @@ func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey,
 		require.NoError(t, err)
 	}
 
-	txn.SignInputs(keys)
+	require.NoError(t, txn.SignInputs(keys))
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
@@ -277,7 +277,7 @@ func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 	}
 
 	// Sign the transaction
-	spendTxn.SignInputs(keys)
+	require.NoError(t, spendTxn.SignInputs(keys))
 	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
 
@@ -307,7 +307,7 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 		err := spendTxn.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 		require.NoError(t, err)
 	}
-	spendTxn.SignInputs(keys)
+	require.NoError(t, spendTxn.SignInputs(keys))
 	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
 	return spendTxn
@@ -336,7 +336,7 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 		err := spendTxn.PushOutput(uxs[0].Body.Address, totalCoins-coins, 0)
 		require.NoError(t, err)
 	}
-	spendTxn.SignInputs(keys)
+	require.NoError(t, spendTxn.SignInputs(keys))
 	err = spendTxn.UpdateHeader()
 	require.NoError(t, err)
 	return spendTxn

@@ -167,7 +167,7 @@ type UnconfirmedTransactions struct {
 	Received    time.Time   `json:"received"`
 	Checked     time.Time   `json:"checked"`
 	Announced   time.Time   `json:"announced"`
-	IsValid     bool        `json:"is_valid"`
+	Valid       bool        `json:"is_valid"`
 }
 
 // NewUnconfirmedTransaction creates a readable unconfirmed transaction
@@ -182,7 +182,7 @@ func NewUnconfirmedTransaction(unconfirmed *visor.UnconfirmedTransaction) (*Unco
 		Received:    timeutil.NanoToTime(unconfirmed.Received),
 		Checked:     timeutil.NanoToTime(unconfirmed.Checked),
 		Announced:   timeutil.NanoToTime(unconfirmed.Announced),
-		IsValid:     unconfirmed.IsValid == 1,
+		Valid:       unconfirmed.Valid == 1,
 	}, nil
 }
 

@@ -451,7 +451,7 @@ func (dm *Daemon) Run() error {
 
 	blockInterval := time.Duration(dm.config.BlockCreationInterval) //nolint:gosec
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !dm.visor.Config.IsBlockPublisher {
+	if !dm.visor.Config.BlockPublisher {
 		blockCreationTicker.Stop()
 	}
 
@@ -514,7 +514,7 @@ loop:
 		case <-blockCreationTicker.C:
 			// Create blocks, if block publisher
 			elapser.Register("blockCreationTicker.C")
-			if dm.visor.Config.IsBlockPublisher && dm.publishesNextBlock() {
+			if dm.visor.Config.BlockPublisher && dm.publishesNextBlock() {
 				sb, err := dm.createAndPublishBlock()
 				if err != nil {
 					logger.WithError(err).Error("Failed to create and publish block")

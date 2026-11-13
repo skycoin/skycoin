@@ -550,7 +550,7 @@ func TestPeerJSONParsing(t *testing.T) {
 	check := func(p *Peer) {
 		require.Equal(t, "11.22.33.44:6000", p.Addr)
 		require.True(t, p.Trusted)
-		require.True(t, p.HasIncomingPort)
+		require.True(t, p.IncomingPortOpen)
 		require.Equal(t, int64(1506235338), p.LastSeen)
 	}
 

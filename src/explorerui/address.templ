@@ -264,8 +264,8 @@ templ RichlistPage(r Richlist) {
 				</a>
 			}
 		</div>
-		if len(r.Rows) > 0 && (r.Page > 1 || r.HasNext) {
-			@Pages("app/richlist/", r.Page, r.Last, r.HasNext)
+		if len(r.Rows) > 0 && (r.Page > 1 || r.NextPage) {
+			@Pages("app/richlist/", r.Page, r.Last, r.NextPage)
 		}
 	}
 }

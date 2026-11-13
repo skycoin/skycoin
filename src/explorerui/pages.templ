@@ -227,7 +227,7 @@ templ TxBox(tx Tx, max int, unconfirmed bool) {
 			<div class="title-main">
 				<span class="-inline-block">{ T(ctx, "txBoxes.transactionIDShortLabel") }<span class="-xs-sm-only">:</span></span>
 				<span class="address"><a href={ templ.SafeURL("app/transaction/" + tx.ID) }>{ tx.ID }</a>@Copy(tx.ID)</span>
-				if tx.HasBalance {
+				if tx.BalanceKnown {
 					<span class={ "-label", templ.KV("-red", tx.Balance < 0), templ.KV("-green", tx.Balance >= 0) }>
 						{ signed(ctx, tx.Balance) } { From(ctx).Coin.Ticker }
 						if !tx.Status.Confirmed {
@@ -289,7 +289,7 @@ templ TxBox(tx Tx, max int, unconfirmed bool) {
 			<div class="-header -xs-only">{ T(ctx, "txBoxes.moreInfo") }</div>
 			<div class="-balance-variation">
 				<div class="fee-box"><span class="-transparent">{ T(ctx, "txBoxes.fee") }:&nbsp;</span>{ Int(tx.Fee) }</div>
-				if tx.HasRunning {
+				if tx.RunningKnown {
 					<div><span class="-transparent">{ T(ctx, "txBoxes.initialBalance") }:&nbsp;</span>{ Amt(ctx, tx.Before) }</div>
 					<span class="separator -not-xs" aria-hidden="true">›</span>
 					<div><span class="-transparent">{ T(ctx, "txBoxes.finalBalance") }:&nbsp;</span>{ Amt(ctx, tx.After) }</div>

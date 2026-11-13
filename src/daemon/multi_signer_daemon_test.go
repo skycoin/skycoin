@@ -64,7 +64,7 @@ func (c *msChain) visorConfig(i int) visor.Config {
 	cfg.GenesisSignature = c.genesis.Sig
 	cfg.MultiSigner = c.rule
 	if i >= 0 {
-		cfg.IsBlockPublisher = true
+		cfg.BlockPublisher = true
 		cfg.Arbitrating = true
 		cfg.BlockchainSeckey = c.sks[i]
 	}
@@ -727,7 +727,7 @@ func TestMultiSignerProposalRelayedOnce(t *testing.T) {
 func TestMultiSignerOff(t *testing.T) {
 	c := newMSChain(t, 0, 0, 0, time.Now().Add(-time.Minute), false)
 	pub := c.visorConfig(-1)
-	pub.IsBlockPublisher = true
+	pub.BlockPublisher = true
 	pub.BlockchainSeckey = c.genSK
 	db, shutdown := testutil.PrepareDB(t)
 	defer shutdown()

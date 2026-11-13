@@ -224,7 +224,7 @@ type UnconfirmedTransactionVerbose struct {
 	Received    time.Time               `json:"received"`
 	Checked     time.Time               `json:"checked"`
 	Announced   time.Time               `json:"announced"`
-	IsValid     bool                    `json:"is_valid"`
+	Valid       bool                    `json:"is_valid"`
 }
 
 // NewUnconfirmedTransactionVerbose creates a verbose readable unconfirmed transaction
@@ -240,7 +240,7 @@ func NewUnconfirmedTransactionVerbose(unconfirmed *visor.UnconfirmedTransaction,
 		Received:    timeutil.NanoToTime(unconfirmed.Received),
 		Checked:     timeutil.NanoToTime(unconfirmed.Checked),
 		Announced:   timeutil.NanoToTime(unconfirmed.Announced),
-		IsValid:     unconfirmed.IsValid == 1,
+		Valid:       unconfirmed.Valid == 1,
 	}, nil
 }
 

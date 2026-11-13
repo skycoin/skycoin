@@ -1215,7 +1215,7 @@ func TxBox(tx Tx, max int, unconfirmed bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if tx.HasBalance {
+		if tx.BalanceKnown {
 			{
 				templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
 				templ_7745c5c3_Buffer := templ.GetBuffer()
@@ -1538,7 +1538,7 @@ func TxBox(tx Tx, max int, unconfirmed bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if tx.HasRunning {
+		if tx.RunningKnown {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<div><span class=\"-transparent\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

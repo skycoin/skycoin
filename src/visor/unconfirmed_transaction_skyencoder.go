@@ -75,7 +75,7 @@ func encodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
 	// obj.Announced
 	i0 += 8
 
-	// obj.IsValid
+	// obj.Valid
 	i0++
 
 	// omitempty
@@ -203,8 +203,8 @@ func encodeUnconfirmedTransactionToBuffer(buf []byte, obj *UnconfirmedTransactio
 	// obj.Announced
 	e.Int64(obj.Announced)
 
-	// obj.IsValid
-	e.Int8(obj.IsValid)
+	// obj.Valid
+	e.Int8(obj.Valid)
 
 	// omitempty
 	if len(obj.PQWitness) != 0 {
@@ -417,12 +417,12 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (uint
 	}
 
 	{
-		// obj.IsValid
+		// obj.Valid
 		i, err := d.Int8()
 		if err != nil {
 			return 0, err
 		}
-		obj.IsValid = i
+		obj.Valid = i
 	}
 
 	{

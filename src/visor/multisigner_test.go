@@ -26,7 +26,7 @@ func newMultiSignerTestVisor(t *testing.T, rule coin.MultiSignerRule, seckey cip
 	cfg.GenesisAddress = genAddress
 	cfg.MultiSigner = rule
 	if !seckey.Null() {
-		cfg.IsBlockPublisher = true
+		cfg.BlockPublisher = true
 		cfg.Arbitrating = true
 		cfg.BlockchainSeckey = seckey
 	}
@@ -180,7 +180,7 @@ func TestConfigVerifyMultiSigner(t *testing.T) {
 	cfg.MultiSigner = coin.MultiSignerRule{Signers: pks, Threshold: 3, ForkSeq: 1}
 	require.NoError(t, cfg.Verify(), "a plain node")
 
-	cfg.IsBlockPublisher = true
+	cfg.BlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	require.ErrorContains(t, cfg.Verify(), "not one of block_signers")
 
@@ -192,7 +192,7 @@ func TestConfigVerifyMultiSigner(t *testing.T) {
 	cfg.MultiSigner.Threshold = 3
 
 	cfg.PQBlocks = coin.PQBlockRule{Pubkey: []byte{1}, ForkSeq: 1}
-	cfg.IsBlockPublisher = false
+	cfg.BlockPublisher = false
 	require.Error(t, cfg.Verify())
 }
 
@@ -214,7 +214,7 @@ func TestMultiSignerGenesis(t *testing.T) {
 	cfg.Distribution = params.MainNetDistribution
 	cfg.BlockchainPubkey = genPublic
 	cfg.BlockchainSeckey = sk
-	cfg.IsBlockPublisher = true
+	cfg.BlockPublisher = true
 	cfg.MultiSigner = rule
 	cfg.GenesisAddress = genAddress
 	cfg.GenesisCoinVolume = genCoins

@@ -166,7 +166,7 @@ func isTrusted(p Peer) bool {
 }
 
 func hasIncomingPort(p Peer) bool {
-	return p.HasIncomingPort
+	return p.IncomingPortOpen
 }
 
 func canTry(p Peer) bool {
@@ -201,12 +201,12 @@ func (pl *peerlist) setAllUntrusted() {
 // setHasIncomingPort marks the peer's port as being publicly accessible
 func (pl *peerlist) setHasIncomingPort(addr string, portOpen bool) error {
 	if p, ok := pl.peers[addr]; ok {
-		p.HasIncomingPort = portOpen
+		p.IncomingPortOpen = portOpen
 		p.Seen()
 		return nil
 	}
 
-	return fmt.Errorf("set peer.HasIncomingPort failed: %v does not exist in peer list", addr)
+	return fmt.Errorf("set peer.IncomingPortOpen failed: %v does not exist in peer list", addr)
 }
 
 // setUserAgent sets a peer's user agent
@@ -334,32 +334,32 @@ type PeerJSON struct {
 	Addr string // An address of the form ip:port
 	// Unix timestamp when this peer was last seen.
 	// This could be a time.Time string or an int64 timestamp
-	LastSeen        interface{}
-	Private         bool  // Whether it should omitted from public requests
-	Trusted         bool  // Whether this peer is trusted
-	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
-	HasIncomingPort *bool // Whether this peer has incoming port
-	UserAgent       useragent.Data
+	LastSeen         interface{}
+	Private          bool  // Whether it should omitted from public requests
+	Trusted          bool  // Whether this peer is trusted
+	IncomePortOpen   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
+	IncomingPortOpen *bool `json:"HasIncomingPort"`         // Whether this peer has incoming port
+	UserAgent        useragent.Data
 }
 
 // newPeerJSON returns a PeerJSON from a Peer
 func newPeerJSON(p Peer) PeerJSON {
 	return PeerJSON{
-		Addr:            p.Addr,
-		LastSeen:        p.LastSeen,
-		Trusted:         p.Trusted,
-		HasIncomingPort: &p.HasIncomingPort,
-		UserAgent:       p.UserAgent,
+		Addr:             p.Addr,
+		LastSeen:         p.LastSeen,
+		Trusted:          p.Trusted,
+		IncomingPortOpen: &p.IncomingPortOpen,
+		UserAgent:        p.UserAgent,
 	}
 }
 
 // newPeerFromJSON converts a PeerJSON to a Peer
 func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	portOpen := false
-	if p.HasIncomingPort != nil {
-		portOpen = *p.HasIncomingPort
-	} else if p.HasIncomePort != nil {
-		portOpen = *p.HasIncomePort
+	if p.IncomingPortOpen != nil {
+		portOpen = *p.IncomingPortOpen
+	} else if p.IncomePortOpen != nil {
+		portOpen = *p.IncomePortOpen
 	}
 
 	// LastSeen could be a RFC3339Nano timestamp or an int64 unix timestamp
@@ -388,10 +388,10 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	}
 
 	return &Peer{
-		Addr:            addr,
-		LastSeen:        lastSeen,
-		Trusted:         p.Trusted,
-		HasIncomingPort: portOpen,
-		UserAgent:       p.UserAgent,
+		Addr:             addr,
+		LastSeen:         lastSeen,
+		Trusted:          p.Trusted,
+		IncomingPortOpen: portOpen,
+		UserAgent:        p.UserAgent,
 	}, nil
 }

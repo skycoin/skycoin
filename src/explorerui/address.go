@@ -50,7 +50,7 @@ func addrTx(t readable.TransactionWithStatusVerbose, addr string) Tx {
 	tx := txFrom(t.Transaction.BlockTransactionVerbose)
 	tx.Status = t.Status
 	tx.Time = unixWhen(t.Transaction.Timestamp)
-	tx.HasBalance = true
+	tx.BalanceKnown = true
 	for _, in := range tx.In {
 		if strings.EqualFold(in.Addr, addr) {
 			tx.Balance -= in.Coins
@@ -122,7 +122,7 @@ func LoadAddress(n Node, addr string, page int) Address {
 		txs := make([]Tx, len(all))
 		for i, t := range all {
 			tx := addrTx(t, addr)
-			tx.HasRunning, tx.Before = true, run
+			tx.RunningKnown, tx.Before = true, run
 			run += tx.Balance
 			tx.After = run
 			if tx.Status.Confirmed {
@@ -230,7 +230,7 @@ func LoadUnconfirmed(n Node) Unconfirmed {
 	for _, p := range pend {
 		tx := txFrom(p.Transaction)
 		tx.Time = When{p.Received.UTC()}
-		tx.Status.Confirmed = p.IsValid
+		tx.Status.Confirmed = p.Valid
 		u.Size += uint64(p.Transaction.Length)
 		u.Txns = append(u.Txns, tx)
 	}
@@ -254,10 +254,10 @@ type RichRow struct {
 // say how long the list is.
 type Richlist struct {
 	Status
-	Rows    []RichRow
-	Page    int
-	Last    int
-	HasNext bool
+	Rows     []RichRow
+	Page     int
+	Last     int
+	NextPage bool
 }
 
 // LoadRichlist reads page (1 based) of the rich list. A node without
@@ -273,7 +273,7 @@ func LoadRichlist(n Node, page int) Richlist {
 	entries := res.Richlist
 	if res.Total > 0 {
 		r.Last = (res.Total + RichlistPageSize - 1) / RichlistPageSize
-		r.HasNext = start+min(len(entries), RichlistPageSize) < res.Total
+		r.NextPage = start+min(len(entries), RichlistPageSize) < res.Total
 	} else {
 		if start > 0 {
 			if res, err = n.Richlist(&api.RichlistParams{N: start + RichlistPageSize + 1}); err != nil {
@@ -282,7 +282,7 @@ func LoadRichlist(n Node, page int) Richlist {
 			}
 			entries = res.Richlist[min(start, len(res.Richlist)):]
 		}
-		r.HasNext = len(entries) > RichlistPageSize
+		r.NextPage = len(entries) > RichlistPageSize
 	}
 	for i, e := range entries[:min(len(entries), RichlistPageSize)] {
 		r.Rows = append(r.Rows, RichRow{Rank: start + i + 1, Addr: e.Address, Coins: Droplets(e.Coins)})

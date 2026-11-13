@@ -21,17 +21,18 @@ import (
 
 func TestIntroductionMessage(t *testing.T) {
 	defer gnet.EraseMessages()
-	setupMsgEncoding()
+	setupMsgEncoding(t)
 
 	pubkey, _ := cipher.GenerateKeyPair()
 	pubkey2, _ := cipher.GenerateKeyPair()
 	genesisHash := testutil.RandSHA256(t)
 
-	invalidGenesisHashExtra := newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
+	invalidGenesisHashExtra, err := newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
 		BurnFactor:          4,
 		MaxTransactionSize:  32768,
 		MaxDropletPrecision: 3,
 	}, genesisHash)
+	require.NoError(t, err)
 	invalidGenesisHashExtra = invalidGenesisHashExtra[:len(invalidGenesisHashExtra)-2]
 
 	type daemonMockValue struct {
@@ -140,7 +141,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
+				Extra: introExtra(t, pubkey, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -183,7 +184,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
+				Extra: append(introExtra(t, pubkey, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -228,7 +229,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.26.0", params.VerifyTxn{
+				Extra: introExtra(t, pubkey2, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -388,7 +389,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
-				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1(foo)", params.VerifyTxn{
+				Extra: introExtra(t, pubkey, "skycoin:0.24.1(foo)", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -431,7 +432,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
-				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+				Extra: introExtra(t, pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -473,7 +474,7 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
-				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+				Extra: introExtra(t, pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -564,7 +565,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 				Mirror:          99998888,
 				ListenPort:      8888,
 				ProtocolVersion: 12341234,
-				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+				Extra: introExtra(t, introPubKey, "skycoin:0.26.0(foo)", params.VerifyTxn{
 					BurnFactor:          2,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
@@ -885,7 +886,7 @@ func TestTruncateGivePeersMessage(t *testing.T) {
 
 	// Empty message, no truncation
 	prevLen := len(m.Peers)
-	truncateGivePeersMessage(m, maxLen)
+	require.NoError(t, truncateGivePeersMessage(m, maxLen))
 	require.Equal(t, prevLen, len(m.Peers))
 
 	n := encodeSizeGivePeersMessage(m)
@@ -894,7 +895,7 @@ func TestTruncateGivePeersMessage(t *testing.T) {
 	// One peer, no truncation
 	m.Peers = append(m.Peers, IPAddr{})
 	prevLen = len(m.Peers)
-	truncateGivePeersMessage(m, maxLen)
+	require.NoError(t, truncateGivePeersMessage(m, maxLen))
 	require.Equal(t, prevLen, len(m.Peers))
 
 	n = encodeSizeGivePeersMessage(m)
@@ -904,7 +905,7 @@ func TestTruncateGivePeersMessage(t *testing.T) {
 	n = encodeSizeIPAddr(&IPAddr{})
 	m.Peers = make([]IPAddr, (maxLen/n)*2)
 	prevLen = len(m.Peers)
-	truncateGivePeersMessage(m, maxLen)
+	require.NoError(t, truncateGivePeersMessage(m, maxLen))
 	require.True(t, len(m.Peers) < prevLen)
 	require.NotEmpty(t, m.Peers)
 
@@ -918,7 +919,7 @@ func TestTruncateGiveBlocksMessage(t *testing.T) {
 
 	// Empty message, no truncation
 	prevLen := len(m.Blocks)
-	truncateGiveBlocksMessage(m, maxLen)
+	require.NoError(t, truncateGiveBlocksMessage(m, maxLen))
 	require.Equal(t, prevLen, len(m.Blocks))
 
 	n := encodeSizeGiveBlocksMessage(m)
@@ -927,7 +928,7 @@ func TestTruncateGiveBlocksMessage(t *testing.T) {
 	// One block, no truncation
 	m.Blocks = append(m.Blocks, coin.SignedBlock{})
 	prevLen = len(m.Blocks)
-	truncateGiveBlocksMessage(m, maxLen)
+	require.NoError(t, truncateGiveBlocksMessage(m, maxLen))
 	require.Equal(t, prevLen, len(m.Blocks))
 
 	n = encodeSizeGiveBlocksMessage(m)
@@ -937,7 +938,7 @@ func TestTruncateGiveBlocksMessage(t *testing.T) {
 	n = encodeSizeSignedBlock(&coin.SignedBlock{})
 	m.Blocks = make([]coin.SignedBlock, (maxLen/n)*2)
 	prevLen = len(m.Blocks)
-	truncateGiveBlocksMessage(m, maxLen)
+	require.NoError(t, truncateGiveBlocksMessage(m, maxLen))
 	require.True(t, len(m.Blocks) < prevLen)
 	require.NotEmpty(t, m.Blocks)
 
@@ -951,7 +952,7 @@ func TestTruncateGiveTransactionsMessage(t *testing.T) {
 
 	// Empty message, no truncation
 	prevLen := len(m.Transactions)
-	truncateGiveTxnsMessage(m, maxLen)
+	require.NoError(t, truncateGiveTxnsMessage(m, maxLen))
 	require.Equal(t, prevLen, len(m.Transactions))
 
 	n := encodeSizeGiveTxnsMessage(m)
@@ -960,7 +961,7 @@ func TestTruncateGiveTransactionsMessage(t *testing.T) {
 	// One block, no truncation
 	m.Transactions = append(m.Transactions, coin.Transaction{})
 	prevLen = len(m.Transactions)
-	truncateGiveTxnsMessage(m, maxLen)
+	require.NoError(t, truncateGiveTxnsMessage(m, maxLen))
 	require.Equal(t, prevLen, len(m.Transactions))
 
 	n = encodeSizeGiveTxnsMessage(m)
@@ -970,7 +971,7 @@ func TestTruncateGiveTransactionsMessage(t *testing.T) {
 	n = encodeSizeTransaction(&coin.Transaction{})
 	m.Transactions = make([]coin.Transaction, (maxLen/n)*2)
 	prevLen = len(m.Transactions)
-	truncateGiveTxnsMessage(m, maxLen)
+	require.NoError(t, truncateGiveTxnsMessage(m, maxLen))
 	require.True(t, len(m.Transactions) < prevLen)
 	require.NotEmpty(t, m.Transactions)
 
@@ -984,7 +985,8 @@ func TestTruncateAnnounceTxnsHashes(t *testing.T) {
 
 	// Empty message, no truncation
 	prevLen := len(m.Transactions)
-	hashes := truncateAnnounceTxnsHashes(m, maxLen)
+	hashes, err := truncateAnnounceTxnsHashes(m, maxLen)
+	require.NoError(t, err)
 	require.Equal(t, prevLen, len(hashes))
 
 	m.Transactions = hashes
@@ -994,7 +996,8 @@ func TestTruncateAnnounceTxnsHashes(t *testing.T) {
 	// One block, no truncation
 	m.Transactions = append(m.Transactions, cipher.SHA256{})
 	prevLen = len(m.Transactions)
-	hashes = truncateAnnounceTxnsHashes(m, maxLen)
+	hashes, err = truncateAnnounceTxnsHashes(m, maxLen)
+	require.NoError(t, err)
 	require.Equal(t, prevLen, len(hashes))
 
 	m.Transactions = hashes
@@ -1005,7 +1008,8 @@ func TestTruncateAnnounceTxnsHashes(t *testing.T) {
 	n = uint64(len(cipher.SHA256{}))
 	m.Transactions = make([]cipher.SHA256, (maxLen/n)*2)
 	prevLen = len(m.Transactions)
-	hashes = truncateAnnounceTxnsHashes(m, maxLen)
+	hashes, err = truncateAnnounceTxnsHashes(m, maxLen)
+	require.NoError(t, err)
 	require.True(t, len(hashes) < prevLen)
 	require.NotEmpty(t, hashes)
 
@@ -1020,7 +1024,8 @@ func TestTruncateGetTxnsHashes(t *testing.T) {
 
 	// Empty message, no truncation
 	prevLen := len(m.Transactions)
-	hashes := truncateGetTxnsHashes(m, maxLen)
+	hashes, err := truncateGetTxnsHashes(m, maxLen)
+	require.NoError(t, err)
 	require.Equal(t, prevLen, len(hashes))
 
 	m.Transactions = hashes
@@ -1030,7 +1035,8 @@ func TestTruncateGetTxnsHashes(t *testing.T) {
 	// One block, no truncation
 	m.Transactions = append(m.Transactions, cipher.SHA256{})
 	prevLen = len(m.Transactions)
-	hashes = truncateGetTxnsHashes(m, maxLen)
+	hashes, err = truncateGetTxnsHashes(m, maxLen)
+	require.NoError(t, err)
 	require.Equal(t, prevLen, len(hashes))
 
 	m.Transactions = hashes
@@ -1041,7 +1047,8 @@ func TestTruncateGetTxnsHashes(t *testing.T) {
 	n = uint64(len(cipher.SHA256{}))
 	m.Transactions = make([]cipher.SHA256, (maxLen/n)*2)
 	prevLen = len(m.Transactions)
-	hashes = truncateGetTxnsHashes(m, maxLen)
+	hashes, err = truncateGetTxnsHashes(m, maxLen)
+	require.NoError(t, err)
 	require.True(t, len(hashes) < prevLen)
 	require.NotEmpty(t, hashes)
 
@@ -1072,7 +1079,8 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 	// Have getSignedBlocksSince return a lot of blocks to verify truncation
 	blocks := make([]coin.SignedBlock, 256)
 
-	gbm := NewGiveBlocksMessage(blocks, config.MaxOutgoingMessageLength)
+	gbm, err := NewGiveBlocksMessage(blocks, config.MaxOutgoingMessageLength)
+	require.NoError(t, err)
 	require.True(t, len(gbm.Blocks) < len(blocks), "blocks should be truncated")
 	require.NotEmpty(t, gbm.Blocks)
 
@@ -1089,8 +1097,14 @@ func TestGetBlocksMessageProcess(t *testing.T) {
 	d.AssertExpectations(t)
 }
 
-func setupMsgEncoding() {
+func setupMsgEncoding(t *testing.T) {
 	gnet.EraseMessages()
 	var messagesConfig = NewMessagesConfig()
-	messagesConfig.Register()
+	require.NoError(t, messagesConfig.Register())
+}
+
+func introExtra(t *testing.T, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn, genesisHash cipher.SHA256) []byte {
+	extra, err := newIntroductionMessageExtra(pubkey, userAgent, verifyParams, genesisHash)
+	require.NoError(t, err)
+	return extra
 }

@@ -448,26 +448,24 @@ func TestConnectionsSetHeight(t *testing.T) {
 	require.Equal(t, height, c.Height)
 }
 
-func TestConnectionsModifyMirrorPanics(t *testing.T) {
+func TestConnectionsModifyMirrorFails(t *testing.T) {
 	conns := NewConnections()
 	addr := "127.0.0.1:6060"
 
 	_, err := conns.connected(addr, 1)
 	require.NoError(t, err)
 
-	// modifying mirror value causes panic
-	require.Panics(t, func() {
-		conns.modify(addr, 1, func(c *ConnectionDetails) { //nolint:errcheck,gosec
-			c.Mirror++
-		})
+	// modifying mirror value fails
+	err = conns.modify(addr, 1, func(c *ConnectionDetails) {
+		c.Mirror++
 	})
+	require.Error(t, err)
 
-	// modifying ListenPort causes panic
-	require.Panics(t, func() {
-		conns.modify(addr, 1, func(c *ConnectionDetails) { //nolint:errcheck,gosec
-			c.ListenPort = 999
-		})
+	// modifying ListenPort fails
+	err = conns.modify(addr, 1, func(c *ConnectionDetails) {
+		c.ListenPort = 999
 	})
+	require.Error(t, err)
 }
 
 func TestConnectionsStateTransitionErrors(t *testing.T) {

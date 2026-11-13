@@ -18,12 +18,12 @@ func TestNewMessageContext(t *testing.T) {
 
 func TestRegisterMessage(t *testing.T) {
 	EraseMessages()
-	RegisterMessage(DummyPrefix, DummyMessage{})
+	require.NoError(t, RegisterMessage(DummyPrefix, DummyMessage{}))
 	require.Equal(t, len(MessageIDMap), 1)
 	require.Equal(t, len(MessageIDReverseMap), 1)
 	require.NotNil(t, MessageIDReverseMap[DummyPrefix])
 
-	RegisterMessage(ErrorPrefix, ErrorMessage{})
+	require.NoError(t, RegisterMessage(ErrorPrefix, ErrorMessage{}))
 	require.Equal(t, len(MessageIDMap), 2)
 	require.Equal(t, len(MessageIDReverseMap), 2)
 	require.NotNil(t, MessageIDReverseMap[ErrorPrefix])
@@ -31,7 +31,7 @@ func TestRegisterMessage(t *testing.T) {
 
 func TestEraseMessages(t *testing.T) {
 	EraseMessages()
-	RegisterMessage(DummyPrefix, DummyMessage{})
+	require.NoError(t, RegisterMessage(DummyPrefix, DummyMessage{}))
 	require.Equal(t, len(MessageIDMap), 1)
 	require.Equal(t, len(MessageIDReverseMap), 1)
 	EraseMessages()
@@ -40,68 +40,68 @@ func TestEraseMessages(t *testing.T) {
 }
 
 func TestVerifyMessages(t *testing.T) {
-	// VerifyMessages either no-ops or panics. Make sure it doesnt panic
+	// VerifyMessages either no-ops or fails. Make sure it does not fail
 	EraseMessages()
-	RegisterMessage(DummyPrefix, DummyMessage{})
-	RegisterMessage(ErrorPrefix, ErrorMessage{})
-	require.NotPanics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(DummyPrefix, DummyMessage{}))
+	require.NoError(t, RegisterMessage(ErrorPrefix, ErrorMessage{}))
+	require.NoError(t, VerifyMessages())
 }
 
 func TestVerifyMessagesDuplicateRegistered(t *testing.T) {
 	EraseMessages()
-	RegisterMessage(DummyPrefix, DummyMessage{})
-	require.Panics(t, func() { RegisterMessage(DummyPrefix, DummyMessage{}) })
-	require.Panics(t, func() { RegisterMessage(BytePrefix, DummyMessage{}) })
+	require.NoError(t, RegisterMessage(DummyPrefix, DummyMessage{}))
+	require.Error(t, RegisterMessage(DummyPrefix, DummyMessage{}))
+	require.Error(t, RegisterMessage(BytePrefix, DummyMessage{}))
 }
 
 func TestVerifyMessagesNotAMessage(t *testing.T) {
 	EraseMessages()
-	RegisterMessage(NothingPrefix, Nothing{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(NothingPrefix, Nothing{}))
+	require.Error(t, VerifyMessages())
 }
 
 func TestVerifyMessagesBadPrefix(t *testing.T) {
 	EraseMessages()
 	// Can't be all null
-	RegisterMessage(MessagePrefix{0x00, 0x00, 0x00, 0x00}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{0x00, 0x00, 0x00, 0x00}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
 	// Can't start with nul
-	RegisterMessage(MessagePrefix{0x00, 'A', 'A', 'A'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{0x00, 'A', 'A', 'A'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
 	// Can't have non nul after nul
-	RegisterMessage(MessagePrefix{'A', 0x00, 'A', 'A'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 0x00, 'A', 'A'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
 	// Can't have invalid ascii bytes
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', '\n'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', '\n'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', '@'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', '@'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', ' '}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', ' '}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', '{'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', '{'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', '`'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', '`'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', '['}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', '['}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', '/'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', '/'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
-	RegisterMessage(MessagePrefix{'A', 'A', 'A', ':'}, DummyMessage{})
-	require.Panics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'A', 'A', 'A', ':'}, DummyMessage{}))
+	require.Error(t, VerifyMessages())
 	EraseMessages()
 	// Some valid messages
-	RegisterMessage(MessagePrefix{'1', '9', 'A', 'z'}, DummyMessage{})
-	require.NotPanics(t, VerifyMessages)
+	require.NoError(t, RegisterMessage(MessagePrefix{'1', '9', 'A', 'z'}, DummyMessage{}))
+	require.NoError(t, VerifyMessages())
 	EraseMessages()
 }
 
@@ -110,12 +110,12 @@ func TestVerifyMessagesCorruptMap(t *testing.T) {
 	EraseMessages()
 	mtype := reflect.TypeOf(DummyMessage{})
 	MessageIDMap[mtype] = DummyPrefix
-	require.Panics(t, VerifyMessages)
+	require.Error(t, VerifyMessages())
 	delete(MessageIDMap, mtype)
 	// MessageIdReverseMap circumvented
 	EraseMessages()
 	MessageIDReverseMap[DummyPrefix] = mtype
-	require.Panics(t, VerifyMessages)
+	require.Error(t, VerifyMessages())
 	delete(MessageIDReverseMap, DummyPrefix)
 }
 

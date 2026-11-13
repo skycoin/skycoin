@@ -2,6 +2,8 @@
 package gnet
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -68,37 +70,38 @@ var MessageIDReverseMap = make(map[MessagePrefix]reflect.Type)
 var registeredMsgsCount = 0
 
 // RegisterMessage registers a message struct for recognition by the message handlers.
-func RegisterMessage(prefix MessagePrefix, msg interface{}) {
+func RegisterMessage(prefix MessagePrefix, msg interface{}) error {
 	t := reflect.TypeOf(msg)
 	id := MessagePrefix{}
 	copy(id[:], prefix[:])
 	_, exists := MessageIDReverseMap[id]
 	if exists {
-		logger.Panicf("Attempted to register message prefix %s twice", string(id[:]))
+		return fmt.Errorf("attempted to register message prefix %s twice", string(id[:]))
 	}
 	_, exists = MessageIDMap[t]
 	if exists {
-		logger.Panicf("Attempts to register message type %v twice", t)
+		return fmt.Errorf("attempted to register message type %v twice", t)
 	}
 	MessageIDMap[t] = id
 	MessageIDReverseMap[id] = t
 
 	registeredMsgsCount++
+	return nil
 }
 
-// VerifyMessages calls logger.Panic if message registration violates sanity checks
-func VerifyMessages() {
+// VerifyMessages returns an error if message registration violates sanity checks
+func VerifyMessages() error {
 	if registeredMsgsCount != len(MessageIDMap) {
-		logger.Panic("MessageIDMap was altered without using RegisterMessage")
+		return errors.New("MessageIDMap was altered without using RegisterMessage")
 	}
 	if registeredMsgsCount != len(MessageIDReverseMap) {
-		logger.Panic("MessageIDReverseMap was altered without using RegisterMessage")
+		return errors.New("MessageIDReverseMap was altered without using RegisterMessage")
 	}
 
 	for t, k := range MessageIDMap {
 		// No empty prefixes allowed
 		if k[0] == 0x00 {
-			logger.Panic("No empty message prefixes allowed")
+			return errors.New("no empty message prefixes allowed")
 		}
 		// No non-null bytes allowed after a nul byte
 		emptyFound := false
@@ -106,7 +109,7 @@ func VerifyMessages() {
 			if b == 0x00 {
 				emptyFound = true
 			} else if emptyFound {
-				logger.Panic("No non-null bytes allowed after a nul byte")
+				return errors.New("no non-null bytes allowed after a nul byte")
 			}
 		}
 		// All characters must be non-whitespace printable ascii chars/digits
@@ -114,7 +117,7 @@ func VerifyMessages() {
 		for _, b := range k {
 			if !((b >= '0' && b <= '9') || (b >= 'A' && b <= 'Z') ||
 				(b >= 'a' && b <= 'z') || b == 0x00) {
-				logger.Panicf("Invalid prefix byte %v", b)
+				return fmt.Errorf("invalid prefix byte %v", b)
 			}
 		}
 
@@ -123,14 +126,13 @@ func VerifyMessages() {
 		// directly
 		mptr := reflect.PointerTo(t)
 		if !mptr.Implements(reflect.TypeOf((*Message)(nil)).Elem()) {
-			logger.Panicf("Invalid message at ID %s: Message must implement the gnet.Message interface", string(k[:]))
+			return fmt.Errorf("invalid message at ID %s: Message must implement the gnet.Message interface", string(k[:]))
 		}
 	}
 	if len(MessageIDMap) != len(MessageIDReverseMap) {
-		logger.Panic("MessageIdMap mismatch")
+		return errors.New("MessageIdMap mismatch")
 	}
-	// No empty prefixes
-	// All prefixes must be 0 padded
+	return nil
 }
 
 // EraseMessages wipes all recorded message types

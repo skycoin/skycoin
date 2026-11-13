@@ -85,12 +85,12 @@ func (cfg *Config) preprocess() (Config, error) {
 		if config.Daemon.Address == "" {
 			local, err := iputil.LocalhostIP()
 			if err != nil {
-				logger.WithError(err).Panic("Failed to obtain localhost IP")
+				return Config{}, fmt.Errorf("failed to obtain localhost IP: %w", err)
 			}
 			config.Daemon.Address = local
 		} else {
 			if !iputil.IsLocalhost(config.Daemon.Address) {
-				logger.WithField("addr", config.Daemon.Address).Panic("Invalid address for localhost-only")
+				return Config{}, fmt.Errorf("invalid address %s for localhost-only", config.Daemon.Address)
 			}
 		}
 		config.Pex.AllowLocalhost = true
@@ -358,7 +358,9 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 	}
 
 	messages := NewMessages(config.Messages)
-	messages.Config.Register()
+	if err := messages.Config.Register(); err != nil {
+		return nil, err
+	}
 
 	d := &Daemon{
 		config:   config.Daemon,
@@ -918,7 +920,7 @@ func (dm *Daemon) handleEvent(e interface{}) {
 		logger.WithFields(logrus.Fields{
 			"type":  fmt.Sprintf("%T", e),
 			"value": fmt.Sprintf("%+v", e),
-		}).Panic("Invalid object in events queue")
+		}).Error("Invalid object in events queue")
 	}
 }
 
@@ -998,7 +1000,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 
 	logger.WithFields(fields).Debug("Sending introduction message")
 
-	if err := dm.sendMessage(e.Addr, NewIntroductionMessage(
+	intro, err := NewIntroductionMessage(
 		dm.config.Mirror,
 		dm.config.ProtocolVersion,
 		dm.pool.Pool.Config.Port,
@@ -1006,7 +1008,12 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 		dm.config.userAgent,
 		dm.config.UnconfirmedVerifyTxn,
 		dm.config.GenesisHash,
-	)); err != nil {
+	)
+	if err != nil {
+		logger.WithFields(fields).WithError(err).Error("Build IntroductionMessage failed")
+		return
+	}
+	if err := dm.sendMessage(e.Addr, intro); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
 	}
@@ -1233,7 +1240,10 @@ func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
 		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{txn}, dm.config.MaxOutgoingMessageLength)
+	m, err := NewGiveTxnsMessage(coin.Transactions{txn}, dm.config.MaxOutgoingMessageLength)
+	if err != nil {
+		return nil, err
+	}
 	if len(m.Transactions) != 1 {
 		logger.Critical().Error("NewGiveTxnsMessage truncated its only transaction")
 	}
@@ -1392,7 +1402,10 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 		return ErrNetworkingDisabled
 	}
 
-	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.config.MaxOutgoingMessageLength)
+	m, err := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.config.MaxOutgoingMessageLength)
+	if err != nil {
+		return err
+	}
 	if len(m.Blocks) != 1 {
 		logger.Critical().Error("NewGiveBlocksMessage truncated its only block")
 	}
@@ -1405,7 +1418,7 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 		logger.WithError(err).Error("broadcast GivePQWitnessesMessage failed")
 	}
 
-	_, err := dm.broadcastMessage(m)
+	_, err = dm.broadcastMessage(m)
 	return err
 }
 
@@ -1465,7 +1478,10 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 		return errors.New("No peers available")
 	}
 
-	m := NewGivePeersMessage(peers, dm.config.MaxOutgoingMessageLength)
+	m, err := NewGivePeersMessage(peers, dm.config.MaxOutgoingMessageLength)
+	if err != nil {
+		return err
+	}
 
 	return dm.sendMessage(addr, m)
 }
@@ -1495,7 +1511,10 @@ func (dm *Daemon) announceTxnHashes(hashes []cipher.SHA256) error {
 	hashesSet := divideHashes(hashes, dm.config.MaxTxnAnnounceNum)
 
 	for _, hs := range hashesSet {
-		m := NewAnnounceTxnsMessage(hs, dm.config.MaxOutgoingMessageLength)
+		m, err := NewAnnounceTxnsMessage(hs, dm.config.MaxOutgoingMessageLength)
+		if err != nil {
+			return err
+		}
 		if len(m.Transactions) != len(hs) {
 			logger.Critical().Error("NewAnnounceTxnsMessage truncated hashes that were already split up")
 		}

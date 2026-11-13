@@ -762,9 +762,9 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(DummyPrefix, DummyMessage{})
-	RegisterMessage(ErrorPrefix, ErrorMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(DummyPrefix, DummyMessage{}))
+	require.NoError(t, RegisterMessage(ErrorPrefix, ErrorMessage{}))
+	require.NoError(t, VerifyMessages())
 
 	// newPool starts a fresh, fully-configured pool. Configuring each scenario's
 	// pool before Run() (rather than mutating a live pool's Config) keeps Config
@@ -900,8 +900,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 func TestConnectionWriteLoop(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 
 	cfg := newTestConfig(t)
 	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
@@ -999,8 +999,8 @@ func TestConnectionWriteLoop(t *testing.T) {
 func TestPoolSendMessageOK(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 
 	cfg := newTestConfig(t)
 	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
@@ -1039,8 +1039,8 @@ func TestPoolSendMessageOK(t *testing.T) {
 func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 
 	cfg := newTestConfig(t)
 	cfg.WriteTimeout = time.Second
@@ -1109,8 +1109,8 @@ func TestPoolBroadcastMessage(t *testing.T) {
 
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 
 	cfg := newTestConfig(t)
 	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
@@ -1208,9 +1208,9 @@ func TestPoolReceiveMessage(t *testing.T) {
 	wait()
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	RegisterMessage(ErrorPrefix, ErrorMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, RegisterMessage(ErrorPrefix, ErrorMessage{}))
+	require.NoError(t, VerifyMessages())
 
 	cfg := newTestConfig(t)
 	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))

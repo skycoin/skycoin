@@ -47,8 +47,8 @@ func TestConvertToMessage(t *testing.T) {
 	assertIsMessage(t, &ByteMessage{})
 	EraseMessages()
 	resetHandler()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 	c := &Connection{}
 	b := make([]byte, 0)
 	b = append(b, BytePrefix[:]...)
@@ -88,9 +88,9 @@ func TestConvertToMessageUnknownMessage(t *testing.T) {
 func TestConvertToMessageBadDeserialize(t *testing.T) {
 	EraseMessages()
 	resetHandler()
-	RegisterMessage(DummyPrefix, DummyMessage{})
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(DummyPrefix, DummyMessage{}))
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 	c := &Connection{}
 	// Test with too many bytes
 	b := append(DummyPrefix[:], []byte{0, 1, 1, 1}...)
@@ -109,12 +109,11 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 func TestConvertToMessageNotMessage(t *testing.T) {
 	EraseMessages()
 	resetHandler()
-	RegisterMessage(NothingPrefix, Nothing{})
+	require.NoError(t, RegisterMessage(NothingPrefix, Nothing{}))
 	// don't verify messages
 	c := &Connection{}
-	require.Panics(t, func() {
-		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) //nolint:errcheck
-	})
+	_, err := convertToMessage(c.ID, NothingPrefix[:], testing.Verbose())
+	require.Error(t, err)
 }
 
 func TestDeserializeMessageTrapsPanic(t *testing.T) {
@@ -131,8 +130,8 @@ func TestDeserializeMessageTrapsPanic(t *testing.T) {
 func TestEncodeMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 	m := NewByteMessage(7)
 	b, err := EncodeMessage(m)
 	require.NoError(t, err)
@@ -142,9 +141,8 @@ func TestEncodeMessage(t *testing.T) {
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	require.Panics(t, func() {
-		_, _ = EncodeMessage(&DummyMessage{}) //nolint:errcheck
-	})
+	_, err := EncodeMessage(&DummyMessage{})
+	require.Error(t, err)
 }
 
 func TestSendByteMessage(t *testing.T) {
@@ -184,8 +182,8 @@ func TestSendByteMessageWriteDeadlineFailed(t *testing.T) {
 func TestSendMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	RegisterMessage(BytePrefix, ByteMessage{})
-	VerifyMessages()
+	require.NoError(t, RegisterMessage(BytePrefix, ByteMessage{}))
+	require.NoError(t, VerifyMessages())
 	m := NewByteMessage(7)
 	sendByteMessage = func(_ net.Conn, msg []byte, _ time.Duration) error {
 		expect := []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}

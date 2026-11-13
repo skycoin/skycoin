@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -37,12 +38,25 @@ type Connection struct {
 	conn           net.Conn
 }
 
-func init() {
-	gnet.RegisterMessage(gnet.MessagePrefixFromString("INTR"), daemon.IntroductionMessage{})
+var (
+	registerOnce sync.Once
+	registerErr  error
+)
+
+// register registers the introduction message with gnet once, before the first connection.
+func register() error {
+	registerOnce.Do(func() {
+		registerErr = gnet.RegisterMessage(gnet.MessagePrefixFromString("INTR"), daemon.IntroductionMessage{})
+	})
+	return registerErr
 }
 
 // NewConnection constructs new connection
 func NewConnection(addr string, connectTimeout, readTimeout time.Duration) (*Connection, error) {
+	if err := register(); err != nil {
+		return nil, err
+	}
+
 	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
 		return nil, err

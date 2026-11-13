@@ -52,6 +52,8 @@ var (
 	ErrConnectionAlreadyConnected = errors.New("Connection is already in connected state")
 	// ErrInvalidGnetID invalid gnet ID value used as argument
 	ErrInvalidGnetID = errors.New("Invalid gnet ID")
+	// ErrConnectionStateInvalid a connection is in an unknown state
+	ErrConnectionStateInvalid = errors.New("Connection state invalid")
 )
 
 // ConnectionDetails connection data managed by daemon
@@ -203,7 +205,8 @@ func (c *Connections) connected(addr string, gnetID uint64) (*connection, error)
 			logger.Critical().WithFields(fields).Error("Connections.connected called on already introduced connection")
 			return nil, ErrConnectionAlreadyIntroduced
 		default:
-			logger.WithFields(fields).Panic("Connection state invalid")
+			logger.Critical().WithFields(fields).Error("Connection state invalid")
+			return nil, ErrConnectionStateInvalid
 		}
 	}
 
@@ -265,7 +268,8 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 		logger.Critical().WithFields(fields).WithFields(errorFields).Error("Connections.introduced called on already introduced connection")
 		return nil, ErrConnectionAlreadyIntroduced
 	default:
-		logger.WithFields(fields).WithFields(errorFields).Panic("invalid connection state")
+		logger.Critical().WithFields(fields).WithFields(errorFields).Error("invalid connection state")
+		return nil, ErrConnectionStateInvalid
 	}
 
 	if err := c.canUpdateMirror(ip, m.Mirror); err != nil {
@@ -291,7 +295,8 @@ func (c *Connections) introduced(addr string, gnetID uint64, m *IntroductionMess
 	}
 
 	if err := c.updateMirror(ip, m.Mirror, listenPort); err != nil {
-		logger.WithFields(fields).WithField("mirror", m.Mirror).WithError(err).Panic("updateMirror failed, but shouldn't")
+		logger.Critical().WithFields(fields).WithField("mirror", m.Mirror).WithError(err).Error("updateMirror failed, but shouldn't")
+		return nil, err
 	}
 
 	conn.State = ConnectionStateIntroduced
@@ -375,14 +380,16 @@ func (c *Connections) modify(addr string, gnetID uint64, f func(c *ConnectionDet
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
 			"gnetID": gnetID,
-		}).Panic("Connections.modify connection Mirror was changed")
+		}).Error("Connections.modify connection Mirror was changed")
+		return errors.New("Connections.modify connection Mirror was changed")
 	}
 
 	if cd.ListenPort != conn.ConnectionDetails.ListenPort {
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
 			"gnetID": gnetID,
-		}).Panic("Connections.modify connection ListenPort was changed")
+		}).Error("Connections.modify connection ListenPort was changed")
+		return errors.New("Connections.modify connection ListenPort was changed")
 	}
 
 	conn.ConnectionDetails = cd

@@ -23,7 +23,8 @@ import (
 )
 
 func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutputsSummary) *CoinSupply {
-	unlockedAddrs := params.MainNetDistribution.UnlockedAddressesDecoded()
+	unlockedAddrs, err := params.MainNetDistribution.UnlockedAddressesDecoded()
+	require.NoError(t, err)
 	var unlockedSupply uint64
 	// check confirmed unspents only
 	// Search map of unlocked addresses
@@ -55,7 +56,10 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	require.NoError(t, err)
 
 	// locked distribution addresses
-	lockedAddrs := params.MainNetDistribution.LockedAddressesDecoded()
+	lockedAddrs, err := params.MainNetDistribution.LockedAddressesDecoded()
+	require.NoError(t, err)
+	lockedStrs, err := params.MainNetDistribution.LockedAddresses()
+	require.NoError(t, err)
 	lockedAddrSet := newAddrSet(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
@@ -85,7 +89,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
 		UnlockedAddresses:     params.MainNetDistribution.UnlockedAddresses(),
-		LockedAddresses:       params.MainNetDistribution.LockedAddresses(),
+		LockedAddresses:       lockedStrs,
 	}
 	return &cs
 }
@@ -96,7 +100,8 @@ func TestCoinSupply(t *testing.T) {
 		testutil.MakeAddress(),
 	}
 
-	unlockedAddrs := params.MainNetDistribution.UnlockedAddressesDecoded()
+	unlockedAddrs, err := params.MainNetDistribution.UnlockedAddressesDecoded()
+	require.NoError(t, err)
 	successGatewayGetUnspentOutputsResult := readable.UnspentOutputsSummary{
 		HeadOutputs: readable.UnspentOutputs{
 			readable.UnspentOutput{

@@ -14,7 +14,7 @@ import (
 )
 
 // CatchInterrupt catches CTRL-C and closes the quit channel if it occurs.
-// If CTRL-C is called again, the program stack is dumped and the process panics,
+// If CTRL-C is called again, every goroutine stack is dumped and the process exits,
 // so that shutdown hangs can be diagnosed.
 func CatchInterrupt(quit chan<- struct{}) {
 	sigchan := make(chan os.Signal, 1)
@@ -23,19 +23,19 @@ func CatchInterrupt(quit chan<- struct{}) {
 	signal.Stop(sigchan)
 	close(quit)
 
-	// If ctrl-c is called again, panic so that the program state can be examined.
+	// If ctrl-c is called again, dump the goroutines so that the program state can be examined.
 	// Ctrl-c would be called again if program shutdown was stuck.
 	go CatchInterruptPanic()
 }
 
-// CatchInterruptPanic catches os.Interrupt and panics
+// CatchInterruptPanic catches os.Interrupt, prints every goroutine stack and exits.
 func CatchInterruptPanic() {
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, os.Interrupt)
 	<-sigchan
 	signal.Stop(sigchan)
 	PrintProgramStatus()
-	panic("SIGINT")
+	os.Exit(2)
 }
 
 // CatchDebug catches SIGUSR1 and prints internal program state

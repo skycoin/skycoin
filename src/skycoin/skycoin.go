@@ -6,7 +6,6 @@ Package skycoin implements the main daemon cmd's configuration and setup
 package skycoin
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -145,9 +144,19 @@ func (c *Coin) Run() error {
 	c.logger.Infof("OS: %s", runtime.GOOS)
 	c.logger.Infof("Arch: %s", runtime.GOARCH)
 
-	wconf := c.ConfigureWallet()
+	if err := params.CheckEnv(); err != nil {
+		return err
+	}
+
+	wconf, err := c.ConfigureWallet()
+	if err != nil {
+		return err
+	}
 	dconf := c.ConfigureDaemon()
-	vconf := c.ConfigureVisor()
+	vconf, err := c.ConfigureVisor()
+	if err != nil {
+		return err
+	}
 	sconf := c.ConfigureStorage()
 
 	// Open the database
@@ -365,7 +374,7 @@ func (c *Coin) initLogFile() (*os.File, error) {
 }
 
 // ConfigureVisor sets the visor config values
-func (c *Coin) ConfigureVisor() visor.Config {
+func (c *Coin) ConfigureVisor() (visor.Config, error) {
 	vc := visor.NewConfig()
 
 	// Use distribution addresses from fiber.toml if available, otherwise use hardcoded MainNetDistribution
@@ -377,8 +386,9 @@ func (c *Coin) ConfigureVisor() visor.Config {
 			UnlockTimeInterval:   c.config.Node.distributionUnlockInterval,
 			Addresses:            c.config.Node.distributionAddresses,
 		}
-		// Validate and decode addresses
-		vc.Distribution.MustValidate()
+		if err := vc.Distribution.Validate(); err != nil {
+			return visor.Config{}, fmt.Errorf("invalid distribution: %w", err)
+		}
 	} else {
 		vc.Distribution = params.MainNetDistribution
 	}
@@ -402,11 +412,11 @@ func (c *Coin) ConfigureVisor() visor.Config {
 	vc.GenesisTimestamp = c.config.Node.GenesisTimestamp
 	vc.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
 
-	return vc
+	return vc, nil
 }
 
 // ConfigureWallet sets the wallet config values
-func (c *Coin) ConfigureWallet() wallet.Config {
+func (c *Coin) ConfigureWallet() (wallet.Config, error) {
 	wc := wallet.NewConfig()
 
 	wc.WalletDir = c.config.Node.WalletDirectory
@@ -416,7 +426,7 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 	// Initialize wallet default crypto type
 	cryptoType, err := crypto.CryptoTypeFromString(c.config.Node.WalletCryptoType)
 	if err != nil {
-		log.Panic(err)
+		return wallet.Config{}, fmt.Errorf("wallet crypto type: %w", err)
 	}
 
 	wc.CryptoType = cryptoType
@@ -424,7 +434,7 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 	bc := c.config.Node.Fiber.Bip44Coin
 	wc.Bip44Coin = &bc
 
-	return wc
+	return wc, nil
 }
 
 // ConfigureStorage sets the key-value storage config values
@@ -601,11 +611,8 @@ func checkCertFiles(cert, key string) (bool, error) {
 		return false, nil
 	case certExists && !keyExists:
 		return false, fmt.Errorf("certfile %s exists but keyfile %s does not", cert, key)
-	case !certExists && keyExists:
+	default: // !certExists && keyExists
 		return false, fmt.Errorf("keyfile %s exists but certfile %s does not", key, cert)
-	default:
-		log.Panic("unreachable code")
-		return false, errors.New("unreachable code")
 	}
 }
 
@@ -634,37 +641,43 @@ func (c *Coin) ParseConfig() error {
 }
 
 // InitTransaction creates the genesis transaction
-func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distribution) coin.Transaction {
-	dist.MustValidate()
+func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distribution) (coin.Transaction, error) {
+	if err := dist.Validate(); err != nil {
+		return coin.Transaction{}, fmt.Errorf("invalid distribution: %w", err)
+	}
 
 	var txn coin.Transaction
 
-	output := cipher.MustSHA256FromHex(uxID)
+	output, err := cipher.SHA256FromHex(uxID)
+	if err != nil {
+		return coin.Transaction{}, fmt.Errorf("invalid uxid: %w", err)
+	}
 	if err := txn.PushInput(output); err != nil {
-		log.Panic(err)
+		return coin.Transaction{}, err
 	}
 
-	for _, addr := range dist.AddressesDecoded() {
+	addrs, err := dist.AddressesDecoded()
+	if err != nil {
+		return coin.Transaction{}, err
+	}
+	for _, addr := range addrs {
 		if err := txn.PushOutput(addr, dist.AddressInitialBalance()*droplet.Multiplier, 1); err != nil {
-			log.Panic(err)
+			return coin.Transaction{}, err
 		}
 	}
 
-	seckeys := make([]cipher.SecKey, 1)
-	seckey := genesisSecKey.Hex()
-	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
-	txn.SignInputs(seckeys)
+	txn.SignInputs([]cipher.SecKey{genesisSecKey})
 
 	if err := txn.UpdateHeader(); err != nil {
-		log.Panic(err)
+		return coin.Transaction{}, err
 	}
 
 	if err := txn.Verify(); err != nil {
-		log.Panic(err)
+		return coin.Transaction{}, err
 	}
 
 	log.Printf("signature= %s", txn.Sigs[0].Hex())
-	return txn
+	return txn, nil
 }
 
 func createDirIfNotExist(dir string) error {

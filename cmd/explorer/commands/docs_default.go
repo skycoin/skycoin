@@ -5,16 +5,19 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
-	"log"
 )
 
 // renderDocs renders the API documentation page from docTemplate.
-func renderDocs(endpoints []APIEndpoint) string {
-	t := template.Must(template.New("docs").Parse(docTemplate))
+func renderDocs(endpoints []APIEndpoint) (string, error) {
+	t, err := template.New("docs").Parse(docTemplate)
+	if err != nil {
+		return "", fmt.Errorf("parse docs template: %w", err)
+	}
 	b := &bytes.Buffer{}
 	if err := t.Execute(b, endpoints); err != nil {
-		log.Panic(err)
+		return "", fmt.Errorf("render docs template: %w", err)
 	}
-	return b.String()
+	return b.String(), nil
 }

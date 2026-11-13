@@ -2278,7 +2278,10 @@ func (vs *Visor) buildRichlist(includeDistribution bool) (Richlist, error) {
 		}
 	}
 
-	lockedAddrs := vs.Config.Distribution.LockedAddressesDecoded()
+	lockedAddrs, err := vs.Config.Distribution.LockedAddressesDecoded()
+	if err != nil {
+		return nil, fmt.Errorf("locked distribution addresses: %w", err)
+	}
 	addrsMap := make(map[cipher.Address]struct{}, len(lockedAddrs))
 	for _, a := range lockedAddrs {
 		addrsMap[a] = struct{}{}
@@ -2290,7 +2293,10 @@ func (vs *Visor) buildRichlist(includeDistribution bool) (Richlist, error) {
 	}
 
 	if !includeDistribution {
-		unlockedAddrs := vs.Config.Distribution.UnlockedAddressesDecoded()
+		unlockedAddrs, err := vs.Config.Distribution.UnlockedAddressesDecoded()
+		if err != nil {
+			return nil, fmt.Errorf("unlocked distribution addresses: %w", err)
+		}
 		for _, a := range unlockedAddrs {
 			addrsMap[a] = struct{}{}
 		}

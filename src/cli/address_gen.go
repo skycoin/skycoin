@@ -358,7 +358,10 @@ func fiberAddressGenCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				addr := cipher.MustAddressFromSecKey(seckey)
+				addr, err := cipher.AddressFromSecKey(seckey)
+				if err != nil {
+					return err
+				}
 
 				seeds[i] = seed
 				addrs[i] = addr

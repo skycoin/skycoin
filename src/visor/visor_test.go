@@ -613,7 +613,9 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
-	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
+	divisor, err := params.UserVerifyTxn.MaxDropletDivisor()
+	require.NoError(t, err)
+	invalidCoins := coins + (divisor / 10)
 	txn = makeSpendTxn(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
@@ -2033,7 +2035,9 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
-	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
+	divisor, err := params.UserVerifyTxn.MaxDropletDivisor()
+	require.NoError(t, err)
+	invalidCoins := coins + (divisor / 10)
 	alwaysInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)

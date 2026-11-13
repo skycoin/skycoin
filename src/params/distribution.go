@@ -9,6 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
+var errUnlockedCount = errors.New("unlocked addresses > total distribution addresses")
+
 // Distribution parameters define the initial coin distribution and unlocking schedule
 type Distribution struct {
 	// MaxCoinSupply is the maximum supply of coins
@@ -28,17 +30,10 @@ type Distribution struct {
 	addressesDecoded []cipher.Address
 }
 
-// MustValidate validates Distribution parameters, panics on error
-func (d *Distribution) MustValidate() {
-	if err := d.Validate(); err != nil {
-		panic(err)
-	}
-}
-
 // Validate validates Distribution parameters
 func (d *Distribution) Validate() error {
 	if d.InitialUnlockedCount > uint64(len(d.Addresses)) {
-		return errors.New("unlocked addresses > total distribution addresses")
+		return errUnlockedCount
 	}
 
 	if d.MaxCoinSupply%uint64(len(d.Addresses)) != 0 {
@@ -77,25 +72,31 @@ func (d *Distribution) UnlockedAddresses() []string {
 }
 
 // LockedAddresses returns distribution addresses that are locked, i.e. they have unspendable outputs
-func (d *Distribution) LockedAddresses() []string {
+func (d *Distribution) LockedAddresses() ([]string, error) {
 	// TODO -- once we reach 30% distribution, we can hardcode the
 	// initial timestamp for releasing more coins
-	addrs := make([]string, d.numLocked())
+	n, err := d.numLocked()
+	if err != nil {
+		return nil, err
+	}
+	addrs := make([]string, n)
 	copy(addrs, d.Addresses[d.InitialUnlockedCount:])
-	return addrs
+	return addrs, nil
 }
 
 // AddressesDecoded returns a copy of the hardcoded distribution addresses array.
 // Each address has 1,000,000 coins. There are 100 addresses.
-func (d *Distribution) AddressesDecoded() []cipher.Address {
-	d.mustDecodeAddresses()
+func (d *Distribution) AddressesDecoded() ([]cipher.Address, error) {
+	if err := d.decodeAddresses(); err != nil {
+		return nil, err
+	}
 	addrs := make([]cipher.Address, len(d.addressesDecoded))
 	copy(addrs, d.addressesDecoded)
-	return addrs
+	return addrs, nil
 }
 
 // UnlockedAddressesDecoded returns distribution addresses that are unlocked, i.e. they have spendable outputs
-func (d *Distribution) UnlockedAddressesDecoded() []cipher.Address {
+func (d *Distribution) UnlockedAddressesDecoded() ([]cipher.Address, error) {
 	// The first d.InitialUnlockedCount (25) addresses are unlocked by default.
 	// Subsequent addresses will be unlocked at a rate of UnlockAddressRate (5) per year,
 	// after the d.InitialUnlockedCount (25) addresses have no remaining balance.
@@ -107,28 +108,39 @@ func (d *Distribution) UnlockedAddressesDecoded() []cipher.Address {
 	// the coin package is agnostic to the state of the blockchain and cannot reference it.
 	// Instead of automatic unlocking, we can hardcode the timestamp at which the first 30%
 	// is distributed, then compute the unlocked addresses easily here.
-	d.mustDecodeAddresses()
+	if err := d.decodeAddresses(); err != nil {
+		return nil, err
+	}
+	if d.InitialUnlockedCount > uint64(len(d.addressesDecoded)) {
+		return nil, errUnlockedCount
+	}
 	addrs := make([]cipher.Address, d.InitialUnlockedCount)
 	copy(addrs[:], d.addressesDecoded[:d.InitialUnlockedCount])
-	return addrs
+	return addrs, nil
 }
 
 // LockedAddressesDecoded returns distribution addresses that are locked, i.e. they have unspendable outputs
-func (d *Distribution) LockedAddressesDecoded() []cipher.Address {
+func (d *Distribution) LockedAddressesDecoded() ([]cipher.Address, error) {
 	// TODO -- once we reach 30% distribution, we can hardcode the
 	// initial timestamp for releasing more coins
-	d.mustDecodeAddresses()
-	addrs := make([]cipher.Address, d.numLocked())
+	if err := d.decodeAddresses(); err != nil {
+		return nil, err
+	}
+	n, err := d.numLocked()
+	if err != nil {
+		return nil, err
+	}
+	addrs := make([]cipher.Address, n)
 	copy(addrs, d.addressesDecoded[d.InitialUnlockedCount:])
-	return addrs
+	return addrs, nil
 }
 
-func (d *Distribution) numLocked() uint64 {
+func (d *Distribution) numLocked() (uint64, error) {
 	n := uint64(len(d.Addresses))
 	if n < d.InitialUnlockedCount {
-		panic("number of distribution addresses is less than InitialUnlockedCount")
+		return 0, errUnlockedCount
 	}
-	return n - d.InitialUnlockedCount
+	return n - d.InitialUnlockedCount, nil
 }
 
 func (d *Distribution) decodeAddresses() error {
@@ -147,10 +159,4 @@ func (d *Distribution) decodeAddresses() error {
 
 	d.addressesDecoded = decodedAddrs
 	return nil
-}
-
-func (d *Distribution) mustDecodeAddresses() {
-	if err := d.decodeAddresses(); err != nil {
-		panic(err)
-	}
 }

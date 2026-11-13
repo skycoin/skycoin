@@ -179,7 +179,11 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 		return err
 	}
 
-	if TransactionIsLocked(distParams, uxIn) {
+	locked, err := TransactionIsLocked(distParams, uxIn)
+	if err != nil {
+		return err
+	}
+	if locked {
 		return ErrTxnIsLocked
 	}
 

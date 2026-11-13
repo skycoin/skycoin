@@ -380,6 +380,11 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("to is empty")
 	}
 
+	divisor, err := params.UserVerifyTxn.MaxDropletDivisor()
+	if err != nil {
+		return err
+	}
+
 	for i, to := range r.To {
 		if to.Address.Null() {
 			return fmt.Errorf("to[%d].address is empty", i)
@@ -389,7 +394,7 @@ func (r createTransactionRequest) Validate() error {
 			return fmt.Errorf("to[%d].coins must not be zero", i)
 		}
 
-		if to.Coins.Value()%params.UserVerifyTxn.MaxDropletDivisor() != 0 {
+		if to.Coins.Value()%divisor != 0 {
 			return fmt.Errorf("to[%d].coins has too many decimal places", i)
 		}
 	}

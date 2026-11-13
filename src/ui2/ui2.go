@@ -24,13 +24,7 @@ const HTMXVersion = "2.0.11"
 //go:embed static
 var static embed.FS
 
-var staticFS = func() fs.FS {
-	sub, err := fs.Sub(static, "static")
-	if err != nil {
-		panic(err)
-	}
-	return sub
-}()
+var staticFS, _ = fs.Sub(static, "static") //nolint:errcheck // fails only for an invalid path
 
 var assets = NewAssets(staticFS)
 

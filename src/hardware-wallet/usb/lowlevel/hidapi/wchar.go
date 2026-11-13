@@ -38,14 +38,18 @@ import (
 
 var sizeofWcharT C.size_t = C.size_t(C.SIZEOF_WCHAR_T)
 
-func stringToWcharT(s string) (*C.wchar_t, C.size_t) {
+var errInvalidWcharSize = fmt.Errorf("invalid sizeof(wchar_t) = %v", sizeofWcharT)
+
+func stringToWcharT(s string) (*C.wchar_t, C.size_t, error) {
 	switch sizeofWcharT {
 	case 2:
-		return stringToWchar2(s) // Windows
+		p, n := stringToWchar2(s) // Windows
+		return p, n, nil
 	case 4:
-		return stringToWchar4(s) // Unix
+		p, n := stringToWchar4(s) // Unix
+		return p, n, nil
 	default:
-		panic(fmt.Sprintf("Invalid sizeof(wchar_t) = %v", sizeofWcharT))
+		return nil, 0, errInvalidWcharSize
 	}
 }
 
@@ -56,7 +60,7 @@ func wcharTToString(s *C.wchar_t) (string, error) {
 	case 4:
 		return wchar4ToString(s) // Unix
 	default:
-		panic(fmt.Sprintf("Invalid sizeof(wchar_t) = %v", sizeofWcharT))
+		return "", errInvalidWcharSize
 	}
 }
 
@@ -67,7 +71,7 @@ func wcharTNToString(s *C.wchar_t, size C.size_t) (string, error) {
 	case 4:
 		return wchar4NToString(s, size) // Unix
 	default:
-		panic(fmt.Sprintf("Invalid sizeof(wchar_t) = %v", sizeofWcharT))
+		return "", errInvalidWcharSize
 	}
 }
 

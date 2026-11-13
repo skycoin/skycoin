@@ -139,7 +139,8 @@ func RequireFileNotExists(t *testing.T, fn string) {
 
 // RandXPub creates a random xpub key
 func RandXPub(t *testing.T) *bip32.PublicKey {
-	m := bip39.MustNewDefaultMnemonic()
+	m, err := bip39.NewDefaultMnemonic()
+	require.NoError(t, err)
 	s, err := bip39.NewSeed(m, "")
 	require.NoError(t, err)
 	c, err := bip44.NewCoin(s, bip44.CoinTypeSkycoin)

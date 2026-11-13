@@ -76,7 +76,7 @@ var (
 		"172.104.57.147:6000",
 	}
 
-	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
+	nodeConfig, nodeConfigErr = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
 		CoinName:            CoinName,
 		GenesisSignatureStr: GenesisSignatureStr,
 		GenesisAddressStr:   GenesisAddressStr,
@@ -111,6 +111,11 @@ var (
 )
 
 func init() {
+	if nodeConfigErr != nil {
+		logger.Errorf("Invalid node config: %v", nodeConfigErr)
+		os.Exit(1)
+	}
+
 	// Check for FIBER_TOML environment variable to load custom fibercoin config
 	// This sets the default values before flag registration, so CLI flags naturally override
 	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {

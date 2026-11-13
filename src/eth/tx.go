@@ -29,7 +29,12 @@ type SignedTx struct {
 
 const dynamicFeeTxType = 0x02
 
-func (tx DynamicFeeTx) fields() rlpList {
+func (tx DynamicFeeTx) fields() (rlpList, error) {
+	for _, v := range []*big.Int{tx.ChainID, tx.MaxPriorityFeePerGas, tx.MaxFeePerGas, tx.Value} {
+		if v == nil || v.Sign() < 0 {
+			return nil, errNegativeUint
+		}
+	}
 	return rlpList{
 		rlpUint(tx.ChainID),
 		rlpUint(new(big.Int).SetUint64(tx.Nonce)),
@@ -40,12 +45,16 @@ func (tx DynamicFeeTx) fields() rlpList {
 		rlpUint(tx.Value),
 		rlpString(tx.Data),
 		rlpList{},
-	}
+	}, nil
 }
 
 // SigningHash is keccak256(0x02 || rlp(fields)), the hash the sender signs.
-func (tx DynamicFeeTx) SigningHash() [32]byte {
-	return Keccak256([]byte{dynamicFeeTxType}, tx.fields().encode())
+func (tx DynamicFeeTx) SigningHash() ([32]byte, error) {
+	f, err := tx.fields()
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return Keccak256([]byte{dynamicFeeTxType}, f.encode()), nil
 }
 
 // Sign signs with sec. The signature's recovery id is the y parity.
@@ -54,7 +63,11 @@ func (tx DynamicFeeTx) Sign(sec cipher.SecKey) (SignedTx, error) {
 	if err != nil {
 		return SignedTx{}, err
 	}
-	fields := append(tx.fields(),
+	fields, err := tx.fields()
+	if err != nil {
+		return SignedTx{}, err
+	}
+	fields = append(fields,
 		rlpUint(big.NewInt(int64(sig[64]))),
 		rlpUint(new(big.Int).SetBytes(sig[:32])),
 		rlpUint(new(big.Int).SetBytes(sig[32:64])),
@@ -64,7 +77,10 @@ func (tx DynamicFeeTx) Sign(sec cipher.SecKey) (SignedTx, error) {
 }
 
 func (tx DynamicFeeTx) signature(sec cipher.SecKey) (cipher.Sig, error) {
-	h := tx.SigningHash()
+	h, err := tx.SigningHash()
+	if err != nil {
+		return cipher.Sig{}, err
+	}
 	sig, err := cipher.SignHash(cipher.SHA256(h), sec)
 	if err != nil {
 		return cipher.Sig{}, err

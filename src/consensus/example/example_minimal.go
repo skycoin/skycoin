@@ -139,9 +139,14 @@ func main() {
 		//
 		x := secp256k1.RandByte(888) // Random data.
 		h := cipher.SumSHA256(x)     // Its hash.
+		sig, err := nodePtr.SignatureOf(h)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		b := consensus.BlockBase{}
 		b.Init(
-			nodePtr.SignatureOf(h),
+			sig,
 			h,
 			0)
 

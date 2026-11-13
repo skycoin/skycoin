@@ -2,6 +2,7 @@
 package eth
 
 import (
+	"errors"
 	"math/big"
 )
 
@@ -15,10 +16,10 @@ type rlpString []byte
 
 type rlpList []rlpItem
 
+var errNegativeUint = errors.New("RLP integers are unsigned")
+
+// rlpUint encodes the magnitude of v. Callers reject negative values first.
 func rlpUint(v *big.Int) rlpString {
-	if v.Sign() < 0 {
-		panic("RLP integers are unsigned")
-	}
 	return rlpString(v.Bytes())
 }
 

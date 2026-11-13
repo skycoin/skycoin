@@ -12,7 +12,9 @@ func TestDistributionAddressArrays(t *testing.T) {
 	// At the time of this writing, there should be 25 addresses in the
 	// unlocked pool and 75 in the locked pool.
 	require.Len(t, MainNetDistribution.UnlockedAddresses(), 25)
-	require.Len(t, MainNetDistribution.LockedAddresses(), 75)
+	locked, err := MainNetDistribution.LockedAddresses()
+	require.NoError(t, err)
+	require.Len(t, locked, 75)
 
 	addrsMap := make(map[string]struct{})
 	for _, a := range MainNetDistribution.Addresses {
@@ -36,7 +38,6 @@ func TestDistributionAddressArrays(t *testing.T) {
 		unlockedMap[a] = struct{}{}
 	}
 
-	locked := MainNetDistribution.LockedAddresses()
 	lockedMap := make(map[string]struct{})
 	for _, a := range locked {
 		// Check no duplicate address in locked addresses

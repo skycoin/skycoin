@@ -20,8 +20,6 @@ import (
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/kvstorage"
 
-	"log"
-
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/pqsig"
@@ -247,7 +245,7 @@ type NodeConfig struct {
 }
 
 // NewNodeConfig returns a new node config instance
-func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
+func NewNodeConfig(mode string, node fiber.NodeConfig) (NodeConfig, error) {
 	nodeConfig := NodeConfig{
 		CoinName:              node.CoinName,
 		GenesisSignatureStr:   node.GenesisSignatureStr,
@@ -388,13 +386,17 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		},
 	}
 
-	nodeConfig.applyConfigMode(mode)
+	if err := nodeConfig.applyConfigMode(mode); err != nil {
+		return NodeConfig{}, err
+	}
 
-	return nodeConfig
+	return nodeConfig, nil
 }
 
 func (c *Config) postProcess() error {
-	c.parseBlockchainKeys()
+	if err := c.parseBlockchainKeys(); err != nil {
+		return err
+	}
 
 	var err error
 	if c.Node.multiSigner, err = coin.NewMultiSignerRule(c.Node.BlockSigners, c.Node.BlockSignerThreshold, c.Node.MultiSignerForkSeq); err != nil {
@@ -421,42 +423,55 @@ func (c *Config) postProcess() error {
 }
 
 // parseBlockchainKeys parses hex-encoded blockchain keys and computes the genesis hash.
-func (c *Config) parseBlockchainKeys() {
+func (c *Config) parseBlockchainKeys() error {
 	var err error
 	if c.Node.GenesisSignatureStr != "" {
 		c.Node.genesisSignature, err = cipher.SigFromHex(c.Node.GenesisSignatureStr)
-		panicIfError(err, "Invalid Signature")
+		if err != nil {
+			return fmt.Errorf("invalid genesis signature: %w", err)
+		}
 	}
 
 	if c.Node.GenesisAddressStr != "" {
 		c.Node.genesisAddress, err = cipher.DecodeBase58Address(c.Node.GenesisAddressStr)
-		panicIfError(err, "Invalid Address")
+		if err != nil {
+			return fmt.Errorf("invalid genesis address: %w", err)
+		}
 	}
 
 	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
 	if err != nil {
-		panicIfError(err, "Create genesis hash failed")
+		return fmt.Errorf("create genesis block: %w", err)
 	}
 	c.Node.genesisHash = gb.HashHeader()
 
 	if c.Node.BlockchainPubkeyStr != "" {
 		c.Node.blockchainPubkey, err = cipher.PubKeyFromHex(c.Node.BlockchainPubkeyStr)
-		panicIfError(err, "Invalid Pubkey")
+		if err != nil {
+			return fmt.Errorf("invalid blockchain pubkey: %w", err)
+		}
 	}
 	if c.Node.BlockchainSeckeyStr != "" {
 		c.Node.blockchainSeckey, err = cipher.SecKeyFromHex(c.Node.BlockchainSeckeyStr)
-		panicIfError(err, "Invalid Seckey")
+		if err != nil {
+			return fmt.Errorf("invalid blockchain seckey: %w", err)
+		}
 		c.Node.BlockchainSeckeyStr = ""
 	}
 	if c.Node.BlockchainPQPubkeyStr != "" {
 		c.Node.blockchainPQPubkey, err = pqsig.PubKeyFromHex(c.Node.BlockchainPQPubkeyStr)
-		panicIfError(err, "Invalid post-quantum pubkey")
+		if err != nil {
+			return fmt.Errorf("invalid post-quantum pubkey: %w", err)
+		}
 	}
 	if c.Node.BlockchainPQSeckeyStr != "" {
 		c.Node.blockchainPQSeckey, err = pqsig.SecKeyFromHex(c.Node.BlockchainPQSeckeyStr)
-		panicIfError(err, "Invalid post-quantum seckey")
+		if err != nil {
+			return fmt.Errorf("invalid post-quantum seckey: %w", err)
+		}
 		c.Node.BlockchainPQSeckeyStr = ""
 	}
+	return nil
 }
 
 // initDirectories resolves and creates data, wallet, storage, and DB directories.
@@ -465,7 +480,9 @@ func (c *Config) initDirectories() error {
 
 	var err error
 	c.Node.DataDirectory, err = file.InitDataDir(replaceHome(c.Node.DataDirectory, home))
-	panicIfError(err, "Invalid DataDirectory")
+	if err != nil {
+		return fmt.Errorf("invalid data directory: %w", err)
+	}
 
 	resolveOrDefault := func(path, defaultSubdir string) string {
 		if path == "" {
@@ -488,7 +505,10 @@ func (c *Config) initDirectories() error {
 	}
 
 	if (c.Node.EnableGUI || c.Node.WebWallet) && c.Node.GUIDirectory != "" {
-		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
+		c.Node.GUIDirectory, err = file.ResolveResourceDirectory(c.Node.GUIDirectory)
+		if err != nil {
+			return fmt.Errorf("gui directory: %w", err)
+		}
 	}
 
 	return nil
@@ -838,7 +858,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().Uint32Var((*uint32)(&c.Fiber.Bip44Coin), "bip44-coin", uint32(c.Fiber.Bip44Coin), "BIP44 coin type")
 }
 
-func (c *NodeConfig) applyConfigMode(configMode string) {
+func (c *NodeConfig) applyConfigMode(configMode string) error {
 	if runtime.GOOS == "windows" {
 		c.ColorLog = false
 	}
@@ -858,8 +878,9 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.ResetCorruptDB = true
 		c.WebInterfacePort = 0 // randomize web interface port
 	default:
-		panic("Invalid ConfigMode")
+		return fmt.Errorf("invalid config mode %q", configMode)
 	}
+	return nil
 }
 
 // LoadFromFiberConfig loads configuration from a fiber.toml file
@@ -1069,12 +1090,6 @@ func (c *NodeConfig) WriteFiberTomlGenesis(signature string) error {
 	}
 
 	return nil
-}
-
-func panicIfError(err error, msg string, args ...interface{}) { //nolint:unparam
-	if err != nil {
-		log.Panicf(msg+": %v", append(args, err)...)
-	}
 }
 
 func replaceHome(path, home string) string {

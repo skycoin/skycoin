@@ -2,6 +2,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -32,19 +33,13 @@ var (
 )
 
 // corsRegex matches all localhost origin headers
-var corsRegex *regexp.Regexp
+var corsRegex = regexp.MustCompile(`(^https?:\/\/)?^?(localhost|127\.0\.0\.1):\d+$`)
 
 // autoPressEmulatorButtons is used to automatically press emulator buttons
 // Used in integration testing
 var autoPressEmulatorButtons bool
 
 func init() {
-	var err error
-	corsRegex, err = regexp.Compile(`(^https?:\/\/)?^?(localhost|127\.0\.0\.1):\d+$`)
-	if err != nil {
-		logger.Panic(err)
-	}
-
 	apb := os.Getenv("AUTO_PRESS_BUTTONS")
 	if apb == "1" && runtime.GOOS == "linux" {
 		autoPressEmulatorButtons = true
@@ -127,6 +122,10 @@ func create(host string, c Config, gateway *Gateway) *Server {
 
 // Create create a new http server
 func Create(host string, c Config, gateway *Gateway) (*Server, error) {
+	if autoPressEmulatorButtons && c.Mode != skyWallet.DeviceTypeEmulator {
+		return nil, errors.New("auto press buttons enabled but device mode is not emulator")
+	}
+
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return nil, err
@@ -209,10 +208,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	webHandlerV1 := func(endpoint string, handler http.Handler) {
 		webHandler("/api/"+apiVersion1+endpoint, handler)
-	}
-
-	if autoPressEmulatorButtons && c.mode != skyWallet.DeviceTypeEmulator {
-		logger.Panic("auto press buttons enabled but device mode is not emulator")
 	}
 
 	// get the current CSRF token

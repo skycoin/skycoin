@@ -277,7 +277,10 @@ func (self *BlockStat) try_add_hash_and_sig(
 					" signer_pubkey=%s), hash=%s\n", &info,
 					sig.Hex()[:8], signer_pubkey.Hex()[:8], hash.Hex()[:8])
 			}
-			info.ObserveSigAndPubkey(sig, signer_pubkey)
+			if err := info.ObserveSigAndPubkey(sig, signer_pubkey); err != nil {
+				fmt.Printf("%v\n", err)
+				return -1
+			}
 			self.accept_count += 1
 		}
 	}

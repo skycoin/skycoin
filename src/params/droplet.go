@@ -13,9 +13,9 @@ var (
 )
 
 // DropletPrecisionToDivisor converts number of allowed decimal places to the modulus divisor used when checking droplet precision rules
-func DropletPrecisionToDivisor(precision uint8) uint64 {
+func DropletPrecisionToDivisor(precision uint8) (uint64, error) {
 	if precision > droplet.Exponent {
-		panic("precision must be <= droplet.Exponent")
+		return 0, ErrInvalidMaxDropletPrecision
 	}
 
 	n := droplet.Exponent - precision
@@ -23,12 +23,16 @@ func DropletPrecisionToDivisor(precision uint8) uint64 {
 	for k := uint8(0); k < n; k++ {
 		i = i * 10
 	}
-	return i
+	return i, nil
 }
 
 // DropletPrecisionCheck checks if an amount of coins is valid given decimal place restrictions
 func DropletPrecisionCheck(precision uint8, amount uint64) error {
-	if amount%DropletPrecisionToDivisor(precision) != 0 {
+	divisor, err := DropletPrecisionToDivisor(precision)
+	if err != nil {
+		return err
+	}
+	if amount%divisor != 0 {
 		return ErrInvalidDecimals
 	}
 	return nil

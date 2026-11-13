@@ -59,7 +59,11 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 
 		dist := gateway.VisorConfig().Distribution
 
-		unlockedAddrs := dist.UnlockedAddressesDecoded()
+		unlockedAddrs, err := dist.UnlockedAddressesDecoded()
+		if err != nil {
+			wh.Error500(w, fmt.Sprintf("unlocked distribution addresses: %v", err))
+			return
+		}
 		// Search map of unlocked addresses, used to filter unspents
 		unlockedAddrSet := newAddrSet(unlockedAddrs)
 
@@ -108,7 +112,16 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// locked distribution addresses
-		lockedAddrs := dist.LockedAddressesDecoded()
+		lockedAddrs, err := dist.LockedAddressesDecoded()
+		if err != nil {
+			wh.Error500(w, fmt.Sprintf("locked distribution addresses: %v", err))
+			return
+		}
+		lockedStrs, err := dist.LockedAddresses()
+		if err != nil {
+			wh.Error500(w, fmt.Sprintf("locked distribution addresses: %v", err))
+			return
+		}
 		lockedAddrSet := newAddrSet(lockedAddrs)
 
 		// get total coins hours which excludes locked distribution addresses
@@ -150,7 +163,7 @@ func coinSupplyHandler(gateway Gatewayer) http.HandlerFunc {
 			CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 			TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
 			UnlockedAddresses:     dist.UnlockedAddresses(),
-			LockedAddresses:       dist.LockedAddresses(),
+			LockedAddresses:       lockedStrs,
 		}
 
 		wh.SendJSONOr500(logger, w, cs)

@@ -22,10 +22,7 @@ import (
 var embedded embed.FS
 
 func sub(dir string) fs.FS {
-	s, err := fs.Sub(embedded, dir)
-	if err != nil {
-		panic(err)
-	}
+	s, _ := fs.Sub(embedded, dir) //nolint:errcheck // fails only for an invalid path, and dir is always a literal
 	return s
 }
 

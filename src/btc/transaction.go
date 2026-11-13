@@ -147,7 +147,10 @@ func BuildTransaction(inputs []UTXO, destinations []TxDestination, changeAddr st
 			return "", fmt.Errorf("no key found for input address %s", input.Address)
 		}
 
-		pubKey := cipher.MustPubKeyFromSecKey(key)
+		pubKey, err := cipher.PubKeyFromSecKey(key)
+		if err != nil {
+			return "", fmt.Errorf("pubkey for input %d: %w", i, err)
+		}
 
 		if isSegwitAddress(input.Address) {
 			// BIP143 segwit signing for P2WPKH

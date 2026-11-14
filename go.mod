@@ -18,7 +18,7 @@ require (
 	github.com/google/gousb v1.1.3
 	github.com/google/uuid v1.6.0
 	github.com/gopherjs/gopherjs v1.21.0
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rs/cors v1.11.1
@@ -29,8 +29,8 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	github.com/toqueteos/webbrowser v1.2.1
-	golang.org/x/crypto v0.58.0
-	golang.org/x/term v0.47.0
+	golang.org/x/crypto v0.59.0
+	golang.org/x/term v0.48.0
 	golang.org/x/time v0.16.0
 	modernc.org/sqlite v1.62.0
 )
@@ -58,8 +58,8 @@ require (
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect

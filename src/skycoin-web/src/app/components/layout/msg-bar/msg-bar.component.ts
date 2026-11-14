@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
 
 export enum MsgBarIcons {
@@ -31,6 +31,15 @@ export class MsgBarComponent implements OnInit {
   config = new MsgBarConfig();
   visible = false;
   UiIsShowingModalWindow = false;
+
+  // Dialogs open in the top layer, above any z-index, so the bar joins it
+  // each time it appears to be seen over an open dialog.
+  @ViewChild('bar') set bar(el: ElementRef<HTMLElement> | undefined) {
+    const e = el?.nativeElement as any;
+    if (e && typeof e.showPopover === 'function' && !e.matches(':popover-open')) {
+      e.showPopover();
+    }
+  }
 
   constructor(private dialog: CustomMatDialogService,
   private changeDetectorRef: ChangeDetectorRef,) { }

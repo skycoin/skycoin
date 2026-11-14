@@ -2191,3 +2191,63 @@ func TestWalletSignTransaction(t *testing.T) {
 		})
 	}
 }
+
+func TestWalletCreateTransactionSplit(t *testing.T) {
+	to := testutil.MakeAddress()
+	makePart := func(coins uint64) (*coin.Transaction, []visor.TransactionInput) {
+		txn := &coin.Transaction{
+			In:  []cipher.SHA256{testutil.RandSHA256(t)},
+			Out: []coin.TransactionOutput{{Address: to, Coins: coins, Hours: 10}},
+		}
+		txn.Sigs = make([]cipher.Sig, 1)
+		require.NoError(t, txn.UpdateHeader())
+		in := []visor.TransactionInput{{
+			UxOut: coin.UxOut{
+				Head: coin.UxHead{Time: uint64(time.Now().UTC().Unix()), BkSeq: 9}, //nolint:gosec
+				Body: coin.UxBody{SrcTransaction: testutil.RandSHA256(t), Address: testutil.MakeAddress(), Coins: coins, Hours: 30},
+			},
+			CalculatedHours: 30,
+		}}
+		return txn, in
+	}
+	t1, in1 := makePart(2e6)
+	t2, in2 := makePart(1e6)
+
+	body := `{"wallet_id":"foo.wlt","split":true,"hours_selection":{"type":"manual"},"to":[{"address":"` + to.String() + `","coins":"3","hours":"20"}]}`
+	var req walletCreateTransactionRequest
+	require.NoError(t, json.Unmarshal([]byte(body), &req))
+
+	cases := []struct {
+		name  string
+		txns  []*coin.Transaction
+		ins   [][]visor.TransactionInput
+		parts int
+	}{
+		{"split", []*coin.Transaction{t1, t2}, [][]visor.TransactionInput{in1, in2}, 2},
+		{"fits", []*coin.Transaction{t1}, [][]visor.TransactionInput{in1}, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("WalletCreateTransactionsSigned", "foo.wlt", []byte(""), req.TransactionParams(), req.VisorParams()).Return(tc.txns, tc.ins, nil)
+
+			r, err := http.NewRequest(http.MethodPost, "/api/v1/wallet/transaction", strings.NewReader(body))
+			require.NoError(t, err)
+			r.Header.Add("Content-Type", ContentTypeJSON)
+			setCSRFParameters(t, tokenValid, r)
+			rr := httptest.NewRecorder()
+			newServerMux(defaultMuxConfig(), gateway).ServeHTTP(rr, r)
+			require.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
+
+			var msg CreateTransactionResponse
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &msg))
+			require.Equal(t, t1.Hash().Hex(), msg.Transaction.TxID)
+			require.Len(t, msg.Transactions, tc.parts)
+			for i, part := range msg.Transactions {
+				require.Equal(t, tc.txns[i].Hash().Hex(), part.Transaction.TxID)
+				require.Equal(t, tc.txns[i].MustSerializeHex(), part.EncodedTransaction)
+				require.Empty(t, part.Transactions)
+			}
+		})
+	}
+}

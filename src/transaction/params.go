@@ -24,6 +24,11 @@ func NewError(err error) error {
 	return Error{err}
 }
 
+// Unwrap returns the wrapped error.
+func (e Error) Unwrap() error {
+	return e.error
+}
+
 const (
 	// HoursSelectionTypeManual is used to specify manual hours selection in advanced spend
 	HoursSelectionTypeManual = "manual"

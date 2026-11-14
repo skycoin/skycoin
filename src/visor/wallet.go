@@ -267,6 +267,21 @@ func (p CreateTransactionParams) Validate() error {
 
 // WalletCreateTransactionSigned creates a signed transaction based upon the parameters in CreateTransactionParams
 func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+	txns, inputs, err := vs.walletCreateTransactionsSigned(wltID, password, p, wp, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	return txns[0], inputs[0], nil
+}
+
+// WalletCreateTransactionsSigned is WalletCreateTransactionSigned, except that a
+// send too large for one transaction is split into several. The parts spend
+// disjoint confirmed outputs, so they can all be injected at once.
+func (vs *Visor) WalletCreateTransactionsSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams) ([]*coin.Transaction, [][]TransactionInput, error) {
+	return vs.walletCreateTransactionsSigned(wltID, password, p, wp, true)
+}
+
+func (vs *Visor) walletCreateTransactionsSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams, split bool) ([]*coin.Transaction, [][]TransactionInput, error) {
 	// Validate params before unlocking wallet
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -275,8 +290,8 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 		return nil, nil, err
 	}
 
-	var txn *coin.Transaction
-	var inputs []TransactionInput
+	var txns []*coin.Transaction
+	var inputs [][]TransactionInput
 	w, err := vs.wallets.GetWallet(wltID)
 	if err != nil {
 		return nil, nil, err
@@ -301,13 +316,13 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 
 	if err := vs.wallets.ViewSecrets(wltID, password, func(w wallet.Wallet) error {
 		var err error
-		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, transaction.TxnSigned)
+		txns, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, transaction.TxnSigned, split)
 		return err
 	}); err != nil {
 		return nil, nil, err
 	}
 
-	return txn, inputs, nil
+	return txns, inputs, nil
 }
 
 // ErrChangeAddressRequired is returned when an encrypted wallet must make a change
@@ -344,6 +359,20 @@ func (vs *Visor) newChangeAddress(w wallet.Wallet) (*cipher.Address, error) {
 // WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
 // TODO: Only referenced by tests, vs.walletCreateTransaction
 func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+	txns, inputs, err := vs.walletCreateTransactions(wltID, p, wp, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	return txns[0], inputs[0], nil
+}
+
+// WalletCreateTransactions is WalletCreateTransaction, except that a send too
+// large for one transaction is split into several.
+func (vs *Visor) WalletCreateTransactions(wltID string, p transaction.Params, wp CreateTransactionParams) ([]*coin.Transaction, [][]TransactionInput, error) {
+	return vs.walletCreateTransactions(wltID, p, wp, true)
+}
+
+func (vs *Visor) walletCreateTransactions(wltID string, p transaction.Params, wp CreateTransactionParams, split bool) ([]*coin.Transaction, [][]TransactionInput, error) {
 	// Validate params before opening wallet
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -352,8 +381,8 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 		return nil, nil, err
 	}
 
-	var txn *coin.Transaction
-	var inputs []TransactionInput
+	var txns []*coin.Transaction
+	var inputs [][]TransactionInput
 
 	if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
 		if p.ChangeAddress == nil && w.Type() != wallet.WalletTypeCollection {
@@ -364,16 +393,16 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 		}
 
 		var err error
-		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, transaction.TxnUnsigned)
+		txns, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, transaction.TxnUnsigned, split)
 		return err
 	}); err != nil {
 		return nil, nil, err
 	}
 
-	return txn, inputs, nil
+	return txns, inputs, nil
 }
 
-func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed transaction.TxnSignedFlag) (*coin.Transaction, []TransactionInput, error) {
+func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed transaction.TxnSignedFlag, split bool) ([]*coin.Transaction, [][]TransactionInput, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -411,28 +440,30 @@ func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p t
 		}
 	}
 
-	var txn *coin.Transaction
-	var uxb []transaction.UxBalance
+	var txns []*coin.Transaction
+	var uxbs [][]transaction.UxBalance
 
 	if err := vs.db.View(methodName, func(tx *dbutil.Tx) error {
 		var err error
-		txn, uxb, err = vs.walletCreateTransactionTx(tx, methodName, w, p, wp, signed, addrs, walletAddressesMap)
+		txns, uxbs, err = vs.walletCreateTransactionTx(tx, methodName, w, p, wp, signed, split, addrs, walletAddressesMap)
 		return err
 	}); err != nil {
 		return nil, nil, err
 	}
 
-	inputs, err := NewTransactionInputsFromUxBalance(uxb)
-	if err != nil {
-		return nil, nil, err
+	inputs := make([][]TransactionInput, len(uxbs))
+	for i, uxb := range uxbs {
+		if inputs[i], err = NewTransactionInputsFromUxBalance(uxb); err != nil {
+			return nil, nil, err
+		}
 	}
 
-	return txn, inputs, nil
+	return txns, inputs, nil
 }
 
 func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
-	w wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed transaction.TxnSignedFlag,
-	addrs []cipher.Address, walletAddressesMap map[cipher.Address]struct{}) (*coin.Transaction, []transaction.UxBalance, error) {
+	w wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed transaction.TxnSignedFlag, split bool,
+	addrs []cipher.Address, walletAddressesMap map[cipher.Address]struct{}) ([]*coin.Transaction, [][]transaction.UxBalance, error) {
 	// Note: assumes inputs have already been validated by walletCreateTransaction
 
 	head, err := vs.blockchain.Head(tx)
@@ -465,14 +496,23 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 	}
 
 	// Create and sign transaction
-	var txn *coin.Transaction
-	var uxb []transaction.UxBalance
+	var txns []*coin.Transaction
+	var uxbs [][]transaction.UxBalance
 
-	switch signed {
-	case transaction.TxnSigned:
-		txn, uxb, err = wallet.CreateTransactionSigned(w, p, auxs, head.Time())
-	case transaction.TxnUnsigned:
-		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time())
+	switch {
+	case split && signed == transaction.TxnSigned:
+		txns, uxbs, err = wallet.CreateTransactionsSigned(w, p, auxs, head.Time())
+	case split && signed == transaction.TxnUnsigned:
+		txns, uxbs, err = wallet.CreateTransactions(w, p, auxs, head.Time())
+	case signed == transaction.TxnSigned || signed == transaction.TxnUnsigned:
+		create := wallet.CreateTransaction
+		if signed == transaction.TxnSigned {
+			create = wallet.CreateTransactionSigned
+		}
+		var txn *coin.Transaction
+		var uxb []transaction.UxBalance
+		txn, uxb, err = create(w, p, auxs, head.Time())
+		txns, uxbs = []*coin.Transaction{txn}, [][]transaction.UxBalance{uxb}
 	default:
 		err = fmt.Errorf("invalid TxnSignedFlag %d", signed)
 	}
@@ -481,21 +521,22 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 		return nil, nil, err
 	}
 
-	if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction user constraints")
-		return nil, nil, err
+	for _, txn := range txns {
+		if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction user constraints")
+			return nil, nil, err
+		}
+
+		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+		// because the wallet is not aware of visor-level constraints.
+		// Check that the transaction is valid before returning it to the caller.
+		if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, signed); err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
+			return nil, nil, err
+		}
 	}
 
-	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-	// because the wallet is not aware of visor-level constraints.
-	// Check that the transaction is valid before returning it to the caller.
-	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, signed); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
-		return nil, nil, err
-	}
-
-	return txn, uxb, nil
+	return txns, uxbs, nil
 }
 
 // CreateTransaction creates an unsigned transaction from requested coin.UxOut hashes

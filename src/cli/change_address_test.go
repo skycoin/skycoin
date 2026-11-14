@@ -69,8 +69,10 @@ func TestCreateRawTxnNewChangeAddress(t *testing.T) {
 			require.NoError(t, err)
 
 			file := filepath.Join(dir, "test.wlt")
-			txn, err := CreateRawTxnFromWallet(fakeOutputs{t, first.Address.(cipher.Address)}, file, "", to, NewPasswordReader(tc.password), params.MainNetDistribution)
+			txns, err := CreateRawTxnFromWallet(fakeOutputs{t, first.Address.(cipher.Address)}, file, "", to, NewPasswordReader(tc.password), params.MainNetDistribution)
 			require.NoError(t, err)
+			require.Len(t, txns, 1)
+			txn := txns[0]
 			require.Len(t, txn.Out, 2)
 			change := txn.Out[1].Address
 			require.NotEqual(t, first.Address.(cipher.Address), change)
@@ -92,8 +94,10 @@ func TestCreateRawTxnNewChangeAddress(t *testing.T) {
 		require.NoError(t, w.(*collection.Wallet).AddEntry(wallet.Entry{Address: addr, Public: pk, Secret: sk}))
 		require.NoError(t, wallet.Save(w, dir))
 
-		txn, err := CreateRawTxnFromWallet(fakeOutputs{t, addr}, filepath.Join(dir, "test.wlt"), "", to, nil, params.MainNetDistribution)
+		txns, err := CreateRawTxnFromWallet(fakeOutputs{t, addr}, filepath.Join(dir, "test.wlt"), "", to, nil, params.MainNetDistribution)
 		require.NoError(t, err)
+		require.Len(t, txns, 1)
+		txn := txns[0]
 		require.Len(t, txn.Out, 2)
 		require.Equal(t, addr, txn.Out[1].Address)
 	})

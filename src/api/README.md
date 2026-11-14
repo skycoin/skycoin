@@ -1393,6 +1393,15 @@ The `"txid"` value of the `"transaction"` object will need to be updated
 after signing the transaction.
 The unsigned `encoded_transaction` can be sent to `POST /api/v2/wallet/transaction/sign` for signing.
 
+`split` is optional and defaults to `false`.
+A transaction is limited to 32768 bytes, about 330 inputs.
+When `false`, a send that needs more inputs than fit returns an error.
+When `true`, such a send is paid with several transactions, returned in
+`"transactions"`, each an object like the response itself. The top level
+fields repeat the first part. The parts spend different confirmed outputs and
+none spends the change of another, so all of them can be injected at once, in
+any order. `"transactions"` is left out when one transaction is enough.
+
 Example:
 
 ```sh

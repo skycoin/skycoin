@@ -164,8 +164,10 @@ func TestChangeAddressFromNode(t *testing.T) {
 			file, first, before := newFile(t, tc.typ, tc.password)
 			node := &fakeNode{fakeOutputs: fakeOutputs{t, first}, dir: filepath.Dir(file)}
 
-			txn, err := CreateRawTxnFromWallet(node, file, "", to, NewPasswordReader(tc.password), params.MainNetDistribution)
+			txns, err := CreateRawTxnFromWallet(node, file, "", to, NewPasswordReader(tc.password), params.MainNetDistribution)
 			require.NoError(t, err)
+			require.Len(t, txns, 1)
+			txn := txns[0]
 			require.Len(t, txn.Out, 2)
 			require.Len(t, node.added, 1)
 			require.Equal(t, node.added[0], txn.Out[1].Address.String(), "the change goes to the address the node added")

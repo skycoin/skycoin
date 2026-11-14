@@ -85,7 +85,7 @@ func TestBuildSignedTxn_DeliversAndReturnsChange(t *testing.T) {
 		t.Fatalf("buildSignedTxn: %v", err)
 	}
 
-	if !txn.IsFullySigned() {
+	if !txn.FullySigned() {
 		t.Fatal("transaction is not fully signed")
 	}
 	if err := txn.Verify(); err != nil {

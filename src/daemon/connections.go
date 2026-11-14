@@ -70,8 +70,8 @@ type ConnectionDetails struct {
 	GenesisHash          cipher.SHA256
 }
 
-// HasIntroduced returns true if the connection has introduced
-func (c ConnectionDetails) HasIntroduced() bool {
+// Introduced returns true if the connection has introduced
+func (c ConnectionDetails) Introduced() bool {
 	switch c.State {
 	case ConnectionStateIntroduced:
 		return true

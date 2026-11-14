@@ -1340,20 +1340,20 @@ func TestPexIsFull(t *testing.T) {
 		Config:   Config{Max: 0},
 	}
 
-	require.False(t, pex.IsFull())
+	require.False(t, pex.Full())
 
 	err := pex.AddPeer("11.22.33.44:5555")
 	require.NoError(t, err)
-	require.False(t, pex.IsFull())
+	require.False(t, pex.Full())
 
 	pex.Config.Max = 2
-	require.False(t, pex.IsFull())
+	require.False(t, pex.Full())
 	err = pex.AddPeer("33.44.55.66:5555")
 	require.NoError(t, err)
-	require.True(t, pex.IsFull())
+	require.True(t, pex.Full())
 
 	pex.Config.Max = 1
-	require.True(t, pex.IsFull())
+	require.True(t, pex.Full())
 }
 
 func TestParseRemotePeerList(t *testing.T) {

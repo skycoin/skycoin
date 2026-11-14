@@ -2077,7 +2077,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 				}
 
 				// Require password if the wallet is encrypted
-				if w.IsEncrypted() {
+				if w.Encrypted() {
 					password := os.Getenv("WALLET_PASSWORD")
 					if len(password) == 0 {
 						t.Fatal("missing WALLET_PASSWORD environment variable")
@@ -2518,7 +2518,7 @@ func TestLiveSend(t *testing.T) {
 	entries, err := w.GetEntries()
 	require.NoError(t, err)
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
 		return
 	}
@@ -2680,7 +2680,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
 	w, _, _ := prepareAndCheckWallet(t, 2e6, 16)
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
 		return
 	}
@@ -2720,7 +2720,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
 		return
 	}
@@ -3326,7 +3326,7 @@ func TestStableWalletCreate(t *testing.T) {
 			args: []string{"-e", "-p", "pwd"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the wallet is encrypted
-				require.True(t, w.IsEncrypted())
+				require.True(t, w.Encrypted())
 				require.Empty(t, w.Seed())
 				require.Empty(t, w.LastSeed())
 
@@ -3372,7 +3372,7 @@ func TestStableWalletCreate(t *testing.T) {
 			wl, err := wallet.Load(walletPath)
 			require.NoError(t, err)
 
-			if !wl.IsEncrypted() {
+			if !wl.Encrypted() {
 				// Confirms all entries and lastSeed are derived from seed.
 				checkWalletEntriesAndLastSeed(t, wl)
 			}
@@ -3460,7 +3460,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
 		return
 	}
@@ -3591,7 +3591,7 @@ func TestEncryptWallet(t *testing.T) {
 				return wlt.Meta.Filename
 			},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.True(t, w.IsEncrypted())
+				require.True(t, w.Encrypted())
 				require.Empty(t, w.Seed())
 				require.Empty(t, w.LastSeed())
 
@@ -3674,7 +3674,7 @@ func TestDecryptWallet(t *testing.T) {
 				return wlt.Meta.Filename
 			},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.False(t, w.IsEncrypted())
+				require.False(t, w.Encrypted())
 				require.Empty(t, w.Secrets())
 				require.NotEmpty(t, w.Seed())
 				require.NotEmpty(t, w.LastSeed())

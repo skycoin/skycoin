@@ -321,8 +321,8 @@ func (_m *MockWallet) GetEntryAt(i int, options ...Option) (Entry, error) {
 	return r0, r1
 }
 
-// HasEntry provides a mock function with given fields: addr, options
-func (_m *MockWallet) HasEntry(addr cipher.Addresser, options ...Option) (bool, error) {
+// Contains provides a mock function with given fields: addr, options
+func (_m *MockWallet) Contains(addr cipher.Addresser, options ...Option) (bool, error) {
 	_va := make([]interface{}, len(options))
 	for _i := range options {
 		_va[_i] = options[_i]
@@ -349,8 +349,8 @@ func (_m *MockWallet) HasEntry(addr cipher.Addresser, options ...Option) (bool, 
 	return r0, r1
 }
 
-// IsEncrypted provides a mock function with given fields:
-func (_m *MockWallet) IsEncrypted() bool {
+// Encrypted provides a mock function with given fields:
+func (_m *MockWallet) Encrypted() bool {
 	ret := _m.Called()
 
 	var r0 bool
@@ -363,8 +363,8 @@ func (_m *MockWallet) IsEncrypted() bool {
 	return r0
 }
 
-// IsTemp provides a mock function with given fields:
-func (_m *MockWallet) IsTemp() bool {
+// Temp provides a mock function with given fields:
+func (_m *MockWallet) Temp() bool {
 	ret := _m.Called()
 
 	var r0 bool

@@ -204,7 +204,7 @@ type Wallet interface {
 	SetLabel(string)
 	Filename() string
 	SetFilename(string)
-	IsEncrypted() bool
+	Encrypted() bool
 	// CryptoType returns the crypto type for encrypting/decrypting the wallet
 	CryptoType() crypto.CryptoType
 	SetCryptoType(ct crypto.CryptoType)
@@ -251,10 +251,10 @@ type Wallet interface {
 	// for bip44 wallet, if no options are specified, it will search the external chain of account
 	// of index 0.
 	GetEntry(addr cipher.Addresser, options ...Option) (Entry, error)
-	// HasEntry returns whether the entry exists in the wallet
+	// Contains returns whether the entry exists in the wallet
 	// for bip44 wallet, if no options are specified, it will check the external chain of account
 	// of index 0.
-	HasEntry(addr cipher.Addresser, options ...Option) (bool, error)
+	Contains(addr cipher.Addresser, options ...Option) (bool, error)
 	// EntriesLen returns the entries length
 	// for bip44 wallet, if no options are specified, the length of the entries on external chain of account
 	// with index 0 will be returned.
@@ -265,8 +265,8 @@ type Wallet interface {
 	Serialize() ([]byte, error)
 	// Deserialize deserialize the data to a Wallet, and error if any
 	Deserialize(data []byte) error
-	// IsTemp returns whether the wallet is a temporary wallet
-	IsTemp() bool
+	// Temp returns whether the wallet is a temporary wallet
+	Temp() bool
 	// SetTemp sets wallet temporary flag
 	SetTemp(temp bool)
 }
@@ -301,7 +301,7 @@ type Bip44Account struct {
 // GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func GuardUpdate(w Wallet, password []byte, fn func(w Wallet) error) error {
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return ErrWalletNotEncrypted
 	}
 
@@ -334,7 +334,7 @@ func GuardUpdate(w Wallet, password []byte, fn func(w Wallet) error) error {
 // GuardView executes a function within the context of a read-only managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func GuardView(w Wallet, password []byte, f func(w Wallet) error) error {
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return ErrWalletNotEncrypted
 	}
 
@@ -364,7 +364,7 @@ type walletLoadMeta struct {
 
 // Save saves the wallet to a directory. The wallet's filename is read from its metadata.
 func Save(w Wallet, dir string) error {
-	if w.IsTemp() {
+	if w.Temp() {
 		return nil
 	}
 
@@ -568,7 +568,7 @@ func ValidateMetaCryptoType(m Meta) error {
 
 // ValidateMetaSeed validate meta seed
 func ValidateMetaSeed(m Meta) error {
-	if m.IsEncrypted() {
+	if m.Encrypted() {
 		if s := m[MetaSeed]; s != "" {
 			return errors.New("seed should not be visible in encrypted wallets")
 		}

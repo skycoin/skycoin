@@ -42,11 +42,11 @@ func signPQTestTxn(t *testing.T, txn *Transaction, secpSk cipher.SecKey, pqSk pq
 
 func TestPQTransaction(t *testing.T) {
 	txn, uxIn, secpSk, pqSk := pqTestTxn(t)
-	require.True(t, txn.IsFullyUnsigned())
+	require.True(t, txn.FullyUnsigned())
 
 	require.NoError(t, txn.SignInput(secpSk, 0))
 	require.NoError(t, txn.UpdateHeader())
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	require.NoError(t, txn.VerifyUnsigned())
 	require.NoError(t, txn.VerifyPartialInputSignatures(uxIn))
 
@@ -54,7 +54,7 @@ func TestPQTransaction(t *testing.T) {
 	require.Error(t, txn.SignPQInput(pqSk, 1), "already signed")
 	require.NoError(t, txn.UpdateHeader())
 	require.Equal(t, TxnTypePQ, txn.Type)
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 	require.NoError(t, txn.Verify())
 	require.NoError(t, txn.VerifyInputSignatures(uxIn))
 

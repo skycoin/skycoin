@@ -400,10 +400,10 @@ func (txn *Transaction) Size() (uint32, error) {
 	return mathutil.IntToUint32(len(buf))
 }
 
-// IsFullyUnsigned returns true if the transaction is not signed for any input.
+// FullyUnsigned returns true if the transaction is not signed for any input.
 // Unsigned transactions have a full signature array, but the signatures are null.
 // Returns true if the signatures array is empty.
-func (txn *Transaction) IsFullyUnsigned() bool {
+func (txn *Transaction) FullyUnsigned() bool {
 	for i := range txn.Sigs {
 		if txn.InputSigned(i) {
 			return false
@@ -413,9 +413,9 @@ func (txn *Transaction) IsFullyUnsigned() bool {
 	return true
 }
 
-// IsFullySigned returns true if the transaction is fully signed.
+// FullySigned returns true if the transaction is fully signed.
 // Returns true if the signatures array is empty.
-func (txn *Transaction) IsFullySigned() bool {
+func (txn *Transaction) FullySigned() bool {
 	if len(txn.Sigs) == 0 {
 		return false
 	}

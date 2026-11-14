@@ -110,7 +110,7 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 		return fmt.Errorf("only %q type wallets can have keypairs added manually", collection.WalletType)
 	}
 
-	if pr == nil && wlt.IsEncrypted() {
+	if pr == nil && wlt.Encrypted() {
 		return wallet.ErrMissingPassword
 	}
 
@@ -118,7 +118,7 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 		return AddPrivateKey(w, key)
 	}
 
-	if wlt.IsEncrypted() {
+	if wlt.Encrypted() {
 		addKey = func(w *collection.Wallet, key string) error {
 			password, err := pr.Password()
 			if err != nil {

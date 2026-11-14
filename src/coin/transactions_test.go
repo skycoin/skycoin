@@ -321,28 +321,28 @@ func TestTransactionPushOutput(t *testing.T) {
 
 func TestTransactionSignInput(t *testing.T) {
 	txn, seckeys := makeTransactionMultipleInputs(t, 3)
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 
 	// Input is already signed
 	err := txn.SignInput(seckeys[0], 0)
 	testutil.RequireError(t, err, "Input already signed")
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 
 	// Input is not signed
 	txn.Sigs[1] = cipher.Sig{}
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	err = txn.SignInput(seckeys[1], 1)
 	require.NoError(t, err)
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 	err = txn.SignInput(seckeys[1], 1)
 	testutil.RequireError(t, err, "Input already signed")
 
 	// Transaction has no sigs; sigs array is initialized
 	txn.Sigs = nil
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	err = txn.SignInput(seckeys[2], 2)
 	require.NoError(t, err)
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	require.Len(t, txn.Sigs, 3)
 	require.True(t, txn.Sigs[0].Null())
 	require.True(t, txn.Sigs[1].Null())
@@ -354,15 +354,15 @@ func TestTransactionSignInput(t *testing.T) {
 	// Signing the rest of the inputs individually works
 	err = txn.SignInput(seckeys[1], 1)
 	require.NoError(t, err)
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	err = txn.SignInput(seckeys[0], 0)
 	require.NoError(t, err)
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 
 	// Can use SignInputs on allocated array of empty sigs
 	txn.Sigs = make([]cipher.Sig, 3)
 	require.NoError(t, txn.SignInputs(seckeys))
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 }
 
 func TestTransactionSignInputs(t *testing.T) {
@@ -1117,27 +1117,27 @@ func TestSortTransactions(t *testing.T) {
 
 func TestTransactionSignedUnsigned(t *testing.T) {
 	txn, _ := makeTransactionMultipleInputs(t, 2)
-	require.True(t, txn.IsFullySigned())
+	require.True(t, txn.FullySigned())
 	require.True(t, txn.hasNonNullSignature())
-	require.False(t, txn.IsFullyUnsigned())
+	require.False(t, txn.FullyUnsigned())
 	require.False(t, txn.hasNullSignature())
 
 	txn.Sigs[1] = cipher.Sig{}
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	require.True(t, txn.hasNonNullSignature())
-	require.False(t, txn.IsFullyUnsigned())
+	require.False(t, txn.FullyUnsigned())
 	require.True(t, txn.hasNullSignature())
 
 	txn.Sigs[0] = cipher.Sig{}
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	require.False(t, txn.hasNonNullSignature())
-	require.True(t, txn.IsFullyUnsigned())
+	require.True(t, txn.FullyUnsigned())
 	require.True(t, txn.hasNullSignature())
 
 	txn.Sigs = nil
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	require.False(t, txn.hasNonNullSignature())
-	require.True(t, txn.IsFullyUnsigned())
+	require.True(t, txn.FullyUnsigned())
 	require.False(t, txn.hasNullSignature())
 }
 

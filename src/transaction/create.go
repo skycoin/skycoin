@@ -397,7 +397,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 }
 
 func verifyCreatedUnignedInvariants(p Params, txn *coin.Transaction, inputs []UxBalance) error {
-	if !txn.IsFullyUnsigned() {
+	if !txn.FullyUnsigned() {
 		return errors.New("Transaction is not fully unsigned")
 	}
 

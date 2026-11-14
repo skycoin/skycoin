@@ -286,7 +286,7 @@ func TestWalletSignTransaction(t *testing.T) {
 
 			if len(tc.signIndexes) == 0 || len(tc.signIndexes) == len(tc.uxOuts) || tc.complete {
 				// Transaction should be fully signed
-				require.False(t, signedTxn.IsFullyUnsigned())
+				require.False(t, signedTxn.FullyUnsigned())
 				err = signedTxn.Verify()
 				require.NoError(t, err)
 				err = signedTxn.VerifyInputSignatures(tc.uxOuts)

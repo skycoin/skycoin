@@ -623,8 +623,8 @@ func (px *Pex) ResetAllRetryTimes() {
 	px.peerlist.resetAllRetryTimes()
 }
 
-// IsFull returns whether the peer list is full
-func (px *Pex) IsFull() bool {
+// Full returns whether the peer list is full
+func (px *Pex) Full() bool {
 	px.RLock()
 	defer px.RUnlock()
 	return px.isFull()

@@ -58,7 +58,7 @@ func (au *addressUx) add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SH
 
 // isEmpty checks if the addressUx bucket is empty
 func (au *addressUx) isEmpty(tx *dbutil.Tx) (bool, error) {
-	return dbutil.IsEmpty(tx, AddressUxBkt)
+	return dbutil.Empty(tx, AddressUxBkt)
 }
 
 // reset resets the bucket

@@ -128,7 +128,7 @@ func TestTradeRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create_listing(LTC) transport error: %v", err)
 	}
-	if !rejected.IsError() || errCode(t, rejected) != protocol.CodeCurrencyUnavailable {
+	if !rejected.Failed() || errCode(t, rejected) != protocol.CodeCurrencyUnavailable {
 		t.Fatalf("create_listing(LTC) = %+v, want CURRENCY_UNAVAILABLE", rejected)
 	}
 
@@ -174,7 +174,7 @@ func TestTradeRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second buy transport error: %v", err)
 	}
-	if !second.IsError() || errCode(t, second) != protocol.CodeProductUnavailable {
+	if !second.Failed() || errCode(t, second) != protocol.CodeProductUnavailable {
 		t.Fatalf("second buy = %+v, want PRODUCT_UNAVAILABLE", second)
 	}
 
@@ -217,7 +217,7 @@ func TestCreateListing_SellCoin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("transport: %v", err)
 	}
-	if !rej.IsError() || errCode(t, rej) != protocol.CodeCurrencyUnavailable {
+	if !rej.Failed() || errCode(t, rej) != protocol.CodeCurrencyUnavailable {
 		t.Fatalf("unknown sell coin = %+v, want CURRENCY_UNAVAILABLE", rej)
 	}
 
@@ -247,7 +247,7 @@ func TestCreateListing_SellCoin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("transport: %v", err)
 	}
-	if !rej2.IsError() || errCode(t, rej2) != protocol.CodeCurrencyUnavailable {
+	if !rej2.Failed() || errCode(t, rej2) != protocol.CodeCurrencyUnavailable {
 		t.Fatalf("disabled sell coin = %+v, want CURRENCY_UNAVAILABLE", rej2)
 	}
 }
@@ -281,7 +281,7 @@ func TestFiberPayment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("transport: %v", err)
 	}
-	if !self.IsError() || errCode(t, self) != protocol.CodeInvalidRequest {
+	if !self.Failed() || errCode(t, self) != protocol.CodeInvalidRequest {
 		t.Fatalf("SKY/SKY listing = %+v, want INVALID_REQUEST", self)
 	}
 
@@ -344,7 +344,7 @@ func TestOnePendingListingPerSeller(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second create transport error: %v", err)
 	}
-	if !second.IsError() || errCode(t, second) != protocol.CodeInvalidRequest {
+	if !second.Failed() || errCode(t, second) != protocol.CodeInvalidRequest {
 		t.Fatalf("second listing = %+v, want INVALID_REQUEST (one pending listing per seller)", second)
 	}
 }
@@ -363,7 +363,7 @@ func TestRegisterRejectsBadWallet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("transport error: %v", err)
 	}
-	if !badBTC.IsError() || errCode(t, badBTC) != protocol.CodeInvalidWallet {
+	if !badBTC.Failed() || errCode(t, badBTC) != protocol.CodeInvalidWallet {
 		t.Fatalf("register(bad BTC) = %+v, want INVALID_WALLET", badBTC)
 	}
 
@@ -372,7 +372,7 @@ func TestRegisterRejectsBadWallet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("transport error: %v", err)
 	}
-	if !badSKY.IsError() || errCode(t, badSKY) != protocol.CodeInvalidWallet {
+	if !badSKY.Failed() || errCode(t, badSKY) != protocol.CodeInvalidWallet {
 		t.Fatalf("register(bad SKY) = %+v, want INVALID_WALLET", badSKY)
 	}
 
@@ -406,7 +406,7 @@ func TestTradeSizeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create_listing(%v) transport: %v", amt, err)
 		}
-		if !resp.IsError() || errCode(t, resp) != protocol.CodeInvalidRequest {
+		if !resp.Failed() || errCode(t, resp) != protocol.CodeInvalidRequest {
 			t.Fatalf("create_listing(%v) = %+v, want INVALID_REQUEST (out of bounds)", amt, resp)
 		}
 	}
@@ -476,7 +476,7 @@ func TestCreateListingPrecision(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !tooBig.IsError() || errCode(t, tooBig) != protocol.CodeInvalidRequest {
+	if !tooBig.Failed() || errCode(t, tooBig) != protocol.CodeInvalidRequest {
 		t.Fatalf("too-large listing = %+v, want INVALID_REQUEST", tooBig)
 	}
 
@@ -487,7 +487,7 @@ func TestCreateListingPrecision(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !tooSmall.IsError() || errCode(t, tooSmall) != protocol.CodeInvalidRequest {
+	if !tooSmall.Failed() || errCode(t, tooSmall) != protocol.CodeInvalidRequest {
 		t.Fatalf("too-small listing = %+v, want INVALID_REQUEST", tooSmall)
 	}
 }
@@ -602,7 +602,7 @@ func TestBuyerCancelBlocksRebuy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rebuy transport error: %v", err)
 	}
-	if !reb.IsError() || errCode(t, reb) != protocol.CodeBuyerBlocked {
+	if !reb.Failed() || errCode(t, reb) != protocol.CodeBuyerBlocked {
 		t.Fatalf("rebuy = %+v, want BUYER_BLOCKED", reb)
 	}
 
@@ -697,7 +697,7 @@ func TestSellerCancelConfirmedOffer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cancel frozen transport error: %v", err)
 	}
-	if !resp.IsError() || errCode(t, resp) != protocol.CodeProductUnavailable {
+	if !resp.Failed() || errCode(t, resp) != protocol.CodeProductUnavailable {
 		t.Fatalf("cancel of frozen offer = %+v, want PRODUCT_UNAVAILABLE", resp)
 	}
 }
@@ -709,7 +709,7 @@ func TestUnknownMessageType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("transport error: %v", err)
 	}
-	if !resp.IsError() || errCode(t, resp) != protocol.CodeInvalidRequest {
+	if !resp.Failed() || errCode(t, resp) != protocol.CodeInvalidRequest {
 		t.Fatalf("resp = %+v, want INVALID_REQUEST", resp)
 	}
 }
@@ -722,7 +722,7 @@ func mustSuccess(t *testing.T, c *market.Conn, msgType string, data any) protoco
 	if err != nil {
 		t.Fatalf("%s transport error: %v", msgType, err)
 	}
-	if resp.IsError() {
+	if resp.Failed() {
 		t.Fatalf("%s failed: %s", msgType, errCode(t, resp))
 	}
 	return resp

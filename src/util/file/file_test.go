@@ -265,9 +265,9 @@ func TestIsWritable(t *testing.T) {
 	require.NoError(t, err)
 	err = SaveBinary(fn, b, 0400)
 	require.NoError(t, err)
-	require.False(t, IsWritable(fn))
+	require.False(t, Writable(fn))
 
 	err = os.Chmod(fn, 0600)
 	require.NoError(t, err)
-	require.True(t, IsWritable(fn))
+	require.True(t, Writable(fn))
 }

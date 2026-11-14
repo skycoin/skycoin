@@ -71,7 +71,7 @@ func (atx *addressTxns) contains(tx *dbutil.Tx, addr cipher.Address) (bool, erro
 
 // isEmpty checks if address transactions bucket is empty
 func (atx *addressTxns) isEmpty(tx *dbutil.Tx) (bool, error) {
-	return dbutil.IsEmpty(tx, AddressTxnsBkt)
+	return dbutil.Empty(tx, AddressTxnsBkt)
 }
 
 // reset resets the bucket

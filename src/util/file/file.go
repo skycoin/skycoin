@@ -293,8 +293,8 @@ func Exists(fn string) (bool, error) {
 	return true, nil
 }
 
-// IsWritable checks if the file is writable
-func IsWritable(name string) bool {
+// Writable checks if the file is writable
+func Writable(name string) bool {
 	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600) //nolint:gosec // Loading user-specified file path
 	if err != nil && os.IsPermission(err) {
 		return false

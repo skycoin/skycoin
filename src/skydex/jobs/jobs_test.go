@@ -366,11 +366,11 @@ func TestBanManager(t *testing.T) {
 		t.Fatalf("RunBanManager: %v", err)
 	}
 
-	banned, _ := d.IsUserBanned("03offender") //nolint
+	banned, _ := d.UserBanned("03offender") //nolint
 	if !banned {
 		t.Fatal("offender should be banned after 3 violations")
 	}
-	stillBanned, _ := d.IsUserBanned("03old") //nolint
+	stillBanned, _ := d.UserBanned("03old") //nolint
 	if stillBanned {
 		t.Fatal("expired ban should have been lifted")
 	}

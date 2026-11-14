@@ -88,9 +88,9 @@ const (
 // verified by address at all.
 var PaymentCurrencies = []string{"BTC", "BCH", "LTC", "DOGE", "DASH"}
 
-// IsSupportedCurrency reports whether code is one of the canonical payment
+// SupportedCurrency reports whether code is one of the canonical payment
 // currencies the market can verify.
-func IsSupportedCurrency(code string) bool {
+func SupportedCurrency(code string) bool {
 	return slices.Contains(PaymentCurrencies, code)
 }
 
@@ -165,8 +165,8 @@ func Unmarshal(payload []byte) (Envelope, error) {
 	return e, err
 }
 
-// IsError reports whether the envelope is an error response.
-func (e Envelope) IsError() bool { return e.Status == StatusError }
+// Failed reports whether the envelope is an error response.
+func (e Envelope) Failed() bool { return e.Status == StatusError }
 
 // --- Payloads ---
 

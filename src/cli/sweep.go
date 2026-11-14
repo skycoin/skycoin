@@ -112,7 +112,7 @@ func sweepWallet(c GetOutputser, walletFile, to string, pr PasswordReader, distP
 	}
 
 	var password []byte
-	if wlt.IsEncrypted() {
+	if wlt.Encrypted() {
 		if password, err = pr.Password(); err != nil {
 			return nil, "", err
 		}

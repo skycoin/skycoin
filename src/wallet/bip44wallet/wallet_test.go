@@ -378,7 +378,7 @@ func TestBip44NewWallet(t *testing.T) {
 
 					require.Equal(t, tc.seed, w.Meta.Seed())
 					require.Equal(t, tc.seedPassphrase, w.Meta.SeedPassphrase())
-					require.False(t, w.Meta.IsEncrypted())
+					require.False(t, w.Meta.Encrypted())
 					require.Empty(t, w.Meta.Secrets())
 					el, err := w.EntriesLen()
 					require.NoError(t, err)
@@ -435,7 +435,7 @@ func TestBip44NewWalletDefaultCrypto(t *testing.T) {
 
 				require.Equal(t, testSeed, w.Meta.Seed())
 				require.Equal(t, testSeedPassphrase, w.Meta.SeedPassphrase())
-				require.False(t, w.Meta.IsEncrypted())
+				require.False(t, w.Meta.Encrypted())
 				require.Empty(t, w.Meta.Secrets())
 			})
 		}
@@ -444,7 +444,7 @@ func TestBip44NewWalletDefaultCrypto(t *testing.T) {
 
 func checkNoSensitiveData(t *testing.T, w *Wallet) {
 	// confirms that seeds and entry secrets are all empty
-	require.True(t, w.IsEncrypted())
+	require.True(t, w.Encrypted())
 	require.Equal(t, w.Seed(), "")
 	require.Equal(t, w.SeedPassphrase(), "")
 	for _, a := range w.Accounts() {
@@ -511,7 +511,7 @@ func TestWalletLock(t *testing.T) {
 				w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase, opts...)
 				require.NoError(t, err)
 
-				if !w.IsEncrypted() {
+				if !w.Encrypted() {
 					// Generates 2 addresses
 					_, err = w.GenerateAddresses(wallet.OptionGenerateN(2))
 					require.NoError(t, err)
@@ -594,7 +594,7 @@ func TestWalletUnlock(t *testing.T) {
 					return
 				}
 
-				require.False(t, unlockWlt.IsEncrypted())
+				require.False(t, unlockWlt.Encrypted())
 				require.Empty(t, unlockWlt.Secrets())
 
 				// Checks the seeds and seed passphrase

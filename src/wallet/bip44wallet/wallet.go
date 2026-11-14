@@ -196,7 +196,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 
 	// encrypts wallet if options.Encrypt is true
 	if advOpts.Encrypt {
-		if wlt.IsTemp() {
+		if wlt.Temp() {
 			return nil, wallet.ErrEncryptTempWallet
 		}
 
@@ -336,15 +336,15 @@ func (w *Wallet) Deserialize(b []byte) error {
 	return nil
 }
 
-// IsEncrypted returns whether the wallet is encrypted
-func (w Wallet) IsEncrypted() bool {
-	return w.Meta.IsEncrypted()
+// Encrypted returns whether the wallet is encrypted
+func (w Wallet) Encrypted() bool {
+	return w.Meta.Encrypted()
 }
 
 // Lock encrypts the wallet if it is unencrypted, return false
 // if it is already encrypted.
 func (w *Wallet) Lock(password []byte) error {
-	if w.IsTemp() {
+	if w.Temp() {
 		return wallet.ErrEncryptTempWallet
 	}
 
@@ -352,7 +352,7 @@ func (w *Wallet) Lock(password []byte) error {
 		return wallet.ErrMissingPassword
 	}
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		return wallet.ErrWalletEncrypted
 	}
 
@@ -401,7 +401,7 @@ func (w *Wallet) Lock(password []byte) error {
 
 // Unlock decrypt the wallet
 func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return nil, wallet.ErrWalletNotEncrypted
 	}
 
@@ -491,7 +491,7 @@ func (w Wallet) Fingerprint() (string, error) {
 	}
 
 	if len(entries) == 0 {
-		if !cw.IsEncrypted() {
+		if !cw.Encrypted() {
 			addrs, err := cw.newExternalAddresses(0, 1)
 			if err != nil {
 				return "", fmt.Errorf("fingerprint initial entry: %w", err)
@@ -739,9 +739,9 @@ func (w *Wallet) GetEntry(addr cipher.Addresser, options ...wallet.Option) (wall
 	return e, nil
 }
 
-// HasEntry checks whether the entry of given address exists on selected account and chain,
+// Contains checks whether the entry of given address exists on selected account and chain,
 // if no options are provided, check the external chain of account 0.
-func (w *Wallet) HasEntry(addr cipher.Addresser, options ...wallet.Option) (bool, error) {
+func (w *Wallet) Contains(addr cipher.Addresser, options ...wallet.Option) (bool, error) {
 	opts := getBip44Options(options...)
 	_, ok, err := w.getEntry(opts.Account, addr)
 	if err != nil {

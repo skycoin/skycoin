@@ -158,9 +158,9 @@ func (w *Wallet) Deserialize(b []byte) error {
 	return nil
 }
 
-// IsEncrypted returns whether the wallet is encrypted
-func (w Wallet) IsEncrypted() bool {
-	return w.Meta.IsEncrypted()
+// Encrypted returns whether the wallet is encrypted
+func (w Wallet) Encrypted() bool {
+	return w.Meta.Encrypted()
 }
 
 // Lock will do nothing to the xpub wallet
@@ -449,8 +449,8 @@ func (w *Wallet) GetEntry(addr cipher.Addresser, _ ...wallet.Option) (wallet.Ent
 	return e, nil
 }
 
-// HasEntry returns true if the wallet has an Entry with a given address
-func (w *Wallet) HasEntry(addr cipher.Addresser, _ ...wallet.Option) (bool, error) {
+// Contains returns true if the wallet has an Entry with a given address
+func (w *Wallet) Contains(addr cipher.Addresser, _ ...wallet.Option) (bool, error) {
 	return w.entries.Has(addr), nil
 }
 

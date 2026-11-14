@@ -195,11 +195,11 @@ func TestCreateWallet(t *testing.T) {
 			require.Equal(t, tc.walletType, lw.Type())
 
 			if tc.encrypted {
-				require.True(t, lw.IsEncrypted())
+				require.True(t, lw.Encrypted())
 				require.Empty(t, lw.Seed())
 				require.Empty(t, lw.SeedPassphrase())
 			} else {
-				require.False(t, lw.IsEncrypted())
+				require.False(t, lw.Encrypted())
 				require.Equal(t, tc.seed, lw.Seed())
 				require.Equal(t, tc.seedPassphrase, lw.SeedPassphrase())
 			}
@@ -1067,7 +1067,7 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, minCoins, minCoinHours u
 		t.Fatalf("Load wallet %v failed: %v", walletPath, err)
 	}
 
-	if w.IsEncrypted() && password == "" {
+	if w.Encrypted() && password == "" {
 		t.Fatalf("Wallet is encrypted, must set WALLET_PASSWORD env var")
 	}
 

@@ -31,7 +31,7 @@ func (m uiMarket) Call(msgType string, req, resp any) error {
 	if err != nil {
 		return err
 	}
-	if env.IsError() {
+	if env.Failed() {
 		var e protocol.ErrorData
 		_ = env.Bind(&e) //nolint:errcheck
 		return &skydexui.MarketError{Code: e.Code, Message: e.Message}

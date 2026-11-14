@@ -54,7 +54,7 @@ func TestServeResetsIdleOnActivity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request %d failed (session dropped?): %v", i, err)
 		}
-		if resp.IsError() {
+		if resp.Failed() {
 			t.Fatalf("request %d returned an error response", i)
 		}
 		time.Sleep(150 * time.Millisecond)

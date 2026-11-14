@@ -238,7 +238,7 @@ func seedProduct(t *testing.T, srv *server.Server, database *db.Database, id str
 	conn := market.NewConn(ce)
 	defer conn.Close() //nolint
 	resp, err := conn.Do(protocol.TypeRegister, protocol.RegisterRequest{WalletSKY: "FbmPhy5bhsMX8JNeAQdQ4W3DeCYFH97FBg", WalletBTC: "19wiPpvWPxHEmcANKzwUjiRgABQk8wZzCp"})
-	if err != nil || resp.IsError() {
+	if err != nil || resp.Failed() {
 		t.Fatalf("register seller: %v %s", err, resp.Data)
 	}
 	if err := database.CreateProduct(&db.Product{

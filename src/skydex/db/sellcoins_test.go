@@ -136,7 +136,7 @@ func TestSellCoinCRUD(t *testing.T) {
 	if err := d.SetSellCoinEnabled("MDL", false); err != nil {
 		t.Fatalf("disable: %v", err)
 	}
-	if ok, _ := d.IsSellCoinAvailable("MDL"); ok { //nolint:errcheck
+	if ok, _ := d.SellCoinAvailable("MDL"); ok { //nolint:errcheck
 		t.Fatal("MDL should be unavailable while disabled")
 	}
 
@@ -158,7 +158,7 @@ func TestSellCoinCRUD(t *testing.T) {
 		t.Fatalf("MDL still present after delete: %+v", got)
 	}
 	// SKY remains.
-	if ok, _ := d.IsSellCoinAvailable("SKY"); !ok { //nolint:errcheck
+	if ok, _ := d.SellCoinAvailable("SKY"); !ok { //nolint:errcheck
 		t.Fatal("SKY should still be available after deleting MDL")
 	}
 }
@@ -166,8 +166,8 @@ func TestSellCoinCRUD(t *testing.T) {
 // TestUnknownSellCoinUnavailable: an unconfigured symbol is never available.
 func TestUnknownSellCoinUnavailable(t *testing.T) {
 	d := newSellCoinDB(t)
-	if ok, err := d.IsSellCoinAvailable("NOPE"); err != nil || ok {
-		t.Fatalf("IsSellCoinAvailable(NOPE) = %v, %v; want false, nil", ok, err)
+	if ok, err := d.SellCoinAvailable("NOPE"); err != nil || ok {
+		t.Fatalf("SellCoinAvailable(NOPE) = %v, %v; want false, nil", ok, err)
 	}
 	if _, _, _, _, enabled, _ := d.SellCoinConfig("NOPE"); enabled { //nolint:errcheck
 		t.Fatal("unknown coin should report disabled")

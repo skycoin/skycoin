@@ -28,7 +28,7 @@ func (f fakeWalletForGuardView) Seed() string {
 	return f.seed
 }
 
-func (f fakeWalletForGuardView) IsEncrypted() bool {
+func (f fakeWalletForGuardView) Encrypted() bool {
 	return f.encrypted
 }
 
@@ -42,7 +42,7 @@ func (f *fakeWalletForGuardView) Erase() {
 	f.seed = ""
 }
 
-func (f *fakeWalletForGuardView) IsTemp() bool {
+func (f *fakeWalletForGuardView) Temp() bool {
 	return f.temp
 }
 
@@ -85,7 +85,7 @@ func TestWalletGuard(t *testing.T) {
 			}
 
 			err := GuardView(w, tc.pwd, func(wlt Wallet) error {
-				require.False(t, wlt.IsEncrypted())
+				require.False(t, wlt.Encrypted())
 				return nil
 			})
 
@@ -93,7 +93,7 @@ func TestWalletGuard(t *testing.T) {
 			if err != nil {
 				return
 			}
-			require.True(t, w.IsEncrypted())
+			require.True(t, w.Encrypted())
 		})
 	}
 }

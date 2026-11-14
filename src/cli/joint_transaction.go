@@ -391,7 +391,7 @@ func txnReview(txn *coin.Transaction, inputs []jointInput, mine map[string]struc
 		fmt.Fprintln(w, "Fee: unknown, some inputs are not unspent outputs on this node")
 	}
 	fmt.Fprintf(w, "Signed: %d of %d inputs", countSigned(txn), len(txn.In))
-	if txn.IsFullySigned() {
+	if txn.FullySigned() {
 		fmt.Fprintln(w, ", ready to broadcast")
 	} else {
 		fmt.Fprintln(w)

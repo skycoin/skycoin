@@ -128,7 +128,7 @@ func (pool *Pool) getStaleConnections() ([]string, error) {
 	return pool.Pool.GetStaleConnections(pool.Config.IdleLimit)
 }
 
-// IsMaxOutgoingDefaultConnectionsReached returns whether max outgoing default connections reached
-func (pool *Pool) IsMaxOutgoingDefaultConnectionsReached() bool {
-	return pool.Pool.IsMaxOutgoingDefaultConnectionsReached()
+// MaxOutgoingDefaultConnectionsReached returns whether max outgoing default connections reached
+func (pool *Pool) MaxOutgoingDefaultConnectionsReached() bool {
+	return pool.Pool.MaxOutgoingDefaultConnectionsReached()
 }

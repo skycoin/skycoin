@@ -54,10 +54,10 @@ func (d *Database) ExplorerConfig(currency string) (provider, baseURL, apiKey st
 	return provider, baseURL, apiKey, nil
 }
 
-// IsCurrencyAvailable reports whether currency has an explorer provider
+// CurrencyAvailable reports whether currency has an explorer provider
 // configured. Any coin symbol is allowed — the Esplora adapter is universal — so
 // availability is purely "has the operator configured an explorer for it".
-func (d *Database) IsCurrencyAvailable(currency string) (bool, error) {
+func (d *Database) CurrencyAvailable(currency string) (bool, error) {
 	provider, _, _, err := d.ExplorerConfig(currency)
 	if err != nil {
 		return false, err

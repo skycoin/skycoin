@@ -327,7 +327,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				}
 
 				require.NoError(t, err)
-				require.Equal(t, w.IsEncrypted(), tc.encrypt)
+				require.Equal(t, w.Encrypted(), tc.encrypt)
 				if tc.encrypt {
 					require.NotEmpty(t, w.Secrets())
 					checkNoSensitiveData(t, w)
@@ -691,8 +691,8 @@ func TestServiceLoadWallet(t *testing.T) {
 					require.Equal(t, a, e.Address.(cipher.Address))
 				}
 
-				require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
-				if w.IsEncrypted() {
+				require.Equal(t, w.Encrypted(), tc.opts.Encrypt)
+				if w.Encrypted() {
 					checkNoSensitiveData(t, w)
 					// Checks the wallet file doesn't contain sensitive data
 					wltPath := filepath.Join(dir, w.Filename())
@@ -952,7 +952,7 @@ func TestServiceNewAddresses(t *testing.T) {
 					tc.walletFileModifier(wltPath)
 				}
 
-				if w.IsEncrypted() {
+				if w.Encrypted() {
 					checkNoSensitiveData(t, w)
 				}
 
@@ -1017,7 +1017,7 @@ func TestServiceNewAddresses(t *testing.T) {
 					require.Equal(t, e, es[i])
 				}
 
-				if w.IsEncrypted() {
+				if w.Encrypted() {
 					checkNoSensitiveData(t, lw)
 				}
 
@@ -1434,7 +1434,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				require.Equal(t, ewb, ew1b)
 
 				// Check the encrypted wallet
-				require.True(t, encWlt.IsEncrypted())
+				require.True(t, encWlt.Encrypted())
 				entries, err := encWlt.GetEntries()
 				require.NoError(t, err)
 				for _, e := range entries {
@@ -1604,7 +1604,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 	verifyDecryptedDeterministicWlt := func(tc testCase, wlt wallet.Wallet) {
 		// Checks the "encrypted" meta info
-		require.False(t, wlt.IsEncrypted())
+		require.False(t, wlt.Encrypted())
 		// Checks the seed
 		require.Equal(t, tc.opts.Seed, wlt.Seed())
 
@@ -1629,7 +1629,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 	verifyDecryptedCollectionWlt := func(_ testCase, wlt wallet.Wallet) {
 		// Checks the "encrypted" meta info
-		require.False(t, wlt.IsEncrypted())
+		require.False(t, wlt.Encrypted())
 		require.Empty(t, wlt.Seed())
 		require.Empty(t, wlt.LastSeed())
 
@@ -1650,7 +1650,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 	verifyDecryptedBip44Wlt := func(tc testCase, wlt wallet.Wallet) {
 		// Checks the "encrypted" meta info
-		require.False(t, wlt.IsEncrypted())
+		require.False(t, wlt.Encrypted())
 		// Checks the seed
 		require.Equal(t, tc.opts.Seed, wlt.Seed())
 		require.Empty(t, wlt.LastSeed())
@@ -2892,7 +2892,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 
 				//require.NoError(t, w.Validate())
 
-				if !w.IsEncrypted() {
+				if !w.Encrypted() {
 					require.Equal(t, tc.expect.seed, w.Seed())
 					require.Equal(t, tc.expect.lastSeed, w.LastSeed())
 				}
@@ -4164,8 +4164,8 @@ func TestServiceUpdate(t *testing.T) {
 			tc.checkWallet(t, w)
 
 			// Even if secrets were modified, wallet should still be encrypted
-			require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
-			if w.IsEncrypted() {
+			require.Equal(t, tc.opts.Encrypt, w.Encrypted())
+			if w.Encrypted() {
 				checkNoSensitiveData(t, w)
 			}
 		})
@@ -4524,8 +4524,8 @@ func TestServiceUpdateSecrets(t *testing.T) {
 			tc.checkWallet(t, w)
 
 			// Even if secrets were modified, wallet should still be encrypted
-			require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
-			if w.IsEncrypted() {
+			require.Equal(t, tc.opts.Encrypt, w.Encrypted())
+			if w.Encrypted() {
 				checkNoSensitiveData(t, w)
 			}
 		})
@@ -4596,7 +4596,7 @@ func TestServiceNewAccount(t *testing.T) {
 
 		w, err := s.NewAccount("t.wlt", []byte("pwd"), "a")
 		require.NoError(t, err)
-		require.True(t, w.IsEncrypted())
+		require.True(t, w.Encrypted())
 		require.Len(t, w.(*bip44wallet.Wallet).Accounts(), 2)
 		checkNoSensitiveData(t, w)
 	})
@@ -4672,7 +4672,7 @@ func TestServiceEthereumWallet(t *testing.T) {
 	require.NoError(t, err)
 	enc, err := s.GetWallet("eth.wlt")
 	require.NoError(t, err)
-	require.True(t, enc.IsEncrypted())
+	require.True(t, enc.Encrypted())
 	encAddrs, err := enc.GetAddresses(wallet.OptionExternal())
 	require.NoError(t, err)
 	require.Equal(t, addrs[0].String(), encAddrs[0].String())

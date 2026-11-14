@@ -763,7 +763,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
 		verifyTxnResp := VerifyTransactionResponse{
 			Confirmed: txnConfirmed,
-			Unsigned:  !txn.IsFullySigned(),
+			Unsigned:  !txn.FullySigned(),
 		}
 
 		if len(inputs) != len(txn.In) {

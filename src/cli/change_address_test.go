@@ -77,7 +77,7 @@ func TestCreateRawTxnNewChangeAddress(t *testing.T) {
 
 			saved, err := wallet.Load(file)
 			require.NoError(t, err)
-			has, err := saved.HasEntry(change)
+			has, err := saved.Contains(change)
 			require.NoError(t, err)
 			require.True(t, has, "the new change address is saved in the wallet file")
 		})
@@ -118,7 +118,7 @@ func TestSweepWallet(t *testing.T) {
 
 	saved, err := wallet.Load(file)
 	require.NoError(t, err)
-	has, err := saved.HasEntry(txn.Out[0].Address)
+	has, err := saved.Contains(txn.Out[0].Address)
 	require.NoError(t, err)
 	require.True(t, has)
 

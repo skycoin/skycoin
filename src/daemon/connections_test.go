@@ -56,7 +56,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, 1, conns.Len())
 	require.Empty(t, c.Mirror)
 	require.Empty(t, conns.mirrors)
-	require.False(t, c.HasIntroduced())
+	require.False(t, c.Introduced())
 	require.Equal(t, addr, c.ListenAddr())
 
 	all = conns.all()
@@ -69,7 +69,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, 1, conns.PendingLen())
 	require.Equal(t, 1, conns.Len())
 	require.Empty(t, conns.mirrors)
-	require.False(t, c.HasIntroduced())
+	require.False(t, c.Introduced())
 	require.Equal(t, addr, c.ListenAddr())
 
 	all = conns.all()
@@ -94,7 +94,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, 1, conns.Len())
 	require.Empty(t, c.Mirror)
 	require.Empty(t, conns.mirrors)
-	require.False(t, c.HasIntroduced())
+	require.False(t, c.Introduced())
 	require.Equal(t, addr, c.ListenAddr())
 
 	all = conns.all()
@@ -123,7 +123,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, m.ProtocolVersion, c.ProtocolVersion)
 	require.Len(t, conns.mirrors, 1)
 	require.Equal(t, port, getMirrorPort(conns, ip, c.Mirror))
-	require.True(t, c.HasIntroduced())
+	require.True(t, c.Introduced())
 	require.Equal(t, addr, c.ListenAddr())
 	require.Equal(t, userAgent, c.UserAgent)
 
@@ -182,7 +182,7 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.Equal(t, 1, conns.Len())
 	require.Empty(t, c.Mirror)
 	require.Empty(t, conns.mirrors)
-	require.False(t, c.HasIntroduced())
+	require.False(t, c.Introduced())
 	require.Empty(t, c.ListenAddr())
 	require.Empty(t, conns.listenAddrs)
 
@@ -217,7 +217,7 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 	require.Equal(t, m.ProtocolVersion, c.ProtocolVersion)
 	require.Len(t, conns.mirrors, 1)
 	require.Equal(t, m.ListenPort, getMirrorPort(conns, ip, c.Mirror))
-	require.True(t, c.HasIntroduced())
+	require.True(t, c.Introduced())
 	require.Equal(t, fmt.Sprintf("%s:%d", ip, m.ListenPort), c.ListenAddr())
 	require.Equal(t, userAgent, c.UserAgent)
 	require.Equal(t, uint32(4), c.UnconfirmedVerifyTxn.BurnFactor)

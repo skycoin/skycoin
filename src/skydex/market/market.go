@@ -41,7 +41,7 @@ func (c *Conn) Close() error { return c.fc.Close() }
 
 // Do sends a request of the given type carrying data and returns the market's
 // response envelope. A transport error is returned as err; an application-level
-// failure is returned as a non-error response with resp.IsError() == true.
+// failure is returned as a non-error response with resp.Failed() == true.
 func (c *Conn) Do(msgType string, data any) (protocol.Envelope, error) {
 	req, err := protocol.NewRequest(msgType, data)
 	if err != nil {

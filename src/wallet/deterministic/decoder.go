@@ -169,7 +169,7 @@ func (rw *readableDeterministicWallet) toWallet() (wallet.Wallet, error) {
 		return nil, err
 	}
 
-	ets, err := rw.Entries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
+	ets, err := rw.Entries.toWalletEntries(w.Meta.Coin(), w.Meta.Encrypted())
 	if err != nil {
 		//wallet.logger.WithError(err).Error("readableDeterministicWallet.ToWallet toWalletEntries failed")
 		return nil, err

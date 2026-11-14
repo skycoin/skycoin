@@ -1697,9 +1697,9 @@ func TestVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	type verifyTxnVerboseResult struct {
-		Uxouts         []visor.TransactionInput
-		IsTxnConfirmed bool
-		Err            error
+		Uxouts       []visor.TransactionInput
+		TxnConfirmed bool
+		Err          error
 	}
 
 	tt := []struct {
@@ -1821,8 +1821,8 @@ func TestVerifyTransaction(t *testing.T) {
 			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
 			gatewayVerifyTxnVerboseSigned: transaction.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
-				Uxouts:         txnAndInputs.inputs,
-				IsTxnConfirmed: true,
+				Uxouts:       txnAndInputs.inputs,
+				TxnConfirmed: true,
 			},
 			httpResponse: HTTPResponse{
 				Error: &HTTPError{
@@ -1869,7 +1869,7 @@ func TestVerifyTransaction(t *testing.T) {
 			endpoint := "/api/v2/transaction/verify"
 			gateway := &MockGatewayer{}
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg, tc.gatewayVerifyTxnVerboseSigned).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
-				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
+				tc.gatewayVerifyTxnVerboseResult.TxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)

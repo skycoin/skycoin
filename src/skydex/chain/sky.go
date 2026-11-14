@@ -386,7 +386,7 @@ func (s *SkyNode) buildSignedTxn(dst cipher.Address, coins uint64, spendable rea
 	if err := txn.UpdateHeader(); err != nil {
 		return nil, fmt.Errorf("sky spend: finalize txn: %w", err)
 	}
-	if !txn.IsFullySigned() {
+	if !txn.FullySigned() {
 		return nil, errors.New("sky spend: transaction is not fully signed")
 	}
 	return txn, nil

@@ -310,7 +310,7 @@ func verifyTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn 
 
 	// Check that there are any duplicates within this set
 	// NOTE: This should already be checked by txn.Verify()
-	if uxOut.HasDupes() {
+	if uxOut.Duplicated() {
 		return errors.New("Duplicate output in transaction")
 	}
 

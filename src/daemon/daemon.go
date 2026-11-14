@@ -585,7 +585,7 @@ func (dm *Daemon) startPex(wg *sync.WaitGroup, errC chan error) {
 				continue
 			}
 
-			if dm.pex.IsFull() {
+			if dm.pex.Full() {
 				continue
 			}
 
@@ -813,7 +813,7 @@ func (dm *Daemon) maybeConnectToTrustedPeer() error {
 		return ErrNetworkingDisabled
 	}
 
-	if dm.pool.IsMaxOutgoingDefaultConnectionsReached() {
+	if dm.pool.MaxOutgoingDefaultConnectionsReached() {
 		return nil
 	}
 
@@ -948,7 +948,7 @@ func (dm *Daemon) onMessageEvent(e messageEvent) {
 	}
 
 	// The first message received must be INTR, DISC or GIVP
-	if !c.HasIntroduced() {
+	if !c.Introduced() {
 		switch e.Message.(type) {
 		case *IntroductionMessage, *DisconnectMessage, *GivePeersMessage:
 		default:
@@ -1303,7 +1303,7 @@ func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coi
 			continue
 		}
 
-		if !c.HasIntroduced() {
+		if !c.Introduced() {
 			continue
 		}
 
@@ -1569,7 +1569,7 @@ func (dm *Daemon) broadcastMessage(msg gnet.Message) ([]uint64, error) {
 	conns := dm.connections.all()
 	var addrs []string
 	for _, c := range conns {
-		if c.HasIntroduced() {
+		if c.Introduced() {
 			addrs = append(addrs, c.Addr)
 		}
 	}

@@ -888,7 +888,7 @@ func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 		return txn.UpdateHeader()
 	}
 
-	if wlt.IsEncrypted() {
+	if wlt.Encrypted() {
 		if err := wallet.GuardUpdate(wlt, []byte(req.Password), func(w wallet.Wallet) error {
 			return signFunc(w)
 		}); err != nil {

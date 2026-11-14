@@ -106,7 +106,7 @@ func (txs *transactions) getArray(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Tran
 
 // isEmpty checks if transaction bucket is empty
 func (txs *transactions) isEmpty(tx *dbutil.Tx) (bool, error) {
-	return dbutil.IsEmpty(tx, TransactionsBkt)
+	return dbutil.Empty(tx, TransactionsBkt)
 }
 
 // reset resets the bucket

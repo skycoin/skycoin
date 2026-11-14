@@ -162,7 +162,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 	var inputs []TransactionInput
 	var signedTxn *coin.Transaction
 
-	if txn.IsFullySigned() {
+	if txn.FullySigned() {
 		return nil, nil, ErrTransactionAlreadySigned
 	}
 
@@ -199,7 +199,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 			}
 
 			signed := transaction.TxnSigned
-			if !signedTxn.IsFullySigned() {
+			if !signedTxn.FullySigned() {
 				signed = transaction.TxnUnsigned
 			}
 
@@ -289,7 +289,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 			return err
 		}
 		var err error
-		if w.IsEncrypted() && w.Type() != wallet.WalletTypeBip44 {
+		if w.Encrypted() && w.Type() != wallet.WalletTypeBip44 {
 			err = vs.wallets.UpdateSecrets(wltID, password, update)
 		} else {
 			err = vs.wallets.Update(wltID, update)
@@ -327,7 +327,7 @@ func (vs *Visor) newChangeAddress(w wallet.Wallet) (*cipher.Address, error) {
 			return nil, err
 		}
 		addr = a
-	case w.IsEncrypted():
+	case w.Encrypted():
 		return nil, ErrChangeAddressRequired
 	default:
 		addrs, err := w.GenerateAddresses(wallet.OptionGenerateN(1))

@@ -101,7 +101,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 	}
 
 	if advOpts.Encrypt {
-		if wlt.IsTemp() {
+		if wlt.Temp() {
 			return nil, wallet.ErrEncryptTempWallet
 		}
 
@@ -192,7 +192,7 @@ func (w *Wallet) Deserialize(data []byte) error {
 
 // Lock encrypts the sensitive data of the wallet
 func (w *Wallet) Lock(password []byte) error {
-	if w.IsTemp() {
+	if w.Temp() {
 		return wallet.ErrEncryptTempWallet
 	}
 
@@ -200,7 +200,7 @@ func (w *Wallet) Lock(password []byte) error {
 		return wallet.ErrMissingPassword
 	}
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		return wallet.ErrWalletEncrypted
 	}
 
@@ -246,7 +246,7 @@ func (w *Wallet) Lock(password []byte) error {
 
 // Unlock decrypts the wallet and returns a decrypted copy
 func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return nil, wallet.ErrWalletNotEncrypted
 	}
 
@@ -315,7 +315,7 @@ func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 func (w *Wallet) Fingerprint() (string, error) {
 	addr := ""
 	if len(w.entries) == 0 {
-		if !w.IsEncrypted() {
+		if !w.Encrypted() {
 			e, err := newEntry(w.Meta.Seed(), 0)
 			if err != nil {
 				return "", fmt.Errorf("fingerprint entry: %w", err)
@@ -368,7 +368,7 @@ func (w *Wallet) Validate() error {
 		return wallet.ErrInvalidWalletType
 	}
 
-	if !w.IsEncrypted() && w.Seed() == "" {
+	if !w.Encrypted() && w.Seed() == "" {
 		return errors.New("seed missing in unencrypted post-quantum wallet")
 	}
 	return nil
@@ -376,7 +376,7 @@ func (w *Wallet) Validate() error {
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		return nil, wallet.ErrWalletEncrypted
 	}
 
@@ -410,7 +410,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 
 // GenerateAddresses generates N addresses
 func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
-	if w.Meta.IsEncrypted() {
+	if w.Meta.Encrypted() {
 		return nil, wallet.ErrWalletEncrypted
 	}
 
@@ -464,8 +464,8 @@ func (w *Wallet) GetEntry(a cipher.Addresser, _ ...wallet.Option) (wallet.Entry,
 	return e, nil
 }
 
-// HasEntry returns true if the wallet has an Entry with a given cipher.Address.
-func (w *Wallet) HasEntry(a cipher.Addresser, _ ...wallet.Option) (bool, error) {
+// Contains returns true if the wallet has an Entry with a given cipher.Address.
+func (w *Wallet) Contains(a cipher.Addresser, _ ...wallet.Option) (bool, error) {
 	return w.entries.Has(a), nil
 }
 

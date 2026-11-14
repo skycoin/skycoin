@@ -158,8 +158,8 @@ func (ua UxArray) Hashes() []cipher.SHA256 {
 	return hashes
 }
 
-// HasDupes checks the UxArray for outputs which have the same hash
-func (ua UxArray) HasDupes() bool {
+// Duplicated checks the UxArray for outputs which have the same hash
+func (ua UxArray) Duplicated() bool {
 	m := make(UxHashSet, len(ua))
 	for i := range ua {
 		h := ua[i].Hash()

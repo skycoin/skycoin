@@ -71,7 +71,7 @@ func TestLiveSkySpend(t *testing.T) {
 		t.Fatalf("serialize txn: %v", err)
 	}
 	t.Logf("built + signed delivery txn: id=%s inputs=%d outputs=%d fully_signed=%v",
-		txn.Hash().Hex(), len(txn.In), len(txn.Out), txn.IsFullySigned())
+		txn.Hash().Hex(), len(txn.In), len(txn.Out), txn.FullySigned())
 	for i, o := range txn.Out {
 		t.Logf("  out[%d] -> %s : %d droplets, %d hours", i, o.Address, o.Coins, o.Hours)
 	}

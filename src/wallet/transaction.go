@@ -84,7 +84,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	}
 	txnInnerHash := signedTxn.HashInner()
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		return nil, ErrWalletEncrypted
 	}
 
@@ -95,7 +95,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	if len(signedTxn.Sigs) == 0 {
 		return nil, NewError(errors.New("Transaction signatures array is empty"))
 	}
-	if signedTxn.IsFullySigned() {
+	if signedTxn.FullySigned() {
 		return nil, NewError(errors.New("Transaction is fully signed"))
 	}
 
@@ -181,11 +181,11 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	}
 
 	if len(signIndexes) == 0 || len(signIndexes) == nMissingSigs {
-		if !signedTxn.IsFullySigned() {
+		if !signedTxn.FullySigned() {
 			return nil, errors.New("Transaction is not fully signed, but should be")
 		}
 	} else {
-		if signedTxn.IsFullySigned() {
+		if signedTxn.FullySigned() {
 			return nil, errors.New("Transaction is fully signed, but shouldn't be")
 		}
 	}
@@ -216,7 +216,7 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 
 	// Check that auxs does not contain addresses that are not known to this wallet
 	for a := range auxs {
-		has, err := w.HasEntry(a)
+		has, err := w.Contains(a)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -307,7 +307,7 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 }
 
 func verifyCreatedSignedInvariants(p transaction.Params, txn *coin.Transaction, inputs []transaction.UxBalance) error {
-	if !txn.IsFullySigned() {
+	if !txn.FullySigned() {
 		return errors.New("Transaction is not fully signed")
 	}
 

@@ -1660,7 +1660,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		},
 	}...)
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		cases = append(cases, liveWalletCreateTxnTestCase{
 			walletID: w.Filename(),
 			password: password + "foo",
@@ -1925,7 +1925,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		t.Skip("Skipping TestLiveWalletCreateTransactionRandom tests with encrypted wallet")
 		return
 	}

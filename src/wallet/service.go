@@ -319,7 +319,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (Wallet, error
 		return nil, err
 	}
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		return nil, ErrWalletEncrypted
 	}
 
@@ -352,7 +352,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error
 	}
 
 	// Returns error if wallet is not encrypted
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return nil, ErrWalletNotEncrypted
 	}
 
@@ -395,7 +395,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error
 // 		return err
 // 	}
 
-// 	if w.IsEncrypted() {
+// 	if w.Encrypted() {
 // 		if err := GuardUpdate(w, password, f); err != nil {
 // 			return nil, err
 // 		}
@@ -411,7 +411,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error
 
 // 	// Checks if the wallet file is writable
 // 	wf := filepath.Join(serv.config.WalletDir, w.Filename())
-// 	if !file.IsWritable(wf) {
+// 	if !file.Writable(wf) {
 // 		return nil, ErrWalletPermission
 // 	}
 
@@ -447,7 +447,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, options ...Opti
 	}
 
 	// TODO: Test this
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		// Bip44 can generate addresses without unlocking the wallet
 		// This will generate addresses on bip44 external chain
 		if w.Type() == WalletTypeBip44 {
@@ -471,10 +471,10 @@ func (serv *Service) NewAddresses(wltID string, password []byte, options ...Opti
 
 	// check if wallet is writable only when it's not a temporary wallet.
 	// this checking would create a temp file
-	if !w.IsTemp() {
+	if !w.Temp() {
 		// Checks if the wallet file is writable
 		wf := filepath.Join(serv.config.WalletDir, w.Filename())
-		if !file.IsWritable(wf) {
+		if !file.Writable(wf) {
 			return nil, ErrWalletPermission
 		}
 
@@ -522,7 +522,7 @@ func (serv *Service) NewAccount(wltID string, password []byte, name string) (Wal
 		return err
 	}
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		if err := GuardUpdate(w, password, f); err != nil {
 			return nil, err
 		}
@@ -535,9 +535,9 @@ func (serv *Service) NewAccount(wltID string, password []byte, name string) (Wal
 		}
 	}
 
-	if !w.IsTemp() {
+	if !w.Temp() {
 		wf := filepath.Join(serv.config.WalletDir, w.Filename())
-		if !file.IsWritable(wf) {
+		if !file.Writable(wf) {
 			return nil, ErrWalletPermission
 		}
 		if err := Save(w, serv.config.WalletDir); err != nil {
@@ -579,7 +579,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 			return nil, err
 		}
 	} else {
-		if w.IsEncrypted() {
+		if w.Encrypted() {
 			if err := GuardUpdate(w, password, f); err != nil {
 				return nil, err
 			}
@@ -595,9 +595,9 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	}
 
 	// Checks if the wallet file is writable
-	if !w.IsTemp() {
+	if !w.Temp() {
 		wf := filepath.Join(serv.config.WalletDir, w.Filename())
-		if !file.IsWritable(wf) {
+		if !file.Writable(wf) {
 			return nil, ErrWalletPermission
 		}
 
@@ -768,7 +768,7 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, strin
 		return "", "", err
 	}
 
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return "", "", ErrWalletNotEncrypted
 	}
 
@@ -797,7 +797,7 @@ func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(Wallet)
 		return err
 	}
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		if err := GuardUpdate(w, password, f); err != nil {
 			return err
 		}
@@ -859,7 +859,7 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(Wallet) e
 		return err
 	}
 
-	if w.IsEncrypted() {
+	if w.Encrypted() {
 		return GuardView(w, password, f)
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
@@ -899,7 +899,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
 		return nil, err
 	}
 
-	if !w.IsEncrypted() {
+	if !w.Encrypted() {
 		return nil, ErrWalletNotEncrypted
 	}
 

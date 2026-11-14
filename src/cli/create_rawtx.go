@@ -664,7 +664,7 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 
 	switch pr.(type) {
 	case nil:
-		if wlt.IsEncrypted() {
+		if wlt.Encrypted() {
 			return nil, wallet.ErrWalletEncrypted
 		}
 	case PasswordFromBytes:
@@ -673,13 +673,13 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 			return nil, err
 		}
 
-		if !wlt.IsEncrypted() && len(p) != 0 {
+		if !wlt.Encrypted() && len(p) != 0 {
 			return nil, wallet.ErrWalletNotEncrypted
 		}
 	}
 
 	var password []byte
-	if wlt.IsEncrypted() {
+	if wlt.Encrypted() {
 		var err error
 		password, err = pr.Password()
 		if err != nil {
@@ -727,7 +727,7 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 
 	switch pr.(type) {
 	case nil:
-		if wlt.IsEncrypted() {
+		if wlt.Encrypted() {
 			return nil, wallet.ErrWalletEncrypted
 		}
 	case PasswordFromBytes:
@@ -736,13 +736,13 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 			return nil, err
 		}
 
-		if !wlt.IsEncrypted() && len(p) != 0 {
+		if !wlt.Encrypted() && len(p) != 0 {
 			return nil, wallet.ErrWalletNotEncrypted
 		}
 	}
 
 	var password []byte
-	if wlt.IsEncrypted() {
+	if wlt.Encrypted() {
 		var err error
 		password, err = pr.Password()
 		if err != nil {
@@ -838,7 +838,7 @@ func newChangeAddress(c interface{}, wlt wallet.Wallet, walletFile string, passw
 		return err
 	}
 
-	if wlt.IsEncrypted() && wlt.Type() != wallet.WalletTypeBip44 {
+	if wlt.Encrypted() && wlt.Type() != wallet.WalletTypeBip44 {
 		err = wallet.GuardUpdate(wlt, password, generate)
 	} else {
 		err = generate(wlt)
@@ -938,7 +938,7 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chg
 		return f(wlt)
 	}
 
-	if wlt.IsEncrypted() {
+	if wlt.Encrypted() {
 		makeTxn = func() (*coin.Transaction, error) {
 			var tx *coin.Transaction
 			if err := wallet.GuardView(wlt, password, func(w wallet.Wallet) error {

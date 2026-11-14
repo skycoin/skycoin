@@ -89,7 +89,7 @@ func TestLockUnlock(t *testing.T) {
 
 	password := []byte("pwd")
 	require.NoError(t, w.Lock(password))
-	require.True(t, w.IsEncrypted())
+	require.True(t, w.Encrypted())
 	require.Empty(t, w.Seed())
 	locked, err := w.GetEntries()
 	require.NoError(t, err)
@@ -208,7 +208,7 @@ func TestSignTransaction(t *testing.T) {
 		ChangeAddress:  &addr,
 	}, coin.NewAddressUxOuts(uxs), 200)
 	require.NoError(t, err)
-	require.False(t, txn.IsFullySigned())
+	require.False(t, txn.FullySigned())
 	uxs = inputOrder(txn, uxs)
 
 	// Signing one input leaves the original untouched and the other input open
@@ -223,7 +223,7 @@ func TestSignTransaction(t *testing.T) {
 
 	full, err := wallet.SignTransaction(w, half, nil, uxs)
 	require.NoError(t, err)
-	require.True(t, full.IsFullySigned())
+	require.True(t, full.FullySigned())
 	require.Equal(t, coin.TxnTypePQ, full.Type)
 	require.NoError(t, full.Verify())
 	require.NoError(t, full.VerifyInputSignatures(uxs))

@@ -254,19 +254,19 @@ func TestUxArrayHashArray(t *testing.T) {
 
 func TestUxArrayHasDupes(t *testing.T) {
 	uxa := makeUxArray(t, 4)
-	assert.False(t, uxa.HasDupes())
+	assert.False(t, uxa.Duplicated())
 	uxa[0] = uxa[1]
-	assert.True(t, uxa.HasDupes())
+	assert.True(t, uxa.Duplicated())
 }
 
 func TestUxArrayRemoveDupes(t *testing.T) {
 	uxa := makeUxArray(t, 4)
-	assert.False(t, uxa.HasDupes())
+	assert.False(t, uxa.Duplicated())
 	assert.Equal(t, uxa, uxa.removeDupes())
 	uxa[0] = uxa[1]
-	assert.True(t, uxa.HasDupes())
+	assert.True(t, uxa.Duplicated())
 	uxb := uxa.removeDupes()
-	assert.False(t, uxb.HasDupes())
+	assert.False(t, uxb.Duplicated())
 	assert.Equal(t, len(uxb), 3)
 	assert.Equal(t, uxb[0], uxa[0])
 	assert.Equal(t, uxb[1], uxa[2])

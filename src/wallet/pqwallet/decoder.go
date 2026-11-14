@@ -87,7 +87,7 @@ func (rw *readableWallet) toWallet() (wallet.Wallet, error) {
 				return nil, fmt.Errorf("invalid secret key for address %s", re.Address)
 			}
 			copy(e.Secret[:], b)
-			if !w.IsEncrypted() {
+			if !w.Encrypted() {
 				if err := e.Verify(); err != nil {
 					return nil, err
 				}

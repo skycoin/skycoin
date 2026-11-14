@@ -235,13 +235,13 @@ func TestNewWallet(t *testing.T) {
 					return
 				}
 
-				//require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
+				//require.Equal(t, tc.opts.Encrypt, w.Encrypted())
 				// confirms the meta data
 				for k, v := range tc.expect.meta {
 					require.Equal(t, v, w.Meta[k])
 				}
 
-				if w.IsEncrypted() {
+				if w.Encrypted() {
 					// Confirms the seeds and entry secrets are all empty
 					require.Equal(t, "", w.Seed())
 					require.Equal(t, "", w.LastSeed())
@@ -305,7 +305,7 @@ func TestWalletLock(t *testing.T) {
 				w, err := NewWallet(wltName, "test", "testseed123", opts...)
 				require.NoError(t, err)
 
-				if !w.IsEncrypted() {
+				if !w.Encrypted() {
 					// Generates 2 addresses
 					_, err = w.GenerateAddresses(wallet.OptionGenerateN(2))
 					require.NoError(t, err)
@@ -317,7 +317,7 @@ func TestWalletLock(t *testing.T) {
 					return
 				}
 
-				require.True(t, w.IsEncrypted())
+				require.True(t, w.Encrypted())
 
 				// Checks if the seeds are wiped
 				require.Empty(t, w.Seed())
@@ -393,7 +393,7 @@ func TestWalletUnlock(t *testing.T) {
 					return
 				}
 
-				require.False(t, wlt.IsEncrypted())
+				require.False(t, wlt.Encrypted())
 
 				// Checks the seeds
 				require.Equal(t, "testseed123", wlt.Seed())

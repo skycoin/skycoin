@@ -957,7 +957,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			matchTxnIgnoreSigs := mock.MatchedBy(func(txn coin.Transaction) bool {
 				switch tc.signed {
 				case transaction.TxnSigned:
-					if !txn.IsFullySigned() {
+					if !txn.FullySigned() {
 						return false
 					}
 					// Unset sigs for comparison to the unsigned txn
@@ -1004,7 +1004,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			}
 
 			if tc.signed == transaction.TxnSigned {
-				require.True(t, txn.IsFullySigned())
+				require.True(t, txn.FullySigned())
 				// Unset sigs for comparison to the unsigned transaction
 				txn.Sigs = make([]cipher.Sig, len(txn.Sigs))
 			}
@@ -1677,7 +1677,7 @@ func TestNewChangeAddress(t *testing.T) {
 		addr, err := v.newChangeAddress(w)
 		require.NoError(t, err)
 		require.NotEqual(t, first.Address, *addr)
-		has, err := w.HasEntry(*addr)
+		has, err := w.Contains(*addr)
 		require.NoError(t, err)
 		require.True(t, has)
 		n, err := w.EntriesLen()
@@ -1700,7 +1700,7 @@ func TestNewChangeAddress(t *testing.T) {
 			return err
 		})
 		require.NoError(t, err)
-		has, err := w.HasEntry(*addr)
+		has, err := w.Contains(*addr)
 		require.NoError(t, err)
 		require.True(t, has)
 		n, err := w.EntriesLen()

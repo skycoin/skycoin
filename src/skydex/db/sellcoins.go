@@ -153,11 +153,11 @@ func (d *Database) SetSellCoinEnabled(symbol string, enabled bool) error {
 	return nil
 }
 
-// IsSellCoinAvailable reports whether symbol is an enabled sell coin with a
+// SellCoinAvailable reports whether symbol is an enabled sell coin with a
 // complete escrow config (node + seed + address). An enabled-but-incomplete coin
 // is never treated as available, so a trade can't be created against a coin that
 // could not settle.
-func (d *Database) IsSellCoinAvailable(symbol string) (bool, error) {
+func (d *Database) SellCoinAvailable(symbol string) (bool, error) {
 	nodeURL, seed, wallet, _, enabled, err := d.SellCoinConfig(symbol)
 	if err != nil {
 		return false, err
@@ -239,12 +239,12 @@ func (d *Database) SellCoinWallet(symbol string) (string, error) {
 	return wallet, err
 }
 
-// IsPaymentAvailable reports whether currency may be used as a listing's payment
+// PaymentAvailable reports whether currency may be used as a listing's payment
 // currency: either an enabled external explorer coin (BTC/LTC/…) or an enabled
 // sell coin (a fibercoin the buyer pays peer-to-peer, verified on its own node).
-func (d *Database) IsPaymentAvailable(currency string) (bool, error) {
-	if ok, err := d.IsCurrencyAvailable(currency); err != nil || ok {
+func (d *Database) PaymentAvailable(currency string) (bool, error) {
+	if ok, err := d.CurrencyAvailable(currency); err != nil || ok {
 		return ok, err
 	}
-	return d.IsSellCoinAvailable(currency)
+	return d.SellCoinAvailable(currency)
 }

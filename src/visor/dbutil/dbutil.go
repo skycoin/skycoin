@@ -325,8 +325,8 @@ func Len(tx *Tx, bktName []byte) (uint64, error) {
 	return uint64(bstats.KeyN), nil
 }
 
-// IsEmpty returns true if the bucket is empty
-func IsEmpty(tx *Tx, bktName []byte) (bool, error) {
+// Empty returns true if the bucket is empty
+func Empty(tx *Tx, bktName []byte) (bool, error) {
 	b := tx.Bucket(bktName)
 	if b == nil {
 		return false, NewErrBucketNotExist(bktName)

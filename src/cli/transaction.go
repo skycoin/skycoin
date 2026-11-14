@@ -401,7 +401,7 @@ func signTxnCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if txn.IsFullySigned() {
+			if txn.FullySigned() {
 				return fmt.Errorf("Transaction already signed")
 			}
 

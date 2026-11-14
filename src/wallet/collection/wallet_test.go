@@ -244,13 +244,13 @@ func TestNewWallet(t *testing.T) {
 					return
 				}
 
-				// require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
+				// require.Equal(t, tc.opts.Encrypt, w.Encrypted())
 				// confirms the meta data
 				for k, v := range tc.expect.meta {
 					require.Equal(t, v, w.Meta[k])
 				}
 
-				if w.IsEncrypted() {
+				if w.Encrypted() {
 					// Confirms the seeds and entry secrets are all empty
 					require.Equal(t, "", w.Seed())
 					require.Equal(t, "", w.LastSeed())
@@ -327,7 +327,7 @@ func TestWalletLock(t *testing.T) {
 					return
 				}
 
-				require.True(t, w.IsEncrypted())
+				require.True(t, w.Encrypted())
 
 				// Checks if the entries are encrypted
 				entries, err := w.GetEntries()
@@ -481,7 +481,7 @@ func TestWalletUnlock(t *testing.T) {
 					return
 				}
 
-				require.False(t, wlt.IsEncrypted())
+				require.False(t, wlt.Encrypted())
 
 				es, err := wlt.GetEntries()
 				require.NoError(t, err)
@@ -528,7 +528,7 @@ func TestLockAndUnLock(t *testing.T) {
 			err = cw.Lock([]byte("pwd"))
 			require.NoError(t, err)
 
-			require.True(t, cw.IsEncrypted())
+			require.True(t, cw.Encrypted())
 
 			// Checks if the entries are encrypted
 			es, err := cw.GetEntries()

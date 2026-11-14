@@ -177,8 +177,8 @@ func (m Meta) SetDecrypted() {
 	delete(m, MetaSecrets)
 }
 
-// IsEncrypted checks whether the wallet is encrypted.
-func (m Meta) IsEncrypted() bool {
+// Encrypted checks whether the wallet is encrypted.
+func (m Meta) Encrypted() bool {
 	encStr, ok := m[MetaEncrypted]
 	if !ok {
 		return false
@@ -331,7 +331,7 @@ func (m Meta) SetTemp(temp bool) {
 	}
 }
 
-// IsTemp returns whether the wallet is a temporary wallet
-func (m Meta) IsTemp() bool {
+// Temp returns whether the wallet is a temporary wallet
+func (m Meta) Temp() bool {
 	return m[MetaTemp] == "true"
 }

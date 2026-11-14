@@ -239,7 +239,7 @@ func (s *Server) handleCreateListing(pk string, req protocol.Envelope) protocol.
 	}
 
 	// The chosen sell coin must be enabled at this market.
-	sellOK, err := s.db.IsSellCoinAvailable(sellCoin)
+	sellOK, err := s.db.SellCoinAvailable(sellCoin)
 	if err != nil {
 		return s.internal(req.ID, "create_listing.sellcoin", err)
 	}
@@ -253,7 +253,7 @@ func (s *Server) handleCreateListing(pk string, req protocol.Envelope) protocol.
 	if payCur == sellCoin {
 		return protocol.ErrorResponse(req.ID, protocol.CodeInvalidRequest, "sell coin and payment currency must differ")
 	}
-	payOK, err := s.db.IsPaymentAvailable(payCur)
+	payOK, err := s.db.PaymentAvailable(payCur)
 	if err != nil {
 		return s.internal(req.ID, "create_listing.currency", err)
 	}
@@ -263,7 +263,7 @@ func (s *Server) handleCreateListing(pk string, req protocol.Envelope) protocol.
 	// A fibercoin payment is a FIXED on-chain amount at 3-dp precision; an external
 	// coin uses 8-dp (and later a unique non-round amount). Normalize the price to
 	// whichever applies, then re-check positivity.
-	fiberPay, err := s.db.IsSellCoinAvailable(payCur)
+	fiberPay, err := s.db.SellCoinAvailable(payCur)
 	if err != nil {
 		return s.internal(req.ID, "create_listing.fiberpay", err)
 	}
@@ -359,7 +359,7 @@ func (s *Server) handleBuyProduct(pk string, req protocol.Envelope) protocol.Env
 		return protocol.ErrorResponse(req.ID, protocol.CodeInvalidRequest, "invalid buy payload")
 	}
 
-	banned, err := s.db.IsUserBanned(pk)
+	banned, err := s.db.UserBanned(pk)
 	if err != nil {
 		return s.internal(req.ID, "buy.ban_check", err)
 	}
@@ -416,7 +416,7 @@ func (s *Server) handleBuyProduct(pk string, req protocol.Envelope) protocol.Env
 	// 100 FIBER1, not 100.002). For an external explorer coin we allocate a unique
 	// non-round amount so payments to a shared address are individually
 	// identifiable. Either way we hold allocMu across the check and the insert.
-	fiberPay, err := s.db.IsSellCoinAvailable(product.PaymentCurrency)
+	fiberPay, err := s.db.SellCoinAvailable(product.PaymentCurrency)
 	if err != nil {
 		s.unfreeze(product.ID)
 		return s.internal(req.ID, "buy.fiberpay", err)

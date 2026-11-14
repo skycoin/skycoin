@@ -632,7 +632,7 @@ func (dm *Daemon) sendBlockCosigs(addr string, blocks []coin.SignedBlock) error 
 func (dm *Daemon) multiSignerPeers(skip string) []string {
 	var addrs []string
 	for _, c := range dm.connections.all() {
-		if c.Addr != skip && c.HasIntroduced() && c.ProtocolVersion >= multiSignerProtocolVersion {
+		if c.Addr != skip && c.Introduced() && c.ProtocolVersion >= multiSignerProtocolVersion {
 			addrs = append(addrs, c.Addr)
 		}
 	}

@@ -225,8 +225,8 @@ func TestHasRdpMemProtectEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		ff := FirmwareFeatures{FirmwareFeaturesRdpLevel: tt.rdpLevel}
-		if got := ff.HasRdpMemProtectEnabled(); got != tt.want {
-			t.Errorf("HasRdpMemProtectEnabled() with RDP level %d = %v, want %v", tt.rdpLevel, got, tt.want)
+		if got := ff.RdpMemProtectEnabled(); got != tt.want {
+			t.Errorf("RdpMemProtectEnabled() with RDP level %d = %v, want %v", tt.rdpLevel, got, tt.want)
 		}
 	}
 }

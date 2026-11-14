@@ -17,7 +17,7 @@ type BitEncodedFlags interface {
 	Unmarshal() error
 
 	// return tru if the RDP is enabled
-	HasRdpMemProtectEnabled() bool
+	RdpMemProtectEnabled() bool
 }
 
 // FirmwareFeatures handle the features in firmware as a BitEncodedFlags implementation
@@ -60,8 +60,8 @@ func (ff *FirmwareFeatures) Unmarshal() error {
 	return nil
 }
 
-// HasRdpMemProtectEnabled return true if rdp == true
-func (ff FirmwareFeatures) HasRdpMemProtectEnabled() bool {
+// RdpMemProtectEnabled return true if rdp == true
+func (ff FirmwareFeatures) RdpMemProtectEnabled() bool {
 	return ff.FirmwareFeaturesRdpLevel == 2
 }
 

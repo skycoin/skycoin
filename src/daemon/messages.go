@@ -393,7 +393,10 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyP
 	}
 
 	userAgentSerialized := encoder.SerializeString(userAgent)
-	verifyParamsSerialized := encoder.Serialize(verifyParams)
+	verifyParamsSerialized, err := encoder.Encode(verifyParams)
+	if err != nil {
+		return nil, err
+	}
 
 	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized)+len(genesisHash))
 

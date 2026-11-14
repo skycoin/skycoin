@@ -1140,3 +1140,17 @@ func TestTransactionSignedUnsigned(t *testing.T) {
 	require.True(t, txn.IsFullyUnsigned())
 	require.False(t, txn.hasNullSignature())
 }
+
+func TestTransactionInnerHashTooManyOutputs(t *testing.T) {
+	_, s := cipher.GenerateKeyPair()
+	txn := Transaction{
+		In:  []cipher.SHA256{{}},
+		Out: make([]TransactionOutput, math.MaxUint16+1),
+	}
+
+	require.Error(t, txn.SignInputs([]cipher.SecKey{s}))
+	require.Error(t, txn.UpdateHeader())
+
+	txn.Sigs = []cipher.Sig{{}}
+	require.Error(t, txn.verifyInputSignaturesPrelude(UxArray{{}}))
+}

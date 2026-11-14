@@ -195,12 +195,8 @@ func (bb BlockBody) Size() (uint32, error) {
 }
 
 // Bytes serialize block body, and return the byte value.
-func (bb *BlockBody) Bytes() []byte {
-	buf, err := encodeBlockBody(bb)
-	if err != nil {
-		log.Panicf("encodeBlockBody failed: %v", err)
-	}
-	return buf
+func (bb *BlockBody) Bytes() ([]byte, error) {
+	return encodeBlockBody(bb)
 }
 
 // CreateUnspents creates the expected outputs for a transaction.

@@ -231,17 +231,21 @@ func (txn *Transaction) verify(signed bool) error {
 }
 
 func (txn Transaction) verifyInputSignaturesPrelude(uxIn UxArray) error {
+	innerHash, err := txn.hashInner()
+	if err != nil {
+		return err
+	}
 	if len(txn.In) != len(uxIn) {
 		return errors.New("txn.In != uxIn")
 	}
 	if len(txn.In) != len(txn.Sigs) {
 		return errors.New("txn.In != txn.Sigs")
 	}
-	if txn.InnerHash != txn.HashInner() {
+	if txn.InnerHash != innerHash {
 		return errors.New("Invalid Tx Inner Hash")
 	}
-	for i := range txn.In {
-		if txn.In[i] != uxIn[i].Hash() {
+	for i, ux := range uxIn {
+		if txn.In[i] != ux.Hash() {
 			return errors.New("Ux hash mismatch")
 		}
 	}
@@ -368,7 +372,10 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) error {
 		return errors.New("Transaction has been signed")
 	}
 
-	innerHash := txn.HashInner()
+	innerHash, err := txn.hashInner()
+	if err != nil {
+		return err
+	}
 
 	sigs := make([]cipher.Sig, len(txn.In))
 	for i, k := range keys {
@@ -477,7 +484,11 @@ func (txn *Transaction) UpdateHeader() error {
 	if len(txn.PQ) != 0 {
 		txn.Type = TxnTypePQ
 	}
-	txn.InnerHash = txn.HashInner()
+	h, err := txn.hashInner()
+	if err != nil {
+		return err
+	}
+	txn.InnerHash = h
 	return nil
 }
 

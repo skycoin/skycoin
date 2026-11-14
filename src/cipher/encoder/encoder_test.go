@@ -323,12 +323,13 @@ func TestEncodeNestedSlice(t *testing.T) {
 		size += 4 + uint64(i*2) //nolint:gosec
 	}
 	c := Container{elems}
-	n := datasizeWrite(reflect.ValueOf(c))
+	n, err := datasizeWrite(reflect.ValueOf(c))
+	require.NoError(t, err)
 	require.False(t, n != size+4, "Wrong data size")
 
 	b := Serialize(c)
 	d := Container{}
-	n, err := DeserializeRaw(b, &d)
+	n, err = DeserializeRaw(b, &d)
 	require.NoError(t, err)
 	require.Equal(t, uint64(len(b)), n)
 
@@ -406,7 +407,7 @@ func TestMultiArrays(t *testing.T) {
 
 func TestDeserializeAtomic(t *testing.T) {
 	var sp uint64 = 0x000C8A9E1809F720
-	b := SerializeAtomic(sp)
+	b := mustSerializeAtomic(t, sp)
 
 	var i uint64
 	n, err := DeserializeAtomic(b, &i)
@@ -422,7 +423,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, ErrBufferUnderflow, err)
 
 	b := false
-	d := SerializeAtomic(b)
+	d := mustSerializeAtomic(t, b)
 	var bb bool
 	n, err = DeserializeAtomic(d, &bb)
 	require.NoError(t, err)
@@ -431,14 +432,14 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 
 	b = true
 	bb = false
-	d = SerializeAtomic(b)
+	d = mustSerializeAtomic(t, b)
 	n, err = DeserializeAtomic(d, &bb)
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), n)
 	require.Equal(t, b, bb)
 
 	var byt byte = 0xE4
-	d = SerializeAtomic(byt)
+	d = mustSerializeAtomic(t, byt)
 	var bytb byte
 	n, err = DeserializeAtomic(d, &bytb)
 	require.NoError(t, err)
@@ -446,7 +447,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, byt, bytb)
 
 	var u8 uint8 = 0xF7
-	d = SerializeAtomic(u8)
+	d = mustSerializeAtomic(t, u8)
 	var u8b uint8
 	n, err = DeserializeAtomic(d, &u8b)
 	require.NoError(t, err)
@@ -454,7 +455,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, u8, u8b)
 
 	var u16 uint16 = 0xF720
-	d = SerializeAtomic(u16)
+	d = mustSerializeAtomic(t, u16)
 	var u16b uint16
 	n, err = DeserializeAtomic(d, &u16b)
 	require.NoError(t, err)
@@ -462,7 +463,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, u16, u16b)
 
 	var u32 uint32 = 0x1809F720
-	d = SerializeAtomic(u32)
+	d = mustSerializeAtomic(t, u32)
 	var u32b uint32
 	n, err = DeserializeAtomic(d, &u32b)
 	require.NoError(t, err)
@@ -470,7 +471,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, u32, u32b)
 
 	var u64 uint64 = 0x000C8A9E1809F720
-	d = SerializeAtomic(u64)
+	d = mustSerializeAtomic(t, u64)
 	var u64b uint64
 	n, err = DeserializeAtomic(d, &u64b)
 	require.NoError(t, err)
@@ -478,7 +479,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, u64, u64b)
 
 	var i8 int8 = 0x69
-	d = SerializeAtomic(i8)
+	d = mustSerializeAtomic(t, i8)
 	var i8b int8
 	n, err = DeserializeAtomic(d, &i8b)
 	require.NoError(t, err)
@@ -486,7 +487,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, i8, i8b)
 
 	var i16 int16 = 0x6920
-	d = SerializeAtomic(i16)
+	d = mustSerializeAtomic(t, i16)
 	var i16b int16
 	n, err = DeserializeAtomic(d, &i16b)
 	require.NoError(t, err)
@@ -494,7 +495,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, i16, i16b)
 
 	var i32 int32 = 0x1809F720
-	d = SerializeAtomic(i32)
+	d = mustSerializeAtomic(t, i32)
 	var i32b int32
 	n, err = DeserializeAtomic(d, &i32b)
 	require.NoError(t, err)
@@ -502,7 +503,7 @@ func TestSerializeDeserializeAtomic(t *testing.T) {
 	require.Equal(t, i32, i32b)
 
 	var i64 int64 = 0x000C8A9E1809F720
-	d = SerializeAtomic(i64)
+	d = mustSerializeAtomic(t, i64)
 	var i64b int64
 	n, err = DeserializeAtomic(d, &i64b)
 	require.NoError(t, err)
@@ -514,19 +515,21 @@ type TestStruct5a struct {
 	Test uint64
 }
 
-func TestSerializeAtomicPanics(t *testing.T) {
-	var x float32
-	require.PanicsWithValue(t, "SerializeAtomic unhandled type", func() {
-		SerializeAtomic(x)
-	})
+func mustSerializeAtomic(t *testing.T, data interface{}) []byte {
+	t.Helper()
+	b, err := SerializeAtomic(data)
+	require.NoError(t, err)
+	return b
+}
 
+func TestSerializeAtomicUnhandled(t *testing.T) {
+	var x float32
 	var tst TestStruct5a
-	require.PanicsWithValue(t, "SerializeAtomic unhandled type", func() {
-		SerializeAtomic(&tst)
-	})
-	require.PanicsWithValue(t, "SerializeAtomic unhandled type", func() {
-		SerializeAtomic(tst)
-	})
+	for _, v := range []interface{}{x, &tst, tst} {
+		b, err := SerializeAtomic(v)
+		require.EqualError(t, err, "SerializeAtomic unhandled type")
+		require.Nil(t, b)
+	}
 }
 
 func TestDeserializeAtomicUnhandled(t *testing.T) {
@@ -887,10 +890,34 @@ func TestOmitEmptyFinalFieldOnly(t *testing.T) {
 		C string
 	}
 
+	var b bad
+	_, err := Encode(b)
+	require.Equal(t, ErrInvalidOmitEmpty, err)
+	_, err = EncodeSize(b)
+	require.Equal(t, ErrInvalidOmitEmpty, err)
+
 	require.Panics(t, func() {
-		var b bad
 		Serialize(b)
 	})
+}
+
+func TestEncodeUnhandledType(t *testing.T) {
+	type withFunc struct {
+		F func()
+	}
+
+	_, err := Encode(withFunc{})
+	require.EqualError(t, err, "invalid type func()")
+	_, err = EncodeSize(withFunc{})
+	require.EqualError(t, err, "invalid type func()")
+
+	var e Encoder
+	require.EqualError(t, e.value(reflect.ValueOf(withFunc{})), "Encoding unhandled type func()")
+
+	_, err = Encode(nil)
+	require.Equal(t, ErrInvalidValue, err)
+	_, err = Encode([]interface{}{nil})
+	require.Equal(t, ErrInvalidValue, err)
 }
 
 func TestTagOmitempty(t *testing.T) {
@@ -1138,7 +1165,8 @@ func TestRandomGarbage(t *testing.T) {
 		Q: map[string]string{"foo": "bar", "cat": "dog"},
 	}
 
-	size := datasizeWrite(reflect.ValueOf(x))
+	size, err := datasizeWrite(reflect.ValueOf(x))
+	require.NoError(t, err)
 
 	var y hasEveryType
 	for j := 0; j < 100; j++ {

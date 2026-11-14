@@ -55,6 +55,8 @@ var (
 	ErrMapDuplicateKeys = errors.New("Duplicate keys encountered while decoding a map")
 	// ErrInvalidBool is returned if the decoder encounters a value other than 0 or 1 for a bool type field
 	ErrInvalidBool = errors.New("Invalid value for bool type")
+	// ErrInvalidValue is returned when encoding a nil value
+	ErrInvalidValue = errors.New("cannot encode a nil value")
 )
 
 // SerializeUint32 serializes a uint32
@@ -73,8 +75,8 @@ func DeserializeUint32(buf []byte) (uint32, uint64, error) {
 }
 
 // SerializeAtomic encodes an integer or boolean contained in `data` to bytes.
-// Panics if `data` is not an integer or boolean type.
-func SerializeAtomic(data interface{}) []byte {
+// Returns an error if `data` is not an integer or boolean type.
+func SerializeAtomic(data interface{}) ([]byte, error) {
 	var b [8]byte
 
 	switch v := data.(type) {
@@ -84,34 +86,33 @@ func SerializeAtomic(data interface{}) []byte {
 		} else {
 			b[0] = 0
 		}
-		return b[:1]
+		return b[:1], nil
 	case int8:
 		b[0] = byte(v)
-		return b[:1]
+		return b[:1], nil
 	case uint8:
 		b[0] = v
-		return b[:1]
+		return b[:1], nil
 	case int16:
 		lePutUint16(b[:2], uint16(v)) //nolint:gosec
-		return b[:2]
+		return b[:2], nil
 	case uint16:
 		lePutUint16(b[:2], v)
-		return b[:2]
+		return b[:2], nil
 	case int32:
 		lePutUint32(b[:4], uint32(v)) //nolint:gosec
-		return b[:4]
+		return b[:4], nil
 	case uint32:
 		lePutUint32(b[:4], v)
-		return b[:4]
+		return b[:4], nil
 	case int64:
 		lePutUint64(b[:8], uint64(v)) //nolint:gosec
-		return b[:8]
+		return b[:8], nil
 	case uint64:
 		lePutUint64(b[:8], v)
-		return b[:8]
+		return b[:8], nil
 	default:
-		log.Panic("SerializeAtomic unhandled type")
-		return nil
+		return nil, errors.New("SerializeAtomic unhandled type")
 	}
 }
 
@@ -185,13 +186,11 @@ func DeserializeAtomic(in []byte, data interface{}) (uint64, error) {
 
 // SerializeString serializes a string to []byte
 func SerializeString(s string) []byte {
-	v := reflect.ValueOf(s)
-	size := datasizeWrite(v)
-	buf := make([]byte, size)
+	buf := make([]byte, 4+len(s))
 	e := &Encoder{
 		Buffer: buf,
 	}
-	e.value(v)
+	e.ByteSlice([]byte(s))
 	return buf
 }
 
@@ -329,25 +328,55 @@ func DeserializeRawToValueNoCopy(in []byte, v reflect.Value) (uint64, error) {
 	return uint64(len(in) - len(d1.Buffer)), nil //nolint:gosec
 }
 
-// Serialize returns serialized basic type-based `data`
-// parameter. Encoding is reflect-based. Panics if `data` is not serializable.
-func Serialize(data interface{}) []byte {
+// Encode returns serialized basic type-based `data` parameter.
+// Encoding is reflect-based. Returns an error if `data` is not serializable.
+func Encode(data interface{}) ([]byte, error) {
 	v := reflect.Indirect(reflect.ValueOf(data))
-	size := datasizeWrite(v)
+	if !v.IsValid() {
+		return nil, ErrInvalidValue
+	}
+	size, err := datasizeWrite(v)
+	if err != nil {
+		return nil, err
+	}
 	buf := make([]byte, size)
 	e := &Encoder{
 		Buffer: buf,
 	}
-	e.value(v)
-	return buf
+	if err := e.value(v); err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
-// Size returns how many bytes would it take to encode the
-// value v, which must be a fixed-size value (struct) or a
-// slice of fixed-size values, or a pointer to such data.
-// Reflect-based encoding is used.
+// Serialize is like Encode but panics if `data` is not serializable.
+// Use it only for types known to be serializable.
+func Serialize(data interface{}) []byte {
+	b, err := Encode(data)
+	if err != nil {
+		log.Panic(err)
+	}
+	return b
+}
+
+// EncodeSize returns how many bytes it would take to encode the value v.
+// Returns an error if v is not serializable.
+func EncodeSize(v interface{}) (uint64, error) {
+	rv := reflect.Indirect(reflect.ValueOf(v))
+	if !rv.IsValid() {
+		return 0, ErrInvalidValue
+	}
+	return datasizeWrite(rv)
+}
+
+// Size is like EncodeSize but panics if v is not serializable.
+// Use it only for types known to be serializable.
 func Size(v interface{}) uint64 {
-	return datasizeWrite(reflect.Indirect(reflect.ValueOf(v)))
+	n, err := EncodeSize(v)
+	if err != nil {
+		log.Panic(err)
+	}
+	return n
 }
 
 // isEmpty returns true if a value is "empty".
@@ -371,10 +400,13 @@ func isEmpty(v reflect.Value) bool {
 // For compound structures, it sums the sizes of the elements. Thus, for instance, for a slice
 // it returns the length of the slice times the element size and does not count the memory
 // occupied by the header.
-func datasizeWrite(v reflect.Value) uint64 {
+func datasizeWrite(v reflect.Value) (uint64, error) {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Interface:
+		if v.IsNil() {
+			return 0, ErrInvalidValue
+		}
 		return datasizeWrite(v.Elem())
 
 	case reflect.Array:
@@ -383,21 +415,23 @@ func datasizeWrite(v reflect.Value) uint64 {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8, reflect.Int8:
-			return uint64(v.Len()) //nolint:gosec
+			return uint64(v.Len()), nil //nolint:gosec
 		case reflect.Uint16, reflect.Int16:
-			return uint64(v.Len()) * 2 //nolint:gosec
+			return uint64(v.Len()) * 2, nil //nolint:gosec
 		case reflect.Uint32, reflect.Int32, reflect.Float32:
-			return uint64(v.Len()) * 4 //nolint:gosec
+			return uint64(v.Len()) * 4, nil //nolint:gosec
 		case reflect.Uint64, reflect.Int64, reflect.Float64:
-			return uint64(v.Len()) * 8 //nolint:gosec
+			return uint64(v.Len()) * 8, nil //nolint:gosec
 		default:
 			size := uint64(0)
 			for i := 0; i < v.Len(); i++ {
-				elem := v.Index(i)
-				s := datasizeWrite(elem)
+				s, err := datasizeWrite(v.Index(i))
+				if err != nil {
+					return 0, err
+				}
 				size += s
 			}
-			return size
+			return size, nil
 		}
 
 	case reflect.Slice:
@@ -405,34 +439,41 @@ func datasizeWrite(v reflect.Value) uint64 {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8, reflect.Int8:
-			return 4 + uint64(v.Len()) //nolint:gosec
+			return 4 + uint64(v.Len()), nil //nolint:gosec
 		case reflect.Uint16, reflect.Int16:
-			return 4 + uint64(v.Len())*2 //nolint:gosec
+			return 4 + uint64(v.Len())*2, nil //nolint:gosec
 		case reflect.Uint32, reflect.Int32, reflect.Float32:
-			return 4 + uint64(v.Len())*4 //nolint:gosec
+			return 4 + uint64(v.Len())*4, nil //nolint:gosec
 		case reflect.Uint64, reflect.Int64, reflect.Float64:
-			return 4 + uint64(v.Len())*8 //nolint:gosec
+			return 4 + uint64(v.Len())*8, nil //nolint:gosec
 		default:
 			size := uint64(0)
 			for i := 0; i < v.Len(); i++ {
-				elem := v.Index(i)
-				s := datasizeWrite(elem)
+				s, err := datasizeWrite(v.Index(i))
+				if err != nil {
+					return 0, err
+				}
 				size += s
 			}
-			return 4 + size
+			return 4 + size, nil
 		}
 
 	case reflect.Map:
 		// length prefix
 		size := uint64(4)
 		for _, key := range v.MapKeys() {
-			s := datasizeWrite(key)
+			s, err := datasizeWrite(key)
+			if err != nil {
+				return 0, err
+			}
 			size += s
-			elem := v.MapIndex(key)
-			s = datasizeWrite(elem)
+			s, err = datasizeWrite(v.MapIndex(key))
+			if err != nil {
+				return 0, err
+			}
 			size += s
 		}
-		return size
+		return size, nil
 
 	case reflect.Struct:
 		sum := uint64(0)
@@ -448,7 +489,7 @@ func datasizeWrite(v reflect.Value) uint64 {
 			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
-				log.Panic(ErrInvalidOmitEmpty)
+				return 0, ErrInvalidOmitEmpty
 			}
 
 			if len(tag) > 0 && tag[0] == '-' {
@@ -457,26 +498,28 @@ func datasizeWrite(v reflect.Value) uint64 {
 
 			fv := v.Field(i)
 			if !omitempty || !isEmpty(fv) {
-				s := datasizeWrite(fv)
+				s, err := datasizeWrite(fv)
+				if err != nil {
+					return 0, err
+				}
 				sum += s
 			}
 		}
-		return sum
+		return sum, nil
 
 	case reflect.Bool:
-		return 1
+		return 1, nil
 
 	case reflect.String:
-		return 4 + uint64(v.Len()) //nolint:gosec
+		return 4 + uint64(v.Len()), nil //nolint:gosec
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Float32, reflect.Float64:
-		return uint64(t.Size())
+		return uint64(t.Size()), nil
 
 	default:
-		log.Panicf("invalid type %s", t.String())
-		return 0
+		return 0, fmt.Errorf("invalid type %s", t.String())
 	}
 }
 
@@ -960,10 +1003,13 @@ func (d *Decoder) value(v reflect.Value, maxlen int) error {
 	return nil
 }
 
-func (e *Encoder) value(v reflect.Value) {
+func (e *Encoder) value(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Interface:
-		e.value(v.Elem())
+		if v.IsNil() {
+			return ErrInvalidValue
+		}
+		return e.value(v.Elem())
 
 	case reflect.Array:
 		// Arrays are a fixed size, so the length is not written
@@ -975,7 +1021,9 @@ func (e *Encoder) value(v reflect.Value) {
 			e.Buffer = e.Buffer[v.Len():]
 		default:
 			for i := 0; i < v.Len(); i++ {
-				e.value(v.Index(i))
+				if err := e.value(v.Index(i)); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -988,15 +1036,21 @@ func (e *Encoder) value(v reflect.Value) {
 		default:
 			e.Uint32(uint32(v.Len())) //nolint:gosec
 			for i := 0; i < v.Len(); i++ {
-				e.value(v.Index(i))
+				if err := e.value(v.Index(i)); err != nil {
+					return err
+				}
 			}
 		}
 
 	case reflect.Map:
 		e.Uint32(uint32(v.Len())) //nolint:gosec
 		for _, key := range v.MapKeys() {
-			e.value(key)
-			e.value(v.MapIndex(key))
+			if err := e.value(key); err != nil {
+				return err
+			}
+			if err := e.value(v.MapIndex(key)); err != nil {
+				return err
+			}
 		}
 
 	case reflect.Struct:
@@ -1014,7 +1068,7 @@ func (e *Encoder) value(v reflect.Value) {
 			omitempty := TagOmitempty(tag)
 
 			if omitempty && i != nFields-1 {
-				log.Panic(ErrInvalidOmitEmpty)
+				return ErrInvalidOmitEmpty
 			}
 
 			if len(tag) > 0 && tag[0] == '-' {
@@ -1023,7 +1077,9 @@ func (e *Encoder) value(v reflect.Value) {
 
 			fv := v.Field(i)
 			if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
-				e.value(fv)
+				if err := e.value(fv); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1057,6 +1113,8 @@ func (e *Encoder) value(v reflect.Value) {
 		e.Uint64(math.Float64bits(v.Float()))
 
 	default:
-		log.Panicf("Encoding unhandled type %s", v.Type().Name())
+		return fmt.Errorf("Encoding unhandled type %s", v.Type().String())
 	}
+
+	return nil
 }

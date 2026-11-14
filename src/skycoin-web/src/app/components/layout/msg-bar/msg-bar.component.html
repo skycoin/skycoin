@@ -1,5 +1,5 @@
 @if (visible) {
-  <div class="main-container" [ngClass]="{ 'fix-small-screen-position': !UiIsShowingModalWindow }">
+  <div #bar popover="manual" class="main-container" [ngClass]="{ 'fix-small-screen-position': !UiIsShowingModalWindow }">
     <div [class]="'internal-container ' + (config.color ? config.color : 'red-background')">
       @if (config.icon) {
         <div class="icon-container"><mat-icon>{{ config.icon }}</mat-icon></div>

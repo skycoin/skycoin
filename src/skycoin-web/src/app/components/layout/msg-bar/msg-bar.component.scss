@@ -5,6 +5,14 @@
   bottom: 0px;
   width: 100%;
   z-index: 1000000;
+  inset: auto 0 0 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  color: inherit;
+  background: transparent;
   display: flex;
   flex-direction: row;
   justify-content: center;

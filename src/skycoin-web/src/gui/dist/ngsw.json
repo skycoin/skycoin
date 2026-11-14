@@ -11,18 +11,18 @@
         "ignoreVary": true
       },
       "urls": [
-        "/angular/chunk-B_d6r9qD.js",
         "/angular/chunk-Bf4uwvS2.js",
         "/angular/chunk-CiEGkYHw.js",
         "/angular/chunk-CtEDDUrS.js",
         "/angular/chunk-D0cKLhGT.js",
+        "/angular/chunk-DKlkcjDE.js",
         "/angular/favicon.ico",
         "/angular/index.html",
-        "/angular/main-3PLCRGR7.js",
+        "/angular/main-ESDWHYJH.js",
         "/angular/manifest.webmanifest",
         "/angular/polyfills-MLCYDCP3.js",
         "/angular/scripts-LEJVCTYY.js",
-        "/angular/styles-AVBDVB4I.css"
+        "/angular/styles-C6CLLNUE.css"
       ],
       "patterns": []
     },
@@ -230,14 +230,14 @@
     "/angular/assets/skycoin-wallet/logo-splash.png": "6504b2e6297bce2cd9979f853b06a2f04ee264f3",
     "/angular/assets/skycoin-wallet/logo-white.png": "dc2ab41d9120f46de3463790287088188f0dfb50",
     "/angular/assets/skycoin-wallet/spinner.png": "aeb7af051425aba2367b2f3222affece2031c3ac",
-    "/angular/chunk-B_d6r9qD.js": "103ecd28a326684da186fa95ce73ed78e7476793",
     "/angular/chunk-Bf4uwvS2.js": "c2377a1717efb85665cf5024fbee937fe63f180f",
     "/angular/chunk-CiEGkYHw.js": "25b6b5e58884460d340ddfb5f9b7d05de901fe67",
     "/angular/chunk-CtEDDUrS.js": "f06e05f3273589508209b960b5916696e0b9aac6",
     "/angular/chunk-D0cKLhGT.js": "564bb1e1a07ef83ea4416a32a4491cf3a225110f",
+    "/angular/chunk-DKlkcjDE.js": "e549ed68091ba18dff9350c70cb08e03cf04decc",
     "/angular/favicon.ico": "25579a8f5d48320216a8fceb497ce1829650edf5",
-    "/angular/index.html": "f7cedbe0226bbe702e629f0ca55e254b3586d2c9",
-    "/angular/main-3PLCRGR7.js": "8cf74b46b39d50cae139488d0fcb36228cebed2e",
+    "/angular/index.html": "fbd523cbe44e24ca8113e8159925221c28f9b32d",
+    "/angular/main-ESDWHYJH.js": "9985e9523beedc555e6ad8041dacf329ec5937fa",
     "/angular/manifest.webmanifest": "b7dd4150bcb7d07266d96bf93bc8608bfa7da755",
     "/angular/media/MaterialIcons-Regular-3OCSKOJA.woff": "c6c953c2ccb2ca9abb21db8dbf473b5a435f0082",
     "/angular/media/MaterialIcons-Regular-DFX2JKJN.ttf": "fc05de31234e0090f7ddc28ce1b23af4026cb1da",
@@ -275,7 +275,7 @@
     "/angular/media/unlock-grey-IQ4WNHIS.png": "d4483fa1d9b81ca67e33e0415c37ab505498cbc1",
     "/angular/polyfills-MLCYDCP3.js": "ace41b92ad605c7018c56db5ca82786eeec21b12",
     "/angular/scripts-LEJVCTYY.js": "4bf89c7615dd722ccaa0a896e3c0bc171b1a584a",
-    "/angular/styles-AVBDVB4I.css": "0bbcb91acc48f92b3734a12bce9fb451468874dc"
+    "/angular/styles-C6CLLNUE.css": "1af9743d7525f380655e30904566b1ee89dd9a3a"
   },
   "navigationUrls": [
     {

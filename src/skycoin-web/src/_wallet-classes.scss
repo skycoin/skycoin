@@ -58,6 +58,13 @@
       > :first-child {
         width: 100%;
       }
+
+      // The percentage max-heights above resolve against an auto height, so
+      // only a viewport cap makes a tall dialog scroll in a short window.
+      .mat-mdc-dialog-surface {
+        max-height: calc(100vh - 40px);
+        max-height: calc(100dvh - 40px);
+      }
     }
   }
 

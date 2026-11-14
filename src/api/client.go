@@ -836,6 +836,7 @@ type Receiver struct {
 // WalletCreateTransactionRequest is sent to /api/v1/wallet/transaction
 type WalletCreateTransactionRequest struct {
 	Unsigned bool   `json:"unsigned"`
+	Split    bool   `json:"split"`
 	WalletID string `json:"wallet_id"`
 	Password string `json:"password"`
 	CreateTransactionRequest

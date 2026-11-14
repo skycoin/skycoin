@@ -8,7 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/pqsig"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/transaction"
 )
 
@@ -210,18 +209,34 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 // WARNING: This method is not concurrent-safe if operating on the same wallet. Use Service.View or Service.ViewSecrets to lock the wallet, or use your own lock.
 func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
-	if err := p.Validate(); err != nil {
+	if err := checkCreateParams(w, p, auxs); err != nil {
 		return nil, nil, err
+	}
+	return transaction.Create(p, auxs, headTime)
+}
+
+// CreateTransactions is CreateTransaction, except that a send too large for one
+// transaction is split into several by transaction.CreateSplit.
+func CreateTransactions(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) ([]*coin.Transaction, [][]transaction.UxBalance, error) {
+	if err := checkCreateParams(w, p, auxs); err != nil {
+		return nil, nil, err
+	}
+	return transaction.CreateSplit(p, auxs, headTime)
+}
+
+func checkCreateParams(w Wallet, p transaction.Params, auxs coin.AddressUxOuts) error {
+	if err := p.Validate(); err != nil {
+		return err
 	}
 
 	// Check that auxs does not contain addresses that are not known to this wallet
 	for a := range auxs {
 		has, err := w.Contains(a)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 		if !has {
-			return nil, nil, fmt.Errorf("Address %s from auxs not found in wallet", a)
+			return fmt.Errorf("Address %s from auxs not found in wallet", a)
 		}
 	}
 
@@ -229,38 +244,7 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
 		err := errors.New("change address must not be nil")
 		logger.Critical().WithError(err).Error("CreateTransaction change address must not be nil for bip44 wallet")
-		return nil, nil, err
-	}
-
-	txn, uxb, err := transaction.Create(p, auxs, headTime)
-	if err != nil {
-		return nil, nil, err
-	}
-	if err := CheckSignedSize(txn, uxb, params.UserVerifyTxn.MaxTransactionSize); err != nil {
-		return nil, nil, err
-	}
-	return txn, uxb, nil
-}
-
-// CheckSignedSize fails early when the signed transaction would be over the size
-// limit. Each post-quantum input adds about 3.7 KB of witness once signed.
-func CheckSignedSize(txn *coin.Transaction, uxb []transaction.UxBalance, limit uint32) error {
-	var nPQ int
-	for _, u := range uxb {
-		if u.Address.Version == cipher.AddressVersionPQ {
-			nPQ++
-		}
-	}
-	if nPQ == 0 {
-		return nil
-	}
-	size, err := txn.Size()
-	if err != nil {
 		return err
-	}
-	total := uint64(size) + uint64(coin.PQWitnessSize(len(txn.In), nPQ)) //nolint:gosec // sizes are non-negative
-	if total > uint64(limit) {
-		return NewError(fmt.Errorf("the transaction needs %d post-quantum inputs and would be %d bytes signed, over the %d byte limit. Send a smaller amount, or first send coins between your own addresses to merge outputs", nPQ, total, limit))
 	}
 	return nil
 }
@@ -273,10 +257,33 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := signCreated(w, txn, uxb); err != nil {
+		return nil, nil, err
+	}
+	if err := verifyCreatedSignedInvariants(p, txn, uxb); err != nil {
+		return nil, nil, err
+	}
+	return txn, uxb, nil
+}
 
+// CreateTransactionsSigned is CreateTransactions with every transaction signed.
+// transaction.Create has checked each part against the outputs it pays.
+func CreateTransactionsSigned(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) ([]*coin.Transaction, [][]transaction.UxBalance, error) {
+	txns, uxbs, err := CreateTransactions(w, p, auxs, headTime)
+	if err != nil {
+		return nil, nil, err
+	}
+	for i := range txns {
+		if err := signCreated(w, txns[i], uxbs[i]); err != nil {
+			return nil, nil, err
+		}
+	}
+	return txns, uxbs, nil
+}
+
+func signCreated(w Wallet, txn *coin.Transaction, uxb []transaction.UxBalance) error {
 	logger.Infof("CreateTransactionSigned: signing %d inputs", len(uxb))
 
-	// Sign the transaction
 	entriesMap := make(map[cipher.Address]Entry)
 	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
@@ -287,23 +294,21 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 				// This should not occur because CreateTransaction should have checked it already
 				err := fmt.Errorf("Chosen spend address %s not found in wallet", s.Address)
 				logger.Critical().WithError(err).Error()
-				return nil, nil, err
+				return err
 			}
 			entriesMap[s.Address] = entry
 		}
 
 		if err := SignInput(txn, entry, i); err != nil {
 			logger.Critical().WithError(err).Errorf("CreateTransaction SignInput(%d) failed", i)
-			return nil, nil, err
+			return err
 		}
 	}
 
-	// Sanity check the signed transaction
-	if err := verifyCreatedSignedInvariants(p, txn, uxb); err != nil {
-		return nil, nil, err
+	if !txn.FullySigned() {
+		return errors.New("Transaction is not fully signed")
 	}
-
-	return txn, uxb, nil
+	return nil
 }
 
 func verifyCreatedSignedInvariants(p transaction.Params, txn *coin.Transaction, inputs []transaction.UxBalance) error {

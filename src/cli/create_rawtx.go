@@ -52,6 +52,9 @@ func createRawTxnCmd() *cobra.Command {
 
     The [to address] and [amount] arguments can be replaced with the --many/-m or the --csv option.
 
+    A send that needs more outputs than fit in one transaction is split into several,
+    printed one per line. They spend different outputs and can be broadcast together.
+
     Use caution when using the "-p" command. If you have command history enabled
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
@@ -64,7 +67,7 @@ func createRawTxnCmd() *cobra.Command {
 				return err
 			}
 
-			txn, err := createRawTxnCmdHandler(c, args)
+			txns, err := createRawTxnCmdHandler(c, args)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -74,20 +77,27 @@ func createRawTxnCmd() *cobra.Command {
 				return err
 			}
 
-			rawTxn, err := txn.SerializeHexWithPQ()
-			if err != nil {
-				return err
+			raws := make([]string, len(txns))
+			for i, txn := range txns {
+				if raws[i], err = txn.SerializeHexWithPQ(); err != nil {
+					return err
+				}
 			}
 
 			if jsonOutput {
-				return printJSON(struct {
-					RawTx string `json:"rawtx"`
-				}{
-					RawTx: rawTxn,
-				})
+				out := struct {
+					RawTx  string   `json:"rawtx"`
+					RawTxs []string `json:"rawtxs,omitempty"`
+				}{RawTx: raws[0]}
+				if len(raws) > 1 {
+					out.RawTxs = raws
+				}
+				return printJSON(out)
 			}
 
-			fmt.Println(rawTxn)
+			for _, raw := range raws {
+				fmt.Println(raw)
+			}
 
 			return nil
 		},
@@ -138,6 +148,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 			}
 			warnSpentAddresses(apiClient, os.Stderr, to)
 
+			req.Split = true
 			rsp, err := apiClient.WalletCreateTransaction(*req)
 			if err != nil {
 				return err
@@ -147,7 +158,12 @@ func createRawTxnV2Cmd() *cobra.Command {
 				return printJSON(rsp)
 			}
 
-			fmt.Println(rsp.EncodedTransaction)
+			if len(rsp.Transactions) == 0 {
+				fmt.Println(rsp.EncodedTransaction)
+			}
+			for _, part := range rsp.Transactions {
+				fmt.Println(part.EncodedTransaction)
+			}
 
 			return nil
 		},
@@ -595,7 +611,7 @@ func parseCreateRawTxnArgs(c *cobra.Command, args []string) (*createRawTxnArgs, 
 	}, nil
 }
 
-func createRawTxnCmdHandler(c *cobra.Command, args []string) (*coin.Transaction, error) {
+func createRawTxnCmdHandler(c *cobra.Command, args []string) ([]*coin.Transaction, error) {
 	parsedArgs, err := parseCreateRawTxnArgs(c, args)
 	if err != nil {
 		return nil, err
@@ -644,9 +660,10 @@ func validateSendAmounts(toAddrs []SendAmount) error {
 
 // PUBLIC
 
-// CreateRawTxnFromWallet creates a transaction from any address or combination of addresses in a wallet
+// CreateRawTxnFromWallet creates transactions from any address or combination of addresses in a wallet.
+// A send too large for one transaction is split into several, see CreateRawTxns.
 // An empty chgAddr sends the change to a new address added to the wallet file.
-func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) (*coin.Transaction, error) {
+func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) ([]*coin.Transaction, error) {
 	if chgAddr != "" {
 		if _, err := cipher.DecodeBase58Address(chgAddr); err != nil {
 			return nil, ErrAddress
@@ -701,8 +718,9 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 	return createRawTxnWithChange(c, wlt, walletFile, addrStrArray, chgAddr, toAddrs, password, distParams)
 }
 
-// CreateRawTxnFromAddress creates a transaction from a specific address in a wallet
-func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) (*coin.Transaction, error) {
+// CreateRawTxnFromAddress creates transactions from a specific address in a wallet.
+// A send too large for one transaction is split into several, see CreateRawTxns.
+func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader, distParams params.Distribution) ([]*coin.Transaction, error) {
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -771,9 +789,9 @@ func checkChangeAddress(wlt wallet.Wallet, chgAddr string) error {
 	return nil
 }
 
-// createRawTxnWithChange is CreateRawTxn that, given no change address, adds a new
+// createRawTxnWithChange is CreateRawTxns that, given no change address, adds a new
 // one to the wallet and saves the wallet file once the transaction is made.
-func createRawTxnWithChange(c GetOutputser, wlt wallet.Wallet, walletFile string, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) (*coin.Transaction, error) {
+func createRawTxnWithChange(c GetOutputser, wlt wallet.Wallet, walletFile string, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) ([]*coin.Transaction, error) {
 	added := false
 	if chgAddr == "" {
 		var err error
@@ -782,14 +800,14 @@ func createRawTxnWithChange(c GetOutputser, wlt wallet.Wallet, walletFile string
 		}
 	}
 
-	txn, err := CreateRawTxn(c, wlt, inAddrs, chgAddr, toAddrs, password, distParams)
+	txns, err := CreateRawTxns(c, wlt, inAddrs, chgAddr, toAddrs, password, distParams)
 	if err != nil || !added {
-		return txn, err
+		return txns, err
 	}
 	if err := saveWalletFile(wlt, walletFile); err != nil {
 		return nil, err
 	}
-	return txn, nil
+	return txns, nil
 }
 
 // saveWalletFile writes wlt back to the file it was loaded from.
@@ -856,6 +874,21 @@ type GetOutputser interface {
 
 // CreateRawTxn creates a transaction from a set of addresses contained in a loaded wallet.Wallet
 func CreateRawTxn(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) (*coin.Transaction, error) {
+	txns, err := createRawTxns(c, wlt, inAddrs, chgAddr, toAddrs, password, distParams, false)
+	if err != nil {
+		return nil, err
+	}
+	return txns[0], nil
+}
+
+// CreateRawTxns is CreateRawTxn, except that a send too large for one transaction
+// is split into several. The parts spend disjoint confirmed outputs, so they can
+// be broadcast together without waiting for one another.
+func CreateRawTxns(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) ([]*coin.Transaction, error) {
+	return createRawTxns(c, wlt, inAddrs, chgAddr, toAddrs, password, distParams, true)
+}
+
+func createRawTxns(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution, split bool) ([]*coin.Transaction, error) {
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
@@ -871,19 +904,17 @@ func CreateRawTxn(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
+	var txns []*coin.Transaction
 	txn, err := createRawTxn(outputs, wlt, chgAddr, toAddrs, password)
-	if err != nil {
-		return nil, err
-	}
-
-	// filter out unspents which are not used in transaction
-	var inUxsFiltered coin.UxArray
-	for _, h := range txn.In {
-		for _, u := range inUxs {
-			if h == u.Hash() {
-				inUxsFiltered = append(inUxsFiltered, u)
-			}
+	switch {
+	case err == nil:
+		txns = []*coin.Transaction{txn}
+	case split && errors.As(err, new(transaction.TooLargeError)):
+		if txns, err = splitRawTxn(outputs, wlt, chgAddr, toAddrs, password); err != nil {
+			return nil, err
 		}
+	default:
+		return nil, err
 	}
 
 	head, err := outputs.Head.ToCoinBlockHeader()
@@ -891,17 +922,31 @@ func CreateRawTxn(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	if err := transaction.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, distParams, params.UserVerifyTxn); err != nil {
-		return nil, err
+	byHash := make(map[cipher.SHA256]coin.UxOut, len(inUxs))
+	for _, u := range inUxs {
+		byHash[u.Hash()] = u
 	}
-	if err := transaction.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered, transaction.TxnSigned); err != nil {
-		return nil, err
-	}
-	if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
-		return nil, err
+	for _, txn := range txns {
+		// filter out unspents which are not used in transaction
+		var inUxsFiltered coin.UxArray
+		for _, h := range txn.In {
+			if u, ok := byHash[h]; ok {
+				inUxsFiltered = append(inUxsFiltered, u)
+			}
+		}
+
+		if err := transaction.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, distParams, params.UserVerifyTxn); err != nil {
+			return nil, err
+		}
+		if err := transaction.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered, transaction.TxnSigned); err != nil {
+			return nil, err
+		}
+		if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
+			return nil, err
+		}
 	}
 
-	return txn, nil
+	return txns, nil
 }
 
 func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
@@ -920,6 +965,78 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chg
 		return nil, err
 	}
 
+	return buildRawTxn(spendOutputs, wlt, chgAddr, toAddrs, password)
+}
+
+// splitRawTxn pays toAddrs with as many transactions as transaction.Split needs.
+func splitRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) ([]*coin.Transaction, error) {
+	spendable, err := readable.OutputsToUxBalances(uxouts.SpendableOutputs())
+	if err != nil {
+		return nil, err
+	}
+
+	to := make([]coin.TransactionOutput, len(toAddrs))
+	for i, s := range toAddrs {
+		if to[i], err = makeUtxoOutput(s.Addr, s.Coins, 0); err != nil {
+			return nil, err
+		}
+	}
+
+	// Unlock the wallet once for every part.
+	var txns []*coin.Transaction
+	run := func(w wallet.Wallet) error {
+		var err error
+		txns, _, err = transaction.Split(to, spendable, func(part []coin.TransactionOutput, chunk []transaction.UxBalance) (*coin.Transaction, []transaction.UxBalance, error) {
+			amounts := make([]SendAmount, len(part))
+			var coins uint64
+			for i, o := range part {
+				amounts[i] = SendAmount{Addr: o.Address.String(), Coins: o.Coins}
+				coins += o.Coins
+			}
+
+			spends, err := transaction.ChooseSpendsMinimizeUxOuts(chunk, coins, 0)
+			if err != nil {
+				return nil, nil, err
+			}
+			// With no change the part would give away all its hours. Spend one more
+			// output, the smallest left in the chunk, to make change.
+			var spent uint64
+			for _, s := range spends {
+				spent += s.Coins
+			}
+			if spent == coins && len(spends) < len(chunk) {
+				used := make(map[cipher.SHA256]struct{}, len(spends))
+				for _, s := range spends {
+					used[s.Hash] = struct{}{}
+				}
+				for i := len(chunk) - 1; i >= 0; i-- {
+					if _, ok := used[chunk[i].Hash]; !ok {
+						spends = append(spends, chunk[i])
+						break
+					}
+				}
+			}
+
+			txn, err := buildRawTxn(spends, w, chgAddr, amounts, nil)
+			if err != nil {
+				return nil, nil, err
+			}
+			return txn, spends, nil
+		})
+		return err
+	}
+
+	if wlt.Encrypted() {
+		err = wallet.GuardView(wlt, password, run)
+	} else {
+		err = run(wlt)
+	}
+	return txns, err
+}
+
+// buildRawTxn makes and signs a transaction that spends spendOutputs to pay
+// toAddrs, with the change to chgAddr.
+func buildRawTxn(spendOutputs []transaction.UxBalance, wlt wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	txOuts, err := makeChangeOut(spendOutputs, chgAddr, toAddrs)
 	if err != nil {
 		return nil, err
@@ -934,26 +1051,19 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chg
 		return NewTransaction(spendOutputs, entries, txOuts)
 	}
 
-	makeTxn := func() (*coin.Transaction, error) {
+	if !wlt.Encrypted() {
 		return f(wlt)
 	}
 
-	if wlt.Encrypted() {
-		makeTxn = func() (*coin.Transaction, error) {
-			var tx *coin.Transaction
-			if err := wallet.GuardView(wlt, password, func(w wallet.Wallet) error {
-				var err error
-				tx, err = f(w)
-				return err
-			}); err != nil {
-				return nil, err
-			}
-
-			return tx, nil
-		}
+	var tx *coin.Transaction
+	if err := wallet.GuardView(wlt, password, func(w wallet.Wallet) error {
+		var err error
+		tx, err = f(w)
+		return err
+	}); err != nil {
+		return nil, err
 	}
-
-	return makeTxn()
+	return tx, nil
 }
 
 func chooseSpends(uxouts *readable.UnspentOutputsSummary, coins uint64) ([]transaction.UxBalance, error) {
@@ -1105,7 +1215,7 @@ func NewTransaction(utxos []transaction.UxBalance, entries []wallet.Entry, outs 
 	}
 
 	txn.Sigs = make([]cipher.Sig, len(txn.In))
-	if err := wallet.CheckSignedSize(&txn, utxos, params.UserVerifyTxn.MaxTransactionSize); err != nil {
+	if err := transaction.CheckSize(&txn, utxos); err != nil {
 		return nil, err
 	}
 

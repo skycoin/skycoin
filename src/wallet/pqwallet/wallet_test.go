@@ -249,8 +249,18 @@ func TestCreateTransactionTooLarge(t *testing.T) {
 
 	// Twelve 3.7 KB witnesses do not fit the default 32 KiB limit
 	_, _, err = wallet.CreateTransactionSigned(w, spend(11e6), coin.NewAddressUxOuts(uxs), 200)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "post-quantum inputs")
+	require.ErrorAs(t, err, new(transaction.TooLargeError))
+
+	// Split, every signed part fits.
+	txns, _, err := wallet.CreateTransactionsSigned(w, spend(11e6), coin.NewAddressUxOuts(uxs), 200)
+	require.NoError(t, err)
+	require.Greater(t, len(txns), 1)
+	for _, txn := range txns {
+		require.True(t, txn.FullySigned())
+		size, err := txn.SizeWithPQ()
+		require.NoError(t, err)
+		require.LessOrEqual(t, size, params.UserVerifyTxn.MaxTransactionSize)
+	}
 
 	txn, _, err := wallet.CreateTransactionSigned(w, spend(3e6), coin.NewAddressUxOuts(uxs), 200)
 	require.NoError(t, err)

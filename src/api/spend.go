@@ -28,6 +28,10 @@ import (
 type CreateTransactionResponse struct {
 	Transaction        CreatedTransaction `json:"transaction"`
 	EncodedTransaction string             `json:"encoded_transaction"`
+	// Transactions is set when a request with split needed more than one
+	// transaction. It holds every part, the first one repeated above. The parts
+	// spend disjoint outputs, so inject them all, in any order.
+	Transactions []CreateTransactionResponse `json:"transactions,omitempty"`
 }
 
 // NewCreateTransactionResponse creates a CreateTransactionResponse
@@ -556,7 +560,9 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 
 // walletCreateTransactionRequest is sent to POST /api/v1/wallet/transaction
 type walletCreateTransactionRequest struct {
-	Unsigned bool   `json:"unsigned"`
+	Unsigned bool `json:"unsigned"`
+	// Split pays a send too large for one transaction with several.
+	Split    bool   `json:"split"`
 	WalletID string `json:"wallet_id"`
 	Password string `json:"password"`
 	createTransactionRequest
@@ -605,12 +611,22 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var txn *coin.Transaction
-		var inputs []visor.TransactionInput
-		if req.Unsigned {
-			txn, inputs, err = gateway.WalletCreateTransaction(req.WalletID, req.TransactionParams(), req.VisorParams())
-		} else {
-			txn, inputs, err = gateway.WalletCreateTransactionSigned(req.WalletID, []byte(req.Password), req.TransactionParams(), req.VisorParams())
+		var txns []*coin.Transaction
+		var inputs [][]visor.TransactionInput
+		switch {
+		case req.Split && req.Unsigned:
+			txns, inputs, err = gateway.WalletCreateTransactions(req.WalletID, req.TransactionParams(), req.VisorParams())
+		case req.Split:
+			txns, inputs, err = gateway.WalletCreateTransactionsSigned(req.WalletID, []byte(req.Password), req.TransactionParams(), req.VisorParams())
+		default:
+			var txn *coin.Transaction
+			var in []visor.TransactionInput
+			if req.Unsigned {
+				txn, in, err = gateway.WalletCreateTransaction(req.WalletID, req.TransactionParams(), req.VisorParams())
+			} else {
+				txn, in, err = gateway.WalletCreateTransactionSigned(req.WalletID, []byte(req.Password), req.TransactionParams(), req.VisorParams())
+			}
+			txns, inputs = []*coin.Transaction{txn}, [][]visor.TransactionInput{in}
 		}
 		if err != nil {
 			switch err.(type) {
@@ -639,11 +655,22 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txnResp, err := NewCreateTransactionResponse(txn, inputs)
+		txnResp, err := NewCreateTransactionResponse(txns[0], inputs[0])
 		if err != nil {
 			err = fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
+		}
+		if len(txns) > 1 {
+			for i := range txns {
+				part, err := NewCreateTransactionResponse(txns[i], inputs[i])
+				if err != nil {
+					err = fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
+					wh.Error500(w, err.Error())
+					return
+				}
+				txnResp.Transactions = append(txnResp.Transactions, *part)
+			}
 		}
 
 		wh.SendJSONOr500(logger, w, txnResp)

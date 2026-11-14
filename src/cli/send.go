@@ -3,6 +3,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -21,20 +22,18 @@ func sendCmd() *cobra.Command {
     If you are sending from a wallet without specifying an address,
     the transaction will use one or more of the addresses within the wallet.
 
+    A send that needs more outputs than fit in one transaction is split into several,
+    which are all broadcast and print one txid each.
+
     Use caution when using the “-p” command. If you have command history enabled
     your wallet encryption password can be recovered from the history log.
     If you do not include the “-p” option you will be prompted to enter your password
     after you enter your command.`,
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
-			rawTxn, err := createRawTxnCmdHandler(c, args)
+			txns, err := createRawTxnCmdHandler(c, args)
 			if err != nil {
 				printHelp(c)
-				return err
-			}
-
-			txid, err := apiClient.InjectTransaction(rawTxn)
-			if err != nil {
 				return err
 			}
 
@@ -42,15 +41,34 @@ func sendCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if jsonOutput {
-				return printJSON(struct {
-					Txid string `json:"txid"`
-				}{
-					Txid: txid,
-				})
+
+			// The parts spend different outputs, so none waits for another.
+			txids := make([]string, 0, len(txns))
+			for _, txn := range txns {
+				txid, err := apiClient.InjectTransaction(txn)
+				if err != nil {
+					if len(txids) > 0 {
+						return fmt.Errorf("sent %d of %d transactions (%s), then: %w", len(txids), len(txns), strings.Join(txids, ", "), err)
+					}
+					return err
+				}
+				txids = append(txids, txid)
 			}
 
-			fmt.Printf("txid:%s\n", txid)
+			if jsonOutput {
+				out := struct {
+					Txid  string   `json:"txid"`
+					Txids []string `json:"txids,omitempty"`
+				}{Txid: txids[0]}
+				if len(txids) > 1 {
+					out.Txids = txids
+				}
+				return printJSON(out)
+			}
+
+			for _, txid := range txids {
+				fmt.Printf("txid:%s\n", txid)
+			}
 			return nil
 		},
 	}

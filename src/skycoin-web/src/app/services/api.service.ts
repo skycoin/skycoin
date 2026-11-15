@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, map, mergeMap } from 'rxjs';
+import { catchError, map, mergeMap, timeout } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { CoinService } from './coin.service';
@@ -10,6 +10,9 @@ import { ApiRequestOptions, ApiTransportService } from './api-transport.service'
 
 @Injectable()
 export class ApiService {
+
+  /** How long a request waits for the node. */
+  requestTimeoutMs = 120000;
 
   private url!: string;
 
@@ -31,13 +34,13 @@ export class ApiService {
   }
 
   get(url: any, params: any = null, options = {}): Observable<any> {
-    return this.transport.request('GET', this.getUrl(url), null, this.getRequestOptions(options, params)).pipe(
+    return this.request('GET', this.getUrl(url), null, this.getRequestOptions(options, params)).pipe(
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
   delete(url: any, params = null, options = {}): Observable<any> {
     return this.withCsrf(options).pipe(
-      mergeMap(opts => this.transport.request('DELETE', this.getUrl(url), null, this.getRequestOptions(opts, params))),
+      mergeMap(opts => this.request('DELETE', this.getUrl(url), null, this.getRequestOptions(opts, params))),
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
@@ -47,13 +50,22 @@ export class ApiService {
     }
 
     return this.withCsrf(options).pipe(
-      mergeMap(opts => this.transport.request(
+      mergeMap(opts => this.request(
         'POST',
         this.getUrl(url, useV2),
         opts.json ? JSON.stringify(body) : this.getQueryString(body),
         this.getRequestOptions(opts),
       )),
       catchError((error: any) => this.getErrorMessage(error)));
+  }
+
+  /** A request that fails when the node has not answered within requestTimeoutMs. */
+  private request(method: string, url: string, body: string | null, options: ApiRequestOptions): Observable<any> {
+    return this.transport.request(method, url, body, options).pipe(
+      timeout({
+        first: this.requestTimeoutMs,
+        with: () => throwError(() => new Error(this.translate.instant('service.api.timeout'))),
+      }));
   }
 
   /**
@@ -66,7 +78,7 @@ export class ApiService {
       return of(options);
     }
 
-    return this.transport.request('GET', this.getUrl('csrf'), null, this.getRequestOptions({})).pipe(
+    return this.request('GET', this.getUrl('csrf'), null, this.getRequestOptions({})).pipe(
       map((response: any) => response && response.csrf_token ? { ...options, csrf: response.csrf_token } : options),
       catchError(() => of(options)),
     );

@@ -545,7 +545,9 @@
   },
   "service": {
     "api": {
-      "server-error": "Server error"
+      "server-error": "Server error",
+      "timeout": "The node did not answer in time. Check your connection to it and try again.",
+      "node-not-ready": "The wallet could not reach the node, or the node has no connections to the network. Wait for it to connect and try again."
     },
     "wallet": {
       "address-without-seed": "trying to generate address without seed!",

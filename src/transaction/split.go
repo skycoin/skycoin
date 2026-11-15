@@ -76,10 +76,19 @@ func Split(to []coin.TransactionOutput, uxb []UxBalance, build BuildFunc) ([]*co
 				return nil, nil, err
 			}
 		}
+		var availCoins uint64
+		for _, u := range avail {
+			var err error
+			if availCoins, err = mathutil.AddUint64(availCoins, u.Coins); err != nil {
+				return nil, nil, err
+			}
+		}
 		// Leave the smallest output of a full chunk unpaid, so the part has
 		// change to keep its unsent hours instead of giving them all away.
+		// A send of the whole balance has no coins to spare for that.
 		payable := chunkCoins
-		if n > 1 && totalCoins(remaining) > chunkCoins {
+		want := totalCoins(remaining)
+		if n > 1 && want > chunkCoins && availCoins-chunk[n-1].Coins >= want {
 			payable -= chunk[n-1].Coins
 		}
 		part, rest := takeCoins(remaining, payable)

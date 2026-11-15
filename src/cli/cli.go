@@ -196,6 +196,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 
 	commands := []*cobra.Command{
 		addPrivateKeyCmd(),
+		autoSweepCmd(),
 		addressBalanceCmd(),
 		addressGenCmd(),
 		fiberAddressGenCmd(),

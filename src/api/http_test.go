@@ -170,6 +170,16 @@ var endpointsMethods = map[string][]string{
 	"/api/v2/wallet/seed/verify": {
 		http.MethodPost,
 	},
+	"/api/v2/wallet/sweep": {
+		http.MethodGet,
+		http.MethodPost,
+	},
+	"/api/v2/wallet/sweep/unlock": {
+		http.MethodPost,
+	},
+	"/api/v2/wallet/sweep/lock": {
+		http.MethodPost,
+	},
 	"/api/v2/wallet/transaction/sign": {
 		http.MethodPost,
 	},

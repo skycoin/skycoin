@@ -42,6 +42,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Decrypt wallet](#decrypt-wallet)
 	- [Get wallet seed](#get-wallet-seed)
 	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+	- [Sweep exposed addresses](#sweep-exposed-addresses)
 - [Key-value storage APIs](#key-value-storage-apis)
 	- [Get all storage values](#get-all-storage-values)
 	- [Add value to storage](#add-value-to-storage)
@@ -1764,6 +1765,96 @@ Result:
     }
 }
 ```
+
+### Sweep exposed addresses
+
+API sets: `WALLET`
+
+```
+URI: /api/v2/wallet/sweep
+Method: GET
+Args:
+    id: wallet id
+
+Method: POST
+Body: the rule
+    wallet: wallet id
+    shared_accounts: [optional] bip44 accounts whose xpub was shared
+    addresses: [optional] addresses to sweep, each must have sent
+    destination: kind "account" (with an optional account), "wallet" (with an
+        optional wallet) or "address" (with an address). Defaults to "account"
+        for a bip44 wallet and "wallet" otherwise
+    enabled: whether the node sweeps, false by default
+    gap: [optional] unused addresses kept generated on a shared account, 20 by default
+```
+
+The node moves the confirmed coins of the exposed addresses of a wallet in the
+block after they arrive: every address of a shared bip44 account, including those
+that never sent, and every address that has sent. A single address that never
+sent is never swept, and an exposed destination is refused. Each sweep burns
+every coin hour of its inputs, the highest fee the rules allow. The rules are kept
+in `sweep.json` in the wallet directory.
+
+Both methods return the rule, `null` when there is none, and its status.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/sweep \
+ -H 'Content-Type: application/json' \
+ -d '{"wallet":"reward.wlt","shared_accounts":[0],"enabled":true}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "rule": {
+            "wallet": "reward.wlt",
+            "shared_accounts": [0],
+            "destination": {"kind": "account"},
+            "enabled": true
+        },
+        "status": {
+            "wallet": "reward.wlt",
+            "enabled": true,
+            "paused": "paused: wallet locked, 7.000000 coins waiting on exposed addresses",
+            "unlocked": false,
+            "head_seq": 1203,
+            "exposed_addresses": 21,
+            "waiting_coins": "7.000000",
+            "waiting_hours": 120,
+            "contested": 0,
+            "confirmed_sweeps": 0
+        }
+    }
+}
+```
+
+`pending_txids`, `last_sweep`, `last_txids`, `displaced_txids`, `destination`,
+`unlock_expires` and `last_error` appear when set.
+
+```
+URI: /api/v2/wallet/sweep/unlock
+Method: POST
+Body:
+    id: wallet id
+    password: wallet password
+    ttl_seconds: [optional] how long the node keeps the password, until it stops when 0
+```
+
+An encrypted wallet is swept only while the node holds its password in memory.
+It is never written to disk.
+
+```
+URI: /api/v2/wallet/sweep/lock
+Method: POST
+Body:
+    id: wallet id
+```
+
+Makes the node forget the password. Both return the rule and status.
 
 ## Key-value storage APIs
 

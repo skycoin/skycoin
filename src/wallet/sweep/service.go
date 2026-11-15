@@ -131,8 +131,12 @@ func (s *Service) Run(quit <-chan struct{}) {
 	t := time.NewTicker(s.cfg.Poll)
 	defer t.Stop()
 	defer s.LockAll()
-	var lastSeq uint64
-	var lastPass time.Time
+	lastSeq, _, err := s.chain.HeadBkSeq()
+	if err != nil {
+		logger.WithError(err).Error("HeadBkSeq failed")
+	}
+	lastPass := s.now()
+	s.Pass()
 	for {
 		select {
 		case <-quit:

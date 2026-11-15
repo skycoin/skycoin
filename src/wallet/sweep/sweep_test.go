@@ -2,6 +2,7 @@ package sweep
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -252,6 +253,7 @@ func TestPlanSplitsBySize(t *testing.T) {
 
 // fakeChain holds outputs and history for unit tests.
 type fakeChain struct {
+	mu      sync.Mutex
 	seq     uint64
 	time    uint64
 	unspent []coin.UxOut
@@ -259,9 +261,15 @@ type fakeChain struct {
 	pool    map[cipher.SHA256]bool
 }
 
-func (c *fakeChain) HeadBkSeq() (uint64, bool, error) { return c.seq, true, nil }
+func (c *fakeChain) HeadBkSeq() (uint64, bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.seq, true, nil
+}
 
 func (c *fakeChain) SweepState(addrs []cipher.Address, txids []cipher.SHA256) (ChainState, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	want := make(map[cipher.Address]bool)
 	for _, a := range addrs {
 		want[a] = true
@@ -294,6 +302,8 @@ type captureInjector struct {
 func (c *captureInjector) InjectBroadcastTransaction(txn coin.Transaction) error {
 	c.txns = append(c.txns, txn)
 	if c.chain != nil {
+		c.chain.mu.Lock()
+		defer c.chain.mu.Unlock()
 		if c.chain.pool == nil {
 			c.chain.pool = map[cipher.SHA256]bool{}
 		}
@@ -430,4 +440,36 @@ func TestRulesFileRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, empty)
 	require.False(t, errors.Is(err, ErrNoHours))
+}
+
+func TestRunSweepsAtStartAndOnNewBlocks(t *testing.T) {
+	ws := newWallets(t)
+	pw := []byte("pwd")
+	w := newBip44(t, ws, "e.wlt", pw)
+	a0 := accountAddrs(t, w, 0)
+	chain := &fakeChain{seq: 0, time: 1000 + 3600*10, unspent: []coin.UxOut{makeUx(t, a0[1], 2e6, 10, 1)}}
+	inj := &captureInjector{chain: chain}
+	dir := t.TempDir()
+	require.NoError(t, saveRules(dir, map[string]Rule{"e.wlt": {Wallet: "e.wlt", SharedAccounts: []uint32{0}, Destination: Destination{Kind: DestAccount}, Enabled: true}}))
+	s, err := NewService(Config{Dir: dir, Poll: 5 * time.Millisecond}, ws, chain, inj)
+	require.NoError(t, err)
+	require.NoError(t, s.Unlock("e.wlt", pw, 0))
+
+	quit := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		s.Run(quit)
+		close(done)
+	}()
+	require.Eventually(t, func() bool { return len(s.Status("e.wlt").Pending) == 1 }, 5*time.Second, 5*time.Millisecond, "a rule loaded from disk is swept at start, on a chain still at block 0")
+
+	chain.mu.Lock()
+	chain.seq = 1
+	chain.unspent = append(chain.unspent, makeUx(t, a0[2], 3e6, 10, 2))
+	chain.mu.Unlock()
+	require.Eventually(t, func() bool { return len(s.Status("e.wlt").Pending) == 2 }, 5*time.Second, 5*time.Millisecond, "a new block triggers a pass")
+
+	close(quit)
+	<-done
+	require.False(t, s.Status("e.wlt").Unlocked, "stopping forgets every password")
 }

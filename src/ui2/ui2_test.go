@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/wallet/sweep"
 )
 
 type fakeNode struct {
@@ -37,6 +38,11 @@ type fakeNode struct {
 	splitParts int
 	// refuse is a transaction the node will not take.
 	refuse string
+	// sweeps are the sweep rules set, by wallet, and unlocked the wallets
+	// unlocked for sweeping. sweepErr refuses the next rule.
+	sweeps   map[string]sweep.Rule
+	unlocked map[string]uint64
+	sweepErr error
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {

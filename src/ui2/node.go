@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/sweep"
 )
 
 // Node is the part of the node's REST API the pages use. *api.Client has
@@ -50,6 +51,10 @@ type Node interface {
 	VerifyTransaction(api.VerifyTransactionRequest) (*api.VerifyTransactionResponse, error)
 	WalletSignTransaction(api.WalletSignTransactionRequest) (*api.CreateTransactionResponse, error)
 	OutputsForHashes(hashes []string) (*readable.UnspentOutputsSummary, error)
+	WalletSweep(id string) (*api.SweepResponse, error)
+	SetWalletSweep(rule sweep.Rule) (*api.SweepResponse, error)
+	WalletSweepUnlock(req api.SweepUnlockRequest) (*api.SweepResponse, error)
+	WalletSweepLock(id string) (*api.SweepResponse, error)
 }
 
 // walletAPIDisabled reports whether err is the node refusing the WALLET API

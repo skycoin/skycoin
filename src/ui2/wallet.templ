@@ -63,6 +63,9 @@ templ WalletPage(w Wallet) {
 				</dl>
 			</section>
 			@walletOptions(w)
+			if From(ctx).Gateway() == "" && sweepable(w) {
+				@SweepSection(w.ID)
+			}
 			if w.Meta.Type == "bip44" {
 				@XPubSection(w.ID)
 			}

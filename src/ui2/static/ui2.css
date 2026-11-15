@@ -202,7 +202,7 @@ table.list { width: 100%; border-collapse: collapse; }
 .form label { display: flex; flex-direction: column; gap: 4px; }
 .form label.check { flex-direction: row; align-items: flex-start; }
 .form input, .form textarea, .form select { width: 100%; }
-.form input[type="checkbox"] { width: auto; margin-top: 3px; }
+.form input[type="checkbox"], .form input[type="radio"] { width: auto; margin-top: 3px; }
 .alert p { margin: 4px 0; }
 ol.seed-words {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 16px;
@@ -267,8 +267,8 @@ details.tx.in .tx-amt strong { color: rgb(var(--green)); }
 
 /* wallet options */
 .notice, .exposed-banner { margin-bottom: 16px; }
-.exposed-banner { display: flex; gap: 8px; align-items: flex-start; }
-.exposed-banner .mi { color: rgb(var(--amber)); }
+.exposed-banner, .sweep-burn { display: flex; gap: 8px; align-items: flex-start; }
+.exposed-banner .mi, .sweep-burn .mi { color: rgb(var(--amber)); }
 .ops { display: flex; flex-direction: column; }
 details.op { border-top: 1px solid rgba(var(--fg), 0.1); margin: 0; }
 details.op > summary { display: flex; align-items: center; gap: 8px; padding: 10px 4px; min-height: 44px; }
@@ -341,3 +341,8 @@ dialog.qr-dialog h2 { margin: 0; }
 #hw-pin { text-align: center; letter-spacing: 4px; }
 .btn.danger { border-color: rgb(var(--rose)); color: rgb(var(--rose)); }
 .ok-text { color: rgb(var(--green)); }
+
+/* auto-sweep */
+.sweep-set { display: flex; flex-direction: column; gap: 6px; }
+.sweep-status, .sweep-unlock { margin: 12px 0; padding-top: 12px; border-top: 1px solid rgba(var(--fg), 0.12); }
+.sweep-status .head h3, .sweep-unlock h3 { margin: 0 0 6px; }

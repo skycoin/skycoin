@@ -410,3 +410,9 @@ document.addEventListener('change', function (e) {
 	document.cookie = 'ui2-coin=' + e.target.value + ';path=/;max-age=31536000;samesite=strict';
 	window.location.href = document.querySelector('base').href;
 });
+
+// A poll marked data-poll-open runs only while its folded panel is open.
+document.addEventListener('htmx:beforeRequest', function (e) {
+	var el = e.detail.elt;
+	if (el && el.hasAttribute && el.hasAttribute('data-poll-open') && el.closest('details:not([open])')) e.preventDefault();
+});

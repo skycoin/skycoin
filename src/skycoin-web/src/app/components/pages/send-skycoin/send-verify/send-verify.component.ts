@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 
+import { TranslateService } from '@ngx-translate/core';
+
 import { PreviewTransaction } from '../../../../app.datatypes';
 import { BalanceService } from '../../../../services/wallet/balance.service';
 import { SpendingService } from '../../../../services/wallet/spending.service';
@@ -29,6 +31,7 @@ export class SendVerifyComponent implements OnDestroy {
     private msgBarService: MsgBarService,
     private dialog: CustomMatDialogService,
     private changeDetectorRef: ChangeDetectorRef,
+    private translate: TranslateService,
   ) {}
 
   ngOnDestroy() {
@@ -41,10 +44,10 @@ export class SendVerifyComponent implements OnDestroy {
     this.sendButton.setLoading();
     this.backButton.setDisabled();
 
-    this.spendingService.injectTransaction(this.transaction.encoded)
+    this.spendingService.injectTransactions(this.transaction)
       .subscribe(
-        txid => {
-          this.onSuccess(txid);
+        txids => {
+          this.onSuccess(txids);
           this.changeDetectorRef.markForCheck();
         },
         (error) => {
@@ -55,7 +58,12 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   get rawTx(): string | undefined {
-    return this.transaction ? this.transaction.encoded : undefined;
+    return this.transaction && !this.parts ? this.transaction.encoded : undefined;
+  }
+
+  /** How many transactions the send takes, when it is more than one. */
+  get parts(): number {
+    return this.transaction && this.transaction.parts && this.transaction.parts.length > 1 ? this.transaction.parts.length : 0;
   }
 
   /** Shows the signed transaction to broadcast elsewhere, without sending it. */
@@ -67,10 +75,12 @@ export class SendVerifyComponent implements OnDestroy {
     this.onBack.emit(false);
   }
 
-  private onSuccess(txid: string) {
-    const noteSaved = !this.transaction.note || setTxNote(txid, this.transaction.note);
+  private onSuccess(txids: string[]) {
+    const noteSaved = !this.transaction.note || txids.every(txid => setTxNote(txid, this.transaction.note!));
     setTimeout(() => {
-      if (noteSaved) {
+      if (noteSaved && txids.length > 1) {
+        this.msgBarService.showDone(this.translate.instant('send.split-sent', { count: txids.length, txids: txids.join(', ') }));
+      } else if (noteSaved) {
         this.msgBarService.showDone('send.sent');
       } else {
         this.msgBarService.showWarning('send.saving-note-error');

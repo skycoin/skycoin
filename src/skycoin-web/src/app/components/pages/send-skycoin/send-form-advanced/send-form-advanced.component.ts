@@ -762,7 +762,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       .toPromise()
       .then(transaction => {
         if (!this.previewTx) {
-          return this.spendingService.injectTransaction((transaction as PreviewTransaction).encoded).toPromise();
+          return this.spendingService.injectTransactions(transaction as PreviewTransaction).toPromise();
         }
 
         let amount = new BigNumber('0');

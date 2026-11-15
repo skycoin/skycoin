@@ -1,3 +1,6 @@
+@if (parts) {
+  <div class="-split-notice">{{ 'send.split-notice' | translate:{ count: parts } }}</div>
+}
 <app-transaction-info
   [transaction]="transaction"
   [isPreview]="true">

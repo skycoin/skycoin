@@ -73,7 +73,13 @@ export class PreviewTransaction extends Transaction {
   from!: string;
   to!: string;
   encoded!: string;
+  /**
+   * The transactions of a send too large for one, in the order they are sent.
+   * The send itself then holds their totals and has no encoding of its own.
+   */
+  parts?: PreviewTransaction[];
 }
+
 
 export interface Output {
   address: string;

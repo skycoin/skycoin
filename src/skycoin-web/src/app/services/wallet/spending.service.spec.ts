@@ -702,7 +702,122 @@ describe('SpendingService', () => {
     }));
   });
 
+  describe('createTransaction split into parts', () => {
+    const part = (n: number) => ({
+      encoded_transaction: 'unsigned' + n,
+      transaction: {
+        fee: String(10 * n),
+        inputs: [{ uxid: 'hash' + n, address: 'address1', calculated_hours: '20', coins: '5' }],
+        outputs: [{ address: 'dest', coins: '5', hours: String(n) }],
+      },
+    });
+    let post: jasmine.Spy;
+
+    beforeEach(() => {
+      (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.28.0');
+      post = jasmine.createSpy('post').and.callFake((url: string, body: any) => {
+        if (url === 'transaction') {
+          return of({ data: { ...part(1), transactions: [part(1), part(2)] } });
+        }
+
+        return of({ data: { encoded_transaction: body.encoded_transaction.replace('unsigned', 'signed') } });
+      });
+      (spyApiService as any).post = post;
+    });
+
+    function create(wallet: Wallet): PreviewTransaction {
+      let tx: any;
+      spendingService.createTransaction(
+        wallet, null, null,
+        [{ address: 'dest', coins: new BigNumber(10) }],
+        { type: HoursSelectionTypes.Auto, ShareFactor: new BigNumber(0.5) },
+        null, 'secret',
+      ).subscribe(t => tx = t);
+
+      return tx;
+    }
+
+    it('asks for parts and signs each of them in order', fakeAsync(() => {
+      const tx = create(Object.assign(createWallet(), { filename: 'w.wlt', addresses: [createAddress('address1', '')] }));
+
+      expect(post.calls.argsFor(0)[1].split).toBe(true);
+      expect(post.calls.all().filter(c => c.args[0] === 'wallet/transaction/sign').map(c => c.args[1].encoded_transaction))
+        .toEqual(['unsigned1', 'unsigned2']);
+      expect(tx.parts!.map(p => p.encoded)).toEqual(['signed1', 'signed2']);
+      expect(tx.inputs.map(i => i.hash)).toEqual(['hash1', 'hash2']);
+      expect(tx.hoursSent!.toNumber()).toBe(3);
+      expect(tx.hoursBurned!.toNumber()).toBe(30);
+    }));
+
+    it('signs each part in the browser for a browser wallet', fakeAsync(() => {
+      spyCipherProvider.prepareTransaction.and.callFake((inputs: TransactionInput[]) => of('browser-' + inputs[0].hash));
+      const tx = create(Object.assign(createWallet(), { addresses: [createAddress('address1', 'secretKey1')] }));
+
+      expect(tx.parts!.map(p => p.encoded)).toEqual(['browser-hash1', 'browser-hash2']);
+      expect(spyCipherProvider.prepareTransaction.calls.argsFor(1)[0][0].secret).toBe('secretKey1');
+    }));
+
+    it('does not ask a hardware wallet send for parts', fakeAsync(() => {
+      const hw = TestBed.inject(HwWalletService) as any;
+      spyOn(hw, 'signTransaction').and.returnValue(of({ rawResponse: ['sig'] }));
+      spyCipherProvider.prepareTransactionWithSignatures.and.returnValue(of('signed'));
+      post.and.returnValue(of({ data: part(1) }));
+      create(Object.assign(createWallet(), { isHardware: true, addresses: [createAddress('address1', '')] }));
+      flushMicrotasks();
+
+      expect(post.calls.argsFor(0)[1].split).toBe(false);
+    }));
+  });
+
+  describe('injectTransactions', () => {
+    const send = Object.assign(new PreviewTransaction(), {
+      inputs: [], outputs: [], encoded: '',
+      parts: ['a', 'b', 'c'].map(e => Object.assign(new PreviewTransaction(), { inputs: [], outputs: [], encoded: e })),
+    });
+
+    beforeEach(() => {
+      spyTranslateService.instant.and.callFake((key: any, params: any) => key + ' ' + JSON.stringify(params));
+    });
+
+    it('sends every part in order and gives their ids', fakeAsync(() => {
+      const sent: string[] = [];
+      spyOn(spendingService, 'injectTransaction').and.callFake((raw: string) => {
+        sent.push(raw);
+
+        return of('txid-' + raw);
+      });
+      let txids: string[] = [];
+      spendingService.injectTransactions(send).subscribe(t => txids = t);
+
+      expect(sent).toEqual(['a', 'b', 'c']);
+      expect(txids).toEqual(['txid-a', 'txid-b', 'txid-c']);
+    }));
+
+    it('says which parts were sent when a later one fails', fakeAsync(() => {
+      spyOn(spendingService, 'injectTransaction').and.callFake((raw: string) =>
+        raw === 'b' ? throwError(() => new Error('refused')) : of('txid-' + raw));
+      let error: any;
+      spendingService.injectTransactions(send).subscribe({ error: e => error = e });
+
+      expect(error.sent).toEqual(['txid-a']);
+      expect(error.message).toContain('send.split-partial-error');
+      expect(error.message).toContain('"txids":"txid-a"');
+      expect(error.message).toContain('"total":3');
+      expect(error.message).toContain('refused');
+    }));
+
+    it('passes the error on when nothing was sent', fakeAsync(() => {
+      spyOn(spendingService, 'injectTransaction').and.returnValue(throwError(() => new Error('refused')));
+      let error: any;
+      spendingService.injectTransactions(Object.assign(new PreviewTransaction(), { inputs: [], outputs: [], encoded: 'x' }))
+        .subscribe({ error: e => error = e });
+
+      expect(error.message).toBe('refused');
+    }));
+  });
+
   describe('createTransaction on a hardware wallet', () => {
+
     it('gives the daemon decimal coins and the cipher droplets', fakeAsync(() => {
       (TestBed.inject(GlobalsService) as any as MockGlobalsService).setNodeVersion('0.27.0');
       (spyApiService as any).post = jasmine.createSpy('post').and.returnValue(of({ data: {

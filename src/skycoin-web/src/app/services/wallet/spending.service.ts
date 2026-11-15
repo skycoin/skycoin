@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
-import { Observable, forkJoin, of, throwError } from 'rxjs';
-import { mergeMap, map, catchError, first } from 'rxjs';
+import { Observable, forkJoin, from, of, throwError } from 'rxjs';
+import { mergeMap, map, catchError, concatMap, first, toArray } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
 import { ApiService } from '../api.service';
 import { CipherProvider } from '../cipher.provider';
 import { Output, TransactionInput, TransactionOutput,
-  Wallet, GetOutputsRequestOutput, Transaction, GetOutputsRequest } from '../../app.datatypes';
+  Wallet, GetOutputsRequestOutput, Transaction, GetOutputsRequest, PreviewTransaction } from '../../app.datatypes';
 import { BaseCoin } from '../../coins/basecoin';
 import { CoinService } from '../coin.service';
 import { WalletService } from './wallet.service';
@@ -32,8 +32,29 @@ export class HoursSelection {
   ShareFactor?: BigNumber;
 }
 
+/** One send made of parts: their inputs, outputs and hours together. */
+export function combineParts(parts: PreviewTransaction[]): PreviewTransaction {
+  const send = new PreviewTransaction();
+  send.inputs = ([] as any[]).concat(...parts.map(p => p.inputs));
+  send.outputs = ([] as any[]).concat(...parts.map(p => p.outputs));
+  send.hoursSent = parts.reduce((sum, p) => sum.plus(p.hoursSent || 0), new BigNumber(0));
+  send.hoursBurned = parts.reduce((sum, p) => sum.plus(p.hoursBurned || 0), new BigNumber(0));
+  send.encoded = '';
+  send.parts = parts;
+
+  return send;
+}
+
+/** A send of which some transactions were sent before one failed. */
+export class PartialSendError extends Error {
+  constructor(message: string, public sent: string[]) {
+    super(message);
+  }
+}
+
 @Injectable()
 export class SpendingService {
+
   isInjectingTx = false;
 
   private currentCoin!: BaseCoin;
@@ -159,17 +180,14 @@ export class SpendingService {
           unspents: unspents,
           to: processedDestinations,
           change_address: changeAddress,
+          // A send too large for one transaction comes back in parts. A
+          // hardware wallet signs one transaction at a time, so it gets the
+          // size error instead.
+          split: !unsigned && !wallet.isHardware,
         };
 
-        // All modes: create unsigned transaction on the remote node via POST /transaction (v2)
-        const response: Observable<Transaction> = this.apiService.post(
-          'transaction',
-          params,
-          { json: true },
-          true,
-        ).pipe(mergeMap(transaction => {
-          const data = transaction.data;
-
+        // Signs one transaction the node made, in whatever way the wallet signs.
+        const preparePart = (data: any): Observable<Transaction> => {
           let hoursSent = new BigNumber('0');
           data.transaction.outputs
             .filter((o: any) => destinations.find(dest => dest.address === o.address))
@@ -243,6 +261,23 @@ export class SpendingService {
                 encoded: rawTransaction
               };
             }));
+        };
+
+        // All modes: create unsigned transaction on the remote node via POST /transaction (v2)
+        const response: Observable<Transaction> = this.apiService.post(
+          'transaction',
+          params,
+          { json: true },
+          true,
+        ).pipe(mergeMap(transaction => {
+          const data = transaction.data;
+          const parts: any[] = data.transactions && data.transactions.length > 1 ? data.transactions : [data];
+
+          return from(parts).pipe(
+            concatMap(part => preparePart(part)),
+            toArray(),
+            map(signed => signed.length === 1 ? signed[0] : combineParts(signed as PreviewTransaction[])),
+          );
         }));
 
         return response;
@@ -347,7 +382,39 @@ export class SpendingService {
   }
 
   /**
-   * Signs an encoded unsigned transaction with wallet, whose addresses must own
+   * Sends every transaction of tx, one after another, and gives their ids. When
+   * one fails, the error says which were sent before it.
+   */
+  injectTransactions(tx: PreviewTransaction): Observable<string[]> {
+    const encoded = tx.parts && tx.parts.length > 0 ? tx.parts.map(p => p.encoded) : [tx.encoded];
+    const sent: string[] = [];
+
+    return from(encoded).pipe(
+      concatMap(raw => this.injectTransaction(raw).pipe(map(txid => {
+        sent.push(txid);
+
+        return txid;
+      }))),
+      toArray(),
+      catchError(err => {
+        if (sent.length === 0) {
+          return throwError(() => err);
+        }
+        const message = this.translate.instant('send.split-partial-error', {
+          error: (err && err.message ? err.message : String(err)).replace(/\.$/, ''),
+          sent: sent.length,
+          total: encoded.length,
+          txids: sent.join(', '),
+        });
+
+        return throwError(() => new PartialSendError(message, sent.slice()));
+      }),
+    );
+  }
+
+  /**
+   * Signs an encoded unsigned transaction
+ with wallet, whose addresses must own
    * every input. Returns the encoded signed transaction.
    */
   signTransaction(wallet: Wallet, password: string | undefined, encoded: string): Observable<string> {

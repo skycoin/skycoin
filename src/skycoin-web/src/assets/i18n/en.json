@@ -353,7 +353,10 @@
     "select-wallet": "Select Wallet",
     "recipient-address": "Recipient address",
     "your-note": "Your note here",
-    "sent": "Transaction successfully sent."
+    "sent": "Transaction successfully sent.",
+    "split-notice": "This send spends more outputs than fit in one transaction, so it is sent as {{ count }} transactions, one after another. The amounts and hours below are their totals.",
+    "split-sent": "Sent {{ count }} transactions: {{ txids }}",
+    "split-partial-error": "{{ error }}. {{ sent }} of {{ total }} transactions were sent before this: {{ txids }}. Sending again sends the rest."
   },
   "tx": {
     "fee": "Fee",

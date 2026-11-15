@@ -330,6 +330,8 @@
   "send.row-hours": "Horas (manual)",
   "send.send": "Enviar",
   "send.sent": "Enviada. La transacción espera confirmación.",
+  "send.split-notice": "Este envío gasta más salidas de las que caben en una transacción, así que se envía como {{ count }} transacciones, una tras otra. Los montos y la comisión de arriba son sus totales.",
+  "send.split-partial": "Se enviaron {{ sent }} de {{ total }} transacciones antes de que esta fallara. Volver a enviar desde la revisión envía el resto.",
   "send.share": "Factor (0 a 1)",
   "send.title": "Enviar",
   "send.to": "Dirección de destino",

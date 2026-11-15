@@ -1,9 +1,11 @@
 package ui2
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -33,11 +35,32 @@ func (f *fakeNode) WalletCreateTransaction(r api.WalletCreateTransactionRequest)
 		t.Transaction.Out = append(t.Transaction.Out, api.CreatedTransactionOutput{Address: to.Address, Coins: to.Coins, Hours: "5"})
 	}
 	t.Transaction.Out = append(t.Transaction.Out, api.CreatedTransactionOutput{Address: change, Coins: "1.000000", Hours: "4"})
+	if r.Split && f.splitParts > 1 {
+		// Each part pays an equal share of the first destination and keeps change.
+		for i := range f.splitParts {
+			var p api.CreateTransactionResponse
+			n := strconv.Itoa(i + 1)
+			p.Transaction.TxID, p.Transaction.Fee, p.EncodedTransaction = "tx"+n, "3", "RAWTX"+n
+			p.Transaction.Out = []api.CreatedTransactionOutput{
+				{Address: r.To[0].Address, Coins: "1.500000", Hours: "5"},
+				{Address: change, Coins: "0.100000", Hours: "4"},
+			}
+			t.Transactions = append(t.Transactions, p)
+		}
+		t.Transaction = t.Transactions[0].Transaction
+		t.EncodedTransaction = t.Transactions[0].EncodedTransaction
+	}
 	return &t, nil
 }
 
 func (f *fakeNode) InjectEncodedTransaction(raw string) (string, error) {
+	if raw == f.refuse {
+		return "", errors.New("400 Bad Request - refused")
+	}
 	f.injected = append(f.injected, raw)
+	if strings.HasPrefix(raw, "RAWTX") && len(raw) > len("RAWTX") {
+		return "tx" + raw[len("RAWTX"):], nil
+	}
 	return "tx1", nil
 }
 
@@ -266,4 +289,48 @@ func TestAdvancedSend(t *testing.T) {
 	require.Contains(t, page, `name="from_addr" value="`+x.spent+`"`)
 	require.NotContains(t, page, `value="`+x.unused+`"`, "an empty address is no source")
 	require.Contains(t, get(t, h, "/send/row").Body.String(), `name="hours"`)
+}
+
+// A send too large for one transaction is reviewed as its parts' totals and
+// sent part by part.
+func TestSendSplit(t *testing.T) {
+	x := sendNode(t)
+	x.n.splitParts = 3
+	h := Handler(x.n, Options{})
+
+	r := Prepare(x.n, SendForm{ID: "s.wlt", To: x.toFresh, Coins: "4.5"})
+	require.Empty(t, r.Err)
+	require.True(t, x.n.txReqs[0].Split)
+	require.Len(t, r.Parts, 3)
+	require.Equal(t, []string{"RAWTX1", "RAWTX2", "RAWTX3"}, r.Raws())
+	require.Equal(t, []Dest{{To: x.toFresh, Coins: "4.500000", Hours: "15"}}, r.Dests)
+	require.Len(t, r.Change, 3)
+	require.Equal(t, "9", r.Fee)
+
+	body := postForm(h, "/send/review", url.Values{"id": {"s.wlt"}, "to": {x.toFresh}, "coins": {"4.5"}}).Body.String()
+	require.Contains(t, body, `data-split-parts="3"`)
+	for _, raw := range r.Raws() {
+		require.Contains(t, body, `name="rawtx" value="`+raw+`"`)
+	}
+
+	x.n.injected = nil
+	body = postForm(h, "/send/inject", url.Values{"id": {"s.wlt"}, "rawtx": r.Raws()}).Body.String()
+	require.Equal(t, []string{"RAWTX1", "RAWTX2", "RAWTX3"}, x.n.injected)
+	for _, txid := range []string{"tx1", "tx2", "tx3"} {
+		require.Contains(t, body, `data-sent-txid="`+txid+`"`)
+	}
+
+	// The second part is refused: the first is reported sent, the third is not sent.
+	x.n.injected, x.n.refuse = nil, "RAWTX2"
+	body = postForm(h, "/send/inject", url.Values{"id": {"s.wlt"}, "rawtx": r.Raws()}).Body.String()
+	require.Equal(t, []string{"RAWTX1"}, x.n.injected)
+	require.Contains(t, body, "refused")
+	require.Contains(t, body, "1 of 3 transactions were sent")
+	require.Contains(t, body, `data-sent-txid="tx1"`)
+	require.NotContains(t, body, `class="alert ok"`)
+
+	// An unsigned send is not split.
+	x.n.txReqs = nil
+	Prepare(x.n, SendForm{ID: "s.wlt", To: x.toFresh, Coins: "1", Unsigned: true})
+	require.False(t, x.n.txReqs[0].Split)
 }

@@ -33,6 +33,10 @@ type fakeNode struct {
 	inputOwners  []string
 	knownOutputs map[string]bool
 	signReqs     []api.WalletSignTransactionRequest
+	// splitParts makes a split send come back in that many parts.
+	splitParts int
+	// refuse is a transaction the node will not take.
+	refuse string
 }
 
 func (f *fakeNode) Health() (*api.HealthResponse, error) {

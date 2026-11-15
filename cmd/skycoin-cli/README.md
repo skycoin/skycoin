@@ -116,6 +116,7 @@ Available Commands:
   addressSpent         Check whether addresses have ever sent coins
   addressTransactions  Show detail for transaction associated with one or more specified addresses
   addresscount         Get the count of addresses with unspent outputs (coins)
+  autoSweep            Have the node sweep exposed addresses of a wallet on every block
   blocks               Lists the content of a single block or a range of blocks
   broadcastTransaction Broadcast a raw transaction to the network
   checkDBDecoding      Verify the database data encoding
@@ -401,6 +402,20 @@ $ skycoin cli sweep my-wallet.wlt
 
 Every spendable coin moves to one new address in the wallet, whose public key has
 never been revealed. `--to` sends the coins to another address instead.
+
+**Sweep exposed addresses on every block:**
+```bash
+$ skycoin cli autoSweep set reward.wlt --shared-account 0 --enable
+$ skycoin cli autoSweep unlock reward.wlt --ttl 24h
+$ skycoin cli autoSweep show reward.wlt
+```
+
+The running node moves the coins of every address of account 0, whose xpub was
+shared, and of every address that has sent, to the next unused address of
+account 1, in the block after they arrive. Each sweep burns every coin hour of
+its inputs, the highest fee the rules allow. `unlock` is needed for an encrypted
+wallet only, and the node keeps the password in memory. `show` prints the rule
+and its status, including why a sweep is paused.
 
 **Create raw transaction:**
 ```bash

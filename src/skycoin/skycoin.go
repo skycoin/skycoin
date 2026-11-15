@@ -251,7 +251,7 @@ func (c *Coin) Run() error {
 	gw = api.NewGateway(d, v, w, s)
 
 	if c.config.Node.WebInterface {
-		webInterface, err = c.createGUI(gw, host, quit)
+		webInterface, err = c.createGUI(gw, sweeper, host, quit)
 		if err != nil {
 			c.logger.WithError(err).Error("c.createGUI failed")
 			return err
@@ -521,7 +521,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	return dc
 }
 
-func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api.Server, error) {
+func (c *Coin) createGUI(gw *api.Gateway, sweeper *sweep.Service, host string, quit chan struct{}) (*api.Server, error) {
 	config := api.Config{
 		DisableCSRF:        c.config.Node.DisableCSRF,
 		DisableHeaderCheck: c.config.Node.DisableHeaderCheck,
@@ -548,6 +548,9 @@ func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api
 		Username:     c.config.Node.WebInterfaceUsername,
 		Password:     c.config.Node.WebInterfacePassword,
 		ShutdownChan: quit,
+	}
+	if sweeper != nil {
+		config.Sweeper = sweeper
 	}
 
 	// -enable-gui and -web-wallet serve the same wallet. With the WALLET API set

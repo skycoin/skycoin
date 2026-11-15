@@ -84,6 +84,8 @@ type Config struct {
 	// root around a client of this API.
 	UI2          func(*Client) http.Handler
 	ShutdownChan chan struct{} // when closed, triggers daemon shutdown
+	// Sweeper, when set, serves the sweep rules under /api/v2/wallet/sweep.
+	Sweeper Sweeper
 }
 
 // HealthConfig configuration data exposed in /health
@@ -118,6 +120,7 @@ type muxConfig struct {
 	shutdownChan       chan struct{}
 	webWallet          http.Handler
 	ui2                func(*Client) http.Handler
+	sweeper            Sweeper
 }
 
 // HTTPResponse represents the http response struct
@@ -215,6 +218,7 @@ func create(host string, c Config, gateway Gatewayer) *Server {
 		shutdownChan:       c.ShutdownChan,
 		webWallet:          c.WebWallet,
 		ui2:                c.UI2,
+		sweeper:            c.Sweeper,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -475,6 +479,16 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV2("/wallet/recover", walletRecoverHandler(gateway), map[string][]string{
+		http.MethodPost: {EndpointsWallet},
+	})
+	webHandlerV2("/wallet/sweep", walletSweepHandler(c.sweeper), map[string][]string{
+		http.MethodGet:  {EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
+	})
+	webHandlerV2("/wallet/sweep/unlock", walletSweepUnlockHandler(c.sweeper), map[string][]string{
+		http.MethodPost: {EndpointsWallet},
+	})
+	webHandlerV2("/wallet/sweep/lock", walletSweepLockHandler(c.sweeper), map[string][]string{
 		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/xpub", walletXPubKeyHandler(gateway), map[string][]string{

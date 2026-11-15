@@ -1,0 +1,131 @@
+@use '../../../../../theme/_variables.scss' as *;
+
+.-help {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: $grey-semi-dark;
+}
+
+.-mono {
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.-status, .-unlock {
+  margin: 12px 0;
+  padding-top: 12px;
+  border-top: 1px solid $grey-light;
+}
+
+h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.-status-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.-badge {
+  padding: 1px 8px;
+  border: 1px solid $grey;
+  border-radius: 10px;
+  font-size: 11px;
+  color: $grey-dark;
+
+  &.-on {
+    border-color: #00875a;
+    color: #00754e;
+  }
+
+  &.-paused {
+    border-color: #b37a00;
+    color: #8a5d00;
+  }
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  font-size: $font-size-standard;
+
+  dt {
+    color: $grey-semi-dark;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    color: $grey-dark;
+  }
+}
+
+.-warning {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-left: 3px solid $yellow;
+  background-color: $grey-very-light;
+  font-size: 12px;
+  line-height: 1.4;
+  color: $grey-dark;
+}
+
+fieldset {
+  border: 1px solid $grey-light;
+  border-radius: 4px;
+  padding: 6px 12px 10px;
+
+  legend {
+    padding: 0 4px;
+    font-size: $font-size-standard;
+    color: $grey-semi-dark;
+  }
+
+  .-account {
+    display: block;
+  }
+}
+
+select, input, textarea {
+  width: 100%;
+}
+
+.-error {
+  margin: 8px 0;
+  color: #d4003f;
+  font-size: $font-size-standard;
+}
+
+.-done {
+  margin: 8px 0;
+  color: #00754e;
+  font-size: $font-size-standard;
+}
+
+.-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: $max-very-small-width) {
+  dl {
+    grid-template-columns: 1fr;
+    gap: 0;
+
+    dd {
+      margin-bottom: 6px;
+    }
+  }
+}

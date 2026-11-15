@@ -38,6 +38,14 @@
         </div>
       </button>
     }
+    @if (showSweepOption) {
+      <button mat-button color="accent" (click)="onAutoSweep()" id="auto-sweep-option">
+        <div class="label">
+          <div class="img -btn-lock"></div>
+          <span>{{ 'wallet.sweep.option' | translate }}</span>
+        </div>
+      </button>
+    }
     <button mat-button color="accent" (click)="onEditWallet()">
       <div class="label">
         <div class="img -btn-edit"></div>

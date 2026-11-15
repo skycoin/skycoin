@@ -55,6 +55,15 @@ describe('WalletDetailComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('offers auto-sweep for a wallet the node keeps, not for a hardware wallet', () => {
+    component.wallet = { label: 'w', filename: 'w.wlt', addresses: [] };
+    expect(component.canAutoSweep).toBeTrue();
+    component.wallet = { label: 'hw', isHardware: true, filename: 'hw', addresses: [] };
+    expect(component.canAutoSweep).toBeFalse();
+    component.wallet = { label: 'b', addresses: [] };
+    expect(component.canAutoSweep).toBeFalse();
+  });
+
   describe('confirming a hardware wallet address', () => {
     let hw: any;
     let msgBar: MsgBarService;

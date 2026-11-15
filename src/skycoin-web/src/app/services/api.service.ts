@@ -33,8 +33,8 @@ export class ApiService {
       });
   }
 
-  get(url: any, params: any = null, options = {}): Observable<any> {
-    return this.request('GET', this.getUrl(url), null, this.getRequestOptions(options, params)).pipe(
+  get(url: any, params: any = null, options = {}, useV2 = false): Observable<any> {
+    return this.request('GET', this.getUrl(url, useV2), null, this.getRequestOptions(options, params)).pipe(
       catchError((error: any) => this.getErrorMessage(error)));
   }
 

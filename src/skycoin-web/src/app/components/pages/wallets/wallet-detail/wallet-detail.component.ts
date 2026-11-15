@@ -18,6 +18,8 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses.component';
+import { AutoSweepComponent } from '../auto-sweep/auto-sweep.component';
+import { canAutoSweep } from '../../../../services/wallet/sweep.service';
 import { bip44GapLimit } from '../../../../services/wallet/backends/browser-wallet-backend';
 
 @Component({
@@ -155,10 +157,20 @@ export class WalletDetailComponent implements OnDestroy {
           this.onDecryptWallet();
         } else if (response === WalletOptionsResponses.ScanAddresses) {
           this.onScanAddresses();
+        } else if (response === WalletOptionsResponses.AutoSweep) {
+          this.onAutoSweep();
         }
       }
       this.changeDetectorRef.markForCheck();
     });
+  }
+
+  get canAutoSweep(): boolean {
+    return canAutoSweep(this.wallet, this.walletService.isServerWallet(this.wallet), this.currentCoin);
+  }
+
+  onAutoSweep() {
+    AutoSweepComponent.openDialog(this.dialog, this.wallet);
   }
 
   get canScanAddresses(): boolean {

@@ -171,6 +171,7 @@ func coinHandler(n Node, o Options) http.Handler {
 		return nil
 	}))
 	mux.HandleFunc("/wallet/do/{op}", post(walletOpHandler(n)))
+	sweepHandlers(mux, n, page, post)
 	mux.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			post(func(w http.ResponseWriter, r *http.Request) templ.Component {

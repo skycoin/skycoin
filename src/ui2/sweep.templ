@@ -1,0 +1,263 @@
+package ui2
+
+import "net/url"
+
+func sweepPart(part, id string) string {
+	p := "wallet/sweep"
+	if part != "" {
+		p += "/" + part
+	}
+	return p + "?id=" + url.QueryEscape(id)
+}
+
+// sweepStatusURL is the poll of the status, which shows the unlock state of
+// an encrypted wallet only.
+func sweepStatusURL(v SweepView) string {
+	if v.Encrypted {
+		return sweepPart("status", v.ID) + "&enc=1"
+	}
+	return sweepPart("status", v.ID)
+}
+
+func accountLabel(a SweepAccount) string {
+	if a.Name != "" {
+		return utoa(uint64(a.Index)) + " · " + a.Name
+	}
+	return utoa(uint64(a.Index))
+}
+
+// SweepSection is the folded auto-sweep panel of a node wallet. It loads
+// when first opened.
+templ SweepSection(id string) {
+	<section class="card" id="auto-sweep">
+		<details class="fold op" hx-get={ sweepPart("", id) } hx-trigger="toggle once" hx-target="find .sweep-body" hx-swap="innerHTML">
+			<summary><span class="mi">security</span>{ T(ctx, "sweep.title") }</summary>
+			<p class="small dim">{ T(ctx, "sweep.help") }</p>
+			<div class="sweep-body">
+				<p class="dim">{ T(ctx, "ui2.loading") }</p>
+			</div>
+		</details>
+	</section>
+}
+
+// SweepPanel is the rule form, the unlock controls and the status of the
+// sweep of one wallet.
+templ SweepPanel(v SweepView) {
+	<div class="sweep-panel">
+		if v.Saved != "" {
+			<div class="alert ok notice" role="status">{ T(ctx, v.Saved) }</div>
+		}
+		if v.Err != "" {
+			<div role="alert">
+				@ErrorBox(T(ctx, v.Err))
+			</div>
+		}
+		if v.Rule.Wallet != "" {
+			@SweepStatusBlock(v.statusOnly())
+			@sweepRuleForm(v)
+			if v.Encrypted {
+				@sweepUnlock(v)
+			}
+		}
+	</div>
+}
+
+templ sweepRuleForm(v SweepView) {
+	<form class="form sweep-rule" hx-post="wallet/sweep/rule" hx-target="closest .sweep-body" hx-swap="innerHTML" autocomplete="off">
+		<input type="hidden" name="id" value={ v.ID }/>
+		<label class="check">
+			<input type="checkbox" name="enabled" value="1" checked?={ v.Rule.Enabled }/>
+			{ T(ctx, "sweep.enable") }
+		</label>
+		<div class="alert warn sweep-burn" role="note">
+			<span class="mi">warning</span>
+			<span>{ T(ctx, "sweep.burn-warning") }</span>
+		</div>
+		if !v.Status.Enabled {
+			<label class="check">
+				<input type="checkbox" name="burn_ok" value="1"/>
+				{ T(ctx, "sweep.burn-ok") }
+			</label>
+		}
+		if v.Bip44 {
+			<fieldset class="sweep-set">
+				<legend>{ T(ctx, "sweep.shared") }</legend>
+				<p class="small dim">{ T(ctx, "sweep.shared-help") }</p>
+				for _, a := range v.Accounts {
+					<label class="check">
+						<input type="checkbox" name="shared" value={ utoa(uint64(a.Index)) } checked?={ v.Shared(a.Index) }/>
+						{ T(ctx, "wallet.account-n", "n", accountLabel(a)) }
+					</label>
+				}
+			</fieldset>
+		}
+		<fieldset class="sweep-set">
+			<legend>{ T(ctx, "sweep.destination") }</legend>
+			if v.Bip44 {
+				<label class="check">
+					<input type="radio" name="to" value="next" checked?={ v.To == sweepToNext }/>
+					{ T(ctx, "sweep.to-next") }
+				</label>
+				<label class="check">
+					<input type="radio" name="to" value="account" checked?={ v.To == sweepToAccount }/>
+					{ T(ctx, "sweep.to-account") }
+				</label>
+				<select name="to_account" aria-label={ T(ctx, "sweep.to-account") }>
+					for _, a := range v.Accounts {
+						<option value={ utoa(uint64(a.Index)) } selected?={ v.Rule.Destination.Account != nil && *v.Rule.Destination.Account == a.Index }>
+							{ T(ctx, "wallet.account-n", "n", accountLabel(a)) }
+						</option>
+					}
+				</select>
+			} else {
+				<label class="check">
+					<input type="radio" name="to" value="self" checked?={ v.To == sweepToSelf }/>
+					{ T(ctx, "sweep.to-self") }
+				</label>
+			}
+			if len(v.Wallets) > 0 {
+				<label class="check">
+					<input type="radio" name="to" value="wallet" checked?={ v.To == sweepToWallet }/>
+					{ T(ctx, "sweep.to-wallet") }
+				</label>
+				<select name="to_wallet" aria-label={ T(ctx, "sweep.to-wallet") }>
+					for _, w := range v.Wallets {
+						<option value={ w.ID } selected?={ v.Rule.Destination.Wallet == w.ID }>
+							if w.Label != "" {
+								{ w.Label } ({ w.ID })
+							} else {
+								{ w.ID }
+							}
+						</option>
+					}
+				</select>
+			}
+			<label class="check">
+				<input type="radio" name="to" value="address" checked?={ v.To == sweepToAddress }/>
+				{ T(ctx, "sweep.to-address") }
+			</label>
+			<input type="text" name="to_address" class="mono" value={ v.Rule.Destination.Address } aria-label={ T(ctx, "sweep.to-address") } maxlength="64"/>
+		</fieldset>
+		<label>
+			{ T(ctx, "sweep.addresses") }
+			<textarea name="addresses" class="mono" rows="2">{ joinLines(v.Rule.Addresses) }</textarea>
+			<span class="small dim">{ T(ctx, "sweep.addresses-help") }</span>
+		</label>
+		<div class="bar">
+			<button class="btn primary" type="submit">{ T(ctx, "sweep.save") }<span class="busy">…</span></button>
+		</div>
+	</form>
+}
+
+templ sweepUnlock(v SweepView) {
+	<div class="sweep-unlock">
+		<h3>{ T(ctx, "sweep.unlock-title") }</h3>
+		<p class="small dim">{ T(ctx, "sweep.unlock-help") }</p>
+		if v.Status.Unlocked {
+			<form class="form" hx-post="wallet/sweep/lock" hx-target="closest .sweep-body" hx-swap="innerHTML">
+				<input type="hidden" name="id" value={ v.ID }/>
+				<div class="bar">
+					<button class="btn" type="submit"><span class="mi">lock</span>{ T(ctx, "sweep.lock") }<span class="busy">…</span></button>
+				</div>
+			</form>
+		} else {
+			<form class="form" hx-post="wallet/sweep/unlock" hx-target="closest .sweep-body" hx-swap="innerHTML" autocomplete="off">
+				<input type="hidden" name="id" value={ v.ID }/>
+				<label>
+					{ T(ctx, "send.password") }
+					<input type="password" name="password" required autocomplete="current-password"/>
+				</label>
+				<label>
+					{ T(ctx, "sweep.ttl") }
+					<select name="ttl">
+						for _, d := range SweepTTLs {
+							<option value={ utoa(d.Seconds) }>{ T(ctx, d.Key) }</option>
+						}
+					</select>
+				</label>
+				<div class="bar">
+					<button class="btn primary" type="submit"><span class="mi">lock_open</span>{ T(ctx, "sweep.unlock") }<span class="busy">…</span></button>
+				</div>
+			</form>
+		}
+	</div>
+}
+
+// SweepStatusBlock is the sweep status. It reloads every 10 s while its
+// panel is open (ui2.js skips the poll of a closed one).
+templ SweepStatusBlock(v SweepView) {
+	<div class="sweep-status" hx-get={ sweepStatusURL(v) } hx-trigger="every 10s" hx-target="this" hx-swap="outerHTML" data-poll-open aria-live="polite">
+		if v.Err != "" {
+			@ErrorBox(T(ctx, v.Err))
+		} else {
+			<div class="head">
+				<h3>{ T(ctx, "sweep.status") }</h3>
+				switch {
+					case v.Active():
+						<span class="badge on">{ T(ctx, "sweep.active") }</span>
+					case v.Status.Enabled:
+						<span class="badge warn-text">{ T(ctx, "sweep.paused") }</span>
+					default:
+						<span class="badge off">{ T(ctx, "sweep.off") }</span>
+				}
+			</div>
+			if v.Status.Enabled && v.Status.Paused != "" {
+				<div class="alert warn" role="status">{ v.Status.Paused }</div>
+			}
+			<dl class="kv">
+				if v.Encrypted {
+					<dt>{ T(ctx, "sweep.unlocked") }</dt>
+					<dd>
+						if !v.Status.Unlocked {
+							{ T(ctx, "sweep.no") }
+						} else if v.Status.UnlockExpires != nil {
+							{ T(ctx, "sweep.until", "time", sweepTime(v.Status.UnlockExpires)) }
+						} else {
+							{ T(ctx, "sweep.until-restart") }
+						}
+					</dd>
+				}
+				<dt>{ T(ctx, "sweep.exposed") }</dt>
+				<dd>{ itoa(v.Status.Exposed) }</dd>
+				<dt>{ T(ctx, "sweep.waiting") }</dt>
+				<dd>{ T(ctx, "sweep.waiting-value", "coins", v.Status.WaitingCoins, "hours", utoa(v.Status.WaitingHours)) }</dd>
+				if v.Status.Destination != "" {
+					<dt>{ T(ctx, "sweep.destination") }</dt>
+					<dd class="mono"><span class="key" data-copy={ v.Status.Destination } title={ T(ctx, "ui2.copy") }>{ v.Status.Destination }</span></dd>
+				}
+				<dt>{ T(ctx, "sweep.last") }</dt>
+				<dd>
+					if t := sweepTime(v.Status.LastSweep); t != "" {
+						{ t }
+					} else {
+						{ T(ctx, "sweep.never") }
+					}
+				</dd>
+				@sweepTxids(T(ctx, "sweep.last-txids"), v.Status.LastTxids)
+				<dt>{ T(ctx, "sweep.confirmed") }</dt>
+				<dd>{ itoa(v.Status.Confirmed) }</dd>
+				@sweepTxids(T(ctx, "sweep.pending"), v.Status.Pending)
+				if v.Status.Contested > 0 {
+					<dt>{ T(ctx, "sweep.contested") }</dt>
+					<dd>{ itoa(v.Status.Contested) }</dd>
+				}
+				@sweepTxids(T(ctx, "sweep.displaced"), v.Status.Displaced)
+				if v.Status.LastError != "" {
+					<dt>{ T(ctx, "sweep.last-error") }</dt>
+					<dd><span class="error">{ v.Status.LastError }</span></dd>
+				}
+			</dl>
+		}
+	</div>
+}
+
+templ sweepTxids(title string, txids []string) {
+	if len(txids) > 0 {
+		<dt>{ title }</dt>
+		<dd class="mono">
+			for _, id := range txids {
+				<div><span class="key" data-copy={ id } title={ T(ctx, "ui2.copy") }>{ id }</span></div>
+			}
+		</dd>
+	}
+}

@@ -1,0 +1,168 @@
+<app-modal class="modal" [headline]="'wallet.sweep.title' | translate" [dialog]="dialogRef">
+  <p class="-help">{{ 'wallet.sweep.help' | translate }}</p>
+
+  @if (!state && !loadError) {
+    <p class="-help">{{ 'common.loading' | translate }}</p>
+  }
+  @if (loadError) {
+    <div class="-error" role="alert">{{ loadError | translate }}</div>
+  }
+
+  @if (state) {
+    <section class="-status" aria-live="polite">
+      <div class="-status-head">
+        <h3>{{ 'wallet.sweep.status' | translate }}</h3>
+        @if (active) {
+          <span class="-badge -on">{{ 'wallet.sweep.active' | translate }}</span>
+        } @else if (state.status.enabled) {
+          <span class="-badge -paused">{{ 'wallet.sweep.paused' | translate }}</span>
+        } @else {
+          <span class="-badge">{{ 'wallet.sweep.off' | translate }}</span>
+        }
+      </div>
+      @if (state.status.enabled && state.status.paused) {
+        <div class="-warning" role="status">{{ state.status.paused }}</div>
+      }
+      <dl>
+        @if (wallet.encrypted) {
+          <dt>{{ 'wallet.sweep.unlocked' | translate }}</dt>
+          <dd>
+            @if (!state.status.unlocked) {
+              {{ 'wallet.sweep.no' | translate }}
+            } @else if (state.status.unlock_expires) {
+              {{ 'wallet.sweep.until' | translate:{ time: (state.status.unlock_expires | date:'medium') } }}
+            } @else {
+              {{ 'wallet.sweep.until-restart' | translate }}
+            }
+          </dd>
+        }
+        <dt>{{ 'wallet.sweep.exposed' | translate }}</dt>
+        <dd>{{ state.status.exposed_addresses }}</dd>
+        <dt>{{ 'wallet.sweep.waiting' | translate }}</dt>
+        <dd>{{ 'wallet.sweep.waiting-value' | translate:{ coins: state.status.waiting_coins, hours: state.status.waiting_hours } }}</dd>
+        @if (state.status.destination) {
+          <dt>{{ 'wallet.sweep.destination' | translate }}</dt>
+          <dd class="-mono">{{ state.status.destination }}</dd>
+        }
+        <dt>{{ 'wallet.sweep.last' | translate }}</dt>
+        <dd>{{ state.status.last_sweep ? (state.status.last_sweep | date:'medium') : ('wallet.sweep.never' | translate) }}</dd>
+        @if (state.status.last_txids?.length) {
+          <dt>{{ 'wallet.sweep.last-txids' | translate }}</dt>
+          <dd class="-mono">@for (id of state.status.last_txids; track id) { <div>{{ id }}</div> }</dd>
+        }
+        <dt>{{ 'wallet.sweep.confirmed' | translate }}</dt>
+        <dd>{{ state.status.confirmed_sweeps }}</dd>
+        @if (state.status.pending_txids?.length) {
+          <dt>{{ 'wallet.sweep.pending' | translate }}</dt>
+          <dd class="-mono">@for (id of state.status.pending_txids; track id) { <div>{{ id }}</div> }</dd>
+        }
+        @if (state.status.contested) {
+          <dt>{{ 'wallet.sweep.contested' | translate }}</dt>
+          <dd>{{ state.status.contested }}</dd>
+        }
+        @if (state.status.displaced_txids?.length) {
+          <dt>{{ 'wallet.sweep.displaced' | translate }}</dt>
+          <dd class="-mono">@for (id of state.status.displaced_txids; track id) { <div>{{ id }}</div> }</dd>
+        }
+        @if (state.status.last_error) {
+          <dt>{{ 'wallet.sweep.last-error' | translate }}</dt>
+          <dd class="-error">{{ state.status.last_error }}</dd>
+        }
+      </dl>
+    </section>
+
+    <section class="-rule">
+      <div class="form-field">
+        <mat-checkbox class="-check" [checked]="enabled" (change)="enabled = $event.checked" id="sweep-enabled">
+          {{ 'wallet.sweep.enable' | translate }}
+        </mat-checkbox>
+      </div>
+      <div class="-warning" role="note">{{ 'wallet.sweep.burn-warning' | translate }}</div>
+      @if (enabling) {
+        <div class="form-field">
+          <mat-checkbox class="-check" [checked]="burnOk" (change)="burnOk = $event.checked" id="sweep-burn-ok">
+            {{ 'wallet.sweep.burn-ok' | translate }}
+          </mat-checkbox>
+        </div>
+      }
+
+      @if (bip44) {
+        <fieldset class="form-field">
+          <legend>{{ 'wallet.sweep.shared' | translate }}</legend>
+          <p class="-help">{{ 'wallet.sweep.shared-help' | translate }}</p>
+          @for (a of accounts; track a.index) {
+            <mat-checkbox class="-check -account" [checked]="shared.has(a.index)" (change)="toggleShared(a.index, $event.checked)"
+              [attr.data-account]="a.index">
+              {{ 'wallet.sweep.account' | translate:{ n: a.index, name: a.name } }}
+            </mat-checkbox>
+          }
+        </fieldset>
+      }
+
+      <div class="form-field">
+        <label for="sweep-destination">{{ 'wallet.sweep.destination' | translate }}</label>
+        <select id="sweep-destination" [(ngModel)]="destination">
+          @for (c of choices; track c.key) {
+            <option [value]="c.key">{{ c.label | translate:c.params }}</option>
+          }
+        </select>
+      </div>
+      @if (destination === 'address') {
+        <div class="form-field">
+          <label for="sweep-address">{{ 'wallet.sweep.to-address' | translate }}</label>
+          <input id="sweep-address" class="-mono" [(ngModel)]="address" maxlength="64" autocomplete="off">
+        </div>
+      }
+      <div class="form-field">
+        <label for="sweep-addresses">{{ 'wallet.sweep.addresses' | translate }}</label>
+        <textarea id="sweep-addresses" class="-mono" rows="2" [(ngModel)]="addresses"></textarea>
+        <p class="-help">{{ 'wallet.sweep.addresses-help' | translate }}</p>
+      </div>
+    </section>
+
+    @if (error) {
+      <div class="-error" role="alert">{{ error | translate }}</div>
+    }
+    @if (done) {
+      <div class="-done" role="status">{{ done | translate }}</div>
+    }
+
+    <div class="-buttons">
+      <app-button (action)="closePopup()">{{ 'common.close' | translate }}</app-button>
+      <app-button (action)="save()" class="primary" [disabled]="busy" id="sweep-save">
+        {{ 'wallet.sweep.save' | translate }}
+      </app-button>
+    </div>
+
+    @if (wallet.encrypted) {
+      <section class="-unlock">
+        <h3>{{ 'wallet.sweep.unlock-title' | translate }}</h3>
+        <p class="-help">{{ 'wallet.sweep.unlock-help' | translate }}</p>
+        @if (state.status.unlocked) {
+          <div class="-buttons">
+            <app-button (action)="lock()" [disabled]="busy" id="sweep-lock">{{ 'wallet.sweep.lock' | translate }}</app-button>
+          </div>
+        } @else {
+          <div class="form-field">
+            <label for="sweep-password">{{ 'wallet.sweep.password' | translate }}</label>
+            <input id="sweep-password" type="password" [(ngModel)]="password" autocomplete="current-password"
+              (keydown.enter)="unlock()">
+          </div>
+          <div class="form-field">
+            <label for="sweep-ttl">{{ 'wallet.sweep.ttl' | translate }}</label>
+            <select id="sweep-ttl" [(ngModel)]="ttl">
+              @for (t of unlockTimes; track t.seconds) {
+                <option [ngValue]="t.seconds">{{ t.label | translate }}</option>
+              }
+            </select>
+          </div>
+          <div class="-buttons">
+            <app-button (action)="unlock()" class="primary" [disabled]="busy" id="sweep-unlock">
+              {{ 'wallet.sweep.unlock' | translate }}
+            </app-button>
+          </div>
+        }
+      </section>
+    }
+  }
+</app-modal>

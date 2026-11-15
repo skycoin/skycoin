@@ -35,3 +35,38 @@ describe('WalletOptionsComponent', () => {
     expect(component).toBeTruthy();
   });
 });
+
+describe('WalletOptionsComponent auto-sweep option', () => {
+  function optionsFor(data: any): WalletOptionsComponent {
+    TestBed.configureTestingModule({
+      declarations: [ WalletOptionsComponent, MockTranslatePipe ],
+      schemas: [ NO_ERRORS_SCHEMA ],
+      providers: [
+        { provide: CoinService, useClass: MockCoinService },
+        { provide: WalletService, useClass: MockWalletService },
+        { provide: MatDialogRef, useValue: {} },
+        { provide: MAT_DIALOG_DATA, useValue: data },
+      ]
+    });
+    const fixture = TestBed.createComponent(WalletOptionsComponent);
+    fixture.detectChanges();
+
+    return fixture.componentInstance;
+  }
+
+  it('is offered for a wallet the node keeps', () => {
+    expect(optionsFor({ filename: 'a.wlt', walletType: 'bip44' }).showSweepOption).toBeTrue();
+  });
+
+  it('is hidden where the node cannot sign', () => {
+    expect(optionsFor({ filename: 'a.wlt', isHardware: true }).showSweepOption).toBeFalse();
+  });
+
+  it('is hidden for a temporary, xpub or browser wallet', () => {
+    expect(optionsFor({ filename: 't.wlt', temporary: true }).showSweepOption).toBeFalse();
+    TestBed.resetTestingModule();
+    expect(optionsFor({ filename: 'x.wlt', walletType: 'xpub' }).showSweepOption).toBeFalse();
+    TestBed.resetTestingModule();
+    expect(optionsFor({ label: 'browser' }).showSweepOption).toBeFalse();
+  });
+});

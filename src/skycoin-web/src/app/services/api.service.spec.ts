@@ -76,6 +76,13 @@ describe('ApiService CSRF', () => {
     service.get('health').subscribe();
     expect(transport.request.calls.count()).toBe(1);
   });
+
+  it('reads a v2 endpoint', () => {
+    transport.request.and.returnValue(of({}));
+    service.get('wallet/sweep', { id: 'w' }, {}, true).subscribe();
+    expect(transport.request.calls.argsFor(0)[1]).toMatch(/\/api\/v2\/wallet\/sweep$/);
+    expect(transport.request.calls.argsFor(0)[3]!.params).toEqual({ id: 'w' });
+  });
 });
 
 describe('ApiService timeout', () => {

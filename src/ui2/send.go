@@ -283,17 +283,39 @@ const (
 // Review is a signed transaction waiting for the user to send it. To,
 // Coins and Hours are the first destination.
 type Review struct {
-	ID       string
-	To       string
-	Coins    string
-	Hours    string
-	Dests    []Dest
-	Change   []api.CreatedTransactionOutput
-	Fee      string
-	Txid     string
-	Raw      string
+	ID     string
+	To     string
+	Coins  string
+	Hours  string
+	Dests  []Dest
+	Change []api.CreatedTransactionOutput
+	Fee    string
+	Txid   string
+	Raw    string
+	// Parts are the transactions of a send too large for one, sent in this
+	// order. Dests, Change and Fee are then their totals.
+	Parts    []ReviewPart
 	Warnings []string
 	Err      string
+}
+
+// ReviewPart is one transaction of a send made of several.
+type ReviewPart struct {
+	Txid string
+	Raw  string
+	Fee  string
+}
+
+// Raws are the encoded transactions to send, in order.
+func (r Review) Raws() []string {
+	if len(r.Parts) == 0 {
+		return []string{r.Raw}
+	}
+	raws := make([]string, len(r.Parts))
+	for i, p := range r.Parts {
+		raws[i] = p.Raw
+	}
+	return raws
 }
 
 var (
@@ -417,23 +439,78 @@ func Prepare(n Node, f SendForm) Review {
 		req.To = append(req.To, api.Receiver{Address: d.To, Coins: d.Coins, Hours: d.Hours})
 	}
 
+	// A send too large for one transaction comes back in parts, which are
+	// signed here and sent one after another. An unsigned one stays whole.
+	req.Split = !f.Unsigned
 	txn, err := n.WalletCreateTransaction(req)
 	if err != nil {
 		return fail(err)
 	}
-	// The node writes the destinations first, in order, and the change after.
-	for i, o := range txn.Transaction.Out {
-		if i < len(dests) {
-			r.Dests = append(r.Dests, Dest{To: o.Address, Coins: o.Coins, Hours: o.Hours})
-			continue
+	if len(txn.Transactions) > 1 {
+		if err := r.addParts(txn.Transactions, dests); err != nil {
+			return fail(err)
 		}
-		r.Change = append(r.Change, o)
+	} else {
+		// The node writes the destinations first, in order, and the change after.
+		for i, o := range txn.Transaction.Out {
+			if i < len(dests) {
+				r.Dests = append(r.Dests, Dest{To: o.Address, Coins: o.Coins, Hours: o.Hours})
+				continue
+			}
+			r.Change = append(r.Change, o)
+		}
+		r.Fee, r.Txid, r.Raw = txn.Transaction.Fee, txn.Transaction.TxID, txn.EncodedTransaction
 	}
 	if len(r.Dests) > 0 {
 		r.To, r.Coins, r.Hours = r.Dests[0].To, dests[0].Coins, r.Dests[0].Hours
 	}
-	r.Fee, r.Txid, r.Raw = txn.Transaction.Fee, txn.Transaction.TxID, txn.EncodedTransaction
 	return r
+}
+
+// addParts fills r with the totals of the parts of a split send. A part pays
+// some of the destinations, so an output is told apart by its address.
+func (r *Review) addParts(parts []api.CreateTransactionResponse, dests []Dest) error {
+	type paid struct{ coins, hours uint64 }
+	toDest := make(map[string]*paid, len(dests))
+	for _, d := range dests {
+		toDest[d.To] = &paid{}
+	}
+	var fee uint64
+	for _, p := range parts {
+		f, err := strconv.ParseUint(p.Transaction.Fee, 10, 64)
+		if err != nil {
+			return err
+		}
+		fee += f
+		r.Parts = append(r.Parts, ReviewPart{Txid: p.Transaction.TxID, Raw: p.EncodedTransaction, Fee: p.Transaction.Fee})
+		for _, o := range p.Transaction.Out {
+			d, ok := toDest[o.Address]
+			if !ok {
+				r.Change = append(r.Change, o)
+				continue
+			}
+			c, err := droplet.FromString(o.Coins)
+			if err != nil {
+				return err
+			}
+			h, err := strconv.ParseUint(o.Hours, 10, 64)
+			if err != nil {
+				return err
+			}
+			d.coins += c
+			d.hours += h
+		}
+	}
+	for _, d := range dests {
+		p := toDest[d.To]
+		coins, err := droplet.ToString(p.coins)
+		if err != nil {
+			return err
+		}
+		r.Dests = append(r.Dests, Dest{To: d.To, Coins: coins, Hours: utoa(p.hours)})
+	}
+	r.Fee, r.Txid = utoa(fee), parts[0].Transaction.TxID
+	return nil
 }
 
 // unusedAddress is an address of w that has never been in a transaction,
@@ -518,4 +595,21 @@ func checkDests(n Node, f *SendForm, own map[string]bool, warnings *[]string, hs
 		}
 	}
 	return dests, manual, nil
+}
+
+// injectAll sends the transactions of a send in order and stops at the first
+// the node refuses. It gives the ids of those it took.
+func injectAll(n Node, raws []string) ([]string, error) {
+	if len(raws) == 0 {
+		return nil, errors.New("no transaction to send")
+	}
+	var txids []string
+	for _, raw := range raws {
+		txid, err := n.InjectEncodedTransaction(raw)
+		if err != nil {
+			return txids, err
+		}
+		txids = append(txids, txid)
+	}
+	return txids, nil
 }

@@ -330,6 +330,8 @@
   "send.row-hours": "Hours (manual)",
   "send.send": "Send",
   "send.sent": "Sent. The transaction is waiting to be confirmed.",
+  "send.split-notice": "This send spends more outputs than fit in one transaction, so it is sent as {{ count }} transactions, one after another. The amounts and fee above are their totals.",
+  "send.split-partial": "{{ sent }} of {{ total }} transactions were sent before this one failed. Sending again from the review sends the rest.",
   "send.share": "Share factor (0 to 1)",
   "send.title": "Send",
   "send.to": "To address",

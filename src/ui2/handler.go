@@ -260,11 +260,12 @@ func coinHandler(n Node, o Options) http.Handler {
 	mux.HandleFunc("/send/row", page(func(*http.Request) templ.Component { return SendRow() }))
 	mux.HandleFunc("/send/inject", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
 		id := r.PostFormValue("id")
-		txid, err := n.InjectEncodedTransaction(r.PostFormValue("rawtx"))
+		raws := r.PostForm["rawtx"]
+		txids, err := injectAll(n, raws)
 		if err != nil {
-			return SentView(walletURL(id), "", err.Error())
+			return SentAllView(walletURL(id), txids, len(raws), err.Error())
 		}
-		return SentView(walletURL(id), txid, "")
+		return SentAllView(walletURL(id), txids, len(raws), "")
 	}))
 
 	mux.HandleFunc("/bw/wallet", page(func(r *http.Request) templ.Component {

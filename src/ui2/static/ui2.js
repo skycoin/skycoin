@@ -105,7 +105,7 @@
 	document.addEventListener('htmx:afterSwap', function (e) {
 		if (!e.detail.target || e.detail.target.id !== 'review') return;
 		if (!e.detail.target.querySelector('.alert.ok')) return;
-		saveNote(e.detail.target.querySelector('[data-sent-txid]'), document.getElementById('send-note'));
+		e.detail.target.querySelectorAll('[data-sent-txid]').forEach(function (s) { saveNote(s, document.getElementById('send-note')); });
 		var f = document.getElementById('send');
 		if (f) f.reset();
 	});

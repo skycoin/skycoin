@@ -79,12 +79,24 @@ templ ReviewView(r Review) {
 				}
 				<dt>{ T(ctx, "send.fee") }</dt>
 				<dd>{ r.Fee } { T(ctx, "balance.hours") }</dd>
-				<dt>{ T(ctx, "tx.id") }</dt>
-				<dd class="mono small">{ r.Txid }</dd>
+				if len(r.Parts) > 0 {
+					for _, p := range r.Parts {
+						<dt>{ T(ctx, "tx.id") }</dt>
+						<dd class="mono small">{ p.Txid }</dd>
+					}
+				} else {
+					<dt>{ T(ctx, "tx.id") }</dt>
+					<dd class="mono small">{ r.Txid }</dd>
+				}
 			</dl>
+			if len(r.Parts) > 0 {
+				<div class="alert warn" data-split-parts={ itoa(len(r.Parts)) }><p>{ T(ctx, "send.split-notice", "count", itoa(len(r.Parts))) }</p></div>
+			}
 			<form hx-post="send/inject" hx-target="#review" hx-swap="innerHTML show:#review:top" hx-disabled-elt="find button">
 				<input type="hidden" name="id" value={ r.ID }/>
-				<input type="hidden" name="rawtx" value={ r.Raw }/>
+				for _, raw := range r.Raws() {
+					<input type="hidden" name="rawtx" value={ raw }/>
+				}
 				<div class="bar">
 					<button class="btn primary" type="submit"><span class="mi">send</span>{ T(ctx, "send.send") }</button>
 					<button class="btn" type="button" data-clear="#review">{ T(ctx, "send.cancel") }</button>
@@ -103,6 +115,30 @@ templ SentView(back, txid, err string) {
 		<div class="alert ok">
 			<p><strong>{ T(ctx, "send.sent") }</strong></p>
 			<p class="mono small" data-sent-txid={ txid }>{ txid }</p>
+			<p><a class="btn primary" href={ templ.URL(back) }>{ T(ctx, "send.back") }</a></p>
+		</div>
+	}
+}
+
+// SentAllView reports the transactions of a send. When one failed, it says
+// which were sent before it.
+templ SentAllView(back string, txids []string, total int, err string) {
+	if err != "" {
+		@ErrorBox(err)
+		if len(txids) > 0 {
+			<div class="alert warn">
+				<p>{ T(ctx, "send.split-partial", "sent", itoa(len(txids)), "total", itoa(total)) }</p>
+				for _, txid := range txids {
+					<p class="mono small" data-sent-txid={ txid }>{ txid }</p>
+				}
+			</div>
+		}
+	} else {
+		<div class="alert ok">
+			<p><strong>{ T(ctx, "send.sent") }</strong></p>
+			for _, txid := range txids {
+				<p class="mono small" data-sent-txid={ txid }>{ txid }</p>
+			}
 			<p><a class="btn primary" href={ templ.URL(back) }>{ T(ctx, "send.back") }</a></p>
 		</div>
 	}

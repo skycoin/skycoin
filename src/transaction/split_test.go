@@ -123,6 +123,7 @@ func TestCreateSplit(t *testing.T) {
 		hs     HoursSelection
 		to     []coin.TransactionOutput
 		nParts int
+		whole  bool
 	}{
 		{
 			name:   "fits in one",
@@ -161,6 +162,33 @@ func TestCreateSplit(t *testing.T) {
 			nParts: 3,
 		},
 		{
+			name:   "whole balance",
+			nOuts:  1000,
+			coins:  oneCoin,
+			hs:     auto,
+			to:     []coin.TransactionOutput{{Address: to[0], Coins: 1000e6}},
+			nParts: 3,
+			whole:  true,
+		},
+		{
+			name:   "whole balance manual hours",
+			nOuts:  1000,
+			coins:  oneCoin,
+			hs:     manual,
+			to:     []coin.TransactionOutput{{Address: to[0], Coins: 1000e6, Hours: 2001}},
+			nParts: 3,
+			whole:  true,
+		},
+		{
+			name:   "whole balance of outputs of different sizes",
+			nOuts:  len(randomCoins),
+			coins:  func(i int) uint64 { return randomCoins[i] },
+			hs:     auto,
+			to:     []coin.TransactionOutput{{Address: to[0], Coins: randomTotal}},
+			nParts: 5,
+			whole:  true,
+		},
+		{
 			name:   "outputs of different sizes",
 			nOuts:  len(randomCoins),
 			coins:  func(i int) uint64 { return randomCoins[i] },
@@ -180,6 +208,12 @@ func TestCreateSplit(t *testing.T) {
 			require.Len(t, txns, tc.nParts)
 			verifySplit(t, p, auxs, headTime, txns, inputs)
 
+			if tc.whole {
+				for _, txn := range txns {
+					require.Len(t, txn.Out, 1, "a part of a whole balance send keeps change")
+				}
+				return
+			}
 			if tc.nParts == 1 {
 				txn, in, err := Create(p, auxs, headTime)
 				require.NoError(t, err)

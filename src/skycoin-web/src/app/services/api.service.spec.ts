@@ -1,5 +1,5 @@
-import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { NEVER, of, throwError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -76,4 +76,33 @@ describe('ApiService CSRF', () => {
     service.get('health').subscribe();
     expect(transport.request.calls.count()).toBe(1);
   });
+});
+
+describe('ApiService timeout', () => {
+  let service: ApiService;
+  let transport: jasmine.SpyObj<ApiTransportService>;
+
+  beforeEach(() => {
+    transport = jasmine.createSpyObj('ApiTransportService', ['request']);
+    TestBed.configureTestingModule({
+      providers: [
+        ApiService,
+        { provide: ApiTransportService, useValue: transport },
+        { provide: TranslateService, useValue: { instant: (key: string) => key, get: (key: string) => of(key) } },
+        { provide: CoinService, useClass: MockCoinService },
+      ],
+    });
+    service = TestBed.inject(ApiService);
+  });
+
+  it('fails a request the node never answers', fakeAsync(() => {
+    transport.request.and.callFake((method: string, url: string) =>
+      url.endsWith('v1/csrf') ? of({}) : NEVER);
+    let error: Error | undefined;
+    service.post('transaction', {}, {}, true).subscribe({ error: e => error = e });
+    tick(service.requestTimeoutMs - 1);
+    expect(error).toBeUndefined();
+    tick(1);
+    expect(error!.message).toBe('service.api.timeout');
+  }));
 });

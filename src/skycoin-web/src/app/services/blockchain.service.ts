@@ -33,6 +33,7 @@ export class BlockchainService {
   private maxDecimals = 6;
   private readonly defaultPeriod = 90000;
   private readonly shortPeriod = 5000;
+  private readonly retryPeriod = 10000;
   private burnRateInternal = new BigNumber(0.5);
 
   get progress(): Observable<ProgressEvent> {
@@ -87,10 +88,25 @@ export class BlockchainService {
     this.progressSubject.next({ state: ProgressStates.Restarting });
     this.synchronizedSubject.next(false);
 
-    this.connectionsSubscription = this.checkConnectionState()
+    this.checkConnection(0);
+  }
+
+  /**
+   * Reads the node version and settings. A failure is shown and tried again,
+   * since everything that waits for the node version would otherwise wait
+   * until the page is reloaded.
+   */
+  private checkConnection(delayMs: number) {
+    this.connectionsSubscription = of(1).pipe(
+      delay(delayMs),
+      mergeMap(() => this.checkConnectionState()),
+    )
       .subscribe(
         () => this.checkBlockchainProgress(0),
-        error => error && error.reported ? null : this.onLoadBlockchainError()
+        error => {
+          this.onLoadBlockchainError(error && error.connectionError ? error.connectionError : undefined);
+          this.checkConnection(this.retryPeriod);
+        }
       );
   }
 
@@ -101,7 +117,10 @@ export class BlockchainService {
     )
       .subscribe(
         (response: any) => this.onBlockchainProgress(response),
-        () => this.onLoadBlockchainError()
+        () => {
+          this.onLoadBlockchainError();
+          this.checkBlockchainProgress(this.retryPeriod);
+        }
       );
   }
 
@@ -145,8 +164,7 @@ export class BlockchainService {
     return this.apiService.get('network/connections').pipe(
       map((status: any) => {
         if ((!status.connections || status.connections.length === 0) && !environment.e2eTest) {
-          this.onLoadBlockchainError(ConnectionError.NO_ACTIVE_CONNECTIONS);
-          throw { reported: true };
+          throw { connectionError: ConnectionError.NO_ACTIVE_CONNECTIONS };
         }
       }),
       mergeMap(() => this.apiService.get('health')),

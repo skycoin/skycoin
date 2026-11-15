@@ -1611,3 +1611,20 @@ func (_m *MockGatewayer) WalletCreateTransactionsSigned(wltID string, password [
 
 	return r0, r1, ret.Error(2)
 }
+
+// CreateTransactions provides a mock function with given fields: p, wp
+func (_m *MockGatewayer) CreateTransactions(p transaction.Params, wp visor.CreateTransactionParams) ([]*coin.Transaction, [][]visor.TransactionInput, error) {
+	ret := _m.Called(p, wp)
+
+	var r0 []*coin.Transaction
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]*coin.Transaction)
+	}
+
+	var r1 [][]visor.TransactionInput
+	if ret.Get(1) != nil {
+		r1 = ret.Get(1).([][]visor.TransactionInput)
+	}
+
+	return r0, r1, ret.Error(2)
+}

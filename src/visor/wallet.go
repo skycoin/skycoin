@@ -541,6 +541,21 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 
 // CreateTransaction creates an unsigned transaction from requested coin.UxOut hashes
 func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+	txns, inputs, err := vs.createTransactions(p, wp, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	return txns[0], inputs[0], nil
+}
+
+// CreateTransactions is CreateTransaction, except that a send too large for one
+// transaction is split into several. The parts spend disjoint confirmed outputs,
+// so they can all be injected at once.
+func (vs *Visor) CreateTransactions(p transaction.Params, wp CreateTransactionParams) ([]*coin.Transaction, [][]TransactionInput, error) {
+	return vs.createTransactions(p, wp, true)
+}
+
+func (vs *Visor) createTransactions(p transaction.Params, wp CreateTransactionParams, split bool) ([]*coin.Transaction, [][]TransactionInput, error) {
 	// Validate parameters before starting database transaction
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -552,26 +567,29 @@ func (vs *Visor) CreateTransaction(p transaction.Params, wp CreateTransactionPar
 		return nil, nil, ErrUxOutsOrAddressesRequired
 	}
 
-	var txn *coin.Transaction
-	var uxb []transaction.UxBalance
+	var txns []*coin.Transaction
+	var uxbs [][]transaction.UxBalance
 
 	if err := vs.db.View("CreateTransaction", func(tx *dbutil.Tx) error {
 		var err error
-		txn, uxb, err = vs.createTransactionTx(tx, p, wp)
+		txns, uxbs, err = vs.createTransactionTx(tx, p, wp, split)
 		return err
 	}); err != nil {
 		return nil, nil, err
 	}
 
-	inputs, err := NewTransactionInputsFromUxBalance(uxb)
-	if err != nil {
-		return nil, nil, err
+	inputs := make([][]TransactionInput, len(uxbs))
+	for i, uxb := range uxbs {
+		var err error
+		if inputs[i], err = NewTransactionInputsFromUxBalance(uxb); err != nil {
+			return nil, nil, err
+		}
 	}
 
-	return txn, inputs, nil
+	return txns, inputs, nil
 }
 
-func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []transaction.UxBalance, error) {
+func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp CreateTransactionParams, split bool) ([]*coin.Transaction, [][]transaction.UxBalance, error) {
 	// Note: assumes inputs have already been validated by walletCreateTransaction
 	head, err := vs.blockchain.Head(tx)
 	if err != nil {
@@ -590,26 +608,36 @@ func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp Cre
 		return nil, nil, err
 	}
 
-	txn, uxb, err := transaction.Create(p, auxs, head.Time())
+	var txns []*coin.Transaction
+	var uxbs [][]transaction.UxBalance
+	if split {
+		txns, uxbs, err = transaction.CreateSplit(p, auxs, head.Time())
+	} else {
+		var txn *coin.Transaction
+		var uxb []transaction.UxBalance
+		txn, uxb, err = transaction.Create(p, auxs, head.Time())
+		txns, uxbs = []*coin.Transaction{txn}, [][]transaction.UxBalance{uxb}
+	}
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction user constraints")
-		return nil, nil, err
+	for _, txn := range txns {
+		if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction user constraints")
+			return nil, nil, err
+		}
+
+		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+		// because the wallet is not aware of visor-level constraints.
+		// Check that the transaction is valid before returning it to the caller.
+		if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, transaction.TxnUnsigned); err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
+			return nil, nil, err
+		}
 	}
 
-	// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-	// because the wallet is not aware of visor-level constraints.
-	// Check that the transaction is valid before returning it to the caller.
-	// TODO -- decimal restriction was moved to params/ package so the wallet can verify now. Move visor/verify to new package?
-	if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.Distribution, params.UserVerifyTxn, transaction.TxnUnsigned); err != nil {
-		logger.WithError(err).Error("Created transaction violates transaction soft/hard constraints")
-		return nil, nil, err
-	}
-
-	return txn, uxb, nil
+	return txns, uxbs, nil
 }
 
 // getCreateTransactionAuxsUxOut returns a map of addresses to their unspent outputs,

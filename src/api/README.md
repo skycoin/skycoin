@@ -2036,6 +2036,10 @@ Otherwise, sign the transaction separately from the API.
 
 The transaction must be fully valid and spendable (except for the lack of signatures) or else an error is returned.
 
+`split` is optional and defaults to `false`. It works as it does for
+`POST /api/v1/wallet/transaction`: a send too large for one transaction is
+paid with several, listed in `"data.transactions"`. Sign and inject every part.
+
 Example request body with manual hours selection type, spending from specific addresses, ignoring unconfirmed unspent outputs:
 
 ```json

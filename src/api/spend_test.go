@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -2247,6 +2248,81 @@ func TestWalletCreateTransactionSplit(t *testing.T) {
 				require.Equal(t, tc.txns[i].Hash().Hex(), part.Transaction.TxID)
 				require.Equal(t, tc.txns[i].MustSerializeHex(), part.EncodedTransaction)
 				require.Empty(t, part.Transactions)
+			}
+		})
+	}
+}
+
+func TestCreateTransactionSplit(t *testing.T) {
+	to := testutil.MakeAddress()
+	makePart := func(coins uint64) (*coin.Transaction, []visor.TransactionInput) {
+		txn := &coin.Transaction{
+			In:  []cipher.SHA256{testutil.RandSHA256(t)},
+			Out: []coin.TransactionOutput{{Address: to, Coins: coins, Hours: 10}},
+		}
+		txn.Sigs = make([]cipher.Sig, 1)
+		require.NoError(t, txn.UpdateHeader())
+		in := []visor.TransactionInput{{
+			UxOut: coin.UxOut{
+				Head: coin.UxHead{Time: uint64(time.Now().UTC().Unix()), BkSeq: 9}, //nolint:gosec
+				Body: coin.UxBody{SrcTransaction: testutil.RandSHA256(t), Address: testutil.MakeAddress(), Coins: coins, Hours: 30},
+			},
+			CalculatedHours: 30,
+		}}
+		return txn, in
+	}
+	t1, in1 := makePart(2e6)
+	t2, in2 := makePart(1e6)
+
+	body := func(split bool) string {
+		return `{"split":` + strconv.FormatBool(split) + `,"addresses":["` + testutil.MakeAddress().String() +
+			`"],"hours_selection":{"type":"manual"},"to":[{"address":"` + to.String() + `","coins":"3","hours":"20"}]}`
+	}
+
+	cases := []struct {
+		name   string
+		split  bool
+		method string
+		txns   []*coin.Transaction
+		ins    [][]visor.TransactionInput
+		parts  int
+	}{
+		{"split", true, "CreateTransactions", []*coin.Transaction{t1, t2}, [][]visor.TransactionInput{in1, in2}, 2},
+		{"split fits", true, "CreateTransactions", []*coin.Transaction{t1}, [][]visor.TransactionInput{in1}, 0},
+		{"no split", false, "CreateTransaction", nil, nil, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := body(tc.split)
+			var req createTransactionRequest
+			require.NoError(t, json.Unmarshal([]byte(b), &req))
+			require.Equal(t, tc.split, req.Split)
+
+			gateway := &MockGatewayer{}
+			if tc.split {
+				gateway.On(tc.method, req.TransactionParams(), req.VisorParams()).Return(tc.txns, tc.ins, nil)
+			} else {
+				gateway.On(tc.method, req.TransactionParams(), req.VisorParams()).Return(t1, in1, nil)
+			}
+
+			r, err := http.NewRequest(http.MethodPost, "/api/v2/transaction", strings.NewReader(b))
+			require.NoError(t, err)
+			r.Header.Add("Content-Type", ContentTypeJSON)
+			setCSRFParameters(t, tokenValid, r)
+			rr := httptest.NewRecorder()
+			newServerMux(defaultMuxConfig(), gateway).ServeHTTP(rr, r)
+			require.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
+			gateway.AssertExpectations(t)
+
+			var rsp ReceivedHTTPResponse
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &rsp))
+			var msg CreateTransactionResponse
+			require.NoError(t, json.Unmarshal(rsp.Data, &msg))
+			require.Equal(t, t1.Hash().Hex(), msg.Transaction.TxID)
+			require.Len(t, msg.Transactions, tc.parts)
+			for i, part := range msg.Transactions {
+				require.Equal(t, tc.txns[i].Hash().Hex(), part.Transaction.TxID)
+				require.Equal(t, tc.txns[i].MustSerializeHex(), part.EncodedTransaction)
 			}
 		})
 	}

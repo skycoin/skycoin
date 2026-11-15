@@ -204,3 +204,43 @@ func TestWalletCreateTransactionBeforeInjectReusesInputs(t *testing.T) {
 		require.NotContains(t, a.In, h)
 	}
 }
+
+// TestCreateTransactionsSplit checks the address based create, which a wallet
+// that keeps its keys elsewhere uses, splits the same way.
+func TestCreateTransactionsSplit(t *testing.T) {
+	v, wltID := newSplitTestVisor(t, 700)
+	w, err := v.wallets.GetWallet(wltID)
+	require.NoError(t, err)
+	addrsers, err := w.GetAddresses()
+	require.NoError(t, err)
+	addrs := make([]cipher.Address, len(addrsers))
+	for i, a := range addrsers {
+		addrs[i] = a.(cipher.Address)
+	}
+	p := splitTestParams(testutil.MakeAddress(), 650e6)
+	p.ChangeAddress = &addrs[0]
+	wp := CreateTransactionParams{Addresses: addrs}
+
+	_, _, err = v.CreateTransaction(p, wp)
+	require.ErrorAs(t, err, new(transaction.TooLargeError))
+
+	txns, inputs, err := v.CreateTransactions(p, wp)
+	require.NoError(t, err)
+	require.Greater(t, len(txns), 1)
+	require.Len(t, inputs, len(txns))
+	seen := make(map[cipher.SHA256]struct{})
+	for i, txn := range txns {
+		require.Len(t, inputs[i], len(txn.In))
+		for _, h := range txn.In {
+			_, dup := seen[h]
+			require.False(t, dup, "an input is spent by two parts")
+			seen[h] = struct{}{}
+		}
+	}
+
+	small := splitTestParams(testutil.MakeAddress(), 20e6)
+	small.ChangeAddress = &addrs[0]
+	txns, _, err = v.CreateTransactions(small, wp)
+	require.NoError(t, err)
+	require.Len(t, txns, 1)
+}

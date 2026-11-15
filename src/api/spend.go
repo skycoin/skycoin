@@ -67,6 +67,25 @@ type CreatedTransaction struct {
 	PQ []readable.PQInputSig `json:"pq,omitempty"`
 }
 
+// newCreateTransactionsResponse is the response for the parts of a send. The
+// first part fills the top level and every part is listed when there are more.
+func newCreateTransactionsResponse(txns []*coin.Transaction, inputs [][]visor.TransactionInput) (*CreateTransactionResponse, error) {
+	resp, err := NewCreateTransactionResponse(txns[0], inputs[0])
+	if err != nil {
+		return nil, fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
+	}
+	if len(txns) > 1 {
+		for i := range txns {
+			part, err := NewCreateTransactionResponse(txns[i], inputs[i])
+			if err != nil {
+				return nil, fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
+			}
+			resp.Transactions = append(resp.Transactions, *part)
+		}
+	}
+	return resp, nil
+}
+
 // NewCreatedTransaction returns a CreatedTransaction
 func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInput) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) {
@@ -275,6 +294,8 @@ func NewCreatedTransactionInput(out visor.TransactionInput) (*CreatedTransaction
 
 // createTransactionRequest is sent to POST /api/v2/transaction
 type createTransactionRequest struct {
+	// Split pays a send too large for one transaction with several.
+	Split             bool           `json:"split"`
 	IgnoreUnconfirmed bool           `json:"ignore_unconfirmed"`
 	HoursSelection    hoursSelection `json:"hours_selection"`
 	ChangeAddress     *wh.Address    `json:"change_address,omitempty"`
@@ -527,7 +548,17 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, inputs, err := gateway.CreateTransaction(req.TransactionParams(), req.VisorParams())
+		var txns []*coin.Transaction
+		var inputs [][]visor.TransactionInput
+		var err error
+		if req.Split {
+			txns, inputs, err = gateway.CreateTransactions(req.TransactionParams(), req.VisorParams())
+		} else {
+			var txn *coin.Transaction
+			var in []visor.TransactionInput
+			txn, in, err = gateway.CreateTransaction(req.TransactionParams(), req.VisorParams())
+			txns, inputs = []*coin.Transaction{txn}, [][]visor.TransactionInput{in}
+		}
 		if err != nil {
 			var resp HTTPResponse
 			switch err.(type) {
@@ -545,9 +576,9 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txnResp, err := NewCreateTransactionResponse(txn, inputs)
+		txnResp, err := newCreateTransactionsResponse(txns, inputs)
 		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewCreateTransactionResponse failed: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			writeHTTPResponse(w, resp)
 			return
 		}
@@ -560,9 +591,7 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 
 // walletCreateTransactionRequest is sent to POST /api/v1/wallet/transaction
 type walletCreateTransactionRequest struct {
-	Unsigned bool `json:"unsigned"`
-	// Split pays a send too large for one transaction with several.
-	Split    bool   `json:"split"`
+	Unsigned bool   `json:"unsigned"`
 	WalletID string `json:"wallet_id"`
 	Password string `json:"password"`
 	createTransactionRequest
@@ -655,22 +684,10 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txnResp, err := NewCreateTransactionResponse(txns[0], inputs[0])
+		txnResp, err := newCreateTransactionsResponse(txns, inputs)
 		if err != nil {
-			err = fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
-		}
-		if len(txns) > 1 {
-			for i := range txns {
-				part, err := NewCreateTransactionResponse(txns[i], inputs[i])
-				if err != nil {
-					err = fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
-					wh.Error500(w, err.Error())
-					return
-				}
-				txnResp.Transactions = append(txnResp.Transactions, *part)
-			}
 		}
 
 		wh.SendJSONOr500(logger, w, txnResp)

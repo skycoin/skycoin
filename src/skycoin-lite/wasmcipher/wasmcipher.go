@@ -238,6 +238,16 @@ func Register() {
 		return liteclient.PrepareTransactionWithSignatures(args[0].String(), args[1].String(), args[2].String())
 	}))
 
+	// sweepCheck and sweepPlan run the node's sweep rule code for a wallet kept in
+	// the browser. sweepPlan returns its result as JSON, which the page parses.
+	skycoinCipher.Set("sweepCheck", arity(1, "sweepCheck", func(args []js.Value) (interface{}, error) {
+		return nil, liteclient.SweepCheck(args[0].String())
+	}))
+
+	skycoinCipher.Set("sweepPlan", arity(1, "sweepPlan", func(args []js.Value) (interface{}, error) {
+		return liteclient.SweepPlan(args[0].String())
+	}))
+
 	skycoinCipher.Set("version", buildVersion())
 
 	js.Global().Set("SkycoinCipher", skycoinCipher)

@@ -184,7 +184,8 @@ func TestSweepOnRealChain(t *testing.T) {
 	require.NotEmpty(t, st.Pending)
 	require.Equal(t, 1, st.Contested)
 	require.Equal(t, uint64(15e6), st.WaitingCoins)
-	dest := cipher.MustDecodeBase58Address(st.Destination)
+	require.Len(t, st.Destinations, 1)
+	dest := cipher.MustDecodeBase58Address(st.Destinations[0])
 	require.Equal(t, addr(savings[2]), dest, "the next unused address of account 1, past savings[1] which received")
 	pool := n.poolHashes()
 	require.Len(t, pool, 1+len(st.Pending))
@@ -295,10 +296,131 @@ func TestSweepSpentSingleAddress(t *testing.T) {
 	n.block()
 	require.Empty(t, n.unspentOf(a))
 	require.Len(t, n.unspentOf(b), 1)
-	dest := cipher.MustDecodeBase58Address(st.Destination)
+	require.Len(t, st.Destinations, 1)
+	dest := cipher.MustDecodeBase58Address(st.Destinations[0])
 	require.NotEqual(t, a, dest)
 	require.NotEqual(t, b, dest, "b appears on chain, so the next unused address is a new one")
 	coins, err := n.unspentOf(dest).Coins()
 	require.NoError(t, err)
 	require.Equal(t, uint64(3e6), coins)
+}
+
+// sendOnce has e spend an output to a stranger and keep the change, so its
+// public key is on the blockchain.
+func (n *node) sendOnce(e wallet.Entry) {
+	a := e.Address.(cipher.Address)
+	out := n.unspentOf(a)[0]
+	var txn coin.Transaction
+	require.NoError(n.t, txn.PushInput(out.Hash()))
+	require.NoError(n.t, txn.PushOutput(testutil.MakeAddress(), 1e6, 1))
+	require.NoError(n.t, txn.PushOutput(a, out.Body.Coins-1e6, 1))
+	require.NoError(n.t, txn.SignInputs([]cipher.SecKey{e.Secret}))
+	require.NoError(n.t, txn.UpdateHeader())
+	require.NoError(n.t, n.InjectBroadcastTransaction(txn))
+}
+
+func TestSweepMappingsOnRealChain(t *testing.T) {
+	n := newNode(t)
+	const id, coldID = "hot.wlt", "cold.wlt"
+	_, err := n.ws.CreateWallet(id, wallet.Options{
+		Label: "hot", Seed: "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+		Type: wallet.WalletTypeBip44, GenerateN: 4,
+	})
+	require.NoError(t, err)
+	_, err = n.ws.NewAccount(id, nil, "trading")
+	require.NoError(t, err)
+	_, err = n.ws.NewAddresses(id, nil, wallet.OptionAccount(1), wallet.OptionExternal(), wallet.OptionGenerateN(3))
+	require.NoError(t, err)
+	_, err = n.ws.CreateWallet(coldID, wallet.Options{Label: "cold", Seed: "cold seed", Type: wallet.WalletTypeDeterministic, GenerateN: 1})
+	require.NoError(t, err)
+	w, err := n.ws.GetWallet(id)
+	require.NoError(t, err)
+	cold, err := n.ws.GetWallet(coldID)
+	require.NoError(t, err)
+	coldEs, err := cold.GetEntries()
+	require.NoError(t, err)
+	coldAddr := coldEs[0].Address.(cipher.Address)
+	a0, a1 := entries(t, w, 0), entries(t, w, 1)
+	addr := func(e wallet.Entry) cipher.Address { return e.Address.(cipher.Address) }
+	fixed := testutil.MakeAddress()
+
+	// a0[0], a0[1] and a1[0] send once, so they are exposed. a1[1] never sends.
+	n.pay([]coin.TransactionOutput{
+		{Address: addr(a0[0]), Coins: 10e6, Hours: 400},
+		{Address: addr(a0[1]), Coins: 20e6, Hours: 400},
+		{Address: addr(a1[0]), Coins: 30e6, Hours: 400},
+		{Address: addr(a1[1]), Coins: 40e6, Hours: 400},
+	})
+	for _, e := range []wallet.Entry{a0[0], a0[1], a1[0]} {
+		n.sendOnce(e)
+	}
+	n.block()
+
+	// Level 1 off: a0[0] goes to a fixed address and account 1 to the cold
+	// wallet. a0[1] has no mapping and stays.
+	s, err := sweep.NewService(sweep.Config{Dir: t.TempDir()}, n.ws, n.v, n)
+	require.NoError(t, err)
+	one := uint32(1)
+	_, err = s.SetRule(sweep.Rule{Wallet: id, Mappings: []sweep.Mapping{
+		{From: sweep.Source{Address: addr(a0[0]).String()}, To: sweep.Destination{Kind: sweep.DestAddress, Address: fixed.String()}},
+		{From: sweep.Source{Account: &one}, To: sweep.Destination{Kind: sweep.DestWallet, Wallet: coldID}},
+	}})
+	require.NoError(t, err)
+	s.Pass()
+	st := s.Status(id)
+	require.Empty(t, st.LastError)
+	require.Equal(t, 3, st.Exposed)
+	require.Equal(t, 1, st.Uncovered)
+	require.Len(t, st.Pending, 2)
+	n.block()
+	s.Pass()
+	st = s.Status(id)
+	require.Empty(t, st.Pending)
+	require.Equal(t, 2, st.Confirmed)
+
+	coins := func(a cipher.Address) uint64 {
+		c, err := n.unspentOf(a).Coins()
+		require.NoError(t, err)
+		return c
+	}
+	require.Equal(t, uint64(9e6), coins(fixed))
+	require.Equal(t, uint64(29e6), coins(coldAddr), "account 1's exposed address went to the cold wallet")
+	require.Equal(t, uint64(19e6), coins(addr(a0[1])), "unmapped and level 1 off: left alone")
+	require.Equal(t, uint64(40e6), coins(addr(a1[1])), "a never-sent address of a source account is not swept")
+	for _, u := range append(n.unspentOf(fixed), n.unspentOf(coldAddr)...) {
+		require.Zero(t, u.Body.Hours, "every coin hour was burned")
+	}
+
+	// Level 1 on with the has-sent inclusion off still leaves a0[1] alone.
+	f := false
+	r, _ := s.Rule(id)
+	r.Enabled, r.IncludeSpent = true, &f
+	_, err = s.SetRule(r)
+	require.NoError(t, err)
+	n.pay([]coin.TransactionOutput{{Address: addr(a0[0]), Coins: 5e6, Hours: 100}})
+	s.Pass()
+	st = s.Status(id)
+	require.Empty(t, st.LastError)
+	require.Equal(t, 2, st.Exposed, "a0[0] and a1[0], the listed ones")
+	require.Len(t, st.Pending, 1)
+	n.block()
+	require.Equal(t, uint64(14e6), coins(fixed))
+	require.Equal(t, uint64(19e6), coins(addr(a0[1])))
+
+	// With the inclusion back on, level 1 takes a0[1] to account 2, the first
+	// after the source account.
+	r.IncludeSpent = nil
+	_, err = s.SetRule(r)
+	require.NoError(t, err)
+	s.Pass()
+	st = s.Status(id)
+	require.Empty(t, st.LastError)
+	require.Len(t, st.Pending, 1)
+	n.block()
+	w, err = n.ws.GetWallet(id)
+	require.NoError(t, err)
+	dest := addr(entries(t, w, 2)[0])
+	require.Equal(t, []string{dest.String()}, st.Destinations)
+	require.Equal(t, uint64(19e6), coins(dest))
+	require.Empty(t, n.unspentOf(addr(a0[1])))
 }

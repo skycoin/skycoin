@@ -1779,21 +1779,30 @@ Args:
 Method: POST
 Body: the rule
     wallet: wallet id
-    shared_accounts: [optional] bip44 accounts whose xpub was shared
-    addresses: [optional] addresses to sweep, each must have sent
+    enabled: level 1, sweep every exposed address no mapping covers to
+        destination. False by default
     destination: kind "account" (with an optional account), "wallet" (with an
         optional wallet) or "address" (with an address). Defaults to "account"
-        for a bip44 wallet and "wallet" otherwise
-    enabled: whether the node sweeps, false by default
+        for a bip44 wallet and "wallet" otherwise. An account destination with
+        no account is the first account after the shared and source accounts
+    mappings: [optional] level 2, a list of {"from": source, "to": destination}.
+        A source is {"address": ...} or {"account": n}, the exposed addresses of
+        that bip44 account. Mappings sweep whether enabled is set or not
+    shared_accounts: [optional] bip44 accounts whose xpub was shared
+    addresses: [optional] addresses to sweep, each must have sent
+    include_spent: [optional] false sweeps only shared accounts, addresses and
+        mapping sources, not every address that has sent. True by default
     gap: [optional] unused addresses kept generated on a shared account, 20 by default
 ```
 
 The node moves the confirmed coins of the exposed addresses of a wallet in the
-block after they arrive: every address of a shared bip44 account, including those
-that never sent, and every address that has sent. A single address that never
-sent is never swept, and an exposed destination is refused. Each sweep burns
-every coin hour of its inputs, the highest fee the rules allow. The rules are kept
-in `sweep.json` in the wallet directory.
+block after they arrive. An address is exposed when it belongs to a shared bip44
+account, including those that never sent, or when it has sent. An address goes
+to the destination of its own mapping, else of its account's mapping, else to
+the level 1 destination when enabled is set, else it is left alone. A single
+address that never sent is never swept, and every destination is refused when
+it is exposed. Each sweep burns every coin hour of its inputs, the highest fee
+the rules allow. The rules are kept in `sweep.json` in the wallet directory.
 
 Both methods return the rule, `null` when there is none, and its status.
 
@@ -1802,7 +1811,8 @@ Example:
 ```sh
 curl -X POST http://127.0.0.1:6420/api/v2/wallet/sweep \
  -H 'Content-Type: application/json' \
- -d '{"wallet":"reward.wlt","shared_accounts":[0],"enabled":true}'
+ -d '{"wallet":"reward.wlt","shared_accounts":[0],"enabled":true,
+      "mappings":[{"from":{"account":2},"to":{"kind":"wallet","wallet":"cold.wlt"}}]}'
 ```
 
 Result:
@@ -1812,17 +1822,20 @@ Result:
     "data": {
         "rule": {
             "wallet": "reward.wlt",
-            "shared_accounts": [0],
+            "enabled": true,
             "destination": {"kind": "account"},
-            "enabled": true
+            "shared_accounts": [0],
+            "mappings": [{"from": {"account": 2}, "to": {"kind": "wallet", "wallet": "cold.wlt"}}]
         },
         "status": {
             "wallet": "reward.wlt",
             "enabled": true,
+            "active": true,
             "paused": "paused: wallet locked, 7.000000 coins waiting on exposed addresses",
             "unlocked": false,
             "head_seq": 1203,
             "exposed_addresses": 21,
+            "uncovered_addresses": 0,
             "waiting_coins": "7.000000",
             "waiting_hours": 120,
             "contested": 0,
@@ -1832,8 +1845,11 @@ Result:
 }
 ```
 
-`pending_txids`, `last_sweep`, `last_txids`, `displaced_txids`, `destination`,
-`unlock_expires` and `last_error` appear when set.
+`enabled` is level 1 and `active` says the rule sweeps anything, through level 1
+or a mapping. `uncovered_addresses` counts exposed addresses left alone because
+no mapping covers them and level 1 is off. `pending_txids`, `last_sweep`,
+`last_txids`, `displaced_txids`, `destinations`, `unlock_expires` and
+`last_error` appear when set.
 
 ```
 URI: /api/v2/wallet/sweep/unlock

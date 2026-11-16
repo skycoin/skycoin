@@ -218,7 +218,7 @@ func TestSweepStatus(t *testing.T) {
 	n.unlocked = map[string]uint64{"b.wlt": 0}
 	sn := &statusNode{fakeNode: n, status: func(s *api.SweepStatus) {
 		s.Exposed, s.Contested, s.Confirmed = 21, 1, 4
-		s.Destination = "destAddr"
+		s.Destinations = []string{"destAddr"}
 		s.LastSweep = &last
 		s.LastTxids = []string{"txLast"}
 		s.Pending = []string{"txPending"}

@@ -221,9 +221,11 @@ templ SweepStatusBlock(v SweepView) {
 				<dd>{ itoa(v.Status.Exposed) }</dd>
 				<dt>{ T(ctx, "sweep.waiting") }</dt>
 				<dd>{ T(ctx, "sweep.waiting-value", "coins", v.Status.WaitingCoins, "hours", utoa(v.Status.WaitingHours)) }</dd>
-				if v.Status.Destination != "" {
+				if len(v.Status.Destinations) > 0 {
 					<dt>{ T(ctx, "sweep.destination") }</dt>
-					<dd class="mono"><span class="key" data-copy={ v.Status.Destination } title={ T(ctx, "ui2.copy") }>{ v.Status.Destination }</span></dd>
+					for _, d := range v.Status.Destinations {
+						<dd class="mono"><span class="key" data-copy={ d } title={ T(ctx, "ui2.copy") }>{ d }</span></dd>
+					}
 				}
 				<dt>{ T(ctx, "sweep.last") }</dt>
 				<dd>

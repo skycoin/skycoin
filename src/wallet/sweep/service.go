@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/sweep/plan"
 )
 
 var logger = logging.MustGetLogger("sweep")
@@ -42,8 +44,11 @@ type Config struct {
 
 // Status is the state of the sweep of one wallet.
 type Status struct {
-	Wallet  string `json:"wallet"`
-	Enabled bool   `json:"enabled"`
+	Wallet string `json:"wallet"`
+	// Enabled is level 1. Active says the rule sweeps anything, through level 1
+	// or a mapping.
+	Enabled bool `json:"enabled"`
+	Active  bool `json:"active"`
 	// Paused says why coins on exposed addresses are not being swept.
 	Paused   string `json:"paused,omitempty"`
 	Unlocked bool   `json:"unlocked"`
@@ -51,16 +56,18 @@ type Status struct {
 	UnlockExpires *time.Time `json:"unlock_expires,omitempty"`
 	HeadSeq       uint64     `json:"head_seq"`
 	Exposed       int        `json:"exposed_addresses"`
+	// Uncovered counts exposed addresses no mapping covers while level 1 is off.
+	Uncovered int `json:"uncovered_addresses"`
 	// WaitingCoins and WaitingHours are on exposed addresses and not in a sweep yet.
 	WaitingCoins uint64 `json:"waiting_coins"`
 	WaitingHours uint64 `json:"waiting_hours"`
 	// Contested counts waiting outputs that another unconfirmed transaction spends.
-	Contested   int        `json:"contested"`
-	Destination string     `json:"destination,omitempty"`
-	Pending     []string   `json:"pending_txids,omitempty"`
-	LastSweep   *time.Time `json:"last_sweep,omitempty"`
-	LastTxids   []string   `json:"last_txids,omitempty"`
-	Confirmed   int        `json:"confirmed_sweeps"`
+	Contested    int        `json:"contested"`
+	Destinations []string   `json:"destinations,omitempty"`
+	Pending      []string   `json:"pending_txids,omitempty"`
+	LastSweep    *time.Time `json:"last_sweep,omitempty"`
+	LastTxids    []string   `json:"last_txids,omitempty"`
+	Confirmed    int        `json:"confirmed_sweeps"`
 	// Displaced lists the latest sweeps that left the pool without confirming.
 	Displaced []string `json:"displaced_txids,omitempty"`
 	LastError string   `json:"last_error,omitempty"`
@@ -176,7 +183,7 @@ func (s *Service) Pass() {
 	s.mu.Lock()
 	rules := make([]Rule, 0, len(s.rules))
 	for _, r := range s.rules {
-		if r.Enabled {
+		if r.Active() {
 			rules = append(rules, r)
 		}
 	}
@@ -234,7 +241,7 @@ func erase(b []byte) {
 // listing is a wallet's addresses and the chain state that goes with them.
 type listing struct {
 	w     wallet.Wallet
-	addrs []walletAddr
+	addrs []plan.Addr
 	st    ChainState
 }
 
@@ -254,7 +261,7 @@ func (s *Service) list(r Rule, txids []cipher.SHA256) (listing, error) {
 		if err != nil {
 			return listing{}, err
 		}
-		needs := gapNeeds(r, addrs, st.Seen)
+		needs := r.GapNeeds(addrs, st.Seen)
 		if len(needs) == 0 {
 			return listing{w: w, addrs: addrs, st: st}, nil
 		}
@@ -270,10 +277,10 @@ func (s *Service) list(r Rule, txids []cipher.SHA256) (listing, error) {
 	return listing{}, errors.New("shared account addresses kept growing past the gap")
 }
 
-func addrsOf(addrs []walletAddr) []cipher.Address {
+func addrsOf(addrs []plan.Addr) []cipher.Address {
 	out := make([]cipher.Address, len(addrs))
 	for i, a := range addrs {
-		out[i] = a.addr
+		out[i] = a.Address
 	}
 	return out
 }
@@ -324,31 +331,23 @@ func (s *Service) sweep(r Rule) error {
 	s.pending[r.Wallet] = kept
 	s.mu.Unlock()
 
-	exp := exposed(r, l.addrs, l.st.Sent)
-	var todo coin.UxArray
-	var coins, hours uint64
-	var contested int
+	outs := make([]plan.Output, 0, len(l.st.Unspent))
 	for _, u := range l.st.Unspent {
-		if !exp[u.Body.Address] || covered[u.Hash()] {
-			continue
+		h, err := u.CoinHours(l.st.HeadTime)
+		if err != nil {
+			return err
 		}
-		todo = append(todo, u.UxOut)
-		coins += u.Body.Coins
-		if h, err := u.CoinHours(l.st.HeadTime); err == nil {
-			hours += h
-		}
-		if len(u.SpentBy) > 0 {
-			contested++
-		}
+		outs = append(outs, plan.Output{Hash: u.Hash(), Address: u.Body.Address, Coins: u.Body.Coins, Hours: h, Contested: len(u.SpentBy) > 0})
 	}
+	p := r.Find(l.addrs, l.st.Sent, outs, covered)
 
 	pw, unlocked := s.password(r.Wallet)
 	defer erase(pw)
 	s.update(r.Wallet, func(st *Status) {
-		st.Enabled = true
+		st.Enabled, st.Active = r.Enabled, true
 		st.HeadSeq = l.st.HeadSeq
-		st.Exposed = len(exp)
-		st.WaitingCoins, st.WaitingHours, st.Contested = coins, hours, contested
+		st.Exposed, st.Uncovered = p.Exposed, p.Uncovered
+		st.WaitingCoins, st.WaitingHours, st.Contested = p.Coins, p.Hours, p.Contested
 		st.Confirmed += confirmed
 		st.Displaced = append(st.Displaced, displaced...)
 		if n := len(st.Displaced); n > 10 {
@@ -357,11 +356,11 @@ func (s *Service) sweep(r Rule) error {
 		st.Pending = hexes(kept)
 		st.Paused = ""
 	})
-	if len(todo) == 0 {
+	if len(p.Groups) == 0 {
 		return nil
 	}
 
-	coinsStr, err := droplet.ToString(coins)
+	coinsStr, err := droplet.ToString(p.Coins)
 	if err != nil {
 		return err
 	}
@@ -372,38 +371,73 @@ func (s *Service) sweep(r Rule) error {
 		return nil
 	}
 
-	dest, err := s.destination(r, l, pw)
-	if err != nil {
-		return err
+	// Targets with the same destination resolve once, and outputs going to the
+	// same address share transactions.
+	exp := r.Exposed(l.addrs, l.st.Sent)
+	var errs []error
+	resolved := make(map[string]cipher.Address)
+	var order []cipher.Address
+	byDest := make(map[cipher.Address][]plan.Output)
+	for _, g := range p.Groups {
+		d := r.Target(g.Target)
+		k := destKey(d)
+		dest, ok := resolved[k]
+		if !ok {
+			dest, err = s.destination(r, d, &l, pw, exp)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("%s: %w", targetName(r, g.Target), err))
+				continue
+			}
+			resolved[k] = dest
+		}
+		if _, ok := byDest[dest]; !ok {
+			order = append(order, dest)
+		}
+		byDest[dest] = append(byDest[dest], g.Outputs...)
 	}
-	s.update(r.Wallet, func(st *Status) { st.Destination = dest.String() })
+	dests := make([]string, len(order))
+	for i, d := range order {
+		dests[i] = d.String()
+	}
+	s.update(r.Wallet, func(st *Status) { st.Destinations = dests })
 
-	plan, err := Plan(todo, l.st.HeadTime, dest, params.UserVerifyTxn.MaxTransactionSize)
-	if errors.Is(err, ErrNoHours) {
+	var sweeps []plan.Sweep
+	noHours := false
+	for _, dest := range order {
+		ps, err := plan.Build(byDest[dest], dest, params.UserVerifyTxn.MaxTransactionSize)
+		if errors.Is(err, plan.ErrNoHours) {
+			noHours = true
+			continue
+		}
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		sweeps = append(sweeps, ps...)
+	}
+	if noHours && len(sweeps) == 0 && len(errs) == 0 {
 		s.update(r.Wallet, func(st *Status) {
 			st.Paused = fmt.Sprintf("waiting: %s coins on exposed addresses have no coin hours to burn yet", coinsStr)
 		})
-		return nil
 	}
-	if err != nil {
-		return err
+	if len(sweeps) == 0 {
+		return errors.Join(errs...)
 	}
 
 	if err := s.wallets.ViewSecrets(r.Wallet, nilIfEmpty(pw), func(w wallet.Wallet) error {
-		return signPlan(w, plan)
+		return signPlan(w, sweeps)
 	}); err != nil {
-		return err
+		return errors.Join(append(errs, err)...)
 	}
 
-	var errs []error
 	var sent []pendingSweep
-	for _, sw := range plan {
+	for _, sw := range sweeps {
 		if err := s.inject.InjectBroadcastTransaction(*sw.Txn); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 		sent = append(sent, pendingSweep{txid: sw.Txn.Hash(), inputs: sw.Txn.In})
-		logger.WithField("wallet", r.Wallet).Infof("swept %d outputs to %s in %s, burning %d coin hours", len(sw.Inputs), dest, sw.Txn.Hash().Hex(), sw.Fee)
+		logger.WithField("wallet", r.Wallet).Infof("swept %d outputs to %s in %s, burning %d coin hours", len(sw.Inputs), sw.Txn.Out[0].Address, sw.Txn.Hash().Hex(), sw.Fee)
 	}
 
 	s.mu.Lock()
@@ -421,6 +455,26 @@ func (s *Service) sweep(r Rule) error {
 	return errors.Join(errs...)
 }
 
+// destKey tells destinations apart by value.
+func destKey(d Destination) string {
+	acct := "next"
+	if d.Account != nil {
+		acct = strconv.FormatUint(uint64(*d.Account), 10)
+	}
+	return d.Kind + "|" + acct + "|" + d.Wallet + "|" + d.Address
+}
+
+func targetName(r Rule, t int) string {
+	if t == plan.Level1 {
+		return "destination"
+	}
+	m := r.Mappings[t].From
+	if m.Account != nil {
+		return fmt.Sprintf("mapping of account %d", *m.Account)
+	}
+	return "mapping of " + m.Address
+}
+
 func nilIfEmpty(b []byte) []byte {
 	if len(b) == 0 {
 		return nil
@@ -436,8 +490,8 @@ func hexes(ps []pendingSweep) []string {
 	return out
 }
 
-// signPlan signs every input of plan with the keys of w, which must be decrypted.
-func signPlan(w wallet.Wallet, plan []Sweep) error {
+// signPlan signs every input of sweeps with the keys of w, which must be decrypted.
+func signPlan(w wallet.Wallet, sweeps []plan.Sweep) error {
 	entries := make(map[cipher.Address]wallet.Entry)
 	add := func(es wallet.Entries) {
 		for _, e := range es {
@@ -461,11 +515,11 @@ func signPlan(w wallet.Wallet, plan []Sweep) error {
 		}
 		add(es)
 	}
-	for _, sw := range plan {
+	for _, sw := range sweeps {
 		for i, in := range sw.Inputs {
-			e, ok := entries[in.Body.Address]
+			e, ok := entries[in.Address]
 			if !ok {
-				return fmt.Errorf("address %s is not in the wallet", in.Body.Address)
+				return fmt.Errorf("address %s is not in the wallet", in.Address)
 			}
 			if err := wallet.SignInput(sw.Txn, e, i); err != nil {
 				return err
@@ -478,18 +532,16 @@ func signPlan(w wallet.Wallet, plan []Sweep) error {
 	return nil
 }
 
-// destination resolves where r sends coins, creating an account or an address
+// destination resolves where d sends coins, creating an account or an address
 // when there is no unused one, and refuses a destination that is exposed.
-func (s *Service) destination(r Rule, l listing, pw []byte) (cipher.Address, error) {
-	exp := exposed(r, l.addrs, l.st.Sent)
-	d := r.Destination
+func (s *Service) destination(r Rule, d Destination, l *listing, pw []byte, exp map[cipher.Address]bool) (cipher.Address, error) {
 	var dest cipher.Address
 	var err error
 	switch d.Kind {
 	case DestAccount:
-		dest, err = s.accountDestination(r, l, pw)
+		dest, err = s.accountDestination(r, d, l, pw)
 	case DestWallet:
-		dest, err = s.walletDestination(r, l, pw)
+		dest, err = s.walletDestination(r, d, l, pw)
 	case DestAddress:
 		dest, err = cipher.DecodeBase58Address(d.Address)
 	default:
@@ -507,30 +559,18 @@ func (s *Service) destination(r Rule, l listing, pw []byte) (cipher.Address, err
 		}
 		sent = st.Sent
 	}
-	if err := checkDestination(dest, exp, sent); err != nil {
+	if err := plan.CheckDestination(dest, exp, sent); err != nil {
 		return cipher.Address{}, err
 	}
 	return dest, nil
 }
 
-// destinationAccount is the account r sends to: the one it names, or the first
-// after the shared accounts.
-func destinationAccount(r Rule) uint32 {
-	if r.Destination.Account != nil {
-		return *r.Destination.Account
-	}
-	if m, ok := r.maxShared(); ok {
-		return m + 1
-	}
-	return 0
-}
-
-func (s *Service) accountDestination(r Rule, l listing, pw []byte) (cipher.Address, error) {
+func (s *Service) accountDestination(r Rule, d Destination, l *listing, pw []byte) (cipher.Address, error) {
 	if l.w.Type() != wallet.WalletTypeBip44 {
 		return cipher.Address{}, errors.New("an account destination needs a bip44 wallet")
 	}
-	acct := destinationAccount(r)
-	if r.shared()[acct] {
+	acct := r.DestinationAccount(d)
+	if r.Shared()[acct] {
 		return cipher.Address{}, fmt.Errorf("%w: account %d is shared", ErrDestinationExposed, acct)
 	}
 	for uint32(len(l.w.Accounts())) <= acct { //nolint:gosec // account count
@@ -543,8 +583,8 @@ func (s *Service) accountDestination(r Rule, l listing, pw []byte) (cipher.Addre
 	return s.nextUnused(r.Wallet, l.w, []wallet.Option{wallet.OptionAccount(acct), wallet.OptionExternal()}, l.st.Seen, nil)
 }
 
-func (s *Service) walletDestination(r Rule, l listing, pw []byte) (cipher.Address, error) {
-	id := r.Destination.Wallet
+func (s *Service) walletDestination(r Rule, d Destination, l *listing, pw []byte) (cipher.Address, error) {
+	id := d.Wallet
 	if id == "" {
 		id = r.Wallet
 	}
@@ -578,7 +618,7 @@ func (s *Service) walletDestination(r Rule, l listing, pw []byte) (cipher.Addres
 		if id == r.Wallet {
 			dr, ok = r, true
 		}
-		if ok && dr.shared()[0] {
+		if ok && dr.Shared()[0] {
 			return cipher.Address{}, fmt.Errorf("%w: account 0 of wallet %s is shared", ErrDestinationExposed, id)
 		}
 		opts = []wallet.Option{wallet.OptionAccount(0), wallet.OptionExternal()}
@@ -642,24 +682,15 @@ func (s *Service) SetRule(r Rule) (Rule, error) {
 			r.Destination.Kind = DestAccount
 		}
 	}
-	if err := r.check(); err != nil {
+	if err := r.Check(); err != nil {
 		return Rule{}, err
 	}
-	if len(r.SharedAccounts) > 0 || r.Destination.Kind == DestAccount {
-		if w.Type() != wallet.WalletTypeBip44 {
-			return Rule{}, errors.New("shared accounts and account destinations need a bip44 wallet")
-		}
+	if r.NeedsBip44() && w.Type() != wallet.WalletTypeBip44 {
+		return Rule{}, errors.New("accounts, as shared accounts, sources or destinations, need a bip44 wallet")
 	}
-	n := uint32(len(w.Accounts())) //nolint:gosec // account count
-	for _, a := range r.SharedAccounts {
-		if a >= n {
-			return Rule{}, fmt.Errorf("wallet %s has no account %d", r.Wallet, a)
-		}
-	}
-	if r.Destination.Kind == DestWallet && r.Destination.Wallet != "" {
-		if _, err := s.wallets.GetWallet(r.Destination.Wallet); err != nil {
-			return Rule{}, err
-		}
+	dests := []Destination{r.Destination}
+	for _, m := range r.Mappings {
+		dests = append(dests, m.To)
 	}
 
 	addrs, err := walletAddresses(w)
@@ -667,20 +698,29 @@ func (s *Service) SetRule(r Rule) (Rule, error) {
 		return Rule{}, err
 	}
 	query := addrsOf(addrs)
-	var fixed cipher.Address
-	if r.Destination.Kind == DestAddress {
-		fixed = cipher.MustDecodeBase58Address(r.Destination.Address)
-		query = append(query, fixed)
+	var fixed []cipher.Address
+	for _, d := range dests {
+		switch {
+		case d.Kind == DestWallet && d.Wallet != "":
+			if _, err := s.wallets.GetWallet(d.Wallet); err != nil {
+				return Rule{}, err
+			}
+		case d.Kind == DestAddress:
+			a := cipher.MustDecodeBase58Address(d.Address)
+			fixed = append(fixed, a)
+			query = append(query, a)
+		}
 	}
 	st, err := s.chain.SweepState(query, nil)
 	if err != nil {
 		return Rule{}, err
 	}
-	if err := checkManual(r, addrs, st.Sent); err != nil {
+	if err := r.CheckListed(addrs, st.Sent, uint32(len(w.Accounts()))); err != nil { //nolint:gosec // account count
 		return Rule{}, err
 	}
-	if r.Destination.Kind == DestAddress {
-		if err := checkDestination(fixed, exposed(r, addrs, st.Sent), st.Sent); err != nil {
+	exp := r.Exposed(addrs, st.Sent)
+	for _, a := range fixed {
+		if err := plan.CheckDestination(a, exp, st.Sent); err != nil {
 			return Rule{}, err
 		}
 	}
@@ -697,8 +737,8 @@ func (s *Service) SetRule(r Rule) (Rule, error) {
 	}
 	s.rules = rules
 	if st, ok := s.status[r.Wallet]; ok {
-		st.Enabled = r.Enabled
-		if !r.Enabled {
+		st.Enabled, st.Active = r.Enabled, r.Active()
+		if !r.Active() {
 			st.Paused = "disabled"
 		}
 	}
@@ -728,7 +768,8 @@ func (s *Service) Status(wltID string) Status {
 	}
 	r, ok := s.rules[wltID]
 	st.Enabled = ok && r.Enabled
-	if !st.Enabled {
+	st.Active = ok && r.Active()
+	if !st.Active {
 		st.Paused = "disabled"
 	}
 	if k, ok := s.keys[wltID]; ok && (k.expires.IsZero() || s.now().Before(k.expires)) {
@@ -792,9 +833,9 @@ func (s *Service) LockAll() {
 	}
 }
 
-func containsAddr(addrs []walletAddr, a cipher.Address) bool {
+func containsAddr(addrs []plan.Addr, a cipher.Address) bool {
 	for _, w := range addrs {
-		if w.addr == a {
+		if w.Address == a {
 			return true
 		}
 	}

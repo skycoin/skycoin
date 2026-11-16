@@ -9,14 +9,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - The node can sweep exposed addresses on its own. A rule per wallet, kept in
-  `sweep.json` in the wallet directory and off by default, names the bip44
-  accounts whose xpub was shared. On every block the node moves the confirmed
-  coins of every address of those accounts, and of every address that has
-  sent, to the next unused address of a later account, another wallet or a
-  fixed address. A sweep burns every coin hour of its inputs, the highest fee
-  the rules allow, so a spend of the same outputs paid from their own hours
-  can at best tie it. An encrypted wallet is swept only while the node holds
-  its password in memory. A single address that never sent is never swept.
+  `sweep.json` in the wallet directory and off by default, has two levels.
+  Level 1 is one switch that moves the confirmed coins of every exposed
+  address, on every block, to the next unused address of a later account,
+  another wallet or a fixed address. Level 2 maps a source, one address or a
+  bip44 account, to its own destination, and an address no mapping covers
+  falls back to level 1 when it is on. An address is exposed when it belongs
+  to an account whose xpub was shared or when it has sent, and the has sent
+  inclusion can be turned off so a rule covers only what it lists. A sweep
+  burns every coin hour of its inputs, the highest fee the rules allow, so a
+  spend of the same outputs paid from their own hours can at best tie it. An
+  encrypted wallet is swept only while the node holds its password in memory.
+  A single address that never sent is never swept, and an exposed
+  destination is refused.
 - A server rendered explorer, built with templ and htmx in the
   `src/explorerui` package, is now the explorer at `/` and the `/app/` paths.
   It serves every page of the Angular one at the same paths, the blocks list,

@@ -139,6 +139,41 @@ func TestHandleReadOnlyPost_TransactionsCaching(t *testing.T) {
 	require.Contains(t, w2.Body.String(), "cached")
 }
 
+func TestHandleReadOnlyPost_CacheKeysOnEveryField(t *testing.T) {
+	calls := map[string]int{}
+	mockNode := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/csrf" {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck,gosec
+			return
+		}
+		require.NoError(t, r.ParseForm())
+		calls[r.PostForm.Get("verbose")]++
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`[{"verbose":"` + r.PostForm.Get("verbose") + `"}]`)) //nolint:errcheck,gosec
+	}))
+	defer mockNode.Close()
+	queryCache = &proxyCache{entries: make(map[string]proxyCacheEntry)}
+
+	ask := func(verbose string) string {
+		w := httptest.NewRecorder()
+		c := newCtx(w, nil)
+		form := url.Values{"addrs": {"a,b"}}
+		if verbose != "" {
+			form.Set("verbose", verbose)
+			form.Set("confirmed", "1")
+		}
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/transactions", strings.NewReader(form.Encode()))
+		c.Request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		handleReadOnlyPost(c, "/v1/transactions", mockNode.URL)
+		return w.Body.String()
+	}
+	require.Contains(t, ask(""), `"verbose":""`)
+	require.Contains(t, ask("1"), `"verbose":"1"`, "a verbose query is not answered from the plain one")
+	require.Contains(t, ask("1"), `"verbose":"1"`)
+	require.Equal(t, map[string]int{"": 1, "1": 1}, calls, "each query is cached on its own")
+}
+
 func TestHandleReadOnlyPost_OutputsEndpoint(t *testing.T) {
 	mockNode := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

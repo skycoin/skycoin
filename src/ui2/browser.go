@@ -136,7 +136,7 @@ func LoadBrowserWallets(n Node, ws []BrowserWallet) Wallets {
 
 // LoadBrowserWallet reads the balance and addresses of browser wallet w.
 func LoadBrowserWallet(n Node, w BrowserWallet) Wallet {
-	out := Wallet{ID: w.ID, Meta: readable.WalletMeta{Label: w.Label, Type: w.Type, Encrypted: w.Encrypted, XPub: w.XPub}}
+	out := Wallet{ID: w.ID, Meta: readable.WalletMeta{Label: w.Label, Type: w.Type, Encrypted: w.Encrypted, XPub: w.XPub, Temp: w.Temporary}}
 	out.BrowserAddrs = w.addrs()
 	b, err := n.Balance(w.addrs())
 	if err != nil {

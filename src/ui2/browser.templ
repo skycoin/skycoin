@@ -131,8 +131,12 @@ templ BrowserWalletView(w Wallet) {
 	</section>
 	if w.Meta.Type == "skywallet" {
 		@hwOptions(w)
+		@HWSweepNote()
 	} else {
 		@bwOptions(w)
+		if !w.Meta.Temp {
+			@BrowserSweepSection(w)
+		}
 	}
 	<section class="card">
 		<div class="bar">

@@ -1031,6 +1031,484 @@
 		window.location.reload();
 	});
 
+	// Auto-sweep of a wallet kept in this browser (bwsweep.templ). The rule
+	// is kept in localStorage under SWEEP and holds no secret. The password
+	// stays in this page's memory for the time asked. Every pass runs the
+	// node's rule code in the wasm cipher (sweepPlan), signs with
+	// prepareTransaction as a send does, and hands the result to the node.
+	var SWEEP = 'sweepRules';
+	function sweepRules() {
+		try { return JSON.parse(localStorage.getItem(SWEEP) || '{}') || {}; } catch (_) { return {}; }
+	}
+	function ruleActive(r) { return !!r && (r.enabled || !!(r.mappings && r.mappings.length)); }
+	function apiGet(path) {
+		return fetch(root + 'api/' + path, { credentials: 'same-origin' })
+			.then(function (r) { if (!r.ok) throw new Error(r.status + ' ' + r.statusText); return r.json(); });
+	}
+	function keys(o) { return Object.keys(o); }
+
+	// chainOf reads the unspent outputs of addrs, those an unconfirmed
+	// transaction spends, and which addresses sent or appear in a block.
+	function chainOf(addrs) {
+		if (!addrs.length) return Promise.resolve({ outputs: [], outgoing: {}, sent: {}, seen: {} });
+		var q = encodeURIComponent(addrs.join(','));
+		return Promise.all([apiGet('v1/outputs?addrs=' + q), apiGet('v1/transactions?verbose=1&confirmed=1&addrs=' + q)]).then(function (r) {
+			var want = {}, sent = {}, seen = {}, outgoing = {};
+			addrs.forEach(function (a) { want[a] = true; });
+			(r[1] || []).forEach(function (t) {
+				(t.txn.inputs || []).forEach(function (i) { if (want[i.owner]) { sent[i.owner] = true; seen[i.owner] = true; } });
+				(t.txn.outputs || []).forEach(function (o) { if (want[o.dst]) seen[o.dst] = true; });
+			});
+			(r[0].outgoing_outputs || []).forEach(function (o) { outgoing[o.hash] = true; });
+			return { outputs: r[0].head_outputs || [], outgoing: outgoing, sent: sent, seen: seen };
+		});
+	}
+
+	// sweepAddrs are w's addresses with their place, as sweepPlan takes them.
+	function sweepAddrs(w) {
+		if (!isBip44(w)) return w.addresses.map(function (e) { return { address: e.address }; });
+		var a = w.accounts[0], out = [];
+		a.externalAddresses.forEach(function (e, i) { out.push({ address: e.address, child: i, bip44: true }); });
+		a.changeAddresses.forEach(function (e, i) { out.push({ address: e.address, change: true, child: i, bip44: true }); });
+		return out;
+	}
+
+	// nextUnused is the first receive address of w after the last one seen,
+	// or the next one to derive, which needs the seed unless w is bip44.
+	function nextUnused(c, w, sec, seen) {
+		var stored = isBip44(w) ? w.accounts[0].externalAddresses : w.addresses, last = -1;
+		stored.forEach(function (e, i) { if (seen[e.address]) last = i; });
+		if (last + 1 < stored.length) return { address: stored[last + 1].address, index: last + 1 };
+		if (isBip44(w)) {
+			return { address: call(c, 'bip44XPubAddresses', [w.accounts[0].accountXpubKey, 0, stored.length, 1])[0].address, index: stored.length, fresh: true };
+		}
+		if (!sec) throw new Error(sweepMsg('dest-full'));
+		var ch = deterministicChain(c, w, sec);
+		return { address: ch.addrs[ch.addrs.length - 1].address, index: stored.length, fresh: true, after: ch.after };
+	}
+
+	// storeFresh keeps a derived destination in its wallet before anything
+	// is sent to it, so the wallet lists the coins.
+	function storeFresh(wid, f, password) {
+		return withList(function (list) {
+			var w = list.filter(ours).find(function (x) { return firstAddress(x) === wid; });
+			if (!w) throw new Error(msg('missing'));
+			if (isBip44(w)) {
+				var a = w.accounts[0];
+				if (a.externalAddresses.length !== f.index) throw new Error(msg('mismatch'));
+				a.externalAddresses.push({ address: f.address });
+				w.addresses = a.externalAddresses.concat(a.changeAddresses);
+				return writeStored(list);
+			}
+			if (w.addresses.length !== f.index) throw new Error(msg('mismatch'));
+			w.addresses.push({ address: f.address });
+			if (w.encryptedSeed) {
+				return encrypt(f.after, password).then(function (e) { w.encryptedNextSeed = e; return writeStored(list); });
+			}
+			w.nextSeed = f.after;
+			return writeStored(list);
+		});
+	}
+
+	var sweepBox = null;
+	function sweepMsg(name) { return (sweepBox && sweepBox.getAttribute('data-msg-' + name)) || name; }
+
+	function sweepFlow(id) {
+		var box = sweepBox = document.querySelector('[data-bw-sweep]');
+		if (!box || box.getAttribute('data-bound')) return;
+		box.setAttribute('data-bound', '1');
+		var form = box.querySelector('[data-bw-sweep-form]');
+		var f = function (root, name) { return root.querySelector('[data-f="' + name + '"]'); };
+		var s = function (name) { return box.querySelector('[data-s="' + name + '"]'); };
+		var session = null; // { sec, password, expires }
+		var state = { pending: [], confirmed: 0, last: '', txids: [], dests: [], error: '', paused: '', res: null };
+		var busy = false, lastSeq = -1, retryAt = 0, others = [];
+
+		function rule() { return sweepRules()[id] || null; }
+		function wallet() {
+			return withList(function (list) {
+				others = list.filter(function (x) { return ours(x) && !x.temporary && firstAddress(x) !== id; });
+				var w = list.filter(ours).find(function (x) { return firstAddress(x) === id; });
+				if (!w) throw new Error(msg('missing'));
+				return w;
+			});
+		}
+		function locked(w) { return !!w.encryptedSeed && !session; }
+
+		function render() {
+			var r = rule(), on = ruleActive(r), res = state.res || {};
+			var badge = s('badge');
+			var active = on && !state.paused && !state.error;
+			badge.className = 'badge ' + (active ? 'on' : on ? 'warn-text' : 'off');
+			badge.textContent = sweepMsg(active ? 'active' : on ? 'paused' : 'off');
+			s('paused').hidden = !(on && state.paused);
+			s('paused').textContent = state.paused;
+			if (s('unlocked')) {
+				s('unlocked').textContent = !session ? sweepMsg('no') : session.expires
+					? sweepMsg('until').replace('{time}', new Date(session.expires).toLocaleTimeString()) : sweepMsg('until-page');
+				box.querySelector('[data-bw-sweep-unlock]').hidden = !!session;
+				s('lock').hidden = !session;
+			}
+			s('exposed').textContent = String(res.exposed || 0);
+			s('uncovered').textContent = String(res.uncovered || 0);
+			var c = String(res.coins || 0).padStart(7, '0');
+			s('waiting').textContent = s('waiting').getAttribute('data-msg').replace('{coins}', c.slice(0, -6) + '.' + c.slice(-6)).replace('{hours}', String(res.hours || 0));
+			s('destinations').textContent = state.dests.join('\n');
+			s('last').textContent = state.last || sweepMsg('never');
+			s('txids').textContent = state.txids.join('\n');
+			s('pending').textContent = state.pending.map(function (p) { return p.txid; }).join('\n');
+			s('confirmed').textContent = String(state.confirmed);
+			s('error').textContent = state.error;
+			s('burn').hidden = on;
+		}
+
+		// fill puts the stored rule in the form.
+		function fill() {
+			var r = rule() || { destination: { kind: 'wallet' } };
+			f(form, 'enabled').checked = !!r.enabled;
+			var d = r.destination || {};
+			var to = d.kind === 'address' ? 'address' : d.wallet ? 'wallet' : 'self';
+			form.querySelectorAll('[data-f="to"]').forEach(function (e) { e.checked = e.value === to; });
+			f(form, 'to_address').value = d.kind === 'address' ? d.address : '';
+			f(form, 'include_spent').checked = r.include_spent !== false;
+			if (f(form, 'shared')) f(form, 'shared').checked = (r.shared_accounts || []).indexOf(0) >= 0;
+			f(form, 'addresses').value = (r.addresses || []).join('\n');
+			f(form, 'burn_ok').checked = false;
+			var sel = f(form, 'to_wallet'), mapTo = f(form, 'map_to');
+			sel.textContent = '';
+			mapTo.querySelectorAll('[data-other]').forEach(function (o) { o.remove(); });
+			others.forEach(function (o) {
+				var label = (o.label || firstAddress(o)) + ' (' + firstAddress(o) + ')';
+				sel.appendChild(new Option(label, firstAddress(o), false, d.wallet === firstAddress(o)));
+				var opt = new Option(label, 'wallet:' + firstAddress(o));
+				opt.setAttribute('data-other', '1');
+				mapTo.appendChild(opt);
+			});
+			maps = (r.mappings || []).slice();
+			drawMaps();
+			sel.hidden = !others.length;
+			form.querySelector('[data-f="to"][value="wallet"]').closest('label').hidden = !others.length;
+			if (maps.length || r.include_spent === false || (r.addresses || []).length) form.querySelector('.sweep-advanced').open = true;
+		}
+		var maps = [];
+		function destText(d) {
+			if (d.kind === 'address') return d.address;
+			if (!d.wallet) return sweepMsg('self');
+			var o = others.find(function (x) { return firstAddress(x) === d.wallet; });
+			return o && o.label ? o.label + ' (' + d.wallet + ')' : d.wallet;
+		}
+		function drawMaps() {
+			var ul = s('maps');
+			ul.textContent = '';
+			if (!maps.length) {
+				var none = document.createElement('li');
+				none.className = 'dim';
+				none.textContent = sweepMsg('none');
+				ul.appendChild(none);
+			}
+			maps.forEach(function (m, i) {
+				var li = document.createElement('li');
+				var from = document.createElement('span'), arrow = document.createElement('span'), to = document.createElement('span');
+				from.className = to.className = 'mono';
+				from.textContent = m.from.address;
+				arrow.className = 'mi';
+				arrow.textContent = 'arrow_forward';
+				to.textContent = destText(m.to);
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'btn sm';
+				b.setAttribute('data-bw-sweep-remove', String(i));
+				b.textContent = sweepMsg('remove');
+				li.append(from, arrow, to, b);
+				ul.appendChild(li);
+			});
+		}
+
+		// read is the rule the form describes. Account destinations and
+		// sources are not offered: a browser wallet has one account.
+		function read() {
+			var to = (form.querySelector('[data-f="to"]:checked') || {}).value;
+			var r = { wallet: id, enabled: f(form, 'enabled').checked, destination: { kind: 'wallet' } };
+			if (to === 'wallet') {
+				if (!f(form, 'to_wallet').value) throw new Error(sweepMsg('destination'));
+				r.destination = { kind: 'wallet', wallet: f(form, 'to_wallet').value };
+			} else if (to === 'address') {
+				var a = f(form, 'to_address').value.trim();
+				if (!a) throw new Error(sweepMsg('destination'));
+				r.destination = { kind: 'address', address: a };
+			}
+			if (!f(form, 'include_spent').checked) r.include_spent = false;
+			if (f(form, 'shared') && f(form, 'shared').checked) r.shared_accounts = [0];
+			var addrs = f(form, 'addresses').value.split(/\s+/).filter(Boolean);
+			if (addrs.length) r.addresses = addrs;
+			if (maps.length) r.mappings = maps.slice();
+			return r;
+		}
+
+		// save checks r with the cipher against the wallet and the chain,
+		// then stores it and runs a pass.
+		function save(r) {
+			var before = rule();
+			if (ruleActive(r) && !ruleActive(before) && !f(form, 'burn_ok').checked) return Promise.reject(new Error(sweepMsg('burn')));
+			return Promise.all([cipher(), wallet()]).then(function (got) {
+				var c = got[0], w = got[1], addrs = sweepAddrs(w);
+				var fixed = [r.destination].concat((r.mappings || []).map(function (m) { return m.to; }))
+					.filter(function (d) { return d.kind === 'address'; }).map(function (d) { return d.address; });
+				return chainOf(addrs.map(function (a) { return a.address; }).concat(fixed)).then(function (ch) {
+					var bad = c.sweepCheck(JSON.stringify({ rule: r, addresses: addrs, sent: keys(ch.sent), accounts: isBip44(w) ? 1 : 0 }));
+					if (bad && bad.error) throw new Error(bad.error);
+					var all = sweepRules();
+					all[id] = r;
+					localStorage.setItem(SWEEP, JSON.stringify(all));
+				});
+			}).then(function () {
+				fill();
+				done('saved');
+				lastSeq = -1;
+				return pass();
+			});
+		}
+		function done(name) {
+			var d = s('done');
+			d.textContent = name ? sweepMsg(name) : '';
+			d.hidden = !name;
+		}
+		function fail(where, err) {
+			var e = where.querySelector('.op-error');
+			if (e) e.textContent = err && err.message ? err.message : msg('error');
+		}
+
+		function plan(c, req) {
+			var out = c.sweepPlan(JSON.stringify(req));
+			if (out && out.error) throw new Error(out.error);
+			return JSON.parse(out);
+		}
+
+		// destinationOf resolves target t of r: an address, this wallet's or
+		// another browser wallet's next unused address.
+		function destinationOf(c, w, sec, r, t, seen) {
+			var d = t === -1 ? r.destination : r.mappings[t].to;
+			if (d.kind === 'address') return Promise.resolve({ address: d.address });
+			if (d.kind !== 'wallet') return Promise.reject(new Error(sweepMsg('account')));
+			if (!d.wallet || d.wallet === id) return Promise.resolve(Object.assign(nextUnused(c, w, sec, seen), { wid: id, own: true }));
+			var o = others.find(function (x) { return firstAddress(x) === d.wallet; });
+			if (!o) return Promise.reject(new Error(msg('missing')));
+			var oa = sweepAddrs(o).map(function (a) { return a.address; });
+			return chainOf(oa).then(function (ch) { return Object.assign(nextUnused(c, o, null, ch.seen), { wid: d.wallet }); });
+		}
+
+		// inject hands raw to the node through bw/sweep/inject, with a fresh CSRF
+		// token as ui2.js takes for every write.
+		function inject(raw) {
+			return fetch(document.body.getAttribute('data-csrf'), { credentials: 'same-origin' })
+				.then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+				.then(function (j) {
+					var h = { 'Content-Type': 'application/x-www-form-urlencoded' };
+					if (j && j.csrf_token) h['X-CSRF-Token'] = j.csrf_token;
+					return fetch(root + 'bw/sweep/inject', { method: 'POST', credentials: 'same-origin', headers: h, body: new URLSearchParams({ rawtx: raw }) });
+				})
+				.then(function (r) { if (!r.ok) throw new Error(r.status + ' ' + r.statusText); return r.text(); })
+				.then(function (html) {
+					var e = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-txid]');
+					if (!e) throw new Error(msg('error'));
+					if (e.getAttribute('data-error')) throw new Error(e.getAttribute('data-error'));
+					return e.getAttribute('data-txid');
+				});
+		}
+
+		// pass sweeps once: everything waiting on exposed addresses goes out
+		// in this pass, so opening and unlocking the page catches up.
+		function pass() {
+			if (busy) return Promise.resolve();
+			var r = rule();
+			if (!ruleActive(r)) { state.paused = ''; state.res = null; render(); return Promise.resolve(); }
+			busy = true;
+			state.error = '';
+			return Promise.all([cipher(), wallet()]).then(function (got) {
+				var c = got[0], w = got[1], addrs = sweepAddrs(w);
+				return chainOf(addrs.map(function (a) { return a.address; })).then(function (ch) {
+					var head = {}, covered = [];
+					ch.outputs.forEach(function (o) { head[o.hash] = true; });
+					state.pending = state.pending.filter(function (p) {
+						if (p.inputs.every(function (h) { return ch.outgoing[h]; })) { covered = covered.concat(p.inputs); return true; }
+						if (p.inputs.every(function (h) { return !head[h]; })) state.confirmed++;
+						return false;
+					});
+					var req = {
+						rule: r, addresses: addrs, sent: keys(ch.sent), seen: keys(ch.seen), covered: covered, accounts: isBip44(w) ? 1 : 0,
+						outputs: ch.outputs.map(function (o) {
+							return { hash: o.hash, address: o.address, coins: droplets(o.coins), hours: o.calculated_hours, contested: !!ch.outgoing[o.hash] && covered.indexOf(o.hash) < 0 };
+						}),
+					};
+					var res = state.res = plan(c, req);
+					if (res.gap && res.gap['0'] && isBip44(w)) return fillGap(c, w, res.gap['0']).then(function () { busy = false; return pass(); });
+					state.paused = '';
+					if (!res.need) return finish(c, w, req, res);
+					var coins = String(res.coins).padStart(7, '0');
+					if (locked(w)) {
+						state.paused = sweepMsg('locked').replace('{coins}', coins.slice(0, -6) + '.' + coins.slice(-6));
+						return null;
+					}
+					var secP = session ? Promise.resolve(session.sec) : secretsOf(c, w, '');
+					return secP.then(function (sec) {
+						var fresh = [];
+						return res.need.reduce(function (p, t) {
+							return p.then(function () {
+								return destinationOf(c, w, sec, r, t, ch.seen).then(function (d) {
+									req.destinations = req.destinations || {};
+									req.destinations[String(t)] = d.address;
+									if (d.fresh) fresh.push(d);
+									if (d.own && d.fresh) req.addresses.push({ address: d.address, child: d.index, bip44: isBip44(w) });
+								});
+							});
+						}, Promise.resolve()).then(function () {
+							var outside = keys(req.destinations).map(function (k) { return req.destinations[k]; })
+								.filter(function (a) { return !addrs.some(function (x) { return x.address === a; }); });
+							return chainOf(outside);
+						}).then(function (dc) {
+							req.sent = req.sent.concat(keys(dc.sent));
+							return finish(c, w, req, plan(c, req), sec, fresh);
+						});
+					});
+				});
+			}).catch(function (err) {
+				state.error = err && err.message ? err.message : String(err);
+				retryAt = Date.now() + 10000;
+			}).then(function () { busy = false; render(); });
+		}
+
+		// finish signs and sends the sweeps of res.
+		function finish(c, w, req, res, sec, fresh) {
+			state.res = Object.assign(state.res || {}, { exposed: res.exposed, uncovered: res.uncovered, coins: res.coins, hours: res.hours });
+			if (res.errors && res.errors.length) state.error = res.errors.join('\n');
+			if (res.no_hours && !(res.sweeps && res.sweeps.length)) {
+				var coins = String(res.coins).padStart(7, '0');
+				state.paused = sweepMsg('no-hours').replace('{coins}', coins.slice(0, -6) + '.' + coins.slice(-6));
+			}
+			if (!res.sweeps || !res.sweeps.length) return null;
+			var used = {};
+			res.sweeps.forEach(function (sw) { used[sw.destination] = true; });
+			var store = (fresh || []).filter(function (d) { return used[d.address]; });
+			var signed = res.sweeps.map(function (sw) {
+				var k = keysOf(c, w, sec, sw.inputs.map(function (i) { return i.address; }));
+				var ins = sw.inputs.map(function (i) { return { hash: i.hash, address: i.address, secret: k[i.address] }; });
+				return { sw: sw, raw: call(c, 'prepareTransaction', [JSON.stringify(ins), JSON.stringify(sw.outputs)]) };
+			});
+			return store.reduce(function (p, d) {
+				return p.then(function () { return storeFresh(d.wid, d, session ? session.password : ''); });
+			}, Promise.resolve()).then(function () {
+				var errs = [], txids = [];
+				return signed.reduce(function (p, x) {
+					return p.then(function () {
+						return inject(x.raw).then(function (txid) {
+							txids.push(txid);
+							state.pending.push({ txid: txid, inputs: x.sw.inputs.map(function (i) { return i.hash; }) });
+							var sent = x.sw.outputs[0].coins;
+							state.res.coins = Math.max(0, state.res.coins - sent);
+							state.res.hours = Math.max(0, state.res.hours - x.sw.fee);
+						}, function (err) { errs.push(err.message); });
+					});
+				}, Promise.resolve()).then(function () {
+					if (txids.length) {
+						state.last = new Date().toLocaleString();
+						state.txids = txids;
+					}
+					state.dests = keys(used);
+					if (errs.length) throw new Error(errs.join('\n'));
+				});
+			});
+		}
+
+		// fillGap stores n more receive addresses of a bip44 wallet whose
+		// xPub was shared, so a payment past the stored ones is seen.
+		function fillGap(c, w, n) {
+			var a = w.accounts[0];
+			var more = call(c, 'bip44XPubAddresses', [a.accountXpubKey, 0, a.externalAddresses.length, n]);
+			return withList(function (list) {
+				var x = list.filter(ours).find(function (y) { return firstAddress(y) === id; });
+				var xa = x.accounts[0];
+				if (xa.externalAddresses.length !== a.externalAddresses.length) return null;
+				more.forEach(function (m) { xa.externalAddresses.push({ address: m.address }); });
+				x.addresses = xa.externalAddresses.concat(xa.changeAddresses);
+				return writeStored(list);
+			});
+		}
+
+		// tick runs a pass on every new block, or again after a failure.
+		function tick() {
+			if (session && session.expires && Date.now() >= session.expires) { session = null; render(); }
+			if (!ruleActive(rule()) || busy) return;
+			apiGet('v1/blockchain/metadata').then(function (m) {
+				var seq = m.head.seq;
+				if (seq !== lastSeq || (state.error && Date.now() >= retryAt)) {
+					lastSeq = seq;
+					return pass();
+				}
+				return null;
+			}).catch(function () { /* the node is away, try on the next tick */ });
+		}
+
+		form.addEventListener('submit', function (e) {
+			e.preventDefault();
+			done('');
+			form.querySelector('.op-error').textContent = '';
+			Promise.resolve().then(function () { return save(read()); }).catch(function (err) { fail(form, err); });
+		});
+		box.addEventListener('click', function (e) {
+			var add = e.target.closest('[data-bw-sweep-add]'), rm = e.target.closest('[data-bw-sweep-remove]');
+			if (!add && !rm && !e.target.closest('[data-bw-sweep-lock]')) return;
+			form.querySelector('.op-error').textContent = '';
+			done('');
+			if (e.target.closest('[data-bw-sweep-lock]')) {
+				session = null;
+				done('locked-done');
+				render();
+				return;
+			}
+			var keep = maps.slice();
+			try {
+				if (add) {
+					var from = f(form, 'map_from').value.trim(), to = f(form, 'map_to').value;
+					var dest = to === 'address' ? { kind: 'address', address: f(form, 'map_to_address').value.trim() }
+						: to === 'wallet' ? { kind: 'wallet' } : { kind: 'wallet', wallet: to.slice(7) };
+					if (!from || (dest.kind === 'address' && !dest.address)) throw new Error(sweepMsg('mapping'));
+					maps.push({ from: { address: from }, to: dest });
+				} else {
+					maps.splice(parseInt(rm.getAttribute('data-bw-sweep-remove'), 10), 1);
+				}
+				save(read()).then(function () {
+					f(form, 'map_from').value = '';
+					f(form, 'map_to_address').value = '';
+				}, function (err) { maps = keep; drawMaps(); fail(form, err); });
+			} catch (err) {
+				maps = keep;
+				fail(form, err);
+			}
+		});
+		var unlockForm = box.querySelector('[data-bw-sweep-unlock]');
+		if (unlockForm) {
+			unlockForm.addEventListener('submit', function (e) {
+				e.preventDefault();
+				unlockForm.querySelector('.op-error').textContent = '';
+				var pw = f(unlockForm, 'password').value, ttl = parseInt(f(unlockForm, 'ttl').value, 10) || 0;
+				Promise.all([cipher(), wallet()]).then(function (got) {
+					return secretsOf(got[0], got[1], pw);
+				}).then(function (sec) {
+					f(unlockForm, 'password').value = '';
+					session = { sec: sec, password: pw, expires: ttl ? Date.now() + ttl * 1000 : 0 };
+					done('unlocked');
+					lastSeq = -1;
+					return pass();
+				}).catch(function (err) { fail(unlockForm, err); });
+			});
+		}
+		// The page forgets the password when it is left.
+		window.addEventListener('pagehide', function () { session = null; });
+
+		wallet().then(function () { fill(); render(); return pass(); }).catch(function (err) { state.error = err.message; render(); });
+		setInterval(tick, 5000);
+	}
+
 	// static/hw.js keeps a Skywallet's wallet in the same list.
 	window.SkyBW = { withList: withList, writeStored: writeStored, firstAddress: firstAddress, isHw: isHw };
 
@@ -1053,6 +1531,9 @@
 				ready(summary(w));
 			}).catch(fail);
 			walletOps(id);
+			document.body.addEventListener('htmx:afterSwap', function (e) {
+				if (e.detail.target && e.detail.target.id === 'bw-wallet') sweepFlow(id);
+			});
 		} else if (mode === 'new' || mode === 'load') {
 			createFlow(mode === 'load');
 		} else if (mode === 'send') {

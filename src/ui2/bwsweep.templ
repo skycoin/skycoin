@@ -1,0 +1,192 @@
+package ui2
+
+// BrowserSweepSection is the auto-sweep panel of a wallet kept in this
+// browser. bw.js keeps the rule in localStorage, the password in this page's
+// memory only, and runs every pass in the page with the wasm cipher. Fields
+// have no name, so nothing in it can be posted.
+templ BrowserSweepSection(w Wallet) {
+	<section
+		class="card"
+		id="auto-sweep"
+		data-bw-sweep
+		data-bip44?={ w.Meta.Type == "bip44" }
+		data-encrypted?={ w.Meta.Encrypted }
+		data-msg-active={ T(ctx, "sweep.active") }
+		data-msg-paused={ T(ctx, "sweep.paused") }
+		data-msg-off={ T(ctx, "sweep.off") }
+		data-msg-locked={ T(ctx, "sweep.bw-paused-locked", "coins", "{coins}") }
+		data-msg-no-hours={ T(ctx, "sweep.bw-no-hours", "coins", "{coins}") }
+		data-msg-burn={ T(ctx, "sweep.err-burn") }
+		data-msg-destination={ T(ctx, "sweep.err-destination") }
+		data-msg-mapping={ T(ctx, "sweep.err-mapping") }
+		data-msg-account={ T(ctx, "sweep.bw-err-account") }
+		data-msg-dest-full={ T(ctx, "sweep.bw-err-dest-full") }
+		data-msg-saved={ T(ctx, "sweep.done-saved") }
+		data-msg-unlocked={ T(ctx, "sweep.bw-done-unlocked") }
+		data-msg-locked-done={ T(ctx, "sweep.bw-done-locked") }
+		data-msg-until={ T(ctx, "sweep.until", "time", "{time}") }
+		data-msg-until-page={ T(ctx, "sweep.ttl-page") }
+		data-msg-no={ T(ctx, "sweep.no") }
+		data-msg-never={ T(ctx, "sweep.never") }
+		data-msg-self={ T(ctx, "sweep.to-self") }
+		data-msg-remove={ T(ctx, "sweep.map-remove") }
+		data-msg-none={ T(ctx, "sweep.mappings-none") }
+	>
+		<details class="fold op">
+			<summary><span class="mi">security</span>{ T(ctx, "sweep.title") }</summary>
+			<p class="small dim">{ T(ctx, "sweep.bw-help") }</p>
+			<div class="alert warn" role="note">
+				<span class="mi">info</span>
+				<span>{ T(ctx, "sweep.bw-note") }</span>
+			</div>
+			<div class="sweep-status" aria-live="polite">
+				<div class="head">
+					<h3>{ T(ctx, "sweep.status") }</h3>
+					<span class="badge off" data-s="badge">{ T(ctx, "sweep.off") }</span>
+				</div>
+				<div class="alert warn" role="status" data-s="paused" hidden></div>
+				<dl class="kv">
+					if w.Meta.Encrypted {
+						<dt>{ T(ctx, "sweep.unlocked") }</dt>
+						<dd data-s="unlocked">{ T(ctx, "sweep.no") }</dd>
+					}
+					<dt>{ T(ctx, "sweep.exposed") }</dt>
+					<dd data-s="exposed">0</dd>
+					<dt>{ T(ctx, "sweep.uncovered") }</dt>
+					<dd data-s="uncovered">0</dd>
+					<dt>{ T(ctx, "sweep.waiting") }</dt>
+					<dd data-s="waiting" data-msg={ T(ctx, "sweep.waiting-value", "coins", "{coins}", "hours", "{hours}") }></dd>
+					<dt>{ T(ctx, "sweep.destination") }</dt>
+					<dd class="mono" data-s="destinations"></dd>
+					<dt>{ T(ctx, "sweep.last") }</dt>
+					<dd data-s="last">{ T(ctx, "sweep.never") }</dd>
+					<dt>{ T(ctx, "sweep.last-txids") }</dt>
+					<dd class="mono" data-s="txids"></dd>
+					<dt>{ T(ctx, "sweep.pending") }</dt>
+					<dd class="mono" data-s="pending"></dd>
+					<dt>{ T(ctx, "sweep.confirmed") }</dt>
+					<dd data-s="confirmed">0</dd>
+					<dt>{ T(ctx, "sweep.last-error") }</dt>
+					<dd><span class="error" data-s="error"></span></dd>
+				</dl>
+			</div>
+			<form class="form sweep-rule" data-bw-sweep-form autocomplete="off">
+				<div class="alert ok notice" role="status" data-s="done" hidden></div>
+				<label class="check">
+					<input type="checkbox" data-f="enabled"/>
+					{ T(ctx, "sweep.enable") }
+				</label>
+				<fieldset class="sweep-set">
+					<legend>{ T(ctx, "sweep.destination") }</legend>
+					<label class="check">
+						<input type="radio" data-f="to" value="self" checked/>
+						{ T(ctx, "sweep.to-self") }
+					</label>
+					<label class="check">
+						<input type="radio" data-f="to" value="wallet"/>
+						{ T(ctx, "sweep.bw-to-wallet") }
+					</label>
+					<select data-f="to_wallet" aria-label={ T(ctx, "sweep.bw-to-wallet") }></select>
+					<label class="check">
+						<input type="radio" data-f="to" value="address"/>
+						{ T(ctx, "sweep.to-address") }
+					</label>
+					<input type="text" data-f="to_address" class="mono" aria-label={ T(ctx, "sweep.to-address") } maxlength="64"/>
+				</fieldset>
+				<div class="alert warn sweep-burn" role="note">
+					<span class="mi">warning</span>
+					<span>{ T(ctx, "sweep.burn-warning") }</span>
+				</div>
+				<label class="check" data-s="burn">
+					<input type="checkbox" data-f="burn_ok"/>
+					{ T(ctx, "sweep.burn-ok") }
+				</label>
+				<details class="fold sweep-advanced">
+					<summary>{ T(ctx, "sweep.advanced") }</summary>
+					<label class="check">
+						<input type="checkbox" data-f="include_spent" checked/>
+						{ T(ctx, "sweep.include-spent") }
+					</label>
+					<p class="small dim">{ T(ctx, "sweep.include-spent-help") }</p>
+					<fieldset class="sweep-set sweep-maps">
+						<legend>{ T(ctx, "sweep.mappings") }</legend>
+						<p class="small dim">{ T(ctx, "sweep.bw-mappings-help") }</p>
+						<ul class="sweep-map-list" data-s="maps"></ul>
+						<div class="sweep-map-add">
+							<label>
+								{ T(ctx, "sweep.map-from") }
+								<input type="text" data-f="map_from" class="mono" maxlength="64" placeholder={ T(ctx, "sweep.bw-map-from-hint") }/>
+							</label>
+							<label>
+								{ T(ctx, "sweep.map-to") }
+								<select data-f="map_to">
+									<option value="address">{ T(ctx, "sweep.to-address") }</option>
+									<option value="wallet">{ T(ctx, "sweep.to-self") }</option>
+								</select>
+							</label>
+							<input type="text" data-f="map_to_address" class="mono" maxlength="64" aria-label={ T(ctx, "sweep.to-address") }/>
+							<button class="btn" type="button" data-bw-sweep-add><span class="mi">add</span>{ T(ctx, "sweep.map-add") }</button>
+						</div>
+					</fieldset>
+					if w.Meta.Type == "bip44" {
+						<label class="check">
+							<input type="checkbox" data-f="shared"/>
+							{ T(ctx, "sweep.bw-shared") }
+						</label>
+						<p class="small dim">{ T(ctx, "sweep.shared-help") }</p>
+					}
+					<label>
+						{ T(ctx, "sweep.addresses") }
+						<textarea data-f="addresses" class="mono" rows="2"></textarea>
+						<span class="small dim">{ T(ctx, "sweep.addresses-help") }</span>
+					</label>
+				</details>
+				<p class="error op-error" role="alert"></p>
+				<div class="bar">
+					<button class="btn primary" type="submit">{ T(ctx, "sweep.save") }</button>
+				</div>
+			</form>
+			if w.Meta.Encrypted {
+				<div class="sweep-unlock">
+					<h3>{ T(ctx, "sweep.unlock-title") }</h3>
+					<p class="small dim">{ T(ctx, "sweep.bw-unlock-help") }</p>
+					<form class="form" data-bw-sweep-unlock autocomplete="off">
+						<label>
+							{ T(ctx, "send.password") }
+							<input type="password" data-f="password" autocomplete="current-password"/>
+						</label>
+						<label>
+							{ T(ctx, "sweep.ttl") }
+							<select data-f="ttl">
+								<option value="900">{ T(ctx, "sweep.ttl-15m") }</option>
+								<option value="3600" selected>{ T(ctx, "sweep.ttl-1h") }</option>
+								<option value="86400">{ T(ctx, "sweep.ttl-24h") }</option>
+								<option value="0">{ T(ctx, "sweep.ttl-page") }</option>
+							</select>
+						</label>
+						<p class="error op-error" role="alert"></p>
+						<div class="bar">
+							<button class="btn primary" type="submit"><span class="mi">lock_open</span>{ T(ctx, "sweep.unlock") }</button>
+						</div>
+					</form>
+					<div class="bar" data-s="lock" hidden>
+						<button class="btn" type="button" data-bw-sweep-lock><span class="mi">lock</span>{ T(ctx, "sweep.lock") }</button>
+					</div>
+				</div>
+			}
+		</details>
+	</section>
+}
+
+// HWSweepNote says why a hardware wallet has no auto-sweep.
+templ HWSweepNote() {
+	<section class="card" id="auto-sweep">
+		<h2><span class="mi">security</span>{ T(ctx, "sweep.title") }</h2>
+		<p class="small dim">{ T(ctx, "sweep.bw-hw") }</p>
+	</section>
+}
+
+// BrowserSweepInjected is the node's answer to a sweep bw.js signed.
+templ BrowserSweepInjected(txid, err string) {
+	<span data-txid={ txid } data-error={ err }></span>
+}

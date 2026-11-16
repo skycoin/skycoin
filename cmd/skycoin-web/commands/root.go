@@ -781,7 +781,7 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 
 	// Cache transaction queries for 30 seconds to avoid slow repeated lookups
 	if trimmedPath == "/v1/transactions" {
-		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
+		cacheKey := transactionsCacheKey(c, targetURL)
 		if entry, ok := queryCache.get(cacheKey, 30*time.Second); ok {
 			log.Printf("[PROXY] POST %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second)) //nolint:gosec // logs a request path on a local server; the value is recorded, never interpreted
 			c.Data(entry.statusCode, entry.contentType, entry.body)
@@ -833,7 +833,7 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 
 	// Cache successful transaction responses
 	if trimmedPath == "/v1/transactions" && resp.StatusCode == http.StatusOK {
-		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
+		cacheKey := transactionsCacheKey(c, targetURL)
 		queryCache.set(cacheKey, proxyCacheEntry{
 			body:        body,
 			contentType: resp.Header.Get("Content-Type"),
@@ -1138,4 +1138,12 @@ func routeCoins(mux *http.ServeMux, table *coinTable, custom *customCoins, coins
 		}
 	})
 
+}
+
+// transactionsCacheKey keys a cached transactions query on every field of its
+// form, sorted, so a query asking for verbose or confirmed transactions is not
+// answered with another one's.
+func transactionsCacheKey(c *webCtx, targetURL string) string {
+	c.Request.FormValue("addrs") // parses the form
+	return targetURL + "?" + c.Request.PostForm.Encode()
 }

@@ -19,7 +19,7 @@ func (f *fakeNode) sweepResponse(id string) *api.SweepResponse {
 	resp.Status.WaitingCoins = "0.000000"
 	if r, ok := f.sweeps[id]; ok {
 		resp.Rule = &r
-		resp.Status.Enabled = r.Enabled
+		resp.Status.Enabled, resp.Status.Active = r.Enabled, r.Active()
 	}
 	if ttl, ok := f.unlocked[id]; ok {
 		resp.Status.Unlocked = true
@@ -28,10 +28,10 @@ func (f *fakeNode) sweepResponse(id string) *api.SweepResponse {
 			resp.Status.UnlockExpires = &t
 		}
 	}
-	if !resp.Status.Enabled {
+	if !resp.Status.Active {
 		resp.Status.Paused = "disabled"
 	}
-	if resp.Status.Enabled && !resp.Status.Unlocked {
+	if resp.Status.Active && !resp.Status.Unlocked {
 		resp.Status.Paused = "paused: wallet locked, 7.000000 coins waiting on exposed addresses"
 		resp.Status.WaitingCoins = "7.000000"
 	}
@@ -247,4 +247,64 @@ func (s *statusNode) WalletSweep(id string) (*api.SweepResponse, error) {
 		s.status(&resp.Status)
 	}
 	return resp, err
+}
+
+func TestSweepMappings(t *testing.T) {
+	n := sweepNodeWithAccounts()
+	h := Handler(n, Options{})
+	post := func(v url.Values) string {
+		v.Set("id", "a.wlt")
+		v.Set("to", "next")
+		return postForm(h, "/wallet/sweep/rule", v).Body.String()
+	}
+	addr := "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
+
+	body := get(t, h, "/wallet/sweep?id=a.wlt").Body.String()
+	require.Contains(t, body, `<details class="fold sweep-advanced">`, "advanced starts folded")
+	require.Contains(t, body, `name="include_spent" value="1" checked`, "the has sent inclusion is on by default")
+	require.Contains(t, body, "No mappings.")
+	require.Contains(t, body, `<option value="account:1">`)
+	require.Contains(t, body, `<option value="wallet:b.wlt">`)
+
+	// A first mapping starts sweeping, so it needs the burn confirmation.
+	body = post(url.Values{"op": {"add"}, "include_spent": {"1"}, "map_from": {"1"}, "map_to": {"wallet:b.wlt"}})
+	require.Contains(t, body, "Confirm that every move burns")
+	require.Empty(t, n.sweeps)
+
+	body = post(url.Values{"op": {"add"}, "include_spent": {"1"}, "burn_ok": {"1"}, "map_from": {"1"}, "map_to": {"wallet:b.wlt"}})
+	require.Contains(t, body, "Saved.")
+	r := n.sweeps["a.wlt"]
+	require.False(t, r.Enabled, "a mapping alone leaves level 1 off")
+	require.True(t, r.Active())
+	require.Len(t, r.Mappings, 1)
+	require.Equal(t, "1=wallet:b.wlt", r.Mappings[0].String())
+	require.Contains(t, body, `name="map" value="1=wallet:b.wlt"`)
+	require.Contains(t, body, `<details class="fold sweep-advanced" open>`)
+	require.NotContains(t, body, `name="burn_ok"`, "an active rule does not ask again")
+
+	body = post(url.Values{"op": {"add"}, "include_spent": {"1"}, "map": {"1=wallet:b.wlt"}, "map_from": {addr}, "map_to": {"address"}, "map_to_address": {addr}})
+	require.Contains(t, body, "Saved.")
+	require.Len(t, n.sweeps["a.wlt"].Mappings, 2)
+	require.Equal(t, addr+"="+addr, n.sweeps["a.wlt"].Mappings[1].String())
+
+	require.Contains(t, post(url.Values{"op": {"add"}, "map": {"1=wallet:b.wlt"}, "map_from": {""}, "map_to": {"wallet"}}), "Fill in the mapping")
+
+	body = post(url.Values{"op": {"remove-0"}, "map": {"1=wallet:b.wlt", addr + "=" + addr}})
+	require.Contains(t, body, "Saved.")
+	r = n.sweeps["a.wlt"]
+	require.Len(t, r.Mappings, 1)
+	require.Equal(t, addr, r.Mappings[0].From.Address)
+	require.False(t, r.SweepsSpent(), "an unticked inclusion is saved off")
+	require.Contains(t, body, `name="include_spent" value="1">`)
+}
+
+func TestSweepStatusUncovered(t *testing.T) {
+	n := sweepNodeWithAccounts()
+	n.sweeps = map[string]sweep.Rule{"b.wlt": {Wallet: "b.wlt", Mappings: []sweep.Mapping{{}}}}
+	sn := &statusNode{fakeNode: n, status: func(s *api.SweepStatus) {
+		s.Exposed, s.Uncovered, s.Paused = 5, 3, ""
+	}}
+	body := get(t, Handler(sn, Options{}), "/wallet/sweep/status?id=b.wlt").Body.String()
+	require.Contains(t, body, "Exposed addresses left alone")
+	require.Contains(t, body, "badge on", "mappings alone make the rule active")
 }

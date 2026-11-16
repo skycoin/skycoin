@@ -346,3 +346,11 @@ dialog.qr-dialog h2 { margin: 0; }
 .sweep-set { display: flex; flex-direction: column; gap: 6px; }
 .sweep-status, .sweep-unlock { margin: 12px 0; padding-top: 12px; border-top: 1px solid rgba(var(--fg), 0.12); }
 .sweep-status .head h3, .sweep-unlock h3 { margin: 0 0 6px; }
+.sweep-advanced { margin: 12px 0; }
+.sweep-advanced > summary { font-weight: 600; }
+.sweep-map-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sweep-map-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sweep-map-list .mono { overflow-wrap: anywhere; }
+.sweep-map-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.sweep-map-add label { display: flex; flex-direction: column; flex: 1 1 14em; min-width: 0; }
+.sweep-map-add input[name="map_to_address"] { flex: 1 1 14em; min-width: 0; }

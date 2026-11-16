@@ -69,28 +69,6 @@ templ sweepRuleForm(v SweepView) {
 			<input type="checkbox" name="enabled" value="1" checked?={ v.Rule.Enabled }/>
 			{ T(ctx, "sweep.enable") }
 		</label>
-		<div class="alert warn sweep-burn" role="note">
-			<span class="mi">warning</span>
-			<span>{ T(ctx, "sweep.burn-warning") }</span>
-		</div>
-		if !v.Status.Enabled {
-			<label class="check">
-				<input type="checkbox" name="burn_ok" value="1"/>
-				{ T(ctx, "sweep.burn-ok") }
-			</label>
-		}
-		if v.Bip44 {
-			<fieldset class="sweep-set">
-				<legend>{ T(ctx, "sweep.shared") }</legend>
-				<p class="small dim">{ T(ctx, "sweep.shared-help") }</p>
-				for _, a := range v.Accounts {
-					<label class="check">
-						<input type="checkbox" name="shared" value={ utoa(uint64(a.Index)) } checked?={ v.Shared(a.Index) }/>
-						{ T(ctx, "wallet.account-n", "n", accountLabel(a)) }
-					</label>
-				}
-			</fieldset>
-		}
 		<fieldset class="sweep-set">
 			<legend>{ T(ctx, "sweep.destination") }</legend>
 			if v.Bip44 {
@@ -123,11 +101,7 @@ templ sweepRuleForm(v SweepView) {
 				<select name="to_wallet" aria-label={ T(ctx, "sweep.to-wallet") }>
 					for _, w := range v.Wallets {
 						<option value={ w.ID } selected?={ v.Rule.Destination.Wallet == w.ID }>
-							if w.Label != "" {
-								{ w.Label } ({ w.ID })
-							} else {
-								{ w.ID }
-							}
+							@sweepWalletName(w)
 						</option>
 					}
 				</select>
@@ -138,15 +112,107 @@ templ sweepRuleForm(v SweepView) {
 			</label>
 			<input type="text" name="to_address" class="mono" value={ v.Rule.Destination.Address } aria-label={ T(ctx, "sweep.to-address") } maxlength="64"/>
 		</fieldset>
-		<label>
-			{ T(ctx, "sweep.addresses") }
-			<textarea name="addresses" class="mono" rows="2">{ joinLines(v.Rule.Addresses) }</textarea>
-			<span class="small dim">{ T(ctx, "sweep.addresses-help") }</span>
-		</label>
+		<div class="alert warn sweep-burn" role="note">
+			<span class="mi">warning</span>
+			<span>{ T(ctx, "sweep.burn-warning") }</span>
+		</div>
+		if !v.Status.Active {
+			<label class="check">
+				<input type="checkbox" name="burn_ok" value="1"/>
+				{ T(ctx, "sweep.burn-ok") }
+			</label>
+		}
+		<details class="fold sweep-advanced" open?={ v.Advanced() }>
+			<summary>{ T(ctx, "sweep.advanced") }</summary>
+			<label class="check">
+				<input type="checkbox" name="include_spent" value="1" checked?={ v.SweepsSpent() }/>
+				{ T(ctx, "sweep.include-spent") }
+			</label>
+			<p class="small dim">{ T(ctx, "sweep.include-spent-help") }</p>
+			@sweepMappings(v)
+			if v.Bip44 {
+				<fieldset class="sweep-set">
+					<legend>{ T(ctx, "sweep.shared") }</legend>
+					<p class="small dim">{ T(ctx, "sweep.shared-help") }</p>
+					for _, a := range v.Accounts {
+						<label class="check">
+							<input type="checkbox" name="shared" value={ utoa(uint64(a.Index)) } checked?={ v.Shared(a.Index) }/>
+							{ T(ctx, "wallet.account-n", "n", accountLabel(a)) }
+						</label>
+					}
+				</fieldset>
+			}
+			<label>
+				{ T(ctx, "sweep.addresses") }
+				<textarea name="addresses" class="mono" rows="2">{ joinLines(v.Rule.Addresses) }</textarea>
+				<span class="small dim">{ T(ctx, "sweep.addresses-help") }</span>
+			</label>
+		</details>
 		<div class="bar">
-			<button class="btn primary" type="submit">{ T(ctx, "sweep.save") }<span class="busy">…</span></button>
+			<button class="btn primary" type="submit" name="op" value="save">{ T(ctx, "sweep.save") }<span class="busy">…</span></button>
 		</div>
 	</form>
+}
+
+templ sweepWalletName(w WalletRow) {
+	if w.Label != "" {
+		{ w.Label } ({ w.ID })
+	} else {
+		{ w.ID }
+	}
+}
+
+// sweepMappings lists the mappings, each posted back as a hidden map field in
+// the syntax of skycoin-cli sweepRule --map, with a row to add one.
+templ sweepMappings(v SweepView) {
+	<fieldset class="sweep-set sweep-maps">
+		<legend>{ T(ctx, "sweep.mappings") }</legend>
+		<p class="small dim">{ T(ctx, "sweep.mappings-help") }</p>
+		if len(v.Rule.Mappings) > 0 {
+			<ul class="sweep-map-list">
+				for i, m := range v.Rule.Mappings {
+					<li>
+						<input type="hidden" name="map" value={ m.String() }/>
+						<span class="mono">{ sweepSourceText(ctx, m.From) }</span>
+						<span class="mi" aria-hidden="true">arrow_forward</span>
+						<span class="mono">{ sweepDestText(ctx, m.To) }</span>
+						<button class="btn sm" type="submit" name="op" value={ "remove-" + itoa(i) } aria-label={ T(ctx, "sweep.map-remove") }>
+							<span class="mi">delete</span>{ T(ctx, "sweep.map-remove") }
+						</button>
+					</li>
+				}
+			</ul>
+		} else {
+			<p class="dim">{ T(ctx, "sweep.mappings-none") }</p>
+		}
+		<div class="sweep-map-add">
+			<label>
+				{ T(ctx, "sweep.map-from") }
+				<input type="text" name="map_from" class="mono" maxlength="64" placeholder={ T(ctx, "sweep.map-from-hint") }/>
+			</label>
+			<label>
+				{ T(ctx, "sweep.map-to") }
+				<select name="map_to">
+					<option value="address">{ T(ctx, "sweep.to-address") }</option>
+					if v.Bip44 {
+						<option value="next-account">{ T(ctx, "sweep.to-next") }</option>
+						for _, a := range v.Accounts {
+							<option value={ "account:" + utoa(uint64(a.Index)) }>{ T(ctx, "wallet.account-n", "n", accountLabel(a)) }</option>
+						}
+					} else {
+						<option value="wallet">{ T(ctx, "sweep.to-self") }</option>
+					}
+					for _, w := range v.Wallets {
+						<option value={ "wallet:" + w.ID }>
+							@sweepWalletName(w)
+						</option>
+					}
+				</select>
+			</label>
+			<input type="text" name="map_to_address" class="mono" maxlength="64" aria-label={ T(ctx, "sweep.to-address") }/>
+			<button class="btn" type="submit" name="op" value="add"><span class="mi">add</span>{ T(ctx, "sweep.map-add") }</button>
+		</div>
+	</fieldset>
 }
 
 templ sweepUnlock(v SweepView) {
@@ -195,13 +261,13 @@ templ SweepStatusBlock(v SweepView) {
 				switch {
 					case v.Active():
 						<span class="badge on">{ T(ctx, "sweep.active") }</span>
-					case v.Status.Enabled:
+					case v.Status.Active:
 						<span class="badge warn-text">{ T(ctx, "sweep.paused") }</span>
 					default:
 						<span class="badge off">{ T(ctx, "sweep.off") }</span>
 				}
 			</div>
-			if v.Status.Enabled && v.Status.Paused != "" {
+			if v.Status.Active && v.Status.Paused != "" {
 				<div class="alert warn" role="status">{ v.Status.Paused }</div>
 			}
 			<dl class="kv">
@@ -219,6 +285,10 @@ templ SweepStatusBlock(v SweepView) {
 				}
 				<dt>{ T(ctx, "sweep.exposed") }</dt>
 				<dd>{ itoa(v.Status.Exposed) }</dd>
+				if v.Status.Uncovered > 0 {
+					<dt>{ T(ctx, "sweep.uncovered") }</dt>
+					<dd>{ itoa(v.Status.Uncovered) }</dd>
+				}
 				<dt>{ T(ctx, "sweep.waiting") }</dt>
 				<dd>{ T(ctx, "sweep.waiting-value", "coins", v.Status.WaitingCoins, "hours", utoa(v.Status.WaitingHours)) }</dd>
 				if len(v.Status.Destinations) > 0 {

@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math"
+	mbits "math/bits"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,7 +41,6 @@ import (
 )
 
 var (
-	startTime    = gotime.Now() // For clock(3)
 	in6_addr_any in.In6_addr
 )
 
@@ -140,6 +141,18 @@ func (f file) setErr() {
 	(*stdio.FILE)(unsafe.Pointer(f.sF())).F_flags |= 1
 }
 
+func (f file) eof() bool {
+	return (*stdio.FILE)(unsafe.Pointer(f.sF())).F_flags&2 != 0
+}
+
+func (f file) setEOF() {
+	(*stdio.FILE)(unsafe.Pointer(f.sF())).F_flags |= 2
+}
+
+func (f file) clearErr() {
+	(*stdio.FILE)(unsafe.Pointer(f.sF())).F_flags &^= 3
+}
+
 func (f file) close(t *TLS) int32 {
 	f = f.sF()
 	fd := f.fd()
@@ -233,7 +246,12 @@ func Xfgetc(t *TLS, stream uintptr) int32 {
 	}
 	fd := int(file(stream).fd())
 	var buf [1]byte
-	if n, _ := unix.Read(fd, buf[:]); n != 0 {
+	switch n, err := unix.Read(fd, buf[:]); {
+	case err != nil:
+		file(stream).setErr()
+	case n == 0:
+		file(stream).setEOF()
+	default:
 		return int32(buf[0])
 	}
 
@@ -1493,6 +1511,10 @@ func Xfread(t *TLS, ptr uintptr, size, nmemb types.Size_t, stream uintptr) types
 		return 0
 	}
 
+	if m == 0 {
+		file(stream).setEOF()
+	}
+
 	if dmesgs {
 		// 	// dmesg("%v: %d %#x x %#x: %#x\n%s", origin(1), file(stream).fd(), size, nmemb, types.Size_t(m)/size, hex.Dump(GoBytes(ptr, int(m))))
 		dmesg("%v: %d %#x x %#x: %#x", origin(1), file(stream).fd(), size, nmemb, types.Size_t(m)/size)
@@ -1730,22 +1752,6 @@ func fcntlCmdStr(cmd int32) string {
 	default:
 		return fmt.Sprintf("cmd(%d)", cmd)
 	}
-}
-
-// int setenv(const char *name, const char *value, int overwrite);
-func Xsetenv(t *TLS, name, value uintptr, overwrite int32) int32 {
-	if __ccgo_strace {
-		trc("t=%v value=%v overwrite=%v, (%v:)", t, value, overwrite, origin(2))
-	}
-	panic(todo(""))
-}
-
-// int unsetenv(const char *name);
-func Xunsetenv(t *TLS, name uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v name=%v, (%v:)", t, name, origin(2))
-	}
-	panic(todo(""))
 }
 
 // int pause(void);
@@ -2018,32 +2024,6 @@ func X__ccgo_getMutexType(tls *TLS, m uintptr) int32 { /* pthread_mutex_lock.c:3
 		trc("tls=%v m=%v, (%v:)", tls, m, origin(2))
 	}
 	return (*(*int32)(unsafe.Pointer((m /* &.__u */ /* &.__i */))) & 15)
-}
-
-func X__ccgo_pthreadAttrGetDetachState(tls *TLS, a uintptr) int32 { /* pthread_attr_get.c:3:5: */
-	if __ccgo_strace {
-		trc("tls=%v a=%v, (%v:)", tls, a, origin(2))
-	}
-	return *(*int32)(unsafe.Pointer((a /* &.__u */ /* &.__i */) + 6*4))
-}
-
-func Xpthread_attr_getdetachstate(tls *TLS, a uintptr, state uintptr) int32 { /* pthread_attr_get.c:7:5: */
-	if __ccgo_strace {
-		trc("tls=%v a=%v state=%v, (%v:)", tls, a, state, origin(2))
-	}
-	*(*int32)(unsafe.Pointer(state)) = *(*int32)(unsafe.Pointer((a /* &.__u */ /* &.__i */) + 6*4))
-	return 0
-}
-
-func Xpthread_attr_setdetachstate(tls *TLS, a uintptr, state int32) int32 { /* pthread_attr_setdetachstate.c:3:5: */
-	if __ccgo_strace {
-		trc("tls=%v a=%v state=%v, (%v:)", tls, a, state, origin(2))
-	}
-	if uint32(state) > 1 {
-		return 22
-	}
-	*(*int32)(unsafe.Pointer((a /* &.__u */ /* &.__i */) + 6*4)) = state
-	return 0
 }
 
 func Xpthread_mutexattr_destroy(tls *TLS, a uintptr) int32 { /* pthread_mutexattr_destroy.c:3:5: */
@@ -2919,14 +2899,6 @@ func Xrewinddir(tls *TLS, f uintptr) {
 	Xfseek(tls, f, 0, stdio.SEEK_SET)
 }
 
-// clock_t clock(void);
-func Xclock(t *TLS) time.Clock_t {
-	if __ccgo_strace {
-		trc("t=%v, (%v:)", t, origin(2))
-	}
-	return time.Clock_t(gotime.Since(startTime) * gotime.Duration(time.CLOCKS_PER_SEC) / gotime.Second)
-}
-
 // ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
 func Xrecvmsg(t *TLS, sockfd int32, msg uintptr, flags int32) types.Ssize_t {
 	if __ccgo_strace {
@@ -2948,3 +2920,34 @@ func Xrecvmsg(t *TLS, sockfd int32, msg uintptr, flags int32) types.Ssize_t {
 func AtomicLoadNUint8(ptr uintptr, memorder int32) uint8 {
 	return byte(a_load_8(ptr))
 }
+
+func X__builtin_ctz(t *TLS, n uint32) int32 {
+	return int32(mbits.TrailingZeros32(n))
+}
+
+func X__signbit(tls *TLS, x float64) (r int32) {
+	return int32(math.Float64bits(x) >> 63)
+}
+
+// int feof(FILE *stream);
+func Xfeof(t *TLS, f uintptr) (r int32) {
+	if __ccgo_strace {
+		trc("t=%v f=%v, (%v:)", t, f, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	return Bool32(file(f).eof())
+}
+
+// void clearerr(FILE *stream);
+func Xclearerr(tls *TLS, f uintptr) {
+	if __ccgo_strace {
+		trc("tls=%v f=%v, (%v:)", tls, f, origin(2))
+	}
+	file(f).clearErr()
+}
+
+// ftw, see ftw_bsd.go.
+const (
+	ftwMaxFDs      = 64   // OPEN_MAX of <sys/syslimits.h>, the largest nfds ftw accepts
+	ftwFollowLinks = true // ftw follows symbolic links below the root
+)

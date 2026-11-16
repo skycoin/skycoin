@@ -18,10 +18,6 @@ import (
 	"modernc.org/libc/wctype"
 )
 
-var (
-	startTime = gotime.Now() // For clock(3)
-)
-
 // int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
 //
 // The handlers are dispatched like those of signal(3), from os/signal: the Go
@@ -515,9 +511,16 @@ type Tin6_addr = struct {
 var Xin6addr_any = Tin6_addr{}
 
 // clock_t clock(void);
-func Xclock(t *TLS) time.Clock_t {
+//
+// It is the system's clock, the processor time of the process.
+func Xclock(t *TLS) (r time.Clock_t) {
 	if __ccgo_strace {
 		trc("t=%v, (%v:)", t, origin(2))
+		defer func() { trc("-> %v", r) }()
 	}
-	return time.Clock_t(gotime.Since(startTime) * gotime.Duration(time.CLOCKS_PER_SEC) / gotime.Second)
+	v, err := libcall(&libc_ccgo_clock)
+	if r = time.Clock_t(v); r == -1 {
+		t.setErrno(err)
+	}
+	return r
 }

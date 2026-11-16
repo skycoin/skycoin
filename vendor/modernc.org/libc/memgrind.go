@@ -24,7 +24,12 @@ import (
 	"modernc.org/memory"
 )
 
-const memgrind = true
+const (
+	// allocaBump selects the alloca(3) bump region, see allocaChunk. Each
+	// alloca is malloc'd instead, so that the audit sees it.
+	allocaBump = false
+	memgrind   = true
+)
 
 type memReportItem struct {
 	p, pc uintptr

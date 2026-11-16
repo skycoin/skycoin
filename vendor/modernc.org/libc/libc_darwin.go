@@ -86,8 +86,6 @@ var X__stdoutp = Xstdout
 // user@darwin-m1:~/tmp$
 var X__mb_cur_max int32 = 1
 
-var startTime = gotime.Now() // For clock(3)
-
 type file uintptr
 
 func (f file) fd() int32      { return int32((*stdio.FILE)(unsafe.Pointer(f)).F_file) }
@@ -416,13 +414,15 @@ func Xfsctl(t *TLS, path uintptr, request ulong, data uintptr, options uint32) i
 	if __ccgo_strace {
 		trc("t=%v path=%v request=%v data=%v options=%v, (%v:)", t, path, request, data, options, origin(2))
 	}
-	panic(todo(""))
-	// if _, _, err := unix.Syscall6(unix.SYS_FSCTL, path, uintptr(request), data, uintptr(options), 0, 0); err != 0 {
-	// 	t.setErrno(err)
-	// 	return -1
-	// }
+	// SQLite's unix VFS takes its byte-range locks on AFP and SMB volumes
+	// with fsctl. libSystem's fsctl is a plain wrapper of this system call.
+	r, _, err := unix.Syscall6(unix.SYS_FSCTL, path, uintptr(request), data, uintptr(options), 0, 0)
+	if err != 0 {
+		t.setErrno(err)
+		return -1
+	}
 
-	// return 0
+	return int32(r)
 }
 
 // int * __error(void);
@@ -2423,14 +2423,6 @@ func Xposix_fadvise(t *TLS, fd int32, offset, len types.Off_t, advice int32) int
 		trc("t=%v fd=%v len=%v advice=%v, (%v:)", t, fd, len, advice, origin(2))
 	}
 	panic(todo(""))
-}
-
-// clock_t clock(void);
-func Xclock(t *TLS) time.Clock_t {
-	if __ccgo_strace {
-		trc("t=%v, (%v:)", t, origin(2))
-	}
-	return time.Clock_t(gotime.Since(startTime) * gotime.Duration(time.CLOCKS_PER_SEC) / gotime.Second)
 }
 
 // int iswspace(wint_t wc);

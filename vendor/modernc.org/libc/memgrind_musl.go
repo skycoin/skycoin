@@ -23,8 +23,11 @@ import (
 )
 
 const (
-	isMemBrk = false
-	memgrind = true
+	// allocaBump selects the alloca(3) bump region, see allocaChunk. Each
+	// alloca is malloc'd instead, so that the audit sees it.
+	allocaBump = false
+	isMemBrk   = false
+	memgrind   = true
 )
 
 type memReportItem struct {
@@ -361,3 +364,6 @@ func MemAuditAnnotate(pc uintptr, s string) {
 func MemAudit() (r []*MemAuditError) {
 	return nil
 }
+
+// tcacheFlushAll is a no-op, this allocator does not use TLS.tcache.
+func (tls *TLS) tcacheFlushAll() {}

@@ -1,4 +1,4 @@
-// Code generated for linux/amd64 by 'gcc --package-name=libc --prefix-enumerator=_ --prefix-external=x_ --prefix-field=F --prefix-static-internal=_ --prefix-static-none=_ --prefix-tagged-enum=_ --prefix-tagged-struct=T --prefix-tagged-union=T --prefix-typename=T --prefix-undefined=_ -emit-func-aliases -eval-all-macros -extended-errors -ignore-asm-errors -ignore-unsupported-alignment -isystem  -hide strlen -hide __libc_sigaction -mlong-double-64 -std=c99 -nostdinc -ffreestanding -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include -DNDEBUG -nostdlib -shared -o lib/libc.so.go obj/src/complex/__cexp.lo.go obj/src/complex/__cexpf.lo.go obj/src/complex/cabs.lo.go obj/src/complex/cabsf.lo.go obj/src/complex/cabsl.lo.go obj/src/complex/cacos.lo.go obj/src/complex/cacosf.lo.go obj/src/complex/cacosh.lo.go obj/src/complex/cacoshf.lo.go obj/src/complex/cacoshl.lo.go obj/src/complex/cacosl.lo.go obj/src/complex/carg.lo.go obj/src/complex/cargf.lo.go obj/src/complex/cargl.lo.go obj/src/complex/casin.lo.go obj/src/complex/casinf.lo.go obj/src/complex/casinh.lo.go obj/src/complex/casinhf.lo.go obj/src/complex/casinhl.lo.go obj/src/complex/casinl.lo.go obj/src/complex/catan.lo.go obj/src/complex/catanf.lo.go obj/src/complex/catanh.lo.go obj/src/complex/catanhf.lo.go obj/src/complex/catanhl.lo.go obj/src/complex/catanl.lo.go obj/src/complex/ccos.lo.go obj/src/complex/ccosf.lo.go obj/src/complex/ccosh.lo.go obj/src/complex/ccoshf.lo.go obj/src/complex/ccoshl.lo.go obj/src/complex/ccosl.lo.go obj/src/complex/cexp.lo.go obj/src/complex/cexpf.lo.go obj/src/complex/cexpl.lo.go obj/src/complex/cimag.lo.go obj/src/complex/cimagf.lo.go obj/src/complex/cimagl.lo.go obj/src/complex/clog.lo.go obj/src/complex/clogf.lo.go obj/src/complex/clogl.lo.go obj/src/complex/conj.lo.go obj/src/complex/conjf.lo.go obj/src/complex/conjl.lo.go obj/src/complex/cpow.lo.go obj/src/complex/cpowf.lo.go obj/src/complex/cpowl.lo.go obj/src/complex/cproj.lo.go obj/src/complex/cprojf.lo.go obj/src/complex/cprojl.lo.go obj/src/complex/creal.lo.go obj/src/complex/crealf.lo.go obj/src/complex/creall.lo.go obj/src/complex/csin.lo.go obj/src/complex/csinf.lo.go obj/src/complex/csinh.lo.go obj/src/complex/csinhf.lo.go obj/src/complex/csinhl.lo.go obj/src/complex/csinl.lo.go obj/src/complex/csqrt.lo.go obj/src/complex/csqrtf.lo.go obj/src/complex/csqrtl.lo.go obj/src/complex/ctan.lo.go obj/src/complex/ctanf.lo.go obj/src/complex/ctanh.lo.go obj/src/complex/ctanhf.lo.go obj/src/complex/ctanhl.lo.go obj/src/complex/ctanl.lo.go obj/src/conf/confstr.lo.go obj/src/conf/fpathconf.lo.go obj/src/conf/legacy.lo.go obj/src/conf/pathconf.lo.go obj/src/conf/sysconf.lo.go obj/src/crypt/crypt.lo.go obj/src/crypt/crypt_blowfish.lo.go obj/src/crypt/crypt_des.lo.go obj/src/crypt/crypt_md5.lo.go obj/src/crypt/crypt_r.lo.go obj/src/crypt/crypt_sha256.lo.go obj/src/crypt/crypt_sha512.lo.go obj/src/crypt/encrypt.lo.go obj/src/ctype/__ctype_b_loc.lo.go obj/src/ctype/__ctype_get_mb_cur_max.lo.go obj/src/ctype/__ctype_tolower_loc.lo.go obj/src/ctype/__ctype_toupper_loc.lo.go obj/src/ctype/isalnum.lo.go obj/src/ctype/isalpha.lo.go obj/src/ctype/isascii.lo.go obj/src/ctype/isblank.lo.go obj/src/ctype/iscntrl.lo.go obj/src/ctype/isdigit.lo.go obj/src/ctype/isgraph.lo.go obj/src/ctype/islower.lo.go obj/src/ctype/isprint.lo.go obj/src/ctype/ispunct.lo.go obj/src/ctype/isspace.lo.go obj/src/ctype/isupper.lo.go obj/src/ctype/iswalnum.lo.go obj/src/ctype/iswalpha.lo.go obj/src/ctype/iswblank.lo.go obj/src/ctype/iswcntrl.lo.go obj/src/ctype/iswctype.lo.go obj/src/ctype/iswdigit.lo.go obj/src/ctype/iswgraph.lo.go obj/src/ctype/iswlower.lo.go obj/src/ctype/iswprint.lo.go obj/src/ctype/iswpunct.lo.go obj/src/ctype/iswspace.lo.go obj/src/ctype/iswupper.lo.go obj/src/ctype/iswxdigit.lo.go obj/src/ctype/isxdigit.lo.go obj/src/ctype/toascii.lo.go obj/src/ctype/tolower.lo.go obj/src/ctype/toupper.lo.go obj/src/ctype/towctrans.lo.go obj/src/ctype/wcswidth.lo.go obj/src/ctype/wctrans.lo.go obj/src/ctype/wcwidth.lo.go obj/src/dirent/alphasort.lo.go obj/src/dirent/closedir.lo.go obj/src/dirent/dirfd.lo.go obj/src/dirent/fdopendir.lo.go obj/src/dirent/opendir.lo.go obj/src/dirent/readdir.lo.go obj/src/dirent/readdir_r.lo.go obj/src/dirent/rewinddir.lo.go obj/src/dirent/scandir.lo.go obj/src/dirent/seekdir.lo.go obj/src/dirent/telldir.lo.go obj/src/dirent/versionsort.lo.go obj/src/env/__environ.lo.go obj/src/env/__reset_tls.lo.go obj/src/env/__stack_chk_fail.lo.go obj/src/env/clearenv.lo.go obj/src/env/getenv.lo.go obj/src/env/putenv.lo.go obj/src/env/secure_getenv.lo.go obj/src/env/setenv.lo.go obj/src/env/unsetenv.lo.go obj/src/errno/strerror.lo.go obj/src/exit/_Exit.lo.go obj/src/exit/abort_lock.lo.go obj/src/exit/assert.lo.go obj/src/exit/at_quick_exit.lo.go obj/src/exit/quick_exit.lo.go obj/src/fcntl/creat.lo.go obj/src/fcntl/fcntl.lo.go obj/src/fcntl/open.lo.go obj/src/fcntl/openat.lo.go obj/src/fcntl/posix_fadvise.lo.go obj/src/fcntl/posix_fallocate.lo.go obj/src/fenv/fenv.lo.go obj/src/internal/defsysinfo.lo.go obj/src/internal/emulate_wait4.lo.go obj/src/internal/floatscan.lo.go obj/src/internal/intscan.lo.go obj/src/internal/libc.lo.go obj/src/internal/procfdname.lo.go obj/src/internal/shgetc.lo.go obj/src/internal/syscall_ret.lo.go obj/src/internal/vdso.lo.go obj/src/internal/version.lo.go obj/src/ipc/ftok.lo.go obj/src/ipc/msgctl.lo.go obj/src/ipc/msgget.lo.go obj/src/ipc/msgrcv.lo.go obj/src/ipc/msgsnd.lo.go obj/src/ipc/semctl.lo.go obj/src/ipc/semget.lo.go obj/src/ipc/semop.lo.go obj/src/ipc/semtimedop.lo.go obj/src/ipc/shmat.lo.go obj/src/ipc/shmctl.lo.go obj/src/ipc/shmdt.lo.go obj/src/ipc/shmget.lo.go obj/src/legacy/cuserid.lo.go obj/src/legacy/err.lo.go obj/src/legacy/euidaccess.lo.go obj/src/legacy/ftw.lo.go obj/src/legacy/futimes.lo.go obj/src/legacy/getdtablesize.lo.go obj/src/legacy/getloadavg.lo.go obj/src/legacy/getpagesize.lo.go obj/src/legacy/getpass.lo.go obj/src/legacy/getusershell.lo.go obj/src/legacy/isastream.lo.go obj/src/legacy/lutimes.lo.go obj/src/legacy/ulimit.lo.go obj/src/legacy/utmpx.lo.go obj/src/linux/adjtime.lo.go obj/src/linux/adjtimex.lo.go obj/src/linux/arch_prctl.lo.go obj/src/linux/brk.lo.go obj/src/linux/cache.lo.go obj/src/linux/cap.lo.go obj/src/linux/chroot.lo.go obj/src/linux/clock_adjtime.lo.go obj/src/linux/copy_file_range.lo.go obj/src/linux/epoll.lo.go obj/src/linux/eventfd.lo.go obj/src/linux/fallocate.lo.go obj/src/linux/fanotify.lo.go obj/src/linux/flock.lo.go obj/src/linux/getdents.lo.go obj/src/linux/getrandom.lo.go obj/src/linux/inotify.lo.go obj/src/linux/ioperm.lo.go obj/src/linux/iopl.lo.go obj/src/linux/klogctl.lo.go obj/src/linux/memfd_create.lo.go obj/src/linux/mlock2.lo.go obj/src/linux/module.lo.go obj/src/linux/mount.lo.go obj/src/linux/name_to_handle_at.lo.go obj/src/linux/open_by_handle_at.lo.go obj/src/linux/personality.lo.go obj/src/linux/pivot_root.lo.go obj/src/linux/prctl.lo.go obj/src/linux/preadv2.lo.go obj/src/linux/prlimit.lo.go obj/src/linux/process_vm.lo.go obj/src/linux/ptrace.lo.go obj/src/linux/pwritev2.lo.go obj/src/linux/quotactl.lo.go obj/src/linux/readahead.lo.go obj/src/linux/reboot.lo.go obj/src/linux/remap_file_pages.lo.go obj/src/linux/sbrk.lo.go obj/src/linux/sendfile.lo.go obj/src/linux/setfsgid.lo.go obj/src/linux/setfsuid.lo.go obj/src/linux/sethostname.lo.go obj/src/linux/setns.lo.go obj/src/linux/settimeofday.lo.go obj/src/linux/signalfd.lo.go obj/src/linux/splice.lo.go obj/src/linux/statx.lo.go obj/src/linux/stime.lo.go obj/src/linux/swap.lo.go obj/src/linux/sync_file_range.lo.go obj/src/linux/syncfs.lo.go obj/src/linux/sysinfo.lo.go obj/src/linux/tee.lo.go obj/src/linux/timerfd.lo.go obj/src/linux/unshare.lo.go obj/src/linux/utimes.lo.go obj/src/linux/vhangup.lo.go obj/src/linux/vmsplice.lo.go obj/src/linux/wait3.lo.go obj/src/linux/wait4.lo.go obj/src/linux/xattr.lo.go obj/src/locale/__lctrans.lo.go obj/src/locale/__mo_lookup.lo.go obj/src/locale/bind_textdomain_codeset.lo.go obj/src/locale/c_locale.lo.go obj/src/locale/catclose.lo.go obj/src/locale/catgets.lo.go obj/src/locale/catopen.lo.go obj/src/locale/dcngettext.lo.go obj/src/locale/duplocale.lo.go obj/src/locale/freelocale.lo.go obj/src/locale/iconv.lo.go obj/src/locale/iconv_close.lo.go obj/src/locale/langinfo.lo.go obj/src/locale/locale_map.lo.go obj/src/locale/localeconv.lo.go obj/src/locale/newlocale.lo.go obj/src/locale/pleval.lo.go obj/src/locale/setlocale.lo.go obj/src/locale/strcoll.lo.go obj/src/locale/strfmon.lo.go obj/src/locale/strtod_l.lo.go obj/src/locale/strxfrm.lo.go obj/src/locale/textdomain.lo.go obj/src/locale/uselocale.lo.go obj/src/locale/wcscoll.lo.go obj/src/locale/wcsxfrm.lo.go obj/src/malloc/reallocarray.lo.go obj/src/math/__cos.lo.go obj/src/math/__cosdf.lo.go obj/src/math/__cosl.lo.go obj/src/math/__expo2.lo.go obj/src/math/__expo2f.lo.go obj/src/math/__fpclassify.lo.go obj/src/math/__fpclassifyf.lo.go obj/src/math/__fpclassifyl.lo.go obj/src/math/__invtrigl.lo.go obj/src/math/__math_divzero.lo.go obj/src/math/__math_divzerof.lo.go obj/src/math/__math_invalid.lo.go obj/src/math/__math_invalidf.lo.go obj/src/math/__math_invalidl.lo.go obj/src/math/__math_oflow.lo.go obj/src/math/__math_oflowf.lo.go obj/src/math/__math_uflow.lo.go obj/src/math/__math_uflowf.lo.go obj/src/math/__math_xflow.lo.go obj/src/math/__math_xflowf.lo.go obj/src/math/__polevll.lo.go obj/src/math/__rem_pio2.lo.go obj/src/math/__rem_pio2_large.lo.go obj/src/math/__rem_pio2f.lo.go obj/src/math/__rem_pio2l.lo.go obj/src/math/__signbit.lo.go obj/src/math/__signbitf.lo.go obj/src/math/__signbitl.lo.go obj/src/math/__sin.lo.go obj/src/math/__sindf.lo.go obj/src/math/__sinl.lo.go obj/src/math/__tan.lo.go obj/src/math/__tandf.lo.go obj/src/math/__tanl.lo.go obj/src/math/acos.lo.go obj/src/math/acosf.lo.go obj/src/math/acosh.lo.go obj/src/math/acoshf.lo.go obj/src/math/acoshl.lo.go obj/src/math/acosl.lo.go obj/src/math/asin.lo.go obj/src/math/asinf.lo.go obj/src/math/asinh.lo.go obj/src/math/asinhf.lo.go obj/src/math/asinhl.lo.go obj/src/math/asinl.lo.go obj/src/math/atan.lo.go obj/src/math/atan2.lo.go obj/src/math/atan2f.lo.go obj/src/math/atan2l.lo.go obj/src/math/atanf.lo.go obj/src/math/atanh.lo.go obj/src/math/atanhf.lo.go obj/src/math/atanhl.lo.go obj/src/math/atanl.lo.go obj/src/math/cbrt.lo.go obj/src/math/cbrtf.lo.go obj/src/math/cbrtl.lo.go obj/src/math/ceil.lo.go obj/src/math/ceilf.lo.go obj/src/math/ceill.lo.go obj/src/math/copysign.lo.go obj/src/math/copysignf.lo.go obj/src/math/copysignl.lo.go obj/src/math/cos.lo.go obj/src/math/cosf.lo.go obj/src/math/cosh.lo.go obj/src/math/coshf.lo.go obj/src/math/coshl.lo.go obj/src/math/cosl.lo.go obj/src/math/erf.lo.go obj/src/math/erff.lo.go obj/src/math/erfl.lo.go obj/src/math/exp.lo.go obj/src/math/exp10.lo.go obj/src/math/exp10f.lo.go obj/src/math/exp10l.lo.go obj/src/math/exp2.lo.go obj/src/math/exp2f.lo.go obj/src/math/exp2f_data.lo.go obj/src/math/exp2l.lo.go obj/src/math/exp_data.lo.go obj/src/math/expf.lo.go obj/src/math/expl.lo.go obj/src/math/expm1.lo.go obj/src/math/expm1f.lo.go obj/src/math/expm1l.lo.go obj/src/math/fabs.lo.go obj/src/math/fabsf.lo.go obj/src/math/fabsl.lo.go obj/src/math/fdim.lo.go obj/src/math/fdimf.lo.go obj/src/math/fdiml.lo.go obj/src/math/finite.lo.go obj/src/math/finitef.lo.go obj/src/math/floor.lo.go obj/src/math/floorf.lo.go obj/src/math/floorl.lo.go obj/src/math/fma.lo.go obj/src/math/fmal.lo.go obj/src/math/fmax.lo.go obj/src/math/fmaxf.lo.go obj/src/math/fmaxl.lo.go obj/src/math/fmin.lo.go obj/src/math/fminf.lo.go obj/src/math/fminl.lo.go obj/src/math/fmod.lo.go obj/src/math/fmodf.lo.go obj/src/math/fmodl.lo.go obj/src/math/frexp.lo.go obj/src/math/frexpf.lo.go obj/src/math/frexpl.lo.go obj/src/math/hypot.lo.go obj/src/math/hypotf.lo.go obj/src/math/hypotl.lo.go obj/src/math/ilogb.lo.go obj/src/math/ilogbf.lo.go obj/src/math/ilogbl.lo.go obj/src/math/j0.lo.go obj/src/math/j0f.lo.go obj/src/math/j1.lo.go obj/src/math/j1f.lo.go obj/src/math/jn.lo.go obj/src/math/jnf.lo.go obj/src/math/ldexp.lo.go obj/src/math/ldexpf.lo.go obj/src/math/ldexpl.lo.go obj/src/math/lgamma.lo.go obj/src/math/lgamma_r.lo.go obj/src/math/lgammaf.lo.go obj/src/math/lgammaf_r.lo.go obj/src/math/lgammal.lo.go obj/src/math/llrint.lo.go obj/src/math/llrintf.lo.go obj/src/math/llrintl.lo.go obj/src/math/llround.lo.go obj/src/math/llroundf.lo.go obj/src/math/llroundl.lo.go obj/src/math/log.lo.go obj/src/math/log10.lo.go obj/src/math/log10f.lo.go obj/src/math/log10l.lo.go obj/src/math/log1p.lo.go obj/src/math/log1pf.lo.go obj/src/math/log1pl.lo.go obj/src/math/log2.lo.go obj/src/math/log2_data.lo.go obj/src/math/log2f.lo.go obj/src/math/log2f_data.lo.go obj/src/math/log2l.lo.go obj/src/math/log_data.lo.go obj/src/math/logb.lo.go obj/src/math/logbf.lo.go obj/src/math/logbl.lo.go obj/src/math/logf.lo.go obj/src/math/logf_data.lo.go obj/src/math/logl.lo.go obj/src/math/lrint.lo.go obj/src/math/lrintf.lo.go obj/src/math/lrintl.lo.go obj/src/math/lround.lo.go obj/src/math/lroundf.lo.go obj/src/math/lroundl.lo.go obj/src/math/modf.lo.go obj/src/math/modff.lo.go obj/src/math/modfl.lo.go obj/src/math/nan.lo.go obj/src/math/nanf.lo.go obj/src/math/nanl.lo.go obj/src/math/nextafter.lo.go obj/src/math/nextafterf.lo.go obj/src/math/nextafterl.lo.go obj/src/math/nexttoward.lo.go obj/src/math/nexttowardf.lo.go obj/src/math/nexttowardl.lo.go obj/src/math/pow.lo.go obj/src/math/pow_data.lo.go obj/src/math/powf.lo.go obj/src/math/powf_data.lo.go obj/src/math/powl.lo.go obj/src/math/remainder.lo.go obj/src/math/remainderf.lo.go obj/src/math/remainderl.lo.go obj/src/math/remquo.lo.go obj/src/math/remquof.lo.go obj/src/math/remquol.lo.go obj/src/math/rint.lo.go obj/src/math/rintf.lo.go obj/src/math/rintl.lo.go obj/src/math/round.lo.go obj/src/math/roundf.lo.go obj/src/math/roundl.lo.go obj/src/math/scalb.lo.go obj/src/math/scalbf.lo.go obj/src/math/scalbln.lo.go obj/src/math/scalblnf.lo.go obj/src/math/scalblnl.lo.go obj/src/math/scalbn.lo.go obj/src/math/scalbnf.lo.go obj/src/math/scalbnl.lo.go obj/src/math/signgam.lo.go obj/src/math/significand.lo.go obj/src/math/significandf.lo.go obj/src/math/sin.lo.go obj/src/math/sincos.lo.go obj/src/math/sincosf.lo.go obj/src/math/sincosl.lo.go obj/src/math/sinf.lo.go obj/src/math/sinh.lo.go obj/src/math/sinhf.lo.go obj/src/math/sinhl.lo.go obj/src/math/sinl.lo.go obj/src/math/sqrt.lo.go obj/src/math/sqrt_data.lo.go obj/src/math/sqrtf.lo.go obj/src/math/sqrtl.lo.go obj/src/math/tan.lo.go obj/src/math/tanf.lo.go obj/src/math/tanh.lo.go obj/src/math/tanhf.lo.go obj/src/math/tanhl.lo.go obj/src/math/tanl.lo.go obj/src/math/tgamma.lo.go obj/src/math/tgammaf.lo.go obj/src/math/tgammal.lo.go obj/src/math/trunc.lo.go obj/src/math/truncf.lo.go obj/src/math/truncl.lo.go obj/src/misc/a64l.lo.go obj/src/misc/basename.lo.go obj/src/misc/dirname.lo.go obj/src/misc/ffs.lo.go obj/src/misc/ffsl.lo.go obj/src/misc/ffsll.lo.go obj/src/misc/fmtmsg.lo.go obj/src/misc/get_current_dir_name.lo.go obj/src/misc/getauxval.lo.go obj/src/misc/getdomainname.lo.go obj/src/misc/getentropy.lo.go obj/src/misc/gethostid.lo.go obj/src/misc/getopt.lo.go obj/src/misc/getopt_long.lo.go obj/src/misc/getpriority.lo.go obj/src/misc/getresgid.lo.go obj/src/misc/getresuid.lo.go obj/src/misc/getrlimit.lo.go obj/src/misc/getrusage.lo.go obj/src/misc/getsubopt.lo.go obj/src/misc/ioctl.lo.go obj/src/misc/issetugid.lo.go obj/src/misc/lockf.lo.go obj/src/misc/login_tty.lo.go obj/src/misc/mntent.lo.go obj/src/misc/nftw.lo.go obj/src/misc/openpty.lo.go obj/src/misc/ptsname.lo.go obj/src/misc/pty.lo.go obj/src/misc/realpath.lo.go obj/src/misc/setdomainname.lo.go obj/src/misc/setpriority.lo.go obj/src/misc/setrlimit.lo.go obj/src/misc/syscall.lo.go obj/src/misc/syslog.lo.go obj/src/misc/uname.lo.go obj/src/mman/madvise.lo.go obj/src/mman/mincore.lo.go obj/src/mman/mlock.lo.go obj/src/mman/mlockall.lo.go obj/src/mman/mmap.lo.go obj/src/mman/mprotect.lo.go obj/src/mman/mremap.lo.go obj/src/mman/msync.lo.go obj/src/mman/munlock.lo.go obj/src/mman/munlockall.lo.go obj/src/mman/munmap.lo.go obj/src/mman/posix_madvise.lo.go obj/src/mman/shm_open.lo.go obj/src/multibyte/btowc.lo.go obj/src/multibyte/c16rtomb.lo.go obj/src/multibyte/c32rtomb.lo.go obj/src/multibyte/internal.lo.go obj/src/multibyte/mblen.lo.go obj/src/multibyte/mbrlen.lo.go obj/src/multibyte/mbrtoc16.lo.go obj/src/multibyte/mbrtoc32.lo.go obj/src/multibyte/mbrtowc.lo.go obj/src/multibyte/mbsinit.lo.go obj/src/multibyte/mbsnrtowcs.lo.go obj/src/multibyte/mbsrtowcs.lo.go obj/src/multibyte/mbstowcs.lo.go obj/src/multibyte/mbtowc.lo.go obj/src/multibyte/wcrtomb.lo.go obj/src/multibyte/wcsnrtombs.lo.go obj/src/multibyte/wcsrtombs.lo.go obj/src/multibyte/wcstombs.lo.go obj/src/multibyte/wctob.lo.go obj/src/multibyte/wctomb.lo.go obj/src/network/accept.lo.go obj/src/network/accept4.lo.go obj/src/network/bind.lo.go obj/src/network/connect.lo.go obj/src/network/dn_comp.lo.go obj/src/network/dn_expand.lo.go obj/src/network/dn_skipname.lo.go obj/src/network/dns_parse.lo.go obj/src/network/ent.lo.go obj/src/network/ether.lo.go obj/src/network/freeaddrinfo.lo.go obj/src/network/gai_strerror.lo.go obj/src/network/getaddrinfo.lo.go obj/src/network/gethostbyaddr.lo.go obj/src/network/gethostbyaddr_r.lo.go obj/src/network/gethostbyname.lo.go obj/src/network/gethostbyname2.lo.go obj/src/network/gethostbyname2_r.lo.go obj/src/network/gethostbyname_r.lo.go obj/src/network/getifaddrs.lo.go obj/src/network/getnameinfo.lo.go obj/src/network/getpeername.lo.go obj/src/network/getservbyname.lo.go obj/src/network/getservbyname_r.lo.go obj/src/network/getsockname.lo.go obj/src/network/getsockopt.lo.go obj/src/network/h_errno.lo.go obj/src/network/herror.lo.go obj/src/network/hstrerror.lo.go obj/src/network/htonl.lo.go obj/src/network/htons.lo.go obj/src/network/if_freenameindex.lo.go obj/src/network/if_indextoname.lo.go obj/src/network/if_nameindex.lo.go obj/src/network/if_nametoindex.lo.go obj/src/network/in6addr_any.lo.go obj/src/network/in6addr_loopback.lo.go obj/src/network/inet_addr.lo.go obj/src/network/inet_aton.lo.go obj/src/network/inet_legacy.lo.go obj/src/network/inet_ntoa.lo.go obj/src/network/inet_ntop.lo.go obj/src/network/inet_pton.lo.go obj/src/network/listen.lo.go obj/src/network/lookup_ipliteral.lo.go obj/src/network/lookup_name.lo.go obj/src/network/lookup_serv.lo.go obj/src/network/netlink.lo.go obj/src/network/netname.lo.go obj/src/network/ns_parse.lo.go obj/src/network/ntohl.lo.go obj/src/network/ntohs.lo.go obj/src/network/proto.lo.go obj/src/network/recv.lo.go obj/src/network/recvfrom.lo.go obj/src/network/recvmmsg.lo.go obj/src/network/recvmsg.lo.go obj/src/network/res_init.lo.go obj/src/network/res_mkquery.lo.go obj/src/network/res_msend.lo.go obj/src/network/res_send.lo.go obj/src/network/res_state.lo.go obj/src/network/resolvconf.lo.go obj/src/network/send.lo.go obj/src/network/sendmmsg.lo.go obj/src/network/sendmsg.lo.go obj/src/network/sendto.lo.go obj/src/network/serv.lo.go obj/src/network/setsockopt.lo.go obj/src/network/shutdown.lo.go obj/src/network/sockatmark.lo.go obj/src/network/socket.lo.go obj/src/network/socketpair.lo.go obj/src/passwd/fgetgrent.lo.go obj/src/passwd/fgetpwent.lo.go obj/src/passwd/getgr_a.lo.go obj/src/passwd/getgr_r.lo.go obj/src/passwd/getgrent.lo.go obj/src/passwd/getgrent_a.lo.go obj/src/passwd/getgrouplist.lo.go obj/src/passwd/getpw_a.lo.go obj/src/passwd/getpw_r.lo.go obj/src/passwd/getpwent.lo.go obj/src/passwd/getpwent_a.lo.go obj/src/passwd/getspent.lo.go obj/src/passwd/lckpwdf.lo.go obj/src/passwd/nscd_query.lo.go obj/src/passwd/putgrent.lo.go obj/src/passwd/putpwent.lo.go obj/src/passwd/putspent.lo.go obj/src/prng/__rand48_step.lo.go obj/src/prng/__seed48.lo.go obj/src/prng/drand48.lo.go obj/src/prng/lcong48.lo.go obj/src/prng/lrand48.lo.go obj/src/prng/mrand48.lo.go obj/src/prng/rand.lo.go obj/src/prng/rand_r.lo.go obj/src/prng/random.lo.go obj/src/prng/seed48.lo.go obj/src/prng/srand48.lo.go obj/src/process/execl.lo.go obj/src/process/execle.lo.go obj/src/process/execlp.lo.go obj/src/process/execv.lo.go obj/src/process/execve.lo.go obj/src/process/execvp.lo.go obj/src/process/fexecve.lo.go obj/src/process/fork.lo.go obj/src/process/posix_spawn_file_actions_addchdir.lo.go obj/src/process/posix_spawn_file_actions_addclose.lo.go obj/src/process/posix_spawn_file_actions_adddup2.lo.go obj/src/process/posix_spawn_file_actions_addfchdir.lo.go obj/src/process/posix_spawn_file_actions_addopen.lo.go obj/src/process/posix_spawn_file_actions_destroy.lo.go obj/src/process/posix_spawn_file_actions_init.lo.go obj/src/process/posix_spawnattr_destroy.lo.go obj/src/process/posix_spawnattr_getflags.lo.go obj/src/process/posix_spawnattr_getpgroup.lo.go obj/src/process/posix_spawnattr_getsigdefault.lo.go obj/src/process/posix_spawnattr_getsigmask.lo.go obj/src/process/posix_spawnattr_init.lo.go obj/src/process/posix_spawnattr_sched.lo.go obj/src/process/posix_spawnattr_setflags.lo.go obj/src/process/posix_spawnattr_setpgroup.lo.go obj/src/process/posix_spawnattr_setsigdefault.lo.go obj/src/process/posix_spawnattr_setsigmask.lo.go obj/src/process/vfork.lo.go obj/src/process/wait.lo.go obj/src/process/waitid.lo.go obj/src/process/waitpid.lo.go obj/src/regex/fnmatch.lo.go obj/src/regex/glob.lo.go obj/src/regex/regcomp.lo.go obj/src/regex/regerror.lo.go obj/src/regex/regexec.lo.go obj/src/regex/tre-mem.lo.go obj/src/sched/affinity.lo.go obj/src/sched/sched_cpucount.lo.go obj/src/sched/sched_get_priority_max.lo.go obj/src/sched/sched_getparam.lo.go obj/src/sched/sched_getscheduler.lo.go obj/src/sched/sched_rr_get_interval.lo.go obj/src/sched/sched_setparam.lo.go obj/src/sched/sched_setscheduler.lo.go obj/src/search/hsearch.lo.go obj/src/search/insque.lo.go obj/src/search/lsearch.lo.go obj/src/search/tdelete.lo.go obj/src/search/tdestroy.lo.go obj/src/search/tfind.lo.go obj/src/search/tsearch.lo.go obj/src/search/twalk.lo.go obj/src/select/poll.lo.go obj/src/select/ppoll.lo.go obj/src/select/pselect.lo.go obj/src/select/select.lo.go obj/src/setjmp/longjmp.lo.go obj/src/setjmp/setjmp.lo.go obj/src/signal/block.lo.go obj/src/signal/getitimer.lo.go obj/src/signal/kill.lo.go obj/src/signal/killpg.lo.go obj/src/signal/psiginfo.lo.go obj/src/signal/psignal.lo.go obj/src/signal/raise.lo.go obj/src/signal/restore.lo.go obj/src/signal/setitimer.lo.go obj/src/signal/sigaction.lo.go obj/src/signal/sigaddset.lo.go obj/src/signal/sigaltstack.lo.go obj/src/signal/sigandset.lo.go obj/src/signal/sigdelset.lo.go obj/src/signal/sigemptyset.lo.go obj/src/signal/sigfillset.lo.go obj/src/signal/sigisemptyset.lo.go obj/src/signal/sigismember.lo.go obj/src/signal/sigorset.lo.go obj/src/signal/sigpending.lo.go obj/src/signal/sigprocmask.lo.go obj/src/signal/sigqueue.lo.go obj/src/signal/sigrtmax.lo.go obj/src/signal/sigrtmin.lo.go obj/src/signal/sigsetjmp.lo.go obj/src/signal/sigsetjmp_tail.lo.go obj/src/signal/sigsuspend.lo.go obj/src/signal/sigtimedwait.lo.go obj/src/signal/sigwait.lo.go obj/src/signal/sigwaitinfo.lo.go obj/src/stat/__xstat.lo.go obj/src/stat/chmod.lo.go obj/src/stat/fchmod.lo.go obj/src/stat/fchmodat.lo.go obj/src/stat/fstat.lo.go obj/src/stat/fstatat.lo.go obj/src/stat/futimens.lo.go obj/src/stat/futimesat.lo.go obj/src/stat/lchmod.lo.go obj/src/stat/lstat.lo.go obj/src/stat/mkdir.lo.go obj/src/stat/mkdirat.lo.go obj/src/stat/mkfifo.lo.go obj/src/stat/mkfifoat.lo.go obj/src/stat/mknod.lo.go obj/src/stat/mknodat.lo.go obj/src/stat/stat.lo.go obj/src/stat/statvfs.lo.go obj/src/stat/umask.lo.go obj/src/stat/utimensat.lo.go obj/src/stdio/__fclose_ca.lo.go obj/src/stdio/__fdopen.lo.go obj/src/stdio/__fmodeflags.lo.go obj/src/stdio/__fopen_rb_ca.lo.go obj/src/stdio/__overflow.lo.go obj/src/stdio/__stdio_close.lo.go obj/src/stdio/__stdio_exit.lo.go obj/src/stdio/__stdio_read.lo.go obj/src/stdio/__stdio_seek.lo.go obj/src/stdio/__stdio_write.lo.go obj/src/stdio/__stdout_write.lo.go obj/src/stdio/__toread.lo.go obj/src/stdio/__towrite.lo.go obj/src/stdio/__uflow.lo.go obj/src/stdio/asprintf.lo.go obj/src/stdio/clearerr.lo.go obj/src/stdio/dprintf.lo.go obj/src/stdio/ext.lo.go obj/src/stdio/ext2.lo.go obj/src/stdio/fclose.lo.go obj/src/stdio/feof.lo.go obj/src/stdio/ferror.lo.go obj/src/stdio/fflush.lo.go obj/src/stdio/fgetc.lo.go obj/src/stdio/fgetln.lo.go obj/src/stdio/fgetpos.lo.go obj/src/stdio/fgets.lo.go obj/src/stdio/fgetwc.lo.go obj/src/stdio/fgetws.lo.go obj/src/stdio/fileno.lo.go obj/src/stdio/flockfile.lo.go obj/src/stdio/fmemopen.lo.go obj/src/stdio/fopen.lo.go obj/src/stdio/fopencookie.lo.go obj/src/stdio/fprintf.lo.go obj/src/stdio/fputc.lo.go obj/src/stdio/fputs.lo.go obj/src/stdio/fputwc.lo.go obj/src/stdio/fputws.lo.go obj/src/stdio/fread.lo.go obj/src/stdio/freopen.lo.go obj/src/stdio/fscanf.lo.go obj/src/stdio/fseek.lo.go obj/src/stdio/fsetpos.lo.go obj/src/stdio/ftell.lo.go obj/src/stdio/ftrylockfile.lo.go obj/src/stdio/funlockfile.lo.go obj/src/stdio/fwide.lo.go obj/src/stdio/fwprintf.lo.go obj/src/stdio/fwrite.lo.go obj/src/stdio/fwscanf.lo.go obj/src/stdio/getc.lo.go obj/src/stdio/getc_unlocked.lo.go obj/src/stdio/getchar.lo.go obj/src/stdio/getchar_unlocked.lo.go obj/src/stdio/getdelim.lo.go obj/src/stdio/getline.lo.go obj/src/stdio/gets.lo.go obj/src/stdio/getw.lo.go obj/src/stdio/getwc.lo.go obj/src/stdio/getwchar.lo.go obj/src/stdio/ofl.lo.go obj/src/stdio/ofl_add.lo.go obj/src/stdio/open_memstream.lo.go obj/src/stdio/open_wmemstream.lo.go obj/src/stdio/pclose.lo.go obj/src/stdio/perror.lo.go obj/src/stdio/printf.lo.go obj/src/stdio/putc.lo.go obj/src/stdio/putc_unlocked.lo.go obj/src/stdio/putchar.lo.go obj/src/stdio/putchar_unlocked.lo.go obj/src/stdio/puts.lo.go obj/src/stdio/putw.lo.go obj/src/stdio/putwc.lo.go obj/src/stdio/putwchar.lo.go obj/src/stdio/remove.lo.go obj/src/stdio/rename.lo.go obj/src/stdio/rewind.lo.go obj/src/stdio/scanf.lo.go obj/src/stdio/setbuf.lo.go obj/src/stdio/setbuffer.lo.go obj/src/stdio/setlinebuf.lo.go obj/src/stdio/setvbuf.lo.go obj/src/stdio/snprintf.lo.go obj/src/stdio/sprintf.lo.go obj/src/stdio/sscanf.lo.go obj/src/stdio/stderr.lo.go obj/src/stdio/stdin.lo.go obj/src/stdio/stdout.lo.go obj/src/stdio/swprintf.lo.go obj/src/stdio/swscanf.lo.go obj/src/stdio/tempnam.lo.go obj/src/stdio/tmpfile.lo.go obj/src/stdio/tmpnam.lo.go obj/src/stdio/ungetc.lo.go obj/src/stdio/ungetwc.lo.go obj/src/stdio/vasprintf.lo.go obj/src/stdio/vdprintf.lo.go obj/src/stdio/vfprintf.lo.go obj/src/stdio/vfscanf.lo.go obj/src/stdio/vfwprintf.lo.go obj/src/stdio/vfwscanf.lo.go obj/src/stdio/vprintf.lo.go obj/src/stdio/vscanf.lo.go obj/src/stdio/vsnprintf.lo.go obj/src/stdio/vsprintf.lo.go obj/src/stdio/vsscanf.lo.go obj/src/stdio/vswprintf.lo.go obj/src/stdio/vswscanf.lo.go obj/src/stdio/vwprintf.lo.go obj/src/stdio/vwscanf.lo.go obj/src/stdio/wprintf.lo.go obj/src/stdio/wscanf.lo.go obj/src/stdlib/abs.lo.go obj/src/stdlib/atof.lo.go obj/src/stdlib/atoi.lo.go obj/src/stdlib/atol.lo.go obj/src/stdlib/atoll.lo.go obj/src/stdlib/bsearch.lo.go obj/src/stdlib/div.lo.go obj/src/stdlib/ecvt.lo.go obj/src/stdlib/fcvt.lo.go obj/src/stdlib/gcvt.lo.go obj/src/stdlib/imaxabs.lo.go obj/src/stdlib/imaxdiv.lo.go obj/src/stdlib/labs.lo.go obj/src/stdlib/ldiv.lo.go obj/src/stdlib/llabs.lo.go obj/src/stdlib/lldiv.lo.go obj/src/stdlib/qsort.lo.go obj/src/stdlib/qsort_nr.lo.go obj/src/stdlib/strtod.lo.go obj/src/stdlib/strtol.lo.go obj/src/stdlib/wcstod.lo.go obj/src/stdlib/wcstol.lo.go obj/src/string/bcmp.lo.go obj/src/string/bcopy.lo.go obj/src/string/bzero.lo.go obj/src/string/explicit_bzero.lo.go obj/src/string/index.lo.go obj/src/string/memccpy.lo.go obj/src/string/memchr.lo.go obj/src/string/memcmp.lo.go obj/src/string/memcpy.lo.go obj/src/string/memmem.lo.go obj/src/string/memmove.lo.go obj/src/string/mempcpy.lo.go obj/src/string/memrchr.lo.go obj/src/string/memset.lo.go obj/src/string/rindex.lo.go obj/src/string/stpcpy.lo.go obj/src/string/stpncpy.lo.go obj/src/string/strcasecmp.lo.go obj/src/string/strcasestr.lo.go obj/src/string/strcat.lo.go obj/src/string/strchr.lo.go obj/src/string/strchrnul.lo.go obj/src/string/strcmp.lo.go obj/src/string/strcpy.lo.go obj/src/string/strcspn.lo.go obj/src/string/strdup.lo.go obj/src/string/strerror_r.lo.go obj/src/string/strlcat.lo.go obj/src/string/strlcpy.lo.go obj/src/string/strlen.lo.go obj/src/string/strncasecmp.lo.go obj/src/string/strncat.lo.go obj/src/string/strncmp.lo.go obj/src/string/strncpy.lo.go obj/src/string/strndup.lo.go obj/src/string/strnlen.lo.go obj/src/string/strpbrk.lo.go obj/src/string/strrchr.lo.go obj/src/string/strsep.lo.go obj/src/string/strsignal.lo.go obj/src/string/strspn.lo.go obj/src/string/strstr.lo.go obj/src/string/strtok.lo.go obj/src/string/strtok_r.lo.go obj/src/string/strverscmp.lo.go obj/src/string/swab.lo.go obj/src/string/wcpcpy.lo.go obj/src/string/wcpncpy.lo.go obj/src/string/wcscasecmp.lo.go obj/src/string/wcscasecmp_l.lo.go obj/src/string/wcscat.lo.go obj/src/string/wcschr.lo.go obj/src/string/wcscmp.lo.go obj/src/string/wcscpy.lo.go obj/src/string/wcscspn.lo.go obj/src/string/wcsdup.lo.go obj/src/string/wcslen.lo.go obj/src/string/wcsncasecmp.lo.go obj/src/string/wcsncasecmp_l.lo.go obj/src/string/wcsncat.lo.go obj/src/string/wcsncmp.lo.go obj/src/string/wcsncpy.lo.go obj/src/string/wcsnlen.lo.go obj/src/string/wcspbrk.lo.go obj/src/string/wcsrchr.lo.go obj/src/string/wcsspn.lo.go obj/src/string/wcsstr.lo.go obj/src/string/wcstok.lo.go obj/src/string/wcswcs.lo.go obj/src/string/wmemchr.lo.go obj/src/string/wmemcmp.lo.go obj/src/string/wmemcpy.lo.go obj/src/string/wmemmove.lo.go obj/src/string/wmemset.lo.go obj/src/temp/mkdtemp.lo.go obj/src/temp/mkostemp.lo.go obj/src/temp/mkostemps.lo.go obj/src/temp/mkstemp.lo.go obj/src/temp/mkstemps.lo.go obj/src/temp/mktemp.lo.go obj/src/termios/cfgetospeed.lo.go obj/src/termios/cfmakeraw.lo.go obj/src/termios/cfsetospeed.lo.go obj/src/termios/tcdrain.lo.go obj/src/termios/tcflow.lo.go obj/src/termios/tcflush.lo.go obj/src/termios/tcgetattr.lo.go obj/src/termios/tcgetsid.lo.go obj/src/termios/tcgetwinsize.lo.go obj/src/termios/tcsendbreak.lo.go obj/src/termios/tcsetattr.lo.go obj/src/termios/tcsetwinsize.lo.go obj/src/thread/pthread_kill.lo.go obj/src/thread/pthread_testcancel.lo.go obj/src/thread/sem_destroy.lo.go obj/src/thread/sem_getvalue.lo.go obj/src/thread/sem_init.lo.go obj/src/thread/sem_open.lo.go obj/src/thread/sem_post.lo.go obj/src/thread/sem_timedwait.lo.go obj/src/thread/sem_trywait.lo.go obj/src/thread/sem_unlink.lo.go obj/src/thread/sem_wait.lo.go obj/src/time/__map_file.lo.go obj/src/time/__month_to_secs.lo.go obj/src/time/__secs_to_tm.lo.go obj/src/time/__tm_to_secs.lo.go obj/src/time/__tz.lo.go obj/src/time/__year_to_secs.lo.go obj/src/time/asctime.lo.go obj/src/time/asctime_r.lo.go obj/src/time/clock.lo.go obj/src/time/clock_getcpuclockid.lo.go obj/src/time/clock_getres.lo.go obj/src/time/clock_gettime.lo.go obj/src/time/clock_nanosleep.lo.go obj/src/time/clock_settime.lo.go obj/src/time/ctime.lo.go obj/src/time/ctime_r.lo.go obj/src/time/difftime.lo.go obj/src/time/ftime.lo.go obj/src/time/getdate.lo.go obj/src/time/gettimeofday.lo.go obj/src/time/gmtime.lo.go obj/src/time/gmtime_r.lo.go obj/src/time/localtime.lo.go obj/src/time/localtime_r.lo.go obj/src/time/mktime.lo.go obj/src/time/nanosleep.lo.go obj/src/time/strftime.lo.go obj/src/time/strptime.lo.go obj/src/time/time.lo.go obj/src/time/timegm.lo.go obj/src/time/timer_delete.lo.go obj/src/time/timer_getoverrun.lo.go obj/src/time/timer_gettime.lo.go obj/src/time/timer_settime.lo.go obj/src/time/times.lo.go obj/src/time/timespec_get.lo.go obj/src/time/utime.lo.go obj/src/time/wcsftime.lo.go obj/src/unistd/_exit.lo.go obj/src/unistd/access.lo.go obj/src/unistd/acct.lo.go obj/src/unistd/alarm.lo.go obj/src/unistd/chdir.lo.go obj/src/unistd/chown.lo.go obj/src/unistd/close.lo.go obj/src/unistd/ctermid.lo.go obj/src/unistd/dup.lo.go obj/src/unistd/dup2.lo.go obj/src/unistd/dup3.lo.go obj/src/unistd/faccessat.lo.go obj/src/unistd/fchdir.lo.go obj/src/unistd/fchown.lo.go obj/src/unistd/fchownat.lo.go obj/src/unistd/fdatasync.lo.go obj/src/unistd/fsync.lo.go obj/src/unistd/ftruncate.lo.go obj/src/unistd/getcwd.lo.go obj/src/unistd/getegid.lo.go obj/src/unistd/geteuid.lo.go obj/src/unistd/getgid.lo.go obj/src/unistd/getgroups.lo.go obj/src/unistd/gethostname.lo.go obj/src/unistd/getlogin.lo.go obj/src/unistd/getlogin_r.lo.go obj/src/unistd/getpgid.lo.go obj/src/unistd/getpgrp.lo.go obj/src/unistd/getpid.lo.go obj/src/unistd/getppid.lo.go obj/src/unistd/getsid.lo.go obj/src/unistd/getuid.lo.go obj/src/unistd/isatty.lo.go obj/src/unistd/lchown.lo.go obj/src/unistd/link.lo.go obj/src/unistd/linkat.lo.go obj/src/unistd/lseek.lo.go obj/src/unistd/nice.lo.go obj/src/unistd/pause.lo.go obj/src/unistd/pipe.lo.go obj/src/unistd/pipe2.lo.go obj/src/unistd/posix_close.lo.go obj/src/unistd/pread.lo.go obj/src/unistd/preadv.lo.go obj/src/unistd/pwrite.lo.go obj/src/unistd/pwritev.lo.go obj/src/unistd/read.lo.go obj/src/unistd/readlink.lo.go obj/src/unistd/readlinkat.lo.go obj/src/unistd/readv.lo.go obj/src/unistd/renameat.lo.go obj/src/unistd/rmdir.lo.go obj/src/unistd/setgid.lo.go obj/src/unistd/setpgid.lo.go obj/src/unistd/setpgrp.lo.go obj/src/unistd/setsid.lo.go obj/src/unistd/setuid.lo.go obj/src/unistd/setxid.lo.go obj/src/unistd/sleep.lo.go obj/src/unistd/symlink.lo.go obj/src/unistd/symlinkat.lo.go obj/src/unistd/sync.lo.go obj/src/unistd/tcgetpgrp.lo.go obj/src/unistd/tcsetpgrp.lo.go obj/src/unistd/truncate.lo.go obj/src/unistd/ttyname.lo.go obj/src/unistd/ttyname_r.lo.go obj/src/unistd/ualarm.lo.go obj/src/unistd/unlink.lo.go obj/src/unistd/unlinkat.lo.go obj/src/unistd/usleep.lo.go obj/src/unistd/write.lo.go obj/src/unistd/writev.lo.go -lgcc -lgcc_eh', DO NOT EDIT.
+// Code generated for linux/amd64 by 'gcc --package-name=libc --prefix-enumerator=_ --prefix-external=x_ --prefix-field=F --prefix-static-internal=_ --prefix-static-none=_ --prefix-tagged-enum=_ --prefix-tagged-struct=T --prefix-tagged-union=T --prefix-typename=T --prefix-undefined=_ -emit-func-aliases -eval-all-macros -extended-errors -ignore-asm-errors -ignore-unsupported-alignment -isystem  -hide strlen -hide __libc_sigaction --no-packed-warning=epoll_event -mlong-double-64 -std=c99 -nostdinc -ffreestanding -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include -DNDEBUG -nostdlib -shared -o lib/libc.so.go obj/src/complex/__cexp.lo.go obj/src/complex/__cexpf.lo.go obj/src/complex/cabs.lo.go obj/src/complex/cabsf.lo.go obj/src/complex/cabsl.lo.go obj/src/complex/cacos.lo.go obj/src/complex/cacosf.lo.go obj/src/complex/cacosh.lo.go obj/src/complex/cacoshf.lo.go obj/src/complex/cacoshl.lo.go obj/src/complex/cacosl.lo.go obj/src/complex/carg.lo.go obj/src/complex/cargf.lo.go obj/src/complex/cargl.lo.go obj/src/complex/casin.lo.go obj/src/complex/casinf.lo.go obj/src/complex/casinh.lo.go obj/src/complex/casinhf.lo.go obj/src/complex/casinhl.lo.go obj/src/complex/casinl.lo.go obj/src/complex/catan.lo.go obj/src/complex/catanf.lo.go obj/src/complex/catanh.lo.go obj/src/complex/catanhf.lo.go obj/src/complex/catanhl.lo.go obj/src/complex/catanl.lo.go obj/src/complex/ccos.lo.go obj/src/complex/ccosf.lo.go obj/src/complex/ccosh.lo.go obj/src/complex/ccoshf.lo.go obj/src/complex/ccoshl.lo.go obj/src/complex/ccosl.lo.go obj/src/complex/cexp.lo.go obj/src/complex/cexpf.lo.go obj/src/complex/cexpl.lo.go obj/src/complex/cimag.lo.go obj/src/complex/cimagf.lo.go obj/src/complex/cimagl.lo.go obj/src/complex/clog.lo.go obj/src/complex/clogf.lo.go obj/src/complex/clogl.lo.go obj/src/complex/conj.lo.go obj/src/complex/conjf.lo.go obj/src/complex/conjl.lo.go obj/src/complex/cpow.lo.go obj/src/complex/cpowf.lo.go obj/src/complex/cpowl.lo.go obj/src/complex/cproj.lo.go obj/src/complex/cprojf.lo.go obj/src/complex/cprojl.lo.go obj/src/complex/creal.lo.go obj/src/complex/crealf.lo.go obj/src/complex/creall.lo.go obj/src/complex/csin.lo.go obj/src/complex/csinf.lo.go obj/src/complex/csinh.lo.go obj/src/complex/csinhf.lo.go obj/src/complex/csinhl.lo.go obj/src/complex/csinl.lo.go obj/src/complex/csqrt.lo.go obj/src/complex/csqrtf.lo.go obj/src/complex/csqrtl.lo.go obj/src/complex/ctan.lo.go obj/src/complex/ctanf.lo.go obj/src/complex/ctanh.lo.go obj/src/complex/ctanhf.lo.go obj/src/complex/ctanhl.lo.go obj/src/complex/ctanl.lo.go obj/src/conf/confstr.lo.go obj/src/conf/fpathconf.lo.go obj/src/conf/legacy.lo.go obj/src/conf/pathconf.lo.go obj/src/conf/sysconf.lo.go obj/src/crypt/crypt.lo.go obj/src/crypt/crypt_blowfish.lo.go obj/src/crypt/crypt_des.lo.go obj/src/crypt/crypt_md5.lo.go obj/src/crypt/crypt_r.lo.go obj/src/crypt/crypt_sha256.lo.go obj/src/crypt/crypt_sha512.lo.go obj/src/crypt/encrypt.lo.go obj/src/ctype/__ctype_b_loc.lo.go obj/src/ctype/__ctype_get_mb_cur_max.lo.go obj/src/ctype/__ctype_tolower_loc.lo.go obj/src/ctype/__ctype_toupper_loc.lo.go obj/src/ctype/isalnum.lo.go obj/src/ctype/isalpha.lo.go obj/src/ctype/isascii.lo.go obj/src/ctype/isblank.lo.go obj/src/ctype/iscntrl.lo.go obj/src/ctype/isdigit.lo.go obj/src/ctype/isgraph.lo.go obj/src/ctype/islower.lo.go obj/src/ctype/isprint.lo.go obj/src/ctype/ispunct.lo.go obj/src/ctype/isspace.lo.go obj/src/ctype/isupper.lo.go obj/src/ctype/iswalnum.lo.go obj/src/ctype/iswalpha.lo.go obj/src/ctype/iswblank.lo.go obj/src/ctype/iswcntrl.lo.go obj/src/ctype/iswctype.lo.go obj/src/ctype/iswdigit.lo.go obj/src/ctype/iswgraph.lo.go obj/src/ctype/iswlower.lo.go obj/src/ctype/iswprint.lo.go obj/src/ctype/iswpunct.lo.go obj/src/ctype/iswspace.lo.go obj/src/ctype/iswupper.lo.go obj/src/ctype/iswxdigit.lo.go obj/src/ctype/isxdigit.lo.go obj/src/ctype/toascii.lo.go obj/src/ctype/tolower.lo.go obj/src/ctype/toupper.lo.go obj/src/ctype/towctrans.lo.go obj/src/ctype/wcswidth.lo.go obj/src/ctype/wctrans.lo.go obj/src/ctype/wcwidth.lo.go obj/src/dirent/alphasort.lo.go obj/src/dirent/closedir.lo.go obj/src/dirent/dirfd.lo.go obj/src/dirent/fdopendir.lo.go obj/src/dirent/opendir.lo.go obj/src/dirent/readdir.lo.go obj/src/dirent/readdir_r.lo.go obj/src/dirent/rewinddir.lo.go obj/src/dirent/scandir.lo.go obj/src/dirent/seekdir.lo.go obj/src/dirent/telldir.lo.go obj/src/dirent/versionsort.lo.go obj/src/env/__environ.lo.go obj/src/env/__reset_tls.lo.go obj/src/env/__stack_chk_fail.lo.go obj/src/env/clearenv.lo.go obj/src/env/getenv.lo.go obj/src/env/putenv.lo.go obj/src/env/secure_getenv.lo.go obj/src/env/setenv.lo.go obj/src/env/unsetenv.lo.go obj/src/errno/strerror.lo.go obj/src/exit/_Exit.lo.go obj/src/exit/abort_lock.lo.go obj/src/exit/assert.lo.go obj/src/exit/at_quick_exit.lo.go obj/src/exit/quick_exit.lo.go obj/src/fcntl/creat.lo.go obj/src/fcntl/fcntl.lo.go obj/src/fcntl/open.lo.go obj/src/fcntl/openat.lo.go obj/src/fcntl/posix_fadvise.lo.go obj/src/fcntl/posix_fallocate.lo.go obj/src/fenv/fenv.lo.go obj/src/internal/defsysinfo.lo.go obj/src/internal/emulate_wait4.lo.go obj/src/internal/floatscan.lo.go obj/src/internal/intscan.lo.go obj/src/internal/libc.lo.go obj/src/internal/procfdname.lo.go obj/src/internal/shgetc.lo.go obj/src/internal/syscall_ret.lo.go obj/src/internal/vdso.lo.go obj/src/internal/version.lo.go obj/src/ipc/ftok.lo.go obj/src/ipc/msgctl.lo.go obj/src/ipc/msgget.lo.go obj/src/ipc/msgrcv.lo.go obj/src/ipc/msgsnd.lo.go obj/src/ipc/semctl.lo.go obj/src/ipc/semget.lo.go obj/src/ipc/semop.lo.go obj/src/ipc/semtimedop.lo.go obj/src/ipc/shmat.lo.go obj/src/ipc/shmctl.lo.go obj/src/ipc/shmdt.lo.go obj/src/ipc/shmget.lo.go obj/src/legacy/cuserid.lo.go obj/src/legacy/err.lo.go obj/src/legacy/euidaccess.lo.go obj/src/legacy/ftw.lo.go obj/src/legacy/futimes.lo.go obj/src/legacy/getdtablesize.lo.go obj/src/legacy/getloadavg.lo.go obj/src/legacy/getpagesize.lo.go obj/src/legacy/getpass.lo.go obj/src/legacy/getusershell.lo.go obj/src/legacy/isastream.lo.go obj/src/legacy/lutimes.lo.go obj/src/legacy/ulimit.lo.go obj/src/legacy/utmpx.lo.go obj/src/linux/adjtime.lo.go obj/src/linux/adjtimex.lo.go obj/src/linux/arch_prctl.lo.go obj/src/linux/brk.lo.go obj/src/linux/cache.lo.go obj/src/linux/cap.lo.go obj/src/linux/chroot.lo.go obj/src/linux/clock_adjtime.lo.go obj/src/linux/copy_file_range.lo.go obj/src/linux/epoll.lo.go obj/src/linux/eventfd.lo.go obj/src/linux/fallocate.lo.go obj/src/linux/fanotify.lo.go obj/src/linux/flock.lo.go obj/src/linux/getdents.lo.go obj/src/linux/getrandom.lo.go obj/src/linux/inotify.lo.go obj/src/linux/ioperm.lo.go obj/src/linux/iopl.lo.go obj/src/linux/klogctl.lo.go obj/src/linux/memfd_create.lo.go obj/src/linux/mlock2.lo.go obj/src/linux/module.lo.go obj/src/linux/mount.lo.go obj/src/linux/name_to_handle_at.lo.go obj/src/linux/open_by_handle_at.lo.go obj/src/linux/personality.lo.go obj/src/linux/pivot_root.lo.go obj/src/linux/prctl.lo.go obj/src/linux/preadv2.lo.go obj/src/linux/prlimit.lo.go obj/src/linux/process_vm.lo.go obj/src/linux/ptrace.lo.go obj/src/linux/pwritev2.lo.go obj/src/linux/quotactl.lo.go obj/src/linux/readahead.lo.go obj/src/linux/reboot.lo.go obj/src/linux/remap_file_pages.lo.go obj/src/linux/sbrk.lo.go obj/src/linux/sendfile.lo.go obj/src/linux/setfsgid.lo.go obj/src/linux/setfsuid.lo.go obj/src/linux/sethostname.lo.go obj/src/linux/setns.lo.go obj/src/linux/settimeofday.lo.go obj/src/linux/signalfd.lo.go obj/src/linux/splice.lo.go obj/src/linux/statx.lo.go obj/src/linux/stime.lo.go obj/src/linux/swap.lo.go obj/src/linux/sync_file_range.lo.go obj/src/linux/syncfs.lo.go obj/src/linux/sysinfo.lo.go obj/src/linux/tee.lo.go obj/src/linux/timerfd.lo.go obj/src/linux/unshare.lo.go obj/src/linux/utimes.lo.go obj/src/linux/vhangup.lo.go obj/src/linux/vmsplice.lo.go obj/src/linux/wait3.lo.go obj/src/linux/wait4.lo.go obj/src/linux/xattr.lo.go obj/src/locale/__lctrans.lo.go obj/src/locale/__mo_lookup.lo.go obj/src/locale/bind_textdomain_codeset.lo.go obj/src/locale/c_locale.lo.go obj/src/locale/catclose.lo.go obj/src/locale/catgets.lo.go obj/src/locale/catopen.lo.go obj/src/locale/dcngettext.lo.go obj/src/locale/duplocale.lo.go obj/src/locale/freelocale.lo.go obj/src/locale/iconv.lo.go obj/src/locale/iconv_close.lo.go obj/src/locale/langinfo.lo.go obj/src/locale/locale_map.lo.go obj/src/locale/localeconv.lo.go obj/src/locale/newlocale.lo.go obj/src/locale/pleval.lo.go obj/src/locale/setlocale.lo.go obj/src/locale/strcoll.lo.go obj/src/locale/strfmon.lo.go obj/src/locale/strtod_l.lo.go obj/src/locale/strxfrm.lo.go obj/src/locale/textdomain.lo.go obj/src/locale/uselocale.lo.go obj/src/locale/wcscoll.lo.go obj/src/locale/wcsxfrm.lo.go obj/src/malloc/reallocarray.lo.go obj/src/math/__cos.lo.go obj/src/math/__cosdf.lo.go obj/src/math/__cosl.lo.go obj/src/math/__expo2.lo.go obj/src/math/__expo2f.lo.go obj/src/math/__fpclassify.lo.go obj/src/math/__fpclassifyf.lo.go obj/src/math/__fpclassifyl.lo.go obj/src/math/__invtrigl.lo.go obj/src/math/__math_divzero.lo.go obj/src/math/__math_divzerof.lo.go obj/src/math/__math_invalid.lo.go obj/src/math/__math_invalidf.lo.go obj/src/math/__math_invalidl.lo.go obj/src/math/__math_oflow.lo.go obj/src/math/__math_oflowf.lo.go obj/src/math/__math_uflow.lo.go obj/src/math/__math_uflowf.lo.go obj/src/math/__math_xflow.lo.go obj/src/math/__math_xflowf.lo.go obj/src/math/__polevll.lo.go obj/src/math/__rem_pio2.lo.go obj/src/math/__rem_pio2_large.lo.go obj/src/math/__rem_pio2f.lo.go obj/src/math/__rem_pio2l.lo.go obj/src/math/__signbit.lo.go obj/src/math/__signbitf.lo.go obj/src/math/__signbitl.lo.go obj/src/math/__sin.lo.go obj/src/math/__sindf.lo.go obj/src/math/__sinl.lo.go obj/src/math/__tan.lo.go obj/src/math/__tandf.lo.go obj/src/math/__tanl.lo.go obj/src/math/acos.lo.go obj/src/math/acosf.lo.go obj/src/math/acosh.lo.go obj/src/math/acoshf.lo.go obj/src/math/acoshl.lo.go obj/src/math/acosl.lo.go obj/src/math/asin.lo.go obj/src/math/asinf.lo.go obj/src/math/asinh.lo.go obj/src/math/asinhf.lo.go obj/src/math/asinhl.lo.go obj/src/math/asinl.lo.go obj/src/math/atan.lo.go obj/src/math/atan2.lo.go obj/src/math/atan2f.lo.go obj/src/math/atan2l.lo.go obj/src/math/atanf.lo.go obj/src/math/atanh.lo.go obj/src/math/atanhf.lo.go obj/src/math/atanhl.lo.go obj/src/math/atanl.lo.go obj/src/math/cbrt.lo.go obj/src/math/cbrtf.lo.go obj/src/math/cbrtl.lo.go obj/src/math/ceil.lo.go obj/src/math/ceilf.lo.go obj/src/math/ceill.lo.go obj/src/math/copysign.lo.go obj/src/math/copysignf.lo.go obj/src/math/copysignl.lo.go obj/src/math/cos.lo.go obj/src/math/cosf.lo.go obj/src/math/cosh.lo.go obj/src/math/coshf.lo.go obj/src/math/coshl.lo.go obj/src/math/cosl.lo.go obj/src/math/erf.lo.go obj/src/math/erff.lo.go obj/src/math/erfl.lo.go obj/src/math/exp.lo.go obj/src/math/exp10.lo.go obj/src/math/exp10f.lo.go obj/src/math/exp10l.lo.go obj/src/math/exp2.lo.go obj/src/math/exp2f.lo.go obj/src/math/exp2f_data.lo.go obj/src/math/exp2l.lo.go obj/src/math/exp_data.lo.go obj/src/math/expf.lo.go obj/src/math/expl.lo.go obj/src/math/expm1.lo.go obj/src/math/expm1f.lo.go obj/src/math/expm1l.lo.go obj/src/math/fabs.lo.go obj/src/math/fabsf.lo.go obj/src/math/fabsl.lo.go obj/src/math/fdim.lo.go obj/src/math/fdimf.lo.go obj/src/math/fdiml.lo.go obj/src/math/finite.lo.go obj/src/math/finitef.lo.go obj/src/math/floor.lo.go obj/src/math/floorf.lo.go obj/src/math/floorl.lo.go obj/src/math/fma.lo.go obj/src/math/fmal.lo.go obj/src/math/fmax.lo.go obj/src/math/fmaxf.lo.go obj/src/math/fmaxl.lo.go obj/src/math/fmin.lo.go obj/src/math/fminf.lo.go obj/src/math/fminl.lo.go obj/src/math/fmod.lo.go obj/src/math/fmodf.lo.go obj/src/math/fmodl.lo.go obj/src/math/frexp.lo.go obj/src/math/frexpf.lo.go obj/src/math/frexpl.lo.go obj/src/math/hypot.lo.go obj/src/math/hypotf.lo.go obj/src/math/hypotl.lo.go obj/src/math/ilogb.lo.go obj/src/math/ilogbf.lo.go obj/src/math/ilogbl.lo.go obj/src/math/j0.lo.go obj/src/math/j0f.lo.go obj/src/math/j1.lo.go obj/src/math/j1f.lo.go obj/src/math/jn.lo.go obj/src/math/jnf.lo.go obj/src/math/ldexp.lo.go obj/src/math/ldexpf.lo.go obj/src/math/ldexpl.lo.go obj/src/math/lgamma.lo.go obj/src/math/lgamma_r.lo.go obj/src/math/lgammaf.lo.go obj/src/math/lgammaf_r.lo.go obj/src/math/lgammal.lo.go obj/src/math/llrint.lo.go obj/src/math/llrintf.lo.go obj/src/math/llrintl.lo.go obj/src/math/llround.lo.go obj/src/math/llroundf.lo.go obj/src/math/llroundl.lo.go obj/src/math/log.lo.go obj/src/math/log10.lo.go obj/src/math/log10f.lo.go obj/src/math/log10l.lo.go obj/src/math/log1p.lo.go obj/src/math/log1pf.lo.go obj/src/math/log1pl.lo.go obj/src/math/log2.lo.go obj/src/math/log2_data.lo.go obj/src/math/log2f.lo.go obj/src/math/log2f_data.lo.go obj/src/math/log2l.lo.go obj/src/math/log_data.lo.go obj/src/math/logb.lo.go obj/src/math/logbf.lo.go obj/src/math/logbl.lo.go obj/src/math/logf.lo.go obj/src/math/logf_data.lo.go obj/src/math/logl.lo.go obj/src/math/lrint.lo.go obj/src/math/lrintf.lo.go obj/src/math/lrintl.lo.go obj/src/math/lround.lo.go obj/src/math/lroundf.lo.go obj/src/math/lroundl.lo.go obj/src/math/modf.lo.go obj/src/math/modff.lo.go obj/src/math/modfl.lo.go obj/src/math/nan.lo.go obj/src/math/nanf.lo.go obj/src/math/nanl.lo.go obj/src/math/nextafter.lo.go obj/src/math/nextafterf.lo.go obj/src/math/nextafterl.lo.go obj/src/math/nexttoward.lo.go obj/src/math/nexttowardf.lo.go obj/src/math/nexttowardl.lo.go obj/src/math/pow.lo.go obj/src/math/pow_data.lo.go obj/src/math/powf.lo.go obj/src/math/powf_data.lo.go obj/src/math/powl.lo.go obj/src/math/remainder.lo.go obj/src/math/remainderf.lo.go obj/src/math/remainderl.lo.go obj/src/math/remquo.lo.go obj/src/math/remquof.lo.go obj/src/math/remquol.lo.go obj/src/math/rint.lo.go obj/src/math/rintf.lo.go obj/src/math/rintl.lo.go obj/src/math/round.lo.go obj/src/math/roundf.lo.go obj/src/math/roundl.lo.go obj/src/math/scalb.lo.go obj/src/math/scalbf.lo.go obj/src/math/scalbln.lo.go obj/src/math/scalblnf.lo.go obj/src/math/scalblnl.lo.go obj/src/math/scalbn.lo.go obj/src/math/scalbnf.lo.go obj/src/math/scalbnl.lo.go obj/src/math/signgam.lo.go obj/src/math/significand.lo.go obj/src/math/significandf.lo.go obj/src/math/sin.lo.go obj/src/math/sincos.lo.go obj/src/math/sincosf.lo.go obj/src/math/sincosl.lo.go obj/src/math/sinf.lo.go obj/src/math/sinh.lo.go obj/src/math/sinhf.lo.go obj/src/math/sinhl.lo.go obj/src/math/sinl.lo.go obj/src/math/sqrt.lo.go obj/src/math/sqrt_data.lo.go obj/src/math/sqrtf.lo.go obj/src/math/sqrtl.lo.go obj/src/math/tan.lo.go obj/src/math/tanf.lo.go obj/src/math/tanh.lo.go obj/src/math/tanhf.lo.go obj/src/math/tanhl.lo.go obj/src/math/tanl.lo.go obj/src/math/tgamma.lo.go obj/src/math/tgammaf.lo.go obj/src/math/tgammal.lo.go obj/src/math/trunc.lo.go obj/src/math/truncf.lo.go obj/src/math/truncl.lo.go obj/src/misc/a64l.lo.go obj/src/misc/basename.lo.go obj/src/misc/dirname.lo.go obj/src/misc/ffs.lo.go obj/src/misc/ffsl.lo.go obj/src/misc/ffsll.lo.go obj/src/misc/fmtmsg.lo.go obj/src/misc/get_current_dir_name.lo.go obj/src/misc/getauxval.lo.go obj/src/misc/getdomainname.lo.go obj/src/misc/getentropy.lo.go obj/src/misc/gethostid.lo.go obj/src/misc/getopt.lo.go obj/src/misc/getopt_long.lo.go obj/src/misc/getpriority.lo.go obj/src/misc/getresgid.lo.go obj/src/misc/getresuid.lo.go obj/src/misc/getrlimit.lo.go obj/src/misc/getrusage.lo.go obj/src/misc/getsubopt.lo.go obj/src/misc/ioctl.lo.go obj/src/misc/issetugid.lo.go obj/src/misc/lockf.lo.go obj/src/misc/login_tty.lo.go obj/src/misc/mntent.lo.go obj/src/misc/nftw.lo.go obj/src/misc/openpty.lo.go obj/src/misc/ptsname.lo.go obj/src/misc/pty.lo.go obj/src/misc/realpath.lo.go obj/src/misc/setdomainname.lo.go obj/src/misc/setpriority.lo.go obj/src/misc/setrlimit.lo.go obj/src/misc/syscall.lo.go obj/src/misc/syslog.lo.go obj/src/misc/uname.lo.go obj/src/mman/madvise.lo.go obj/src/mman/mincore.lo.go obj/src/mman/mlock.lo.go obj/src/mman/mlockall.lo.go obj/src/mman/mmap.lo.go obj/src/mman/mprotect.lo.go obj/src/mman/mremap.lo.go obj/src/mman/msync.lo.go obj/src/mman/munlock.lo.go obj/src/mman/munlockall.lo.go obj/src/mman/munmap.lo.go obj/src/mman/posix_madvise.lo.go obj/src/mman/shm_open.lo.go obj/src/multibyte/btowc.lo.go obj/src/multibyte/c16rtomb.lo.go obj/src/multibyte/c32rtomb.lo.go obj/src/multibyte/internal.lo.go obj/src/multibyte/mblen.lo.go obj/src/multibyte/mbrlen.lo.go obj/src/multibyte/mbrtoc16.lo.go obj/src/multibyte/mbrtoc32.lo.go obj/src/multibyte/mbrtowc.lo.go obj/src/multibyte/mbsinit.lo.go obj/src/multibyte/mbsnrtowcs.lo.go obj/src/multibyte/mbsrtowcs.lo.go obj/src/multibyte/mbstowcs.lo.go obj/src/multibyte/mbtowc.lo.go obj/src/multibyte/wcrtomb.lo.go obj/src/multibyte/wcsnrtombs.lo.go obj/src/multibyte/wcsrtombs.lo.go obj/src/multibyte/wcstombs.lo.go obj/src/multibyte/wctob.lo.go obj/src/multibyte/wctomb.lo.go obj/src/network/accept.lo.go obj/src/network/accept4.lo.go obj/src/network/bind.lo.go obj/src/network/connect.lo.go obj/src/network/dn_comp.lo.go obj/src/network/dn_expand.lo.go obj/src/network/dn_skipname.lo.go obj/src/network/dns_parse.lo.go obj/src/network/ent.lo.go obj/src/network/ether.lo.go obj/src/network/freeaddrinfo.lo.go obj/src/network/gai_strerror.lo.go obj/src/network/getaddrinfo.lo.go obj/src/network/gethostbyaddr.lo.go obj/src/network/gethostbyaddr_r.lo.go obj/src/network/gethostbyname.lo.go obj/src/network/gethostbyname2.lo.go obj/src/network/gethostbyname2_r.lo.go obj/src/network/gethostbyname_r.lo.go obj/src/network/getifaddrs.lo.go obj/src/network/getnameinfo.lo.go obj/src/network/getpeername.lo.go obj/src/network/getservbyname.lo.go obj/src/network/getservbyname_r.lo.go obj/src/network/getsockname.lo.go obj/src/network/getsockopt.lo.go obj/src/network/h_errno.lo.go obj/src/network/herror.lo.go obj/src/network/hstrerror.lo.go obj/src/network/htonl.lo.go obj/src/network/htons.lo.go obj/src/network/if_freenameindex.lo.go obj/src/network/if_indextoname.lo.go obj/src/network/if_nameindex.lo.go obj/src/network/if_nametoindex.lo.go obj/src/network/in6addr_any.lo.go obj/src/network/in6addr_loopback.lo.go obj/src/network/inet_addr.lo.go obj/src/network/inet_aton.lo.go obj/src/network/inet_legacy.lo.go obj/src/network/inet_ntoa.lo.go obj/src/network/inet_ntop.lo.go obj/src/network/inet_pton.lo.go obj/src/network/listen.lo.go obj/src/network/lookup_ipliteral.lo.go obj/src/network/lookup_name.lo.go obj/src/network/lookup_serv.lo.go obj/src/network/netlink.lo.go obj/src/network/netname.lo.go obj/src/network/ns_parse.lo.go obj/src/network/ntohl.lo.go obj/src/network/ntohs.lo.go obj/src/network/proto.lo.go obj/src/network/recv.lo.go obj/src/network/recvfrom.lo.go obj/src/network/recvmmsg.lo.go obj/src/network/recvmsg.lo.go obj/src/network/res_init.lo.go obj/src/network/res_mkquery.lo.go obj/src/network/res_msend.lo.go obj/src/network/res_send.lo.go obj/src/network/res_state.lo.go obj/src/network/resolvconf.lo.go obj/src/network/send.lo.go obj/src/network/sendmmsg.lo.go obj/src/network/sendmsg.lo.go obj/src/network/sendto.lo.go obj/src/network/serv.lo.go obj/src/network/setsockopt.lo.go obj/src/network/shutdown.lo.go obj/src/network/sockatmark.lo.go obj/src/network/socket.lo.go obj/src/network/socketpair.lo.go obj/src/passwd/fgetgrent.lo.go obj/src/passwd/fgetpwent.lo.go obj/src/passwd/getgr_a.lo.go obj/src/passwd/getgr_r.lo.go obj/src/passwd/getgrent.lo.go obj/src/passwd/getgrent_a.lo.go obj/src/passwd/getgrouplist.lo.go obj/src/passwd/getpw_a.lo.go obj/src/passwd/getpw_r.lo.go obj/src/passwd/getpwent.lo.go obj/src/passwd/getpwent_a.lo.go obj/src/passwd/getspent.lo.go obj/src/passwd/lckpwdf.lo.go obj/src/passwd/nscd_query.lo.go obj/src/passwd/putgrent.lo.go obj/src/passwd/putpwent.lo.go obj/src/passwd/putspent.lo.go obj/src/prng/__rand48_step.lo.go obj/src/prng/__seed48.lo.go obj/src/prng/drand48.lo.go obj/src/prng/lcong48.lo.go obj/src/prng/lrand48.lo.go obj/src/prng/mrand48.lo.go obj/src/prng/rand.lo.go obj/src/prng/rand_r.lo.go obj/src/prng/random.lo.go obj/src/prng/seed48.lo.go obj/src/prng/srand48.lo.go obj/src/process/execl.lo.go obj/src/process/execle.lo.go obj/src/process/execlp.lo.go obj/src/process/execv.lo.go obj/src/process/execve.lo.go obj/src/process/execvp.lo.go obj/src/process/fexecve.lo.go obj/src/process/fork.lo.go obj/src/process/posix_spawn_file_actions_addchdir.lo.go obj/src/process/posix_spawn_file_actions_addclose.lo.go obj/src/process/posix_spawn_file_actions_adddup2.lo.go obj/src/process/posix_spawn_file_actions_addfchdir.lo.go obj/src/process/posix_spawn_file_actions_addopen.lo.go obj/src/process/posix_spawn_file_actions_destroy.lo.go obj/src/process/posix_spawn_file_actions_init.lo.go obj/src/process/posix_spawnattr_destroy.lo.go obj/src/process/posix_spawnattr_getflags.lo.go obj/src/process/posix_spawnattr_getpgroup.lo.go obj/src/process/posix_spawnattr_getsigdefault.lo.go obj/src/process/posix_spawnattr_getsigmask.lo.go obj/src/process/posix_spawnattr_init.lo.go obj/src/process/posix_spawnattr_sched.lo.go obj/src/process/posix_spawnattr_setflags.lo.go obj/src/process/posix_spawnattr_setpgroup.lo.go obj/src/process/posix_spawnattr_setsigdefault.lo.go obj/src/process/posix_spawnattr_setsigmask.lo.go obj/src/process/vfork.lo.go obj/src/process/wait.lo.go obj/src/process/waitid.lo.go obj/src/process/waitpid.lo.go obj/src/regex/fnmatch.lo.go obj/src/regex/glob.lo.go obj/src/regex/regcomp.lo.go obj/src/regex/regerror.lo.go obj/src/regex/regexec.lo.go obj/src/regex/tre-mem.lo.go obj/src/sched/affinity.lo.go obj/src/sched/sched_cpucount.lo.go obj/src/sched/sched_get_priority_max.lo.go obj/src/sched/sched_getparam.lo.go obj/src/sched/sched_getscheduler.lo.go obj/src/sched/sched_rr_get_interval.lo.go obj/src/sched/sched_setparam.lo.go obj/src/sched/sched_setscheduler.lo.go obj/src/search/hsearch.lo.go obj/src/search/insque.lo.go obj/src/search/lsearch.lo.go obj/src/search/tdelete.lo.go obj/src/search/tdestroy.lo.go obj/src/search/tfind.lo.go obj/src/search/tsearch.lo.go obj/src/search/twalk.lo.go obj/src/select/poll.lo.go obj/src/select/ppoll.lo.go obj/src/select/pselect.lo.go obj/src/select/select.lo.go obj/src/setjmp/longjmp.lo.go obj/src/setjmp/setjmp.lo.go obj/src/signal/block.lo.go obj/src/signal/getitimer.lo.go obj/src/signal/kill.lo.go obj/src/signal/killpg.lo.go obj/src/signal/psiginfo.lo.go obj/src/signal/psignal.lo.go obj/src/signal/raise.lo.go obj/src/signal/restore.lo.go obj/src/signal/setitimer.lo.go obj/src/signal/sigaction.lo.go obj/src/signal/sigaddset.lo.go obj/src/signal/sigaltstack.lo.go obj/src/signal/sigandset.lo.go obj/src/signal/sigdelset.lo.go obj/src/signal/sigemptyset.lo.go obj/src/signal/sigfillset.lo.go obj/src/signal/sigisemptyset.lo.go obj/src/signal/sigismember.lo.go obj/src/signal/sigorset.lo.go obj/src/signal/sigpending.lo.go obj/src/signal/sigprocmask.lo.go obj/src/signal/sigqueue.lo.go obj/src/signal/sigrtmax.lo.go obj/src/signal/sigrtmin.lo.go obj/src/signal/sigsetjmp.lo.go obj/src/signal/sigsetjmp_tail.lo.go obj/src/signal/sigsuspend.lo.go obj/src/signal/sigtimedwait.lo.go obj/src/signal/sigwait.lo.go obj/src/signal/sigwaitinfo.lo.go obj/src/stat/__xstat.lo.go obj/src/stat/chmod.lo.go obj/src/stat/fchmod.lo.go obj/src/stat/fchmodat.lo.go obj/src/stat/fstat.lo.go obj/src/stat/fstatat.lo.go obj/src/stat/futimens.lo.go obj/src/stat/futimesat.lo.go obj/src/stat/lchmod.lo.go obj/src/stat/lstat.lo.go obj/src/stat/mkdir.lo.go obj/src/stat/mkdirat.lo.go obj/src/stat/mkfifo.lo.go obj/src/stat/mkfifoat.lo.go obj/src/stat/mknod.lo.go obj/src/stat/mknodat.lo.go obj/src/stat/stat.lo.go obj/src/stat/statvfs.lo.go obj/src/stat/umask.lo.go obj/src/stat/utimensat.lo.go obj/src/stdio/__fclose_ca.lo.go obj/src/stdio/__fdopen.lo.go obj/src/stdio/__fmodeflags.lo.go obj/src/stdio/__fopen_rb_ca.lo.go obj/src/stdio/__overflow.lo.go obj/src/stdio/__stdio_close.lo.go obj/src/stdio/__stdio_exit.lo.go obj/src/stdio/__stdio_read.lo.go obj/src/stdio/__stdio_seek.lo.go obj/src/stdio/__stdio_write.lo.go obj/src/stdio/__stdout_write.lo.go obj/src/stdio/__toread.lo.go obj/src/stdio/__towrite.lo.go obj/src/stdio/__uflow.lo.go obj/src/stdio/asprintf.lo.go obj/src/stdio/clearerr.lo.go obj/src/stdio/dprintf.lo.go obj/src/stdio/ext.lo.go obj/src/stdio/ext2.lo.go obj/src/stdio/fclose.lo.go obj/src/stdio/feof.lo.go obj/src/stdio/ferror.lo.go obj/src/stdio/fflush.lo.go obj/src/stdio/fgetc.lo.go obj/src/stdio/fgetln.lo.go obj/src/stdio/fgetpos.lo.go obj/src/stdio/fgets.lo.go obj/src/stdio/fgetwc.lo.go obj/src/stdio/fgetws.lo.go obj/src/stdio/fileno.lo.go obj/src/stdio/flockfile.lo.go obj/src/stdio/fmemopen.lo.go obj/src/stdio/fopen.lo.go obj/src/stdio/fopencookie.lo.go obj/src/stdio/fprintf.lo.go obj/src/stdio/fputc.lo.go obj/src/stdio/fputs.lo.go obj/src/stdio/fputwc.lo.go obj/src/stdio/fputws.lo.go obj/src/stdio/fread.lo.go obj/src/stdio/freopen.lo.go obj/src/stdio/fscanf.lo.go obj/src/stdio/fseek.lo.go obj/src/stdio/fsetpos.lo.go obj/src/stdio/ftell.lo.go obj/src/stdio/ftrylockfile.lo.go obj/src/stdio/funlockfile.lo.go obj/src/stdio/fwide.lo.go obj/src/stdio/fwprintf.lo.go obj/src/stdio/fwrite.lo.go obj/src/stdio/fwscanf.lo.go obj/src/stdio/getc.lo.go obj/src/stdio/getc_unlocked.lo.go obj/src/stdio/getchar.lo.go obj/src/stdio/getchar_unlocked.lo.go obj/src/stdio/getdelim.lo.go obj/src/stdio/getline.lo.go obj/src/stdio/gets.lo.go obj/src/stdio/getw.lo.go obj/src/stdio/getwc.lo.go obj/src/stdio/getwchar.lo.go obj/src/stdio/ofl.lo.go obj/src/stdio/ofl_add.lo.go obj/src/stdio/open_memstream.lo.go obj/src/stdio/open_wmemstream.lo.go obj/src/stdio/pclose.lo.go obj/src/stdio/perror.lo.go obj/src/stdio/printf.lo.go obj/src/stdio/putc.lo.go obj/src/stdio/putc_unlocked.lo.go obj/src/stdio/putchar.lo.go obj/src/stdio/putchar_unlocked.lo.go obj/src/stdio/puts.lo.go obj/src/stdio/putw.lo.go obj/src/stdio/putwc.lo.go obj/src/stdio/putwchar.lo.go obj/src/stdio/remove.lo.go obj/src/stdio/rename.lo.go obj/src/stdio/rewind.lo.go obj/src/stdio/scanf.lo.go obj/src/stdio/setbuf.lo.go obj/src/stdio/setbuffer.lo.go obj/src/stdio/setlinebuf.lo.go obj/src/stdio/setvbuf.lo.go obj/src/stdio/snprintf.lo.go obj/src/stdio/sprintf.lo.go obj/src/stdio/sscanf.lo.go obj/src/stdio/stderr.lo.go obj/src/stdio/stdin.lo.go obj/src/stdio/stdout.lo.go obj/src/stdio/swprintf.lo.go obj/src/stdio/swscanf.lo.go obj/src/stdio/tempnam.lo.go obj/src/stdio/tmpfile.lo.go obj/src/stdio/tmpnam.lo.go obj/src/stdio/ungetc.lo.go obj/src/stdio/ungetwc.lo.go obj/src/stdio/vasprintf.lo.go obj/src/stdio/vdprintf.lo.go obj/src/stdio/vfprintf.lo.go obj/src/stdio/vfscanf.lo.go obj/src/stdio/vfwprintf.lo.go obj/src/stdio/vfwscanf.lo.go obj/src/stdio/vprintf.lo.go obj/src/stdio/vscanf.lo.go obj/src/stdio/vsnprintf.lo.go obj/src/stdio/vsprintf.lo.go obj/src/stdio/vsscanf.lo.go obj/src/stdio/vswprintf.lo.go obj/src/stdio/vswscanf.lo.go obj/src/stdio/vwprintf.lo.go obj/src/stdio/vwscanf.lo.go obj/src/stdio/wprintf.lo.go obj/src/stdio/wscanf.lo.go obj/src/stdlib/abs.lo.go obj/src/stdlib/atof.lo.go obj/src/stdlib/atoi.lo.go obj/src/stdlib/atol.lo.go obj/src/stdlib/atoll.lo.go obj/src/stdlib/bsearch.lo.go obj/src/stdlib/div.lo.go obj/src/stdlib/ecvt.lo.go obj/src/stdlib/fcvt.lo.go obj/src/stdlib/gcvt.lo.go obj/src/stdlib/imaxabs.lo.go obj/src/stdlib/imaxdiv.lo.go obj/src/stdlib/labs.lo.go obj/src/stdlib/ldiv.lo.go obj/src/stdlib/llabs.lo.go obj/src/stdlib/lldiv.lo.go obj/src/stdlib/qsort.lo.go obj/src/stdlib/qsort_nr.lo.go obj/src/stdlib/strtod.lo.go obj/src/stdlib/strtol.lo.go obj/src/stdlib/wcstod.lo.go obj/src/stdlib/wcstol.lo.go obj/src/string/bcmp.lo.go obj/src/string/bcopy.lo.go obj/src/string/bzero.lo.go obj/src/string/explicit_bzero.lo.go obj/src/string/index.lo.go obj/src/string/memccpy.lo.go obj/src/string/memchr.lo.go obj/src/string/memcmp.lo.go obj/src/string/memcpy.lo.go obj/src/string/memmem.lo.go obj/src/string/memmove.lo.go obj/src/string/mempcpy.lo.go obj/src/string/memrchr.lo.go obj/src/string/memset.lo.go obj/src/string/rindex.lo.go obj/src/string/stpcpy.lo.go obj/src/string/stpncpy.lo.go obj/src/string/strcasecmp.lo.go obj/src/string/strcasestr.lo.go obj/src/string/strcat.lo.go obj/src/string/strchr.lo.go obj/src/string/strchrnul.lo.go obj/src/string/strcmp.lo.go obj/src/string/strcpy.lo.go obj/src/string/strcspn.lo.go obj/src/string/strdup.lo.go obj/src/string/strerror_r.lo.go obj/src/string/strlcat.lo.go obj/src/string/strlcpy.lo.go obj/src/string/strlen.lo.go obj/src/string/strncasecmp.lo.go obj/src/string/strncat.lo.go obj/src/string/strncmp.lo.go obj/src/string/strncpy.lo.go obj/src/string/strndup.lo.go obj/src/string/strnlen.lo.go obj/src/string/strpbrk.lo.go obj/src/string/strrchr.lo.go obj/src/string/strsep.lo.go obj/src/string/strsignal.lo.go obj/src/string/strspn.lo.go obj/src/string/strstr.lo.go obj/src/string/strtok.lo.go obj/src/string/strtok_r.lo.go obj/src/string/strverscmp.lo.go obj/src/string/swab.lo.go obj/src/string/wcpcpy.lo.go obj/src/string/wcpncpy.lo.go obj/src/string/wcscasecmp.lo.go obj/src/string/wcscasecmp_l.lo.go obj/src/string/wcscat.lo.go obj/src/string/wcschr.lo.go obj/src/string/wcscmp.lo.go obj/src/string/wcscpy.lo.go obj/src/string/wcscspn.lo.go obj/src/string/wcsdup.lo.go obj/src/string/wcslen.lo.go obj/src/string/wcsncasecmp.lo.go obj/src/string/wcsncasecmp_l.lo.go obj/src/string/wcsncat.lo.go obj/src/string/wcsncmp.lo.go obj/src/string/wcsncpy.lo.go obj/src/string/wcsnlen.lo.go obj/src/string/wcspbrk.lo.go obj/src/string/wcsrchr.lo.go obj/src/string/wcsspn.lo.go obj/src/string/wcsstr.lo.go obj/src/string/wcstok.lo.go obj/src/string/wcswcs.lo.go obj/src/string/wmemchr.lo.go obj/src/string/wmemcmp.lo.go obj/src/string/wmemcpy.lo.go obj/src/string/wmemmove.lo.go obj/src/string/wmemset.lo.go obj/src/temp/mkdtemp.lo.go obj/src/temp/mkostemp.lo.go obj/src/temp/mkostemps.lo.go obj/src/temp/mkstemp.lo.go obj/src/temp/mkstemps.lo.go obj/src/temp/mktemp.lo.go obj/src/termios/cfgetospeed.lo.go obj/src/termios/cfmakeraw.lo.go obj/src/termios/cfsetospeed.lo.go obj/src/termios/tcdrain.lo.go obj/src/termios/tcflow.lo.go obj/src/termios/tcflush.lo.go obj/src/termios/tcgetattr.lo.go obj/src/termios/tcgetsid.lo.go obj/src/termios/tcgetwinsize.lo.go obj/src/termios/tcsendbreak.lo.go obj/src/termios/tcsetattr.lo.go obj/src/termios/tcsetwinsize.lo.go obj/src/thread/pthread_kill.lo.go obj/src/thread/pthread_testcancel.lo.go obj/src/thread/sem_destroy.lo.go obj/src/thread/sem_getvalue.lo.go obj/src/thread/sem_init.lo.go obj/src/thread/sem_open.lo.go obj/src/thread/sem_post.lo.go obj/src/thread/sem_timedwait.lo.go obj/src/thread/sem_trywait.lo.go obj/src/thread/sem_unlink.lo.go obj/src/thread/sem_wait.lo.go obj/src/time/__map_file.lo.go obj/src/time/__month_to_secs.lo.go obj/src/time/__secs_to_tm.lo.go obj/src/time/__tm_to_secs.lo.go obj/src/time/__tz.lo.go obj/src/time/__year_to_secs.lo.go obj/src/time/asctime.lo.go obj/src/time/asctime_r.lo.go obj/src/time/clock.lo.go obj/src/time/clock_getcpuclockid.lo.go obj/src/time/clock_getres.lo.go obj/src/time/clock_gettime.lo.go obj/src/time/clock_nanosleep.lo.go obj/src/time/clock_settime.lo.go obj/src/time/ctime.lo.go obj/src/time/ctime_r.lo.go obj/src/time/difftime.lo.go obj/src/time/ftime.lo.go obj/src/time/getdate.lo.go obj/src/time/gettimeofday.lo.go obj/src/time/gmtime.lo.go obj/src/time/gmtime_r.lo.go obj/src/time/localtime.lo.go obj/src/time/localtime_r.lo.go obj/src/time/mktime.lo.go obj/src/time/nanosleep.lo.go obj/src/time/strftime.lo.go obj/src/time/strptime.lo.go obj/src/time/time.lo.go obj/src/time/timegm.lo.go obj/src/time/timer_delete.lo.go obj/src/time/timer_getoverrun.lo.go obj/src/time/timer_gettime.lo.go obj/src/time/timer_settime.lo.go obj/src/time/times.lo.go obj/src/time/timespec_get.lo.go obj/src/time/utime.lo.go obj/src/time/wcsftime.lo.go obj/src/unistd/_exit.lo.go obj/src/unistd/access.lo.go obj/src/unistd/acct.lo.go obj/src/unistd/alarm.lo.go obj/src/unistd/chdir.lo.go obj/src/unistd/chown.lo.go obj/src/unistd/close.lo.go obj/src/unistd/ctermid.lo.go obj/src/unistd/dup.lo.go obj/src/unistd/dup2.lo.go obj/src/unistd/dup3.lo.go obj/src/unistd/faccessat.lo.go obj/src/unistd/fchdir.lo.go obj/src/unistd/fchown.lo.go obj/src/unistd/fchownat.lo.go obj/src/unistd/fdatasync.lo.go obj/src/unistd/fsync.lo.go obj/src/unistd/ftruncate.lo.go obj/src/unistd/getcwd.lo.go obj/src/unistd/getegid.lo.go obj/src/unistd/geteuid.lo.go obj/src/unistd/getgid.lo.go obj/src/unistd/getgroups.lo.go obj/src/unistd/gethostname.lo.go obj/src/unistd/getlogin.lo.go obj/src/unistd/getlogin_r.lo.go obj/src/unistd/getpgid.lo.go obj/src/unistd/getpgrp.lo.go obj/src/unistd/getpid.lo.go obj/src/unistd/getppid.lo.go obj/src/unistd/getsid.lo.go obj/src/unistd/getuid.lo.go obj/src/unistd/isatty.lo.go obj/src/unistd/lchown.lo.go obj/src/unistd/link.lo.go obj/src/unistd/linkat.lo.go obj/src/unistd/lseek.lo.go obj/src/unistd/nice.lo.go obj/src/unistd/pause.lo.go obj/src/unistd/pipe.lo.go obj/src/unistd/pipe2.lo.go obj/src/unistd/posix_close.lo.go obj/src/unistd/pread.lo.go obj/src/unistd/preadv.lo.go obj/src/unistd/pwrite.lo.go obj/src/unistd/pwritev.lo.go obj/src/unistd/read.lo.go obj/src/unistd/readlink.lo.go obj/src/unistd/readlinkat.lo.go obj/src/unistd/readv.lo.go obj/src/unistd/renameat.lo.go obj/src/unistd/rmdir.lo.go obj/src/unistd/setgid.lo.go obj/src/unistd/setpgid.lo.go obj/src/unistd/setpgrp.lo.go obj/src/unistd/setsid.lo.go obj/src/unistd/setuid.lo.go obj/src/unistd/setxid.lo.go obj/src/unistd/sleep.lo.go obj/src/unistd/symlink.lo.go obj/src/unistd/symlinkat.lo.go obj/src/unistd/sync.lo.go obj/src/unistd/tcgetpgrp.lo.go obj/src/unistd/tcsetpgrp.lo.go obj/src/unistd/truncate.lo.go obj/src/unistd/ttyname.lo.go obj/src/unistd/ttyname_r.lo.go obj/src/unistd/ualarm.lo.go obj/src/unistd/unlink.lo.go obj/src/unistd/unlinkat.lo.go obj/src/unistd/usleep.lo.go obj/src/unistd/write.lo.go obj/src/unistd/writev.lo.go -lgcc -lgcc_eh', DO NOT EDIT.
 
 //go:build linux && amd64
 
@@ -7431,106 +7431,125 @@ func Xsysconf(tls *TLS, name int32) (r int64) {
 	var _ /* set at bp+16 */ [128]uint8
 	var _ /* si at bp+144 */ Tsysinfo
 	_, _, _, _, _, _, _ = cnt, i, mem, val, v1, v3, v5
-	if Uint64FromInt32(name) >= Uint64FromInt64(502)/Uint64FromInt64(2) || !(_values1[name] != 0) {
-		*(*int32)(__ccgo_ptr(X__errno_location(tls))) = int32(EINVAL)
-		return int64(-int32(1))
-	} else {
-		if int32(_values1[name]) >= -int32(1) {
-			return int64(_values1[name])
+	{
+		if Uint64FromInt32(name) >= Uint64FromInt64(502)/Uint64FromInt64(2) || !(_values1[name] != 0) {
+			*(*int32)(__ccgo_ptr(X__errno_location(tls))) = int32(EINVAL)
+			r = int64(-int32(1))
+			goto _1
 		} else {
-			if int32(_values1[name]) < -int32(256) {
-				Xgetrlimit(tls, int32(_values1[name])&int32(16383), bp)
-				if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur == ^Uint64FromUint64(0) {
-					return int64(-int32(1))
+			if int32(_values1[name]) >= -int32(1) {
+				r = int64(_values1[name])
+				goto _1
+			} else {
+				if int32(_values1[name]) < -int32(256) {
+					Xgetrlimit(tls, int32(_values1[name])&int32(16383), bp)
+					if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur == ^Uint64FromUint64(0) {
+						r = int64(-int32(1))
+						goto _1
+					}
+					if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur > uint64(0x7fffffffffffffff) {
+						v1 = uint64(0x7fffffffffffffff)
+					} else {
+						v1 = (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur
+					}
+					r = Int64FromUint64(v1)
+					goto _1
 				}
-				if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur > uint64(0x7fffffffffffffff) {
-					v1 = uint64(0x7fffffffffffffff)
-				} else {
-					v1 = (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur
-				}
-				return Int64FromUint64(v1)
 			}
 		}
-	}
-	switch Int32FromUint8(Uint8FromInt16(_values1[name])) {
-	case (-Int32FromInt32(256) | Int32FromInt32(1)) & Int32FromInt32(255):
-		return int64(200809)
-	case (-Int32FromInt32(256) | Int32FromInt32(2)) & Int32FromInt32(255):
-		return int64(ARG_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(3)) & Int32FromInt32(255):
-		return int64(MQ_PRIO_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(4)) & Int32FromInt32(255):
-		return int64(PAGESIZE)
-	case (-Int32FromInt32(256) | Int32FromInt32(5)) & Int32FromInt32(255):
-		return int64(SEM_VALUE_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(11)) & Int32FromInt32(255):
-		return int64(DELAYTIMER_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(6)) & Int32FromInt32(255):
-		fallthrough
-	case (-Int32FromInt32(256) | Int32FromInt32(7)) & Int32FromInt32(255):
-		*(*[128]uint8)(__ccgo_ptr(bp + 16)) = [128]uint8{
-			0: uint8(1),
-		}
-		X__syscall3(tls, int64(SYS_sched_getaffinity), int64(Int32FromInt32(0)), Int64FromUint64(Uint64FromInt64(128)), int64(bp+16))
-		v3 = Int32FromInt32(0)
-		cnt = v3
-		i = v3
-		for {
-			if !(Uint64FromInt32(i) < uint64(128)) {
-				break
+		switch Int32FromUint8(Uint8FromInt16(_values1[name])) {
+		case (-Int32FromInt32(256) | Int32FromInt32(1)) & Int32FromInt32(255):
+			r = int64(200809)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(2)) & Int32FromInt32(255):
+			r = int64(ARG_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(3)) & Int32FromInt32(255):
+			r = int64(MQ_PRIO_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(4)) & Int32FromInt32(255):
+			r = int64(PAGESIZE)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(5)) & Int32FromInt32(255):
+			r = int64(SEM_VALUE_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(11)) & Int32FromInt32(255):
+			r = int64(DELAYTIMER_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(6)) & Int32FromInt32(255):
+			fallthrough
+		case (-Int32FromInt32(256) | Int32FromInt32(7)) & Int32FromInt32(255):
+			*(*[128]uint8)(__ccgo_ptr(bp + 16)) = [128]uint8{
+				0: uint8(1),
 			}
+			X__syscall3(tls, int64(SYS_sched_getaffinity), int64(Int32FromInt32(0)), Int64FromUint64(Uint64FromInt64(128)), int64(bp+16))
+			v3 = Int32FromInt32(0)
+			cnt = v3
+			i = v3
 			for {
-				if !((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i] != 0) {
+				if !(Uint64FromInt32(i) < uint64(128)) {
 					break
 				}
-				goto _4
-			_4:
+				for {
+					if !((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i] != 0) {
+						break
+					}
+					goto _5
+				_5:
+					;
+					v5 = bp + 16 + uintptr(i)
+					*(*uint8)(unsafe.Pointer(v5)) = uint8(int32(*(*uint8)(unsafe.Pointer(v5))) & (Int32FromUint8((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i]) - Int32FromInt32(1)))
+					cnt = cnt + 1
+				}
+				goto _3
+			_3:
 				;
-				v5 = bp + 16 + uintptr(i)
-				*(*uint8)(unsafe.Pointer(v5)) = uint8(int32(*(*uint8)(unsafe.Pointer(v5))) & (Int32FromUint8((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i]) - Int32FromInt32(1)))
-				cnt = cnt + 1
+				i = i + 1
 			}
-			goto _2
-		_2:
-			;
-			i = i + 1
+			r = int64(cnt)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(8)) & Int32FromInt32(255):
+			fallthrough
+		case (-Int32FromInt32(256) | Int32FromInt32(9)) & Int32FromInt32(255):
+			X__lsysinfo(tls, bp+144)
+			if !((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit != 0) {
+				(*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit = uint32(1)
+			}
+			if name == int32(_SC_PHYS_PAGES) {
+				mem = (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ftotalram
+			} else {
+				mem = (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ffreeram + (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fbufferram
+			}
+			mem = mem * uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit)
+			mem = mem / uint64(PAGESIZE)
+			if mem > uint64(0x7fffffffffffffff) {
+				v1 = uint64(0x7fffffffffffffff)
+			} else {
+				v1 = mem
+			}
+			r = Int64FromUint64(v1)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(12)) & Int32FromInt32(255):
+			fallthrough
+		case (-Int32FromInt32(256) | Int32FromInt32(13)) & Int32FromInt32(255):
+			val = Int64FromUint64(X__getauxval(tls, uint64(AT_MINSIGSTKSZ)))
+			if val < int64(MINSIGSTKSZ) {
+				val = int64(MINSIGSTKSZ)
+			}
+			if int32(_values1[name]) == -Int32FromInt32(256)|Int32FromInt32(13) {
+				val = val + int64(Int32FromInt32(SIGSTKSZ)-Int32FromInt32(MINSIGSTKSZ))
+			}
+			r = val
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(10)) & Int32FromInt32(255):
+			r = 0
+			goto _1
 		}
-		return int64(cnt)
-	case (-Int32FromInt32(256) | Int32FromInt32(8)) & Int32FromInt32(255):
-		fallthrough
-	case (-Int32FromInt32(256) | Int32FromInt32(9)) & Int32FromInt32(255):
-		X__lsysinfo(tls, bp+144)
-		if !((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit != 0) {
-			(*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit = uint32(1)
-		}
-		if name == int32(_SC_PHYS_PAGES) {
-			mem = (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ftotalram
-		} else {
-			mem = (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ffreeram + (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fbufferram
-		}
-		mem = mem * uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit)
-		mem = mem / uint64(PAGESIZE)
-		if mem > uint64(0x7fffffffffffffff) {
-			v1 = uint64(0x7fffffffffffffff)
-		} else {
-			v1 = mem
-		}
-		return Int64FromUint64(v1)
-	case (-Int32FromInt32(256) | Int32FromInt32(12)) & Int32FromInt32(255):
-		fallthrough
-	case (-Int32FromInt32(256) | Int32FromInt32(13)) & Int32FromInt32(255):
-		val = Int64FromUint64(X__getauxval(tls, uint64(AT_MINSIGSTKSZ)))
-		if val < int64(MINSIGSTKSZ) {
-			val = int64(MINSIGSTKSZ)
-		}
-		if int32(_values1[name]) == -Int32FromInt32(256)|Int32FromInt32(13) {
-			val = val + int64(Int32FromInt32(SIGSTKSZ)-Int32FromInt32(MINSIGSTKSZ))
-		}
-		return val
-	case (-Int32FromInt32(256) | Int32FromInt32(10)) & Int32FromInt32(255):
-		return 0
+		r = int64(_values1[name])
+		goto _1
 	}
-	return int64(_values1[name])
+_1:
+	return r
 }
 
 var _values1 = [251]int16{
@@ -24607,6 +24626,7 @@ func X_Exit(tls *TLS, ec int32) {
 	if __ccgo_strace {
 		trc("tls=%v ec=%v, (%v:)", tls, ec, origin(2))
 	}
+	___exit_unwind(tls, ec)
 	X__syscall1(tls, int64(SYS_exit_group), int64(ec))
 	for {
 		X__syscall1(tls, int64(SYS_exit), int64(ec))
@@ -24659,6 +24679,9 @@ func Xat_quick_exit(tls *TLS, __ccgo_fp_func uintptr) (r1 int32) {
 	var r, v1 int32
 	_, _ = r, v1
 	r = 0
+	if ___at_quick_exit_unwind(tls, __ccgo_fp_func) != 0 {
+		return 0
+	}
 	___lock(tls, uintptr(unsafe.Pointer(&_lock)))
 	if _count == int32(32) {
 		r = -int32(1)
@@ -24678,6 +24701,7 @@ func Xquick_exit(tls *TLS, code int32) {
 	if __ccgo_strace {
 		trc("tls=%v code=%v, (%v:)", tls, code, origin(2))
 	}
+	___quick_exit_unwind(tls, code)
 	X__funcs_on_quick_exit(tls)
 	X_Exit(tls, code)
 }
@@ -28201,6 +28225,13 @@ type Tepoll_event = struct {
 	Fdata   Tepoll_data_t
 }
 
+/* modernc.org/libc: on x86_64 the kernel's struct epoll_event is packed, 12
+ * bytes with data at offset 4, and so is the one sys/epoll.h declares. cc/v4,
+ * which compiles this libc and the C code calling it, ignores
+ * __attribute__((__packed__)), and its struct epoll_event is 16 bytes with
+ * data at offset 8. epoll_ctl and epoll_pwait therefore convert between the
+ * two layouts, for as long as they differ. */
+
 func Xepoll_create(tls *TLS, size int32) (r int32) {
 	if __ccgo_strace {
 		trc("tls=%v size=%v, (%v:)", tls, size, origin(2))
@@ -28231,6 +28262,14 @@ func Xepoll_ctl(tls *TLS, fd int32, op int32, fd2 int32, ev uintptr) (r int32) {
 		trc("tls=%v fd=%v op=%v fd2=%v ev=%v, (%v:)", tls, fd, op, fd2, ev, origin(2))
 		defer func() { trc("-> %v", r) }()
 	}
+	bp := tls.Alloc(16)
+	defer tls.Free(16)
+	var _ /* k at bp+0 */ [12]uint8
+	if Bool(uint64(16) != uint64(12)) && ev != 0 {
+		Xmemcpy(tls, bp, ev, uint64(4))
+		Xmemcpy(tls, bp+uintptr(4), ev+8, uint64(8))
+		ev = bp
+	}
 	return int32(X__syscall_ret(tls, Uint64FromInt64(X__syscall4(tls, int64(SYS_epoll_ctl), int64(fd), int64(op), int64(fd2), int64(ev)))))
 }
 
@@ -28239,11 +28278,36 @@ func Xepoll_pwait(tls *TLS, fd int32, ev uintptr, cnt int32, to int32, sigs uint
 		trc("tls=%v fd=%v ev=%v cnt=%v to=%v sigs=%v, (%v:)", tls, fd, ev, cnt, to, sigs, origin(2))
 		defer func() { trc("-> %v", r1) }()
 	}
-	var r int32
-	_ = r
+	bp := tls.Alloc(16)
+	defer tls.Free(16)
+	var i, r int32
+	var p uintptr
+	var _ /* data at bp+8 */ Tepoll_data_t
+	var _ /* events at bp+0 */ Tuint32_t
+	_, _, _ = i, p, r
 	r = int32(___syscall_cp(tls, int64(SYS_epoll_pwait), int64(fd), int64(ev), int64(cnt), int64(to), int64(sigs), int64(Int32FromInt32(_NSIG)/Int32FromInt32(8))))
 	if r == -int32(ENOSYS) && !(sigs != 0) {
 		r = int32(___syscall_cp(tls, int64(SYS_epoll_wait), int64(fd), int64(ev), int64(cnt), int64(to), 0, 0))
+	}
+	/* The kernel wrote r records of KERNEL_EVENT bytes to the start of
+	 * ev. Spread them out in place, the last first, so that no record
+	 * is overwritten before it is read. */
+	if Bool(uint64(16) != uint64(12)) && r > 0 {
+		p = ev
+		i = r - int32(1)
+		for {
+			if !(i >= 0) {
+				break
+			}
+			Xmemcpy(tls, bp, p+uintptr(i*int32(12)), uint64(4))
+			Xmemcpy(tls, bp+8, p+uintptr(i*int32(12))+uintptr(4), uint64(8))
+			(*(*Tepoll_event)(__ccgo_ptr(ev + uintptr(i)*16))).Fevents = *(*Tuint32_t)(__ccgo_ptr(bp))
+			(*(*Tepoll_event)(__ccgo_ptr(ev + uintptr(i)*16))).Fdata = *(*Tepoll_data_t)(__ccgo_ptr(bp + 8))
+			goto _1
+		_1:
+			;
+			i = i - 1
+		}
 	}
 	return int32(X__syscall_ret(tls, Uint64FromInt32(r)))
 }
@@ -104177,7 +104241,7 @@ func _mul(tls *TLS, hi unsafe.Pointer, lo unsafe.Pointer, x Tuint64_t, y Tuint64
 	*(*Tuint64_t)(hi) = t3 + t2>>Int32FromInt32(32) + BoolUint64(t1 > *(*Tuint64_t)(lo))
 }
 
-func Xfma(tls *TLS, x float64, y float64, z float64) (r1 float64) {
+func ___musl_fma(tls *TLS, x float64, y float64, z float64) (r1 float64) {
 	if __ccgo_strace {
 		trc("tls=%v x=%v y=%v z=%v, (%v:)", tls, x, y, z, origin(2))
 		defer func() { trc("-> %v", r1) }()
@@ -111276,7 +111340,7 @@ func _mul64(tls *TLS, a Tuint64_t, b Tuint64_t) (r Tuint64_t) {
 	return ahi*bhi + ahi*blo>>int32(32) + alo*bhi>>int32(32)
 }
 
-func Xsqrt(tls *TLS, x1 float64) (r1 float64) {
+func ___musl_sqrt(tls *TLS, x1 float64) (r1 float64) {
 	if __ccgo_strace {
 		trc("tls=%v x1=%v, (%v:)", tls, x1, origin(2))
 		defer func() { trc("-> %v", r1) }()
@@ -111428,7 +111492,7 @@ func _mul321(tls *TLS, a Tuint32_t, b Tuint32_t) (r Tuint32_t) {
 
 /* see sqrt.c for more detailed comments.  */
 
-func Xsqrtf(tls *TLS, x1 float32) (r1 float32) {
+func ___musl_sqrtf(tls *TLS, x1 float32) (r1 float32) {
 	if __ccgo_strace {
 		trc("tls=%v x1=%v, (%v:)", tls, x1, origin(2))
 		defer func() { trc("-> %v", r1) }()
@@ -130131,227 +130195,266 @@ func _tre_compute_nfl(tls *TLS, mem Ttre_mem_t, stack uintptr, tree uintptr) (r 
 	var cat, iter, lit, node, tags, uni uintptr
 	var symbol Ttre_nfl_stack_symbol_t
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = _status, _status1, _status10, _status11, _status12, _status13, _status14, _status15, _status16, _status17, _status2, _status3, _status4, _status5, _status6, _status7, _status8, _status9, assertions, bottom, cat, iter, lit, node, num_tags, status, symbol, tags, uni
-	bottom = _tre_stack_num_objects(tls, stack)
-	_status = _tre_stack_push_voidptr(tls, stack, tree)
-	if _status != REG_OK {
-		return _status
-	}
-	_status1 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-	if _status1 != REG_OK {
-		return _status1
-	}
-	for _tre_stack_num_objects(tls, stack) > bottom {
-		symbol = _tre_stack_pop_int(tls, stack)
-		node = _tre_stack_pop_voidptr(tls, stack)
-		switch symbol {
-		case int32(_NFL_RECURSE):
-			switch (*Ttre_ast_node_t)(unsafe.Pointer(node)).Ftype1 {
-			case int32(_LITERAL):
-				lit = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-				if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min == int64(-int32(4)) {
-					/* Back references: nullable = false, firstpos = {i},
-					   lastpos = {i}. */
-					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
-					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint64(0), UintptrFromInt32(0), -int32(1))
-					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-						return int32(REG_ESPACE)
-					}
-					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint64(0), UintptrFromInt32(0), int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max))
-					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-						return int32(REG_ESPACE)
-					}
-				} else {
-					if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min < 0 {
-						/* Tags, empty strings, params, and zero width assertions:
-						   nullable = true, firstpos = {}, and lastpos = {}. */
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_empty(tls, mem)
-						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-							return int32(REG_ESPACE)
-						}
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_empty(tls, mem)
-						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-							return int32(REG_ESPACE)
-						}
-					} else {
-						/* Literal at position i: nullable = false, firstpos = {i},
+	{
+		bottom = _tre_stack_num_objects(tls, stack)
+		_status = _tre_stack_push_voidptr(tls, stack, tree)
+		if _status != REG_OK {
+			r = _status
+			goto _1
+		}
+		_status1 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+		if _status1 != REG_OK {
+			r = _status1
+			goto _1
+		}
+		for _tre_stack_num_objects(tls, stack) > bottom {
+			symbol = _tre_stack_pop_int(tls, stack)
+			node = _tre_stack_pop_voidptr(tls, stack)
+			switch symbol {
+			case int32(_NFL_RECURSE):
+				switch (*Ttre_ast_node_t)(unsafe.Pointer(node)).Ftype1 {
+				case int32(_LITERAL):
+					lit = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+					if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min == int64(-int32(4)) {
+						/* Back references: nullable = false, firstpos = {i},
 						   lastpos = {i}. */
 						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min), int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max), uint64(0), UintptrFromInt32(0), -int32(1))
+						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint64(0), UintptrFromInt32(0), -int32(1))
 						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-							return int32(REG_ESPACE)
+							r = int32(REG_ESPACE)
+							goto _1
 						}
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min), int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max), (*Ttre_literal_t)(unsafe.Pointer(lit)).Fclass, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fneg_classes, -int32(1))
+						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint64(0), UintptrFromInt32(0), int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max))
 						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-							return int32(REG_ESPACE)
+							r = int32(REG_ESPACE)
+							goto _1
+						}
+					} else {
+						if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min < 0 {
+							/* Tags, empty strings, params, and zero width assertions:
+							   nullable = true, firstpos = {}, and lastpos = {}. */
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_empty(tls, mem)
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_empty(tls, mem)
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
+						} else {
+							/* Literal at position i: nullable = false, firstpos = {i},
+							   lastpos = {i}. */
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min), int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max), uint64(0), UintptrFromInt32(0), -int32(1))
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min), int32((*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max), (*Ttre_literal_t)(unsafe.Pointer(lit)).Fclass, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fneg_classes, -int32(1))
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
 						}
 					}
+				case int32(_UNION):
+					/* Compute the attributes for the two subtrees, and after that
+					for this node. */
+					_status2 = _tre_stack_push_voidptr(tls, stack, node)
+					if _status2 != REG_OK {
+						r = _status2
+						goto _1
+					}
+					_status3 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_UNION))
+					if _status3 != REG_OK {
+						r = _status3
+						goto _1
+					}
+					_status4 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
+					if _status4 != REG_OK {
+						r = _status4
+						goto _1
+					}
+					_status5 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status5 != REG_OK {
+						r = _status5
+						goto _1
+					}
+					_status6 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
+					if _status6 != REG_OK {
+						r = _status6
+						goto _1
+					}
+					_status7 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status7 != REG_OK {
+						r = _status7
+						goto _1
+					}
+				case int32(_CATENATION):
+					/* Compute the attributes for the two subtrees, and after that
+					for this node. */
+					_status8 = _tre_stack_push_voidptr(tls, stack, node)
+					if _status8 != REG_OK {
+						r = _status8
+						goto _1
+					}
+					_status9 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_CATENATION))
+					if _status9 != REG_OK {
+						r = _status9
+						goto _1
+					}
+					_status10 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
+					if _status10 != REG_OK {
+						r = _status10
+						goto _1
+					}
+					_status11 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status11 != REG_OK {
+						r = _status11
+						goto _1
+					}
+					_status12 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
+					if _status12 != REG_OK {
+						r = _status12
+						goto _1
+					}
+					_status13 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status13 != REG_OK {
+						r = _status13
+						goto _1
+					}
+				case int32(_ITERATION):
+					/* Compute the attributes for the subtree, and after that for
+					this node. */
+					_status14 = _tre_stack_push_voidptr(tls, stack, node)
+					if _status14 != REG_OK {
+						r = _status14
+						goto _1
+					}
+					_status15 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_ITERATION))
+					if _status15 != REG_OK {
+						r = _status15
+						goto _1
+					}
+					_status16 = _tre_stack_push_voidptr(tls, stack, (*Ttre_iteration_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Farg)
+					if _status16 != REG_OK {
+						r = _status16
+						goto _1
+					}
+					_status17 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status17 != REG_OK {
+						r = _status17
+						goto _1
+					}
+					break
 				}
-			case int32(_UNION):
-				/* Compute the attributes for the two subtrees, and after that
-				for this node. */
-				_status2 = _tre_stack_push_voidptr(tls, stack, node)
-				if _status2 != REG_OK {
-					return _status2
+			case int32(_NFL_POST_UNION):
+				uni = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Fnullable != 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Fnullable != 0)
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Ffirstpos, UintptrFromInt32(0), 0)
+				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+					r = int32(REG_ESPACE)
+					goto _1
 				}
-				_status3 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_UNION))
-				if _status3 != REG_OK {
-					return _status3
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Flastpos, UintptrFromInt32(0), 0)
+				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+					r = int32(REG_ESPACE)
+					goto _1
 				}
-				_status4 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
-				if _status4 != REG_OK {
-					return _status4
+			case int32(_NFL_POST_ITERATION):
+				iter = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+				if (*Ttre_iteration_t)(unsafe.Pointer(iter)).Fmin == 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Fnullable != 0 {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
+				} else {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
 				}
-				_status5 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status5 != REG_OK {
-					return _status5
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Ffirstpos
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Flastpos
+			case int32(_NFL_POST_CATENATION):
+				cat = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 && (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0)
+				/* Compute firstpos. */
+				if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 {
+					/* The left side matches the empty string.  Make a first pass
+					   with tre_match_empty() to get the number of tags and
+					   parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
+					if status != REG_OK {
+						r = status
+						goto _1
+					}
+					/* Allocate arrays for the tags and parameters. */
+					tags = Xmalloc(tls, uint64(4)*Uint64FromInt32(num_tags+Int32FromInt32(1)))
+					if !(tags != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+					*(*int32)(__ccgo_ptr(tags)) = -int32(1)
+					assertions = 0
+					/* Second pass with tre_mach_empty() to get the list of
+					   tags and parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, tags, unsafe.Pointer(&assertions), nil)
+					if status != REG_OK {
+						Xfree(tls, tags)
+						r = status
+						goto _1
+					}
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos, tags, assertions)
+					Xfree(tls, tags)
+					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+				} else {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos
 				}
-				_status6 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
-				if _status6 != REG_OK {
-					return _status6
+				/* Compute lastpos. */
+				if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0 {
+					/* The right side matches the empty string.  Make a first pass
+					   with tre_match_empty() to get the number of tags and
+					   parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
+					if status != REG_OK {
+						r = status
+						goto _1
+					}
+					/* Allocate arrays for the tags and parameters. */
+					tags = Xmalloc(tls, uint64(4)*Uint64FromInt32(num_tags+Int32FromInt32(1)))
+					if !(tags != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+					*(*int32)(__ccgo_ptr(tags)) = -int32(1)
+					assertions = 0
+					/* Second pass with tre_mach_empty() to get the list of
+					   tags and parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, tags, unsafe.Pointer(&assertions), nil)
+					if status != REG_OK {
+						Xfree(tls, tags)
+						r = status
+						goto _1
+					}
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos, tags, assertions)
+					Xfree(tls, tags)
+					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+				} else {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos
 				}
-				_status7 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status7 != REG_OK {
-					return _status7
-				}
-			case int32(_CATENATION):
-				/* Compute the attributes for the two subtrees, and after that
-				for this node. */
-				_status8 = _tre_stack_push_voidptr(tls, stack, node)
-				if _status8 != REG_OK {
-					return _status8
-				}
-				_status9 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_CATENATION))
-				if _status9 != REG_OK {
-					return _status9
-				}
-				_status10 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
-				if _status10 != REG_OK {
-					return _status10
-				}
-				_status11 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status11 != REG_OK {
-					return _status11
-				}
-				_status12 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
-				if _status12 != REG_OK {
-					return _status12
-				}
-				_status13 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status13 != REG_OK {
-					return _status13
-				}
-			case int32(_ITERATION):
-				/* Compute the attributes for the subtree, and after that for
-				this node. */
-				_status14 = _tre_stack_push_voidptr(tls, stack, node)
-				if _status14 != REG_OK {
-					return _status14
-				}
-				_status15 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_ITERATION))
-				if _status15 != REG_OK {
-					return _status15
-				}
-				_status16 = _tre_stack_push_voidptr(tls, stack, (*Ttre_iteration_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Farg)
-				if _status16 != REG_OK {
-					return _status16
-				}
-				_status17 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status17 != REG_OK {
-					return _status17
-				}
+			default:
 				break
 			}
-		case int32(_NFL_POST_UNION):
-			uni = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Fnullable != 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Fnullable != 0)
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Ffirstpos, UintptrFromInt32(0), 0)
-			if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-				return int32(REG_ESPACE)
-			}
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Flastpos, UintptrFromInt32(0), 0)
-			if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-				return int32(REG_ESPACE)
-			}
-		case int32(_NFL_POST_ITERATION):
-			iter = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-			if (*Ttre_iteration_t)(unsafe.Pointer(iter)).Fmin == 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Fnullable != 0 {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
-			} else {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
-			}
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Ffirstpos
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Flastpos
-		case int32(_NFL_POST_CATENATION):
-			cat = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 && (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0)
-			/* Compute firstpos. */
-			if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 {
-				/* The left side matches the empty string.  Make a first pass
-				   with tre_match_empty() to get the number of tags and
-				   parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
-				if status != REG_OK {
-					return status
-				}
-				/* Allocate arrays for the tags and parameters. */
-				tags = Xmalloc(tls, uint64(4)*Uint64FromInt32(num_tags+Int32FromInt32(1)))
-				if !(tags != 0) {
-					return int32(REG_ESPACE)
-				}
-				*(*int32)(__ccgo_ptr(tags)) = -int32(1)
-				assertions = 0
-				/* Second pass with tre_mach_empty() to get the list of
-				   tags and parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, tags, unsafe.Pointer(&assertions), nil)
-				if status != REG_OK {
-					Xfree(tls, tags)
-					return status
-				}
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos, tags, assertions)
-				Xfree(tls, tags)
-				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-					return int32(REG_ESPACE)
-				}
-			} else {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos
-			}
-			/* Compute lastpos. */
-			if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0 {
-				/* The right side matches the empty string.  Make a first pass
-				   with tre_match_empty() to get the number of tags and
-				   parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
-				if status != REG_OK {
-					return status
-				}
-				/* Allocate arrays for the tags and parameters. */
-				tags = Xmalloc(tls, uint64(4)*Uint64FromInt32(num_tags+Int32FromInt32(1)))
-				if !(tags != 0) {
-					return int32(REG_ESPACE)
-				}
-				*(*int32)(__ccgo_ptr(tags)) = -int32(1)
-				assertions = 0
-				/* Second pass with tre_mach_empty() to get the list of
-				   tags and parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, tags, unsafe.Pointer(&assertions), nil)
-				if status != REG_OK {
-					Xfree(tls, tags)
-					return status
-				}
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos, tags, assertions)
-				Xfree(tls, tags)
-				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-					return int32(REG_ESPACE)
-				}
-			} else {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos
-			}
-		default:
-			break
 		}
+		r = REG_OK
+		goto _1
 	}
-	return REG_OK
+_1:
+	return r
 }
 
 // C documentation
@@ -148748,428 +148851,448 @@ func Xstrptime(tls *TLS, s uintptr, f uintptr, tm uintptr) (r uintptr) {
 	var _ /* new_f at bp+16 */ uintptr
 	var _ /* relyear at bp+8 */ int32
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = adj, dest, ex, i, len1, min, neg, range1, w, want_century, v1, v2, v5, v6, v8, v9
-	want_century = 0
-	*(*int32)(__ccgo_ptr(bp + 4)) = 0
-	*(*int32)(__ccgo_ptr(bp + 8)) = 0
-	for *(*int8)(__ccgo_ptr(f)) != 0 {
-		if int32(*(*int8)(__ccgo_ptr(f))) != int32('%') {
-			v1 = int32(*(*int8)(__ccgo_ptr(f)))
-			v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
-			goto _3
-		_3:
-			if v2 != 0 {
-				for {
-					if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
-						v5 = int32(*(*int8)(__ccgo_ptr(s)))
-						v6 = BoolInt32(v5 == int32(' ') || Uint32FromInt32(v5)-uint32('\t') < uint32(5))
-						goto _7
-					_7:
-					}
-					if !(v8 && v6 != 0) {
-						break
-					}
-					goto _4
-				_4:
-					;
-					s = s + 1
-				}
-			} else {
-				if int32(*(*int8)(__ccgo_ptr(s))) != int32(*(*int8)(__ccgo_ptr(f))) {
-					return uintptr(0)
-				} else {
-					s = s + 1
-				}
-			}
-			f = f + 1
-			continue
-		}
-		f = f + 1
-		if int32(*(*int8)(__ccgo_ptr(f))) == int32('+') {
-			f = f + 1
-		}
-		if BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(f)))-uint32('0') < uint32(10)) != 0 {
-			w = Int32FromUint64(Xstrtoul(tls, f, bp+16, int32(10)))
-			f = *(*uintptr)(__ccgo_ptr(bp + 16))
-		} else {
-			w = -int32(1)
-		}
-		adj = 0
-		v9 = f
-		f = f + 1
-		switch int32(*(*int8)(__ccgo_ptr(v9))) {
-		case int32('A'):
-			goto _10
-		case int32('a'):
-			goto _11
-		case int32('h'):
-			goto _12
-		case int32('B'):
-			goto _13
-		case int32('b'):
-			goto _14
-		case int32('c'):
-			goto _15
-		case int32('C'):
-			goto _16
-		case int32('e'):
-			goto _17
-		case int32('d'):
-			goto _18
-		case int32('D'):
-			goto _19
-		case int32('H'):
-			goto _20
-		case int32('I'):
-			goto _21
-		case int32('j'):
-			goto _22
-		case int32('m'):
-			goto _23
-		case int32('M'):
-			goto _24
-		case int32('t'):
-			goto _25
-		case int32('n'):
-			goto _26
-		case int32('p'):
-			goto _27
-		case int32('r'):
-			goto _28
-		case int32('R'):
-			goto _29
-		case int32('S'):
-			goto _30
-		case int32('T'):
-			goto _31
-		case int32('W'):
-			goto _32
-		case int32('U'):
-			goto _33
-		case int32('w'):
-			goto _34
-		case int32('x'):
-			goto _35
-		case int32('X'):
-			goto _36
-		case int32('y'):
-			goto _37
-		case int32('Y'):
-			goto _38
-		case int32('%'):
-			goto _39
-		default:
-			goto _40
-		}
-		goto _41
-	_11:
-		;
-	_10:
-		;
-		dest = tm + 24
-		min = int32(ABDAY_1)
-		range1 = int32(7)
-		goto symbolic_range
-	_14:
-		;
-	_13:
-		;
-	_12:
-		;
-		dest = tm + 16
-		min = int32(ABMON_1)
-		range1 = int32(12)
-		goto symbolic_range
-	_15:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_T_FMT)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_16:
-		;
-		dest = bp + 4
-		if w < 0 {
-			w = int32(2)
-		}
-		want_century = want_century | int32(2)
-		goto numeric_digits
-	_18:
-		;
-	_17:
-		;
-		dest = tm + 12
-		min = int32(1)
-		range1 = int32(31)
-		goto numeric_range
-	_19:
-		;
-		s = Xstrptime(tls, s, __ccgo_ts+1657, tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_20:
-		;
-		dest = tm + 8
-		min = 0
-		range1 = int32(24)
-		goto numeric_range
-	_21:
-		;
-		dest = tm + 8
-		min = int32(1)
-		range1 = int32(12)
-		goto numeric_range
-	_22:
-		;
-		dest = tm + 28
-		min = int32(1)
-		range1 = int32(366)
-		adj = int32(1)
-		goto numeric_range
-	_23:
-		;
-		dest = tm + 16
-		min = int32(1)
-		range1 = int32(12)
-		adj = int32(1)
-		goto numeric_range
-	_24:
-		;
-		dest = tm + 4
-		min = 0
-		range1 = int32(60)
-		goto numeric_range
-	_26:
-		;
-	_25:
-		;
-	_44:
-		;
-		if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
-			v1 = int32(*(*int8)(__ccgo_ptr(s)))
-			v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
-			goto _47
-		_47:
-		}
-		if !(v8 && v2 != 0) {
-			goto _42
-		}
-		goto _43
-	_43:
-		;
-		s = s + 1
-		goto _44
-		goto _42
-	_42:
-		;
-		goto _41
-	_27:
-		;
-		ex = Xnl_langinfo(tls, int32(AM_STR))
-		len1 = _strlen(tls, ex)
-		if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
-			*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
-			s = s + uintptr(len1)
-			goto _41
-		}
-		ex = Xnl_langinfo(tls, int32(PM_STR))
-		len1 = _strlen(tls, ex)
-		if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
-			*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
-			*(*int32)(__ccgo_ptr(tm + 8)) += int32(12)
-			s = s + uintptr(len1)
-			goto _41
-		}
-		return uintptr(0)
-	_28:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT_AMPM)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_29:
-		;
-		s = Xstrptime(tls, s, __ccgo_ts+1675, tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_30:
-		;
-		dest = tm
-		min = 0
-		range1 = int32(61)
-		goto numeric_range
-	_31:
-		;
-		s = Xstrptime(tls, s, __ccgo_ts+1681, tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_33:
-		;
-	_32:
-		;
-		/* Throw away result, for now. (FIXME?) */
-		dest = bp
-		min = 0
-		range1 = int32(54)
-		goto numeric_range
-	_34:
-		;
-		dest = tm + 24
-		min = 0
-		range1 = int32(7)
-		goto numeric_range
-	_35:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_FMT)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_36:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_37:
-		;
-		dest = bp + 8
-		w = int32(2)
-		want_century = want_century | int32(1)
-		goto numeric_digits
-	_38:
-		;
-		dest = tm + 20
-		if w < 0 {
-			w = int32(4)
-		}
-		adj = int32(1900)
+	{
 		want_century = 0
-		goto numeric_digits
-	_39:
-		;
-		v9 = s
-		s = s + 1
-		if int32(*(*int8)(__ccgo_ptr(v9))) != int32('%') {
-			return uintptr(0)
-		}
-		goto _41
-	_40:
-		;
-		return uintptr(0)
-		goto numeric_range
-	numeric_range:
-		;
-		if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
-			return uintptr(0)
-		}
-		*(*int32)(__ccgo_ptr(dest)) = 0
-		i = int32(1)
-		for {
-			if !(i <= min+range1 && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
-				break
+		*(*int32)(__ccgo_ptr(bp + 4)) = 0
+		*(*int32)(__ccgo_ptr(bp + 8)) = 0
+		for *(*int8)(__ccgo_ptr(f)) != 0 {
+			if int32(*(*int8)(__ccgo_ptr(f))) != int32('%') {
+				v1 = int32(*(*int8)(__ccgo_ptr(f)))
+				v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
+				goto _4
+			_4:
+				if v2 != 0 {
+					for {
+						if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
+							v5 = int32(*(*int8)(__ccgo_ptr(s)))
+							v6 = BoolInt32(v5 == int32(' ') || Uint32FromInt32(v5)-uint32('\t') < uint32(5))
+							goto _8
+						_8:
+						}
+						if !(v8 && v6 != 0) {
+							break
+						}
+						goto _5
+					_5:
+						;
+						s = s + 1
+					}
+				} else {
+					if int32(*(*int8)(__ccgo_ptr(s))) != int32(*(*int8)(__ccgo_ptr(f))) {
+						r = uintptr(0)
+						goto _1
+					} else {
+						s = s + 1
+					}
+				}
+				f = f + 1
+				continue
 			}
-			v9 = s
-			s = s + 1
-			*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
-			goto _50
-		_50:
+			f = f + 1
+			if int32(*(*int8)(__ccgo_ptr(f))) == int32('+') {
+				f = f + 1
+			}
+			if BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(f)))-uint32('0') < uint32(10)) != 0 {
+				w = Int32FromUint64(Xstrtoul(tls, f, bp+16, int32(10)))
+				f = *(*uintptr)(__ccgo_ptr(bp + 16))
+			} else {
+				w = -int32(1)
+			}
+			adj = 0
+			v9 = f
+			f = f + 1
+			switch int32(*(*int8)(__ccgo_ptr(v9))) {
+			case int32('A'):
+				goto _11
+			case int32('a'):
+				goto _12
+			case int32('h'):
+				goto _13
+			case int32('B'):
+				goto _14
+			case int32('b'):
+				goto _15
+			case int32('c'):
+				goto _16
+			case int32('C'):
+				goto _17
+			case int32('e'):
+				goto _18
+			case int32('d'):
+				goto _19
+			case int32('D'):
+				goto _20
+			case int32('H'):
+				goto _21
+			case int32('I'):
+				goto _22
+			case int32('j'):
+				goto _23
+			case int32('m'):
+				goto _24
+			case int32('M'):
+				goto _25
+			case int32('t'):
+				goto _26
+			case int32('n'):
+				goto _27
+			case int32('p'):
+				goto _28
+			case int32('r'):
+				goto _29
+			case int32('R'):
+				goto _30
+			case int32('S'):
+				goto _31
+			case int32('T'):
+				goto _32
+			case int32('W'):
+				goto _33
+			case int32('U'):
+				goto _34
+			case int32('w'):
+				goto _35
+			case int32('x'):
+				goto _36
+			case int32('X'):
+				goto _37
+			case int32('y'):
+				goto _38
+			case int32('Y'):
+				goto _39
+			case int32('%'):
+				goto _40
+			default:
+				goto _41
+			}
+			goto _42
+		_12:
 			;
-			i = i * int32(10)
-		}
-		if Uint32FromInt32(*(*int32)(__ccgo_ptr(dest))-min) >= Uint32FromInt32(range1) {
-			return uintptr(0)
-		}
-		*(*int32)(__ccgo_ptr(dest)) -= adj
-		switch int64(dest) - int64(tm) {
-		case Int64FromUint64(uint64(UintptrFromInt32(0) + 28)):
-		}
-		goto update
-		goto numeric_digits
-	numeric_digits:
-		;
-		neg = 0
-		if int32(*(*int8)(__ccgo_ptr(s))) == int32('+') {
-			s = s + 1
-		} else {
-			if int32(*(*int8)(__ccgo_ptr(s))) == int32('-') {
-				neg = int32(1)
-				s = s + 1
-			}
-		}
-		if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
-			return uintptr(0)
-		}
-		v1 = Int32FromInt32(0)
-		i = v1
-		*(*int32)(__ccgo_ptr(dest)) = v1
-		for {
-			if !(i < w && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
-				break
-			}
-			v9 = s
-			s = s + 1
-			*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
-			goto _52
-		_52:
+		_11:
 			;
-			i = i + 1
-		}
-		if neg != 0 {
-			*(*int32)(__ccgo_ptr(dest)) = -*(*int32)(__ccgo_ptr(dest))
-		}
-		*(*int32)(__ccgo_ptr(dest)) -= adj
-		goto update
-		goto symbolic_range
-	symbolic_range:
-		;
-		i = int32(2)*range1 - int32(1)
-		for {
-			if !(i >= 0) {
-				break
+			dest = tm + 24
+			min = int32(ABDAY_1)
+			range1 = int32(7)
+			goto symbolic_range
+		_15:
+			;
+		_14:
+			;
+		_13:
+			;
+			dest = tm + 16
+			min = int32(ABMON_1)
+			range1 = int32(12)
+			goto symbolic_range
+		_16:
+			;
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_T_FMT)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
 			}
-			ex = Xnl_langinfo(tls, min+i)
+			goto _42
+		_17:
+			;
+			dest = bp + 4
+			if w < 0 {
+				w = int32(2)
+			}
+			want_century = want_century | int32(2)
+			goto numeric_digits
+		_19:
+			;
+		_18:
+			;
+			dest = tm + 12
+			min = int32(1)
+			range1 = int32(31)
+			goto numeric_range
+		_20:
+			;
+			s = Xstrptime(tls, s, __ccgo_ts+1657, tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_21:
+			;
+			dest = tm + 8
+			min = 0
+			range1 = int32(24)
+			goto numeric_range
+		_22:
+			;
+			dest = tm + 8
+			min = int32(1)
+			range1 = int32(12)
+			goto numeric_range
+		_23:
+			;
+			dest = tm + 28
+			min = int32(1)
+			range1 = int32(366)
+			adj = int32(1)
+			goto numeric_range
+		_24:
+			;
+			dest = tm + 16
+			min = int32(1)
+			range1 = int32(12)
+			adj = int32(1)
+			goto numeric_range
+		_25:
+			;
+			dest = tm + 4
+			min = 0
+			range1 = int32(60)
+			goto numeric_range
+		_27:
+			;
+		_26:
+			;
+		_45:
+			;
+			if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
+				v1 = int32(*(*int8)(__ccgo_ptr(s)))
+				v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
+				goto _48
+			_48:
+			}
+			if !(v8 && v2 != 0) {
+				goto _43
+			}
+			goto _44
+		_44:
+			;
+			s = s + 1
+			goto _45
+			goto _43
+		_43:
+			;
+			goto _42
+		_28:
+			;
+			ex = Xnl_langinfo(tls, int32(AM_STR))
 			len1 = _strlen(tls, ex)
-			if Xstrncasecmp(tls, s, ex, len1) != 0 {
-				goto _55
+			if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
+				*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
+				s = s + uintptr(len1)
+				goto _42
 			}
-			s = s + uintptr(len1)
-			*(*int32)(__ccgo_ptr(dest)) = i % range1
-			break
-			goto _55
-		_55:
+			ex = Xnl_langinfo(tls, int32(PM_STR))
+			len1 = _strlen(tls, ex)
+			if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
+				*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
+				*(*int32)(__ccgo_ptr(tm + 8)) += int32(12)
+				s = s + uintptr(len1)
+				goto _42
+			}
+			r = uintptr(0)
+			goto _1
+		_29:
 			;
-			i = i - 1
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT_AMPM)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_30:
+			;
+			s = Xstrptime(tls, s, __ccgo_ts+1675, tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_31:
+			;
+			dest = tm
+			min = 0
+			range1 = int32(61)
+			goto numeric_range
+		_32:
+			;
+			s = Xstrptime(tls, s, __ccgo_ts+1681, tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_34:
+			;
+		_33:
+			;
+			/* Throw away result, for now. (FIXME?) */
+			dest = bp
+			min = 0
+			range1 = int32(54)
+			goto numeric_range
+		_35:
+			;
+			dest = tm + 24
+			min = 0
+			range1 = int32(7)
+			goto numeric_range
+		_36:
+			;
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_FMT)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_37:
+			;
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_38:
+			;
+			dest = bp + 8
+			w = int32(2)
+			want_century = want_century | int32(1)
+			goto numeric_digits
+		_39:
+			;
+			dest = tm + 20
+			if w < 0 {
+				w = int32(4)
+			}
+			adj = int32(1900)
+			want_century = 0
+			goto numeric_digits
+		_40:
+			;
+			v9 = s
+			s = s + 1
+			if int32(*(*int8)(__ccgo_ptr(v9))) != int32('%') {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_41:
+			;
+			r = uintptr(0)
+			goto _1
+			goto numeric_range
+		numeric_range:
+			;
+			if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			*(*int32)(__ccgo_ptr(dest)) = 0
+			i = int32(1)
+			for {
+				if !(i <= min+range1 && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
+					break
+				}
+				v9 = s
+				s = s + 1
+				*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
+				goto _51
+			_51:
+				;
+				i = i * int32(10)
+			}
+			if Uint32FromInt32(*(*int32)(__ccgo_ptr(dest))-min) >= Uint32FromInt32(range1) {
+				r = uintptr(0)
+				goto _1
+			}
+			*(*int32)(__ccgo_ptr(dest)) -= adj
+			switch int64(dest) - int64(tm) {
+			case Int64FromUint64(uint64(UintptrFromInt32(0) + 28)):
+			}
+			goto update
+			goto numeric_digits
+		numeric_digits:
+			;
+			neg = 0
+			if int32(*(*int8)(__ccgo_ptr(s))) == int32('+') {
+				s = s + 1
+			} else {
+				if int32(*(*int8)(__ccgo_ptr(s))) == int32('-') {
+					neg = int32(1)
+					s = s + 1
+				}
+			}
+			if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			v1 = Int32FromInt32(0)
+			i = v1
+			*(*int32)(__ccgo_ptr(dest)) = v1
+			for {
+				if !(i < w && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
+					break
+				}
+				v9 = s
+				s = s + 1
+				*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
+				goto _53
+			_53:
+				;
+				i = i + 1
+			}
+			if neg != 0 {
+				*(*int32)(__ccgo_ptr(dest)) = -*(*int32)(__ccgo_ptr(dest))
+			}
+			*(*int32)(__ccgo_ptr(dest)) -= adj
+			goto update
+			goto symbolic_range
+		symbolic_range:
+			;
+			i = int32(2)*range1 - int32(1)
+			for {
+				if !(i >= 0) {
+					break
+				}
+				ex = Xnl_langinfo(tls, min+i)
+				len1 = _strlen(tls, ex)
+				if Xstrncasecmp(tls, s, ex, len1) != 0 {
+					goto _56
+				}
+				s = s + uintptr(len1)
+				*(*int32)(__ccgo_ptr(dest)) = i % range1
+				break
+				goto _56
+			_56:
+				;
+				i = i - 1
+			}
+			if i < 0 {
+				r = uintptr(0)
+				goto _1
+			}
+			goto update
+			goto update
+		update:
+			;
+			//FIXME
+		_42:
 		}
-		if i < 0 {
-			return uintptr(0)
-		}
-		goto update
-		goto update
-	update:
-		;
-		//FIXME
-	_41:
-	}
-	if want_century != 0 {
-		(*Ttm)(unsafe.Pointer(tm)).Ftm_year = *(*int32)(__ccgo_ptr(bp + 8))
-		if want_century&int32(2) != 0 {
-			*(*int32)(__ccgo_ptr(tm + 20)) += *(*int32)(__ccgo_ptr(bp + 4))*int32(100) - int32(1900)
-		} else {
-			if (*Ttm)(unsafe.Pointer(tm)).Ftm_year <= int32(68) {
-				*(*int32)(__ccgo_ptr(tm + 20)) += int32(100)
+		if want_century != 0 {
+			(*Ttm)(unsafe.Pointer(tm)).Ftm_year = *(*int32)(__ccgo_ptr(bp + 8))
+			if want_century&int32(2) != 0 {
+				*(*int32)(__ccgo_ptr(tm + 20)) += *(*int32)(__ccgo_ptr(bp + 4))*int32(100) - int32(1900)
+			} else {
+				if (*Ttm)(unsafe.Pointer(tm)).Ftm_year <= int32(68) {
+					*(*int32)(__ccgo_ptr(tm + 20)) += int32(100)
+				}
 			}
 		}
+		r = s
+		goto _1
 	}
-	return s
+_1:
+	return r
 }
 
 func Xtime(tls *TLS, t uintptr) (r Ttime_t) {

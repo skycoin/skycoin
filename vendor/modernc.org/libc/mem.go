@@ -15,7 +15,11 @@ import (
 	"modernc.org/memory"
 )
 
-const memgrind = false
+const (
+	// allocaBump selects the alloca(3) bump region, see allocaChunk.
+	allocaBump = true
+	memgrind   = false
+)
 
 var (
 	allocator memory.Allocator

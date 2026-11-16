@@ -1,5 +1,6 @@
 *.gz
 *.zip
+!headers/*.zip
 go.work
 go.sum
 musl-*

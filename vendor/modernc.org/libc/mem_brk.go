@@ -21,8 +21,11 @@ import (
 )
 
 const (
-	heapAlign = 16
-	memgrind  = false
+	// allocaBump selects the alloca(3) bump region, see allocaChunk. Each
+	// alloca is malloc'd instead, so that it is never reused.
+	allocaBump = false
+	heapAlign  = 16
+	memgrind   = false
 )
 
 var (

@@ -207,20 +207,20 @@ again:
 }
 
 // Close frees the resources of t: every stack segment, every alloca and the
-// thread registration. It does not depend on the Alloc/Free and FreeAlloca
-// pairs of the frames having balanced, so it also cleans up after a recovered
-// panic that skipped their frees, or when t is closed from under a call that
-// still has frames on it.
+// thread registration. It does not depend on the Alloc/Free pairs and the
+// alloca regions of the frames having balanced, so it also cleans up after a
+// recovered panic that skipped their frees, or when t is closed from under a
+// call that still has frames on it.
 func (t *TLS) Close() {
-	// The current alloca list and the lists saved by FreeAlloca.
-	for _, p := range t.allocas {
-		Xfree(t, p)
-	}
-	for _, a := range t.allocaStack {
-		for _, p := range a {
-			Xfree(t, p)
-		}
-	}
+	t.freeMemory()
+	t.pthreadData.close(t)
+	*t = TLS{}
+}
+
+// freeMemory frees the memory of t, see Close, and leaves its other fields
+// alone.
+func (t *TLS) freeMemory() {
+	t.allocaClose()
 	// t.stack is the header of the current segment, the other segments hold
 	// their own. Store it, then walk the chain from the first segment: prev
 	// links lead back to it and next links lead forward, through the empty
@@ -241,6 +241,8 @@ func (t *TLS) Close() {
 			Xfree(t, p)
 			p = next
 		}
+		t.stack = stackHeader{}
+		t.sp = 0
 	}
 	if memgrind {
 		if t.stackHeaderBalance != 0 {
@@ -249,8 +251,6 @@ func (t *TLS) Close() {
 
 		atomic.AddInt32(&tlsBalance, -1)
 	}
-	t.pthreadData.close(t)
-	*t = TLS{}
 }
 
 // Alloc allocates n bytes of thread-local storage. It must be paired with a
@@ -413,6 +413,108 @@ func (t *TLS) Free(n int) {
 	(*stackHeader)(unsafe.Pointer(nstack.prev)).next = 0
 	*(*stackHeader)(unsafe.Pointer(t.stack.page)) = t.stack
 	t.stack = *(*stackHeader)(unsafe.Pointer(t.stack.prev))
+}
+
+// tlsCheckpointStack is the TLS.Alloc part of a TLSCheckpoint.
+type tlsCheckpointStack struct {
+	sp   uintptr // TLS.sp
+	page uintptr // TLS.stack.page, zero if there is no segment
+	top  uintptr // TLS.stack.sp
+	free uintptr // TLS.stack.free
+}
+
+func (t *TLS) stackCheckpoint() tlsCheckpointStack {
+	return tlsCheckpointStack{sp: uintptr(t.sp), page: t.stack.page, top: t.stack.sp, free: uintptr(t.stack.free)}
+}
+
+// stackSegment returns the header of the stack segment at page if it is the
+// current segment or one before it. The header of the current segment is
+// t.stack, the others are stored at the start of their segment by Alloc when
+// it moves on to the next one.
+func (t *TLS) stackSegment(page uintptr) (h stackHeader, ok bool) {
+	for h = t.stack; h.page != page; h = *(*stackHeader)(unsafe.Pointer(h.prev)) {
+		if h.prev == 0 {
+			return h, false
+		}
+	}
+	return h, true
+}
+
+func (t *TLS) checkStackRollback(c tlsCheckpointStack) error {
+	if c.sp > uintptr(t.sp) {
+		return errTLSCheckpointNotLive
+	}
+
+	if c.page == 0 {
+		if c.top != 0 || c.free != 0 {
+			return errTLSCheckpointMalformed
+		}
+
+		return nil
+	}
+
+	h, ok := t.stackSegment(c.page)
+	switch {
+	case !ok:
+		return errTLSCheckpointNotLive
+	case c.top < c.page+stackHeaderSize || c.top > h.sp:
+		return errTLSCheckpointNotLive
+	case c.free != uintptr(h.free)+(h.sp-c.top):
+		return errTLSCheckpointMalformed
+	}
+	return nil
+}
+
+// stackRollback returns the stack to the segment and position of c and frees
+// the segments after it. They hold only the discarded allocations and their
+// stored headers would be stale.
+func (t *TLS) stackRollback(c tlsCheckpointStack) {
+	t.sp = int(c.sp)
+	if c.page == 0 {
+		t.stackFreeFrom(t.stackFirst())
+		t.stack = stackHeader{}
+		return
+	}
+
+	h, _ := t.stackSegment(c.page)
+	if h.page != t.stack.page {
+		t.stackFreeFrom(h.next)
+		h.next = 0
+	}
+	h.sp = c.top
+	h.free = int(c.free)
+	t.stack = h
+}
+
+// stackFirst returns the first stack segment, or zero if there is none.
+func (t *TLS) stackFirst() (r uintptr) {
+	if r = t.stack.page; r == 0 {
+		return 0
+	}
+
+	for q := t.stack.prev; q != 0; q = (*stackHeader)(unsafe.Pointer(q)).prev {
+		r = q
+	}
+	return r
+}
+
+// stackFreeFrom frees the stack segment at p, if any, and the segments after
+// it.
+func (t *TLS) stackFreeFrom(p uintptr) {
+	for p != 0 {
+		next := (*stackHeader)(unsafe.Pointer(p)).next
+		if p == t.stack.page {
+			// Its stored header may be stale.
+			next = t.stack.next
+		}
+		if memgrind {
+			if atomic.AddInt32(&t.stackHeaderBalance, -1) < 0 {
+				panic(todo("negative stack header balance"))
+			}
+		}
+		Xfree(t, p)
+		p = next
+	}
 }
 
 type stackHeader struct {

@@ -10,7 +10,7 @@ github.com/0magnet/coloredcobra
 # github.com/0magnet/logrus v1.10.3-0.20261108193845-7365f3bff722
 ## explicit; go 1.23
 github.com/0magnet/logrus
-# github.com/a-h/templ v0.3.1100
+# github.com/a-h/templ v0.3.1118
 ## explicit; go 1.26.0
 github.com/a-h/templ
 github.com/a-h/templ/internal/htmlattr
@@ -216,7 +216,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.16.0
 ## explicit; go 1.26.0
 golang.org/x/time/rate
-# modernc.org/libc v1.80.1
+# modernc.org/libc v1.81.2
 ## explicit; go 1.26.0
 modernc.org/libc
 modernc.org/libc/errno
@@ -247,7 +247,7 @@ modernc.org/libc/wctype
 # modernc.org/mathutil v1.7.1
 ## explicit; go 1.21
 modernc.org/mathutil
-# modernc.org/memory v1.12.1
+# modernc.org/memory v1.13.0
 ## explicit; go 1.23.0
 modernc.org/memory
 # modernc.org/sqlite v1.62.0

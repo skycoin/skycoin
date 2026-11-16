@@ -69,6 +69,7 @@ func (t *TLS) libcall64(fn *libcFunc, args ...uintptr) int64 {
 //go:cgo_import_dynamic libc_ccgo_chdir chdir "libc.so"
 //go:cgo_import_dynamic libc_ccgo_chmod chmod "libc.so"
 //go:cgo_import_dynamic libc_ccgo_chown chown "libc.so"
+//go:cgo_import_dynamic libc_ccgo_clock clock "libc.so"
 //go:cgo_import_dynamic libc_ccgo_clock_gettime clock_gettime "libc.so"
 //go:cgo_import_dynamic libc_ccgo_close close "libc.so"
 //go:cgo_import_dynamic libc_ccgo_closedir closedir "libc.so"
@@ -171,6 +172,7 @@ func (t *TLS) libcall64(fn *libcFunc, args ...uintptr) int64 {
 //go:linkname libc_ccgo_chdir libc_ccgo_chdir
 //go:linkname libc_ccgo_chmod libc_ccgo_chmod
 //go:linkname libc_ccgo_chown libc_ccgo_chown
+//go:linkname libc_ccgo_clock libc_ccgo_clock
 //go:linkname libc_ccgo_clock_gettime libc_ccgo_clock_gettime
 //go:linkname libc_ccgo_close libc_ccgo_close
 //go:linkname libc_ccgo_closedir libc_ccgo_closedir
@@ -274,6 +276,7 @@ var (
 	libc_ccgo_chdir,
 	libc_ccgo_chmod,
 	libc_ccgo_chown,
+	libc_ccgo_clock,
 	libc_ccgo_clock_gettime,
 	libc_ccgo_close,
 	libc_ccgo_closedir,

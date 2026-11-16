@@ -35,7 +35,7 @@ var (
 // Thread local storage.
 type TLS struct {
 	errnop      uintptr
-	allocaStack [][]uintptr
+	allocaStack []allocaMark
 	allocas     []uintptr
 	jumpBuffers []uintptr
 	lastError   uint32
@@ -43,9 +43,18 @@ type TLS struct {
 	sp    int
 	stack stackHeader
 
+	// The alloca(3) bump region, see allocaChunk.
+	allocaChunks []allocaChunk
+	allocaNext   int     // allocaChunks index of the chunk to use when the current one is full
+	allocaP      uintptr // the next free byte in the current chunk
+	allocaEnd    uintptr // the end of the current chunk, zero before the first chunk
+	allocaExitFn func()  // tls.AllocaExit, returned by every FreeAlloca
+
 	ID                 int32
 	reentryGuard       int32 // memgrind
 	stackHeaderBalance int32
+
+	allocaSeq uintptr // numbers the alloca regions, see TLSCheckpoint
 }
 
 var errno0 int32 // Temp errno for NewTLS
@@ -71,23 +80,16 @@ func (tls *TLS) StackSlots() int {
 	return tls.sp
 }
 
-func (t *TLS) alloca(n size_t) (r uintptr) {
-	r = Xmalloc(t, n)
-	t.allocas = append(t.allocas, r)
-	return r
-}
-
+// FreeAlloca does what AllocaEntry does and returns AllocaExit. For the
+// targets of this file the generated code of a function that calls alloca(3)
+// starts with 'defer tls.FreeAlloca()()'. The function returned is the same on
+// every call, so the region costs no allocation.
 func (t *TLS) FreeAlloca() func() {
-	t.allocaStack = append(t.allocaStack, t.allocas)
-	t.allocas = nil
-	return func() {
-		for _, v := range t.allocas {
-			Xfree(t, v)
-		}
-		n := len(t.allocaStack)
-		t.allocas = t.allocaStack[n-1]
-		t.allocaStack = t.allocaStack[:n-1]
+	t.AllocaEntry()
+	if t.allocaExitFn == nil {
+		t.allocaExitFn = t.AllocaExit
 	}
+	return t.allocaExitFn
 }
 
 // PushJumpBuffer arms jb, which stays armed until the matching PopJumpBuffer or
@@ -165,6 +167,7 @@ type pthreadData struct {
 	wait   chan struct{} // cond var interaction
 
 	detached bool
+	started  bool // by Xpthread_create, whose goroutine ends the thread
 }
 
 func (d *pthreadData) init(t *TLS, detached bool) {
@@ -710,9 +713,18 @@ func Xpthread_create(t *TLS, pThread, pAttr, startRoutine, arg uintptr) int32 {
 	})(unsafe.Pointer(&struct{ uintptr }{startRoutine})).f
 	detached := pAttr != 0 && X__ccgo_pthreadAttrGetDetachState(t, pAttr) == pthread.PTHREAD_CREATE_DETACHED
 	tls := newTLS(detached)
+	tls.started = true
 	*(*pthread.Pthread_t)(unsafe.Pointer(pThread)) = pthread.Pthread_t(tls.ID)
 
 	go func() {
+		// Xpthread_exit ends in runtime.Goexit, which runs the deferred calls
+		// of the thread's frames. They still use its memory, so it is freed
+		// only after them, and only then does the thread count as exited.
+		defer func() {
+			tls.freeMemory()
+			tls.exited()
+		}()
+
 		Xpthread_exit(tls, fn(tls, arg))
 	}()
 
@@ -771,15 +783,24 @@ func Xpthread_exit(t *TLS, value uintptr) {
 		}
 	}
 
-	switch {
-	case t.detached:
-		threadsMu.Lock()
-		delete(threads, t.ID)
-		threadsMu.Unlock()
-	default:
-		close(t.done)
+	if !t.started {
+		t.exited()
 	}
 	runtime.Goexit()
+}
+
+// exited marks the thread of t as exited. A detached thread is forgotten, the
+// joiner of a joinable one is released.
+func (t *TLS) exited() {
+	threadsMu.Lock()
+	detached := t.detached
+	if detached {
+		delete(threads, t.ID)
+	}
+	threadsMu.Unlock()
+	if !detached {
+		close(t.done)
+	}
 }
 
 // int pthread_join(pthread_t thread, void **value_ptr);

@@ -9,6 +9,7 @@ package libc // import "modernc.org/libc"
 import (
 	"math"
 	"math/bits"
+	"runtime"
 	"unsafe"
 )
 
@@ -128,6 +129,64 @@ func Xfabs(tls *TLS, x float64) (r float64) {
 	return r
 }
 
+// double fma(double x, double y, double z);
+//
+// On most targets musl's fma is one instruction in inline assembly, which ccgo
+// cannot translate, so every target got the generic fma.c, a correctly rounded
+// fma in integer arithmetic. It returns x*y + z, unfused, when x or y is zero,
+// infinite or NaN, or when z is zero, and z when z alone is infinite or NaN.
+// Xfma does the same, so that NaNs and signed zeros come out as they do there,
+// and leaves the rest to math.FMA, which is correctly rounded too and compiles
+// to the instruction where there is one. Like the translated original it makes
+// no signal check.
+func Xfma(tls *TLS, x float64, y float64, z float64) (r float64) {
+	if __ccgo_strace {
+		trc("tls=%v x=%v y=%v z=%v, (%v:)", tls, x, y, z, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	switch {
+	case !fmaFiniteNonzero(x) || !fmaFiniteNonzero(y) || z == 0:
+		return float64(x*y) + z
+	case !fmaFiniteNonzero(z):
+		return z
+	}
+
+	return math.FMA(x, y, z)
+}
+
+// fmaFiniteNonzero reports whether x is neither zero, infinite nor NaN.
+func fmaFiniteNonzero(x float64) bool {
+	b := math.Float64bits(x) << 1 // without the sign
+	return b != 0 && b < 0x7ff<<53
+}
+
+// double sqrt(double x);
+//
+// On most targets musl's sqrt is one instruction in inline assembly, which
+// ccgo cannot translate, so every target got the generic sqrt.c, a correctly
+// rounded square root in integer arithmetic. math.Sqrt is correctly rounded
+// too and compiles to the instruction. Like the translated original it makes
+// no signal check.
+func Xsqrt(tls *TLS, x float64) (r float64) {
+	if __ccgo_strace {
+		trc("tls=%v x=%v, (%v:)", tls, x, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	return math.Sqrt(x)
+}
+
+// float sqrtf(float x);
+//
+// See Xsqrt. The square root of a float rounded to double and then to float is
+// the correctly rounded float square root.
+func Xsqrtf(tls *TLS, x float32) (r float32) {
+	if __ccgo_strace {
+		trc("tls=%v x=%v, (%v:)", tls, x, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	return float32(math.Sqrt(float64(x)))
+}
+
 // void qsort(void *base, size_t nel, size_t width, int (*cmp)(const void *, const void *));
 func Xqsort(tls *TLS, base uintptr, nel Tsize_t, width Tsize_t, __ccgo_fp_cmp Tcmpfun) {
 	if __ccgo_strace {
@@ -137,11 +196,32 @@ func Xqsort(tls *TLS, base uintptr, nel Tsize_t, width Tsize_t, __ccgo_fp_cmp Tc
 }
 
 // size_t strcspn(const char *s, const char *c);
+//
+// A reject set of one or two bytes, as in sqlite's LIKE and GLOB matcher, is
+// scanned for a word at a time without building the set.
 func Xstrcspn(tls *TLS, s uintptr, c uintptr) (r Tsize_t) {
 	if __ccgo_strace {
 		trc("tls=%v s=%v c=%v, (%v:)", tls, s, c, origin(2))
 		defer func() { trc("-> %v", r) }()
 	}
+	if c0 := *(*byte)(unsafe.Pointer(c)); c0 != 0 {
+		short := true
+		switch c1 := *(*byte)(unsafe.Pointer(c + 1)); {
+		case c1 == 0:
+			r = strcspn2(s, c0, c0)
+		case *(*byte)(unsafe.Pointer(c + 2)) == 0:
+			r = strcspn2(s, c0, c1)
+		default:
+			short = false
+		}
+		if short {
+			if tls.checkSignals {
+				tls.checkSignal()
+			}
+			return r
+		}
+	}
+
 	// Native words rather than uint64 so that the 32-bit targets do
 	// not pay for 64-bit shifts on every byte.
 	var set [256 / bits.UintSize]uint
@@ -161,5 +241,38 @@ func Xstrcspn(tls *TLS, s uintptr, c uintptr) (r Tsize_t) {
 			}
 			return r
 		}
+	}
+}
+
+// strcspn2 returns the length of the initial part of the string s that holds
+// neither c0 nor c1. Like strlenWords it reads aligned native words, which
+// cannot cross a page boundary, so it touches only pages the string occupies.
+func strcspn2(s uintptr, c0, c1 byte) Tsize_t {
+	p := s
+	for ; p%strlenWordSize != 0; p++ {
+		if ch := *(*byte)(unsafe.Pointer(p)); ch == 0 || ch == c0 || ch == c1 {
+			return Tsize_t(p - s)
+		}
+	}
+	r0, r1 := strlenLowOnes*uint(c0), strlenLowOnes*uint(c1)
+	for {
+		x := *(*uint)(unsafe.Pointer(p))
+		y, z := x^r0, x^r1
+		// The lowest byte flagged is the first that matches: a borrow can
+		// flag bytes only above a matching one.
+		if m := ((x-strlenLowOnes)&^x | (y-strlenLowOnes)&^y | (z-strlenLowOnes)&^z) & strlenHighBits; m != 0 {
+			if runtime.GOARCH != "s390x" { // little-endian
+				return Tsize_t(p - s + uintptr(bits.TrailingZeros(m)/8))
+			}
+
+			break
+		}
+		p += strlenWordSize
+	}
+	for {
+		if ch := *(*byte)(unsafe.Pointer(p)); ch == 0 || ch == c0 || ch == c1 {
+			return Tsize_t(p - s)
+		}
+		p++
 	}
 }

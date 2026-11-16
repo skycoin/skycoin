@@ -7548,106 +7548,125 @@ func Xsysconf(tls *TLS, name int32) (r int32) {
 	var _ /* set at bp+16 */ [128]uint8
 	var _ /* si at bp+144 */ Tsysinfo
 	_, _, _, _, _, _, _ = cnt, i, mem, val, v1, v3, v5
-	if Uint32FromInt32(name) >= Uint32FromInt64(502)/Uint32FromInt64(2) || !(_values1[name] != 0) {
-		*(*int32)(__ccgo_ptr(X__errno_location(tls))) = int32(EINVAL)
-		return -int32(1)
-	} else {
-		if int32(_values1[name]) >= -int32(1) {
-			return int32(_values1[name])
+	{
+		if Uint32FromInt32(name) >= Uint32FromInt64(502)/Uint32FromInt64(2) || !(_values1[name] != 0) {
+			*(*int32)(__ccgo_ptr(X__errno_location(tls))) = int32(EINVAL)
+			r = -int32(1)
+			goto _1
 		} else {
-			if int32(_values1[name]) < -int32(256) {
-				Xgetrlimit(tls, int32(_values1[name])&int32(16383), bp)
-				if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur == ^Uint64FromUint64(0) {
-					return -int32(1)
+			if int32(_values1[name]) >= -int32(1) {
+				r = int32(_values1[name])
+				goto _1
+			} else {
+				if int32(_values1[name]) < -int32(256) {
+					Xgetrlimit(tls, int32(_values1[name])&int32(16383), bp)
+					if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur == ^Uint64FromUint64(0) {
+						r = -int32(1)
+						goto _1
+					}
+					if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur > uint64(0x7fffffff) {
+						v1 = uint64(0x7fffffff)
+					} else {
+						v1 = (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur
+					}
+					r = Int32FromUint64(v1)
+					goto _1
 				}
-				if (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur > uint64(0x7fffffff) {
-					v1 = uint64(0x7fffffff)
-				} else {
-					v1 = (*(*Trlimit)(__ccgo_ptr(bp))).Frlim_cur
-				}
-				return Int32FromUint64(v1)
 			}
 		}
-	}
-	switch Int32FromUint8(Uint8FromInt16(_values1[name])) {
-	case (-Int32FromInt32(256) | Int32FromInt32(1)) & Int32FromInt32(255):
-		return int32(200809)
-	case (-Int32FromInt32(256) | Int32FromInt32(2)) & Int32FromInt32(255):
-		return int32(ARG_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(3)) & Int32FromInt32(255):
-		return int32(MQ_PRIO_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(4)) & Int32FromInt32(255):
-		return int32(PAGESIZE)
-	case (-Int32FromInt32(256) | Int32FromInt32(5)) & Int32FromInt32(255):
-		return int32(SEM_VALUE_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(11)) & Int32FromInt32(255):
-		return int32(DELAYTIMER_MAX)
-	case (-Int32FromInt32(256) | Int32FromInt32(6)) & Int32FromInt32(255):
-		fallthrough
-	case (-Int32FromInt32(256) | Int32FromInt32(7)) & Int32FromInt32(255):
-		*(*[128]uint8)(__ccgo_ptr(bp + 16)) = [128]uint8{
-			0: uint8(1),
-		}
-		X__syscall3(tls, int32(SYS_sched_getaffinity), int32(Int32FromInt32(0)), Int32FromUint32(Uint32FromInt64(128)), int32(bp+16))
-		v3 = Int32FromInt32(0)
-		cnt = v3
-		i = v3
-		for {
-			if !(Uint32FromInt32(i) < uint32(128)) {
-				break
+		switch Int32FromUint8(Uint8FromInt16(_values1[name])) {
+		case (-Int32FromInt32(256) | Int32FromInt32(1)) & Int32FromInt32(255):
+			r = int32(200809)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(2)) & Int32FromInt32(255):
+			r = int32(ARG_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(3)) & Int32FromInt32(255):
+			r = int32(MQ_PRIO_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(4)) & Int32FromInt32(255):
+			r = int32(PAGESIZE)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(5)) & Int32FromInt32(255):
+			r = int32(SEM_VALUE_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(11)) & Int32FromInt32(255):
+			r = int32(DELAYTIMER_MAX)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(6)) & Int32FromInt32(255):
+			fallthrough
+		case (-Int32FromInt32(256) | Int32FromInt32(7)) & Int32FromInt32(255):
+			*(*[128]uint8)(__ccgo_ptr(bp + 16)) = [128]uint8{
+				0: uint8(1),
 			}
+			X__syscall3(tls, int32(SYS_sched_getaffinity), int32(Int32FromInt32(0)), Int32FromUint32(Uint32FromInt64(128)), int32(bp+16))
+			v3 = Int32FromInt32(0)
+			cnt = v3
+			i = v3
 			for {
-				if !((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i] != 0) {
+				if !(Uint32FromInt32(i) < uint32(128)) {
 					break
 				}
-				goto _4
-			_4:
+				for {
+					if !((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i] != 0) {
+						break
+					}
+					goto _5
+				_5:
+					;
+					v5 = bp + 16 + uintptr(i)
+					*(*uint8)(unsafe.Pointer(v5)) = uint8(int32(*(*uint8)(unsafe.Pointer(v5))) & (Int32FromUint8((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i]) - Int32FromInt32(1)))
+					cnt = cnt + 1
+				}
+				goto _3
+			_3:
 				;
-				v5 = bp + 16 + uintptr(i)
-				*(*uint8)(unsafe.Pointer(v5)) = uint8(int32(*(*uint8)(unsafe.Pointer(v5))) & (Int32FromUint8((*(*[128]uint8)(__ccgo_ptr(bp + 16)))[i]) - Int32FromInt32(1)))
-				cnt = cnt + 1
+				i = i + 1
 			}
-			goto _2
-		_2:
-			;
-			i = i + 1
+			r = cnt
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(8)) & Int32FromInt32(255):
+			fallthrough
+		case (-Int32FromInt32(256) | Int32FromInt32(9)) & Int32FromInt32(255):
+			X__lsysinfo(tls, bp+144)
+			if !((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit != 0) {
+				(*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit = uint32(1)
+			}
+			if name == int32(_SC_PHYS_PAGES) {
+				mem = uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ftotalram)
+			} else {
+				mem = uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ffreeram + (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fbufferram)
+			}
+			mem = mem * uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit)
+			mem = mem / uint64(PAGESIZE)
+			if mem > uint64(0x7fffffff) {
+				v1 = uint64(0x7fffffff)
+			} else {
+				v1 = mem
+			}
+			r = Int32FromUint64(v1)
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(12)) & Int32FromInt32(255):
+			fallthrough
+		case (-Int32FromInt32(256) | Int32FromInt32(13)) & Int32FromInt32(255):
+			val = Int32FromUint32(X__getauxval(tls, uint32(AT_MINSIGSTKSZ)))
+			if val < int32(MINSIGSTKSZ) {
+				val = int32(MINSIGSTKSZ)
+			}
+			if int32(_values1[name]) == -Int32FromInt32(256)|Int32FromInt32(13) {
+				val = val + int32(Int32FromInt32(SIGSTKSZ)-Int32FromInt32(MINSIGSTKSZ))
+			}
+			r = val
+			goto _1
+		case (-Int32FromInt32(256) | Int32FromInt32(10)) & Int32FromInt32(255):
+			r = 0
+			goto _1
 		}
-		return cnt
-	case (-Int32FromInt32(256) | Int32FromInt32(8)) & Int32FromInt32(255):
-		fallthrough
-	case (-Int32FromInt32(256) | Int32FromInt32(9)) & Int32FromInt32(255):
-		X__lsysinfo(tls, bp+144)
-		if !((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit != 0) {
-			(*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit = uint32(1)
-		}
-		if name == int32(_SC_PHYS_PAGES) {
-			mem = uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ftotalram)
-		} else {
-			mem = uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Ffreeram + (*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fbufferram)
-		}
-		mem = mem * uint64((*(*Tsysinfo)(__ccgo_ptr(bp + 144))).Fmem_unit)
-		mem = mem / uint64(PAGESIZE)
-		if mem > uint64(0x7fffffff) {
-			v1 = uint64(0x7fffffff)
-		} else {
-			v1 = mem
-		}
-		return Int32FromUint64(v1)
-	case (-Int32FromInt32(256) | Int32FromInt32(12)) & Int32FromInt32(255):
-		fallthrough
-	case (-Int32FromInt32(256) | Int32FromInt32(13)) & Int32FromInt32(255):
-		val = Int32FromUint32(X__getauxval(tls, uint32(AT_MINSIGSTKSZ)))
-		if val < int32(MINSIGSTKSZ) {
-			val = int32(MINSIGSTKSZ)
-		}
-		if int32(_values1[name]) == -Int32FromInt32(256)|Int32FromInt32(13) {
-			val = val + int32(Int32FromInt32(SIGSTKSZ)-Int32FromInt32(MINSIGSTKSZ))
-		}
-		return val
-	case (-Int32FromInt32(256) | Int32FromInt32(10)) & Int32FromInt32(255):
-		return 0
+		r = int32(_values1[name])
+		goto _1
 	}
-	return int32(_values1[name])
+_1:
+	return r
 }
 
 var _values1 = [251]int16{
@@ -24729,6 +24748,7 @@ func X_Exit(tls *TLS, ec int32) {
 	if __ccgo_strace {
 		trc("tls=%v ec=%v, (%v:)", tls, ec, origin(2))
 	}
+	___exit_unwind(tls, ec)
 	X__syscall1(tls, int32(SYS_exit_group), ec)
 	for {
 		X__syscall1(tls, int32(SYS_exit), ec)
@@ -24781,6 +24801,9 @@ func Xat_quick_exit(tls *TLS, __ccgo_fp_func uintptr) (r1 int32) {
 	var r, v1 int32
 	_, _ = r, v1
 	r = 0
+	if ___at_quick_exit_unwind(tls, __ccgo_fp_func) != 0 {
+		return 0
+	}
 	___lock(tls, uintptr(unsafe.Pointer(&_lock)))
 	if _count == int32(32) {
 		r = -int32(1)
@@ -24800,6 +24823,7 @@ func Xquick_exit(tls *TLS, code int32) {
 	if __ccgo_strace {
 		trc("tls=%v code=%v, (%v:)", tls, code, origin(2))
 	}
+	___quick_exit_unwind(tls, code)
 	X__funcs_on_quick_exit(tls)
 	X_Exit(tls, code)
 }
@@ -28510,6 +28534,13 @@ type Tepoll_event = struct {
 	Fevents Tuint32_t
 	Fdata   Tepoll_data_t
 }
+
+/* modernc.org/libc: on x86_64 the kernel's struct epoll_event is packed, 12
+ * bytes with data at offset 4, and so is the one sys/epoll.h declares. cc/v4,
+ * which compiles this libc and the C code calling it, ignores
+ * __attribute__((__packed__)), and its struct epoll_event is 16 bytes with
+ * data at offset 8. epoll_ctl and epoll_pwait therefore convert between the
+ * two layouts, for as long as they differ. */
 
 func Xepoll_create(tls *TLS, size int32) (r int32) {
 	if __ccgo_strace {
@@ -104488,7 +104519,7 @@ func _mul(tls *TLS, hi unsafe.Pointer, lo unsafe.Pointer, x Tuint64_t, y Tuint64
 	*(*Tuint64_t)(hi) = t3 + t2>>Int32FromInt32(32) + BoolUint64(t1 > *(*Tuint64_t)(lo))
 }
 
-func Xfma(tls *TLS, x1 float64, y float64, z float64) (r1 float64) {
+func ___musl_fma(tls *TLS, x1 float64, y float64, z float64) (r1 float64) {
 	if __ccgo_strace {
 		trc("tls=%v x1=%v y=%v z=%v, (%v:)", tls, x1, y, z, origin(2))
 		defer func() { trc("-> %v", r1) }()
@@ -111456,7 +111487,7 @@ func _mul64(tls *TLS, a Tuint64_t, b Tuint64_t) (r Tuint64_t) {
 	return ahi*bhi + ahi*blo>>int32(32) + alo*bhi>>int32(32)
 }
 
-func Xsqrt(tls *TLS, x1 float64) (r1 float64) {
+func ___musl_sqrt(tls *TLS, x1 float64) (r1 float64) {
 	if __ccgo_strace {
 		trc("tls=%v x1=%v, (%v:)", tls, x1, origin(2))
 		defer func() { trc("-> %v", r1) }()
@@ -111608,7 +111639,7 @@ func _mul321(tls *TLS, a Tuint32_t, b Tuint32_t) (r Tuint32_t) {
 
 /* see sqrt.c for more detailed comments.  */
 
-func Xsqrtf(tls *TLS, x1 float32) (r1 float32) {
+func ___musl_sqrtf(tls *TLS, x1 float32) (r1 float32) {
 	if __ccgo_strace {
 		trc("tls=%v x1=%v, (%v:)", tls, x1, origin(2))
 		defer func() { trc("-> %v", r1) }()
@@ -130773,227 +130804,266 @@ func _tre_compute_nfl(tls *TLS, mem Ttre_mem_t, stack uintptr, tree uintptr) (r 
 	var cat, iter, lit, node, tags, uni uintptr
 	var symbol Ttre_nfl_stack_symbol_t
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = _status, _status1, _status10, _status11, _status12, _status13, _status14, _status15, _status16, _status17, _status2, _status3, _status4, _status5, _status6, _status7, _status8, _status9, assertions, bottom, cat, iter, lit, node, num_tags, status, symbol, tags, uni
-	bottom = _tre_stack_num_objects(tls, stack)
-	_status = _tre_stack_push_voidptr(tls, stack, tree)
-	if _status != REG_OK {
-		return _status
-	}
-	_status1 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-	if _status1 != REG_OK {
-		return _status1
-	}
-	for _tre_stack_num_objects(tls, stack) > bottom {
-		symbol = _tre_stack_pop_int(tls, stack)
-		node = _tre_stack_pop_voidptr(tls, stack)
-		switch symbol {
-		case int32(_NFL_RECURSE):
-			switch (*Ttre_ast_node_t)(unsafe.Pointer(node)).Ftype1 {
-			case int32(_LITERAL):
-				lit = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-				if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min == -int32(4) {
-					/* Back references: nullable = false, firstpos = {i},
-					   lastpos = {i}. */
-					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
-					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint32(0), UintptrFromInt32(0), -int32(1))
-					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-						return int32(REG_ESPACE)
-					}
-					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint32(0), UintptrFromInt32(0), (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max)
-					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-						return int32(REG_ESPACE)
-					}
-				} else {
-					if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min < 0 {
-						/* Tags, empty strings, params, and zero width assertions:
-						   nullable = true, firstpos = {}, and lastpos = {}. */
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_empty(tls, mem)
-						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-							return int32(REG_ESPACE)
-						}
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_empty(tls, mem)
-						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-							return int32(REG_ESPACE)
-						}
-					} else {
-						/* Literal at position i: nullable = false, firstpos = {i},
+	{
+		bottom = _tre_stack_num_objects(tls, stack)
+		_status = _tre_stack_push_voidptr(tls, stack, tree)
+		if _status != REG_OK {
+			r = _status
+			goto _1
+		}
+		_status1 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+		if _status1 != REG_OK {
+			r = _status1
+			goto _1
+		}
+		for _tre_stack_num_objects(tls, stack) > bottom {
+			symbol = _tre_stack_pop_int(tls, stack)
+			node = _tre_stack_pop_voidptr(tls, stack)
+			switch symbol {
+			case int32(_NFL_RECURSE):
+				switch (*Ttre_ast_node_t)(unsafe.Pointer(node)).Ftype1 {
+				case int32(_LITERAL):
+					lit = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+					if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min == -int32(4) {
+						/* Back references: nullable = false, firstpos = {i},
 						   lastpos = {i}. */
 						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max, uint32(0), UintptrFromInt32(0), -int32(1))
+						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint32(0), UintptrFromInt32(0), -int32(1))
 						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-							return int32(REG_ESPACE)
+							r = int32(REG_ESPACE)
+							goto _1
 						}
-						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fclass, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fneg_classes, -int32(1))
+						(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, 0, int32(TRE_CHAR_MAX), uint32(0), UintptrFromInt32(0), (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max)
 						if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-							return int32(REG_ESPACE)
+							r = int32(REG_ESPACE)
+							goto _1
+						}
+					} else {
+						if (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min < 0 {
+							/* Tags, empty strings, params, and zero width assertions:
+							   nullable = true, firstpos = {}, and lastpos = {}. */
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_empty(tls, mem)
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_empty(tls, mem)
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
+						} else {
+							/* Literal at position i: nullable = false, firstpos = {i},
+							   lastpos = {i}. */
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max, uint32(0), UintptrFromInt32(0), -int32(1))
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
+							(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_one(tls, mem, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fposition, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_min, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fcode_max, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fclass, (*Ttre_literal_t)(unsafe.Pointer(lit)).Fneg_classes, -int32(1))
+							if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+								r = int32(REG_ESPACE)
+								goto _1
+							}
 						}
 					}
+				case int32(_UNION):
+					/* Compute the attributes for the two subtrees, and after that
+					for this node. */
+					_status2 = _tre_stack_push_voidptr(tls, stack, node)
+					if _status2 != REG_OK {
+						r = _status2
+						goto _1
+					}
+					_status3 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_UNION))
+					if _status3 != REG_OK {
+						r = _status3
+						goto _1
+					}
+					_status4 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
+					if _status4 != REG_OK {
+						r = _status4
+						goto _1
+					}
+					_status5 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status5 != REG_OK {
+						r = _status5
+						goto _1
+					}
+					_status6 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
+					if _status6 != REG_OK {
+						r = _status6
+						goto _1
+					}
+					_status7 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status7 != REG_OK {
+						r = _status7
+						goto _1
+					}
+				case int32(_CATENATION):
+					/* Compute the attributes for the two subtrees, and after that
+					for this node. */
+					_status8 = _tre_stack_push_voidptr(tls, stack, node)
+					if _status8 != REG_OK {
+						r = _status8
+						goto _1
+					}
+					_status9 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_CATENATION))
+					if _status9 != REG_OK {
+						r = _status9
+						goto _1
+					}
+					_status10 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
+					if _status10 != REG_OK {
+						r = _status10
+						goto _1
+					}
+					_status11 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status11 != REG_OK {
+						r = _status11
+						goto _1
+					}
+					_status12 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
+					if _status12 != REG_OK {
+						r = _status12
+						goto _1
+					}
+					_status13 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status13 != REG_OK {
+						r = _status13
+						goto _1
+					}
+				case int32(_ITERATION):
+					/* Compute the attributes for the subtree, and after that for
+					this node. */
+					_status14 = _tre_stack_push_voidptr(tls, stack, node)
+					if _status14 != REG_OK {
+						r = _status14
+						goto _1
+					}
+					_status15 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_ITERATION))
+					if _status15 != REG_OK {
+						r = _status15
+						goto _1
+					}
+					_status16 = _tre_stack_push_voidptr(tls, stack, (*Ttre_iteration_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Farg)
+					if _status16 != REG_OK {
+						r = _status16
+						goto _1
+					}
+					_status17 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
+					if _status17 != REG_OK {
+						r = _status17
+						goto _1
+					}
+					break
 				}
-			case int32(_UNION):
-				/* Compute the attributes for the two subtrees, and after that
-				for this node. */
-				_status2 = _tre_stack_push_voidptr(tls, stack, node)
-				if _status2 != REG_OK {
-					return _status2
+			case int32(_NFL_POST_UNION):
+				uni = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Fnullable != 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Fnullable != 0)
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Ffirstpos, UintptrFromInt32(0), 0)
+				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+					r = int32(REG_ESPACE)
+					goto _1
 				}
-				_status3 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_UNION))
-				if _status3 != REG_OK {
-					return _status3
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Flastpos, UintptrFromInt32(0), 0)
+				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+					r = int32(REG_ESPACE)
+					goto _1
 				}
-				_status4 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
-				if _status4 != REG_OK {
-					return _status4
+			case int32(_NFL_POST_ITERATION):
+				iter = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+				if (*Ttre_iteration_t)(unsafe.Pointer(iter)).Fmin == 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Fnullable != 0 {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
+				} else {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
 				}
-				_status5 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status5 != REG_OK {
-					return _status5
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Ffirstpos
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Flastpos
+			case int32(_NFL_POST_CATENATION):
+				cat = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
+				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 && (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0)
+				/* Compute firstpos. */
+				if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 {
+					/* The left side matches the empty string.  Make a first pass
+					   with tre_match_empty() to get the number of tags and
+					   parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
+					if status != REG_OK {
+						r = status
+						goto _1
+					}
+					/* Allocate arrays for the tags and parameters. */
+					tags = Xmalloc(tls, uint32(4)*Uint32FromInt32(num_tags+Int32FromInt32(1)))
+					if !(tags != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+					*(*int32)(__ccgo_ptr(tags)) = -int32(1)
+					assertions = 0
+					/* Second pass with tre_mach_empty() to get the list of
+					   tags and parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, tags, unsafe.Pointer(&assertions), nil)
+					if status != REG_OK {
+						Xfree(tls, tags)
+						r = status
+						goto _1
+					}
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos, tags, assertions)
+					Xfree(tls, tags)
+					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+				} else {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos
 				}
-				_status6 = _tre_stack_push_voidptr(tls, stack, (*Ttre_union_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
-				if _status6 != REG_OK {
-					return _status6
+				/* Compute lastpos. */
+				if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0 {
+					/* The right side matches the empty string.  Make a first pass
+					   with tre_match_empty() to get the number of tags and
+					   parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
+					if status != REG_OK {
+						r = status
+						goto _1
+					}
+					/* Allocate arrays for the tags and parameters. */
+					tags = Xmalloc(tls, uint32(4)*Uint32FromInt32(num_tags+Int32FromInt32(1)))
+					if !(tags != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+					*(*int32)(__ccgo_ptr(tags)) = -int32(1)
+					assertions = 0
+					/* Second pass with tre_mach_empty() to get the list of
+					   tags and parameters. */
+					status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, tags, unsafe.Pointer(&assertions), nil)
+					if status != REG_OK {
+						Xfree(tls, tags)
+						r = status
+						goto _1
+					}
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos, tags, assertions)
+					Xfree(tls, tags)
+					if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
+						r = int32(REG_ESPACE)
+						goto _1
+					}
+				} else {
+					(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos
 				}
-				_status7 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status7 != REG_OK {
-					return _status7
-				}
-			case int32(_CATENATION):
-				/* Compute the attributes for the two subtrees, and after that
-				for this node. */
-				_status8 = _tre_stack_push_voidptr(tls, stack, node)
-				if _status8 != REG_OK {
-					return _status8
-				}
-				_status9 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_CATENATION))
-				if _status9 != REG_OK {
-					return _status9
-				}
-				_status10 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fright)
-				if _status10 != REG_OK {
-					return _status10
-				}
-				_status11 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status11 != REG_OK {
-					return _status11
-				}
-				_status12 = _tre_stack_push_voidptr(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Fleft)
-				if _status12 != REG_OK {
-					return _status12
-				}
-				_status13 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status13 != REG_OK {
-					return _status13
-				}
-			case int32(_ITERATION):
-				/* Compute the attributes for the subtree, and after that for
-				this node. */
-				_status14 = _tre_stack_push_voidptr(tls, stack, node)
-				if _status14 != REG_OK {
-					return _status14
-				}
-				_status15 = _tre_stack_push_int(tls, stack, int32(_NFL_POST_ITERATION))
-				if _status15 != REG_OK {
-					return _status15
-				}
-				_status16 = _tre_stack_push_voidptr(tls, stack, (*Ttre_iteration_t)(unsafe.Pointer((*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj)).Farg)
-				if _status16 != REG_OK {
-					return _status16
-				}
-				_status17 = _tre_stack_push_int(tls, stack, int32(_NFL_RECURSE))
-				if _status17 != REG_OK {
-					return _status17
-				}
+			default:
 				break
 			}
-		case int32(_NFL_POST_UNION):
-			uni = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Fnullable != 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Fnullable != 0)
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Ffirstpos, UintptrFromInt32(0), 0)
-			if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-				return int32(REG_ESPACE)
-			}
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_union_t)(unsafe.Pointer(uni)).Fright)).Flastpos, UintptrFromInt32(0), 0)
-			if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-				return int32(REG_ESPACE)
-			}
-		case int32(_NFL_POST_ITERATION):
-			iter = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-			if (*Ttre_iteration_t)(unsafe.Pointer(iter)).Fmin == 0 || (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Fnullable != 0 {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = int32(1)
-			} else {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = 0
-			}
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Ffirstpos
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_iteration_t)(unsafe.Pointer(iter)).Farg)).Flastpos
-		case int32(_NFL_POST_CATENATION):
-			cat = (*Ttre_ast_node_t)(unsafe.Pointer(node)).Fobj
-			(*Ttre_ast_node_t)(unsafe.Pointer(node)).Fnullable = BoolInt32((*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 && (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0)
-			/* Compute firstpos. */
-			if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Fnullable != 0 {
-				/* The left side matches the empty string.  Make a first pass
-				   with tre_match_empty() to get the number of tags and
-				   parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
-				if status != REG_OK {
-					return status
-				}
-				/* Allocate arrays for the tags and parameters. */
-				tags = Xmalloc(tls, uint32(4)*Uint32FromInt32(num_tags+Int32FromInt32(1)))
-				if !(tags != 0) {
-					return int32(REG_ESPACE)
-				}
-				*(*int32)(__ccgo_ptr(tags)) = -int32(1)
-				assertions = 0
-				/* Second pass with tre_mach_empty() to get the list of
-				   tags and parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft, tags, unsafe.Pointer(&assertions), nil)
-				if status != REG_OK {
-					Xfree(tls, tags)
-					return status
-				}
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Ffirstpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos, tags, assertions)
-				Xfree(tls, tags)
-				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos != 0) {
-					return int32(REG_ESPACE)
-				}
-			} else {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Ffirstpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Ffirstpos
-			}
-			/* Compute lastpos. */
-			if (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Fnullable != 0 {
-				/* The right side matches the empty string.  Make a first pass
-				   with tre_match_empty() to get the number of tags and
-				   parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, UintptrFromInt32(0), nil, unsafe.Pointer(&num_tags))
-				if status != REG_OK {
-					return status
-				}
-				/* Allocate arrays for the tags and parameters. */
-				tags = Xmalloc(tls, uint32(4)*Uint32FromInt32(num_tags+Int32FromInt32(1)))
-				if !(tags != 0) {
-					return int32(REG_ESPACE)
-				}
-				*(*int32)(__ccgo_ptr(tags)) = -int32(1)
-				assertions = 0
-				/* Second pass with tre_mach_empty() to get the list of
-				   tags and parameters. */
-				status = _tre_match_empty(tls, stack, (*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright, tags, unsafe.Pointer(&assertions), nil)
-				if status != REG_OK {
-					Xfree(tls, tags)
-					return status
-				}
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = _tre_set_union(tls, mem, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fleft)).Flastpos, (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos, tags, assertions)
-				Xfree(tls, tags)
-				if !((*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos != 0) {
-					return int32(REG_ESPACE)
-				}
-			} else {
-				(*Ttre_ast_node_t)(unsafe.Pointer(node)).Flastpos = (*Ttre_ast_node_t)(unsafe.Pointer((*Ttre_catenation_t)(unsafe.Pointer(cat)).Fright)).Flastpos
-			}
-		default:
-			break
 		}
+		r = REG_OK
+		goto _1
 	}
-	return REG_OK
+_1:
+	return r
 }
 
 // C documentation
@@ -149681,428 +149751,448 @@ func Xstrptime(tls *TLS, s uintptr, f uintptr, tm uintptr) (r uintptr) {
 	var _ /* new_f at bp+12 */ uintptr
 	var _ /* relyear at bp+8 */ int32
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = adj, dest, ex, i, len1, min, neg, range1, w, want_century, v1, v2, v5, v6, v8, v9
-	want_century = 0
-	*(*int32)(__ccgo_ptr(bp + 4)) = 0
-	*(*int32)(__ccgo_ptr(bp + 8)) = 0
-	for *(*int8)(__ccgo_ptr(f)) != 0 {
-		if int32(*(*int8)(__ccgo_ptr(f))) != int32('%') {
-			v1 = int32(*(*int8)(__ccgo_ptr(f)))
-			v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
-			goto _3
-		_3:
-			if v2 != 0 {
-				for {
-					if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
-						v5 = int32(*(*int8)(__ccgo_ptr(s)))
-						v6 = BoolInt32(v5 == int32(' ') || Uint32FromInt32(v5)-uint32('\t') < uint32(5))
-						goto _7
-					_7:
-					}
-					if !(v8 && v6 != 0) {
-						break
-					}
-					goto _4
-				_4:
-					;
-					s = s + 1
-				}
-			} else {
-				if int32(*(*int8)(__ccgo_ptr(s))) != int32(*(*int8)(__ccgo_ptr(f))) {
-					return uintptr(0)
-				} else {
-					s = s + 1
-				}
-			}
-			f = f + 1
-			continue
-		}
-		f = f + 1
-		if int32(*(*int8)(__ccgo_ptr(f))) == int32('+') {
-			f = f + 1
-		}
-		if BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(f)))-uint32('0') < uint32(10)) != 0 {
-			w = Int32FromUint32(Xstrtoul(tls, f, bp+12, int32(10)))
-			f = *(*uintptr)(__ccgo_ptr(bp + 12))
-		} else {
-			w = -int32(1)
-		}
-		adj = 0
-		v9 = f
-		f = f + 1
-		switch int32(*(*int8)(__ccgo_ptr(v9))) {
-		case int32('A'):
-			goto _10
-		case int32('a'):
-			goto _11
-		case int32('h'):
-			goto _12
-		case int32('B'):
-			goto _13
-		case int32('b'):
-			goto _14
-		case int32('c'):
-			goto _15
-		case int32('C'):
-			goto _16
-		case int32('e'):
-			goto _17
-		case int32('d'):
-			goto _18
-		case int32('D'):
-			goto _19
-		case int32('H'):
-			goto _20
-		case int32('I'):
-			goto _21
-		case int32('j'):
-			goto _22
-		case int32('m'):
-			goto _23
-		case int32('M'):
-			goto _24
-		case int32('t'):
-			goto _25
-		case int32('n'):
-			goto _26
-		case int32('p'):
-			goto _27
-		case int32('r'):
-			goto _28
-		case int32('R'):
-			goto _29
-		case int32('S'):
-			goto _30
-		case int32('T'):
-			goto _31
-		case int32('W'):
-			goto _32
-		case int32('U'):
-			goto _33
-		case int32('w'):
-			goto _34
-		case int32('x'):
-			goto _35
-		case int32('X'):
-			goto _36
-		case int32('y'):
-			goto _37
-		case int32('Y'):
-			goto _38
-		case int32('%'):
-			goto _39
-		default:
-			goto _40
-		}
-		goto _41
-	_11:
-		;
-	_10:
-		;
-		dest = tm + 24
-		min = int32(ABDAY_1)
-		range1 = int32(7)
-		goto symbolic_range
-	_14:
-		;
-	_13:
-		;
-	_12:
-		;
-		dest = tm + 16
-		min = int32(ABMON_1)
-		range1 = int32(12)
-		goto symbolic_range
-	_15:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_T_FMT)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_16:
-		;
-		dest = bp + 4
-		if w < 0 {
-			w = int32(2)
-		}
-		want_century = want_century | int32(2)
-		goto numeric_digits
-	_18:
-		;
-	_17:
-		;
-		dest = tm + 12
-		min = int32(1)
-		range1 = int32(31)
-		goto numeric_range
-	_19:
-		;
-		s = Xstrptime(tls, s, __ccgo_ts+1657, tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_20:
-		;
-		dest = tm + 8
-		min = 0
-		range1 = int32(24)
-		goto numeric_range
-	_21:
-		;
-		dest = tm + 8
-		min = int32(1)
-		range1 = int32(12)
-		goto numeric_range
-	_22:
-		;
-		dest = tm + 28
-		min = int32(1)
-		range1 = int32(366)
-		adj = int32(1)
-		goto numeric_range
-	_23:
-		;
-		dest = tm + 16
-		min = int32(1)
-		range1 = int32(12)
-		adj = int32(1)
-		goto numeric_range
-	_24:
-		;
-		dest = tm + 4
-		min = 0
-		range1 = int32(60)
-		goto numeric_range
-	_26:
-		;
-	_25:
-		;
-	_44:
-		;
-		if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
-			v1 = int32(*(*int8)(__ccgo_ptr(s)))
-			v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
-			goto _47
-		_47:
-		}
-		if !(v8 && v2 != 0) {
-			goto _42
-		}
-		goto _43
-	_43:
-		;
-		s = s + 1
-		goto _44
-		goto _42
-	_42:
-		;
-		goto _41
-	_27:
-		;
-		ex = Xnl_langinfo(tls, int32(AM_STR))
-		len1 = _strlen(tls, ex)
-		if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
-			*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
-			s = s + uintptr(len1)
-			goto _41
-		}
-		ex = Xnl_langinfo(tls, int32(PM_STR))
-		len1 = _strlen(tls, ex)
-		if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
-			*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
-			*(*int32)(__ccgo_ptr(tm + 8)) += int32(12)
-			s = s + uintptr(len1)
-			goto _41
-		}
-		return uintptr(0)
-	_28:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT_AMPM)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_29:
-		;
-		s = Xstrptime(tls, s, __ccgo_ts+1675, tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_30:
-		;
-		dest = tm
-		min = 0
-		range1 = int32(61)
-		goto numeric_range
-	_31:
-		;
-		s = Xstrptime(tls, s, __ccgo_ts+1681, tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_33:
-		;
-	_32:
-		;
-		/* Throw away result, for now. (FIXME?) */
-		dest = bp
-		min = 0
-		range1 = int32(54)
-		goto numeric_range
-	_34:
-		;
-		dest = tm + 24
-		min = 0
-		range1 = int32(7)
-		goto numeric_range
-	_35:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_FMT)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_36:
-		;
-		s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT)), tm)
-		if !(s != 0) {
-			return uintptr(0)
-		}
-		goto _41
-	_37:
-		;
-		dest = bp + 8
-		w = int32(2)
-		want_century = want_century | int32(1)
-		goto numeric_digits
-	_38:
-		;
-		dest = tm + 20
-		if w < 0 {
-			w = int32(4)
-		}
-		adj = int32(1900)
+	{
 		want_century = 0
-		goto numeric_digits
-	_39:
-		;
-		v9 = s
-		s = s + 1
-		if int32(*(*int8)(__ccgo_ptr(v9))) != int32('%') {
-			return uintptr(0)
-		}
-		goto _41
-	_40:
-		;
-		return uintptr(0)
-		goto numeric_range
-	numeric_range:
-		;
-		if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
-			return uintptr(0)
-		}
-		*(*int32)(__ccgo_ptr(dest)) = 0
-		i = int32(1)
-		for {
-			if !(i <= min+range1 && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
-				break
+		*(*int32)(__ccgo_ptr(bp + 4)) = 0
+		*(*int32)(__ccgo_ptr(bp + 8)) = 0
+		for *(*int8)(__ccgo_ptr(f)) != 0 {
+			if int32(*(*int8)(__ccgo_ptr(f))) != int32('%') {
+				v1 = int32(*(*int8)(__ccgo_ptr(f)))
+				v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
+				goto _4
+			_4:
+				if v2 != 0 {
+					for {
+						if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
+							v5 = int32(*(*int8)(__ccgo_ptr(s)))
+							v6 = BoolInt32(v5 == int32(' ') || Uint32FromInt32(v5)-uint32('\t') < uint32(5))
+							goto _8
+						_8:
+						}
+						if !(v8 && v6 != 0) {
+							break
+						}
+						goto _5
+					_5:
+						;
+						s = s + 1
+					}
+				} else {
+					if int32(*(*int8)(__ccgo_ptr(s))) != int32(*(*int8)(__ccgo_ptr(f))) {
+						r = uintptr(0)
+						goto _1
+					} else {
+						s = s + 1
+					}
+				}
+				f = f + 1
+				continue
 			}
-			v9 = s
-			s = s + 1
-			*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
-			goto _50
-		_50:
+			f = f + 1
+			if int32(*(*int8)(__ccgo_ptr(f))) == int32('+') {
+				f = f + 1
+			}
+			if BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(f)))-uint32('0') < uint32(10)) != 0 {
+				w = Int32FromUint32(Xstrtoul(tls, f, bp+12, int32(10)))
+				f = *(*uintptr)(__ccgo_ptr(bp + 12))
+			} else {
+				w = -int32(1)
+			}
+			adj = 0
+			v9 = f
+			f = f + 1
+			switch int32(*(*int8)(__ccgo_ptr(v9))) {
+			case int32('A'):
+				goto _11
+			case int32('a'):
+				goto _12
+			case int32('h'):
+				goto _13
+			case int32('B'):
+				goto _14
+			case int32('b'):
+				goto _15
+			case int32('c'):
+				goto _16
+			case int32('C'):
+				goto _17
+			case int32('e'):
+				goto _18
+			case int32('d'):
+				goto _19
+			case int32('D'):
+				goto _20
+			case int32('H'):
+				goto _21
+			case int32('I'):
+				goto _22
+			case int32('j'):
+				goto _23
+			case int32('m'):
+				goto _24
+			case int32('M'):
+				goto _25
+			case int32('t'):
+				goto _26
+			case int32('n'):
+				goto _27
+			case int32('p'):
+				goto _28
+			case int32('r'):
+				goto _29
+			case int32('R'):
+				goto _30
+			case int32('S'):
+				goto _31
+			case int32('T'):
+				goto _32
+			case int32('W'):
+				goto _33
+			case int32('U'):
+				goto _34
+			case int32('w'):
+				goto _35
+			case int32('x'):
+				goto _36
+			case int32('X'):
+				goto _37
+			case int32('y'):
+				goto _38
+			case int32('Y'):
+				goto _39
+			case int32('%'):
+				goto _40
+			default:
+				goto _41
+			}
+			goto _42
+		_12:
 			;
-			i = i * int32(10)
-		}
-		if Uint32FromInt32(*(*int32)(__ccgo_ptr(dest))-min) >= Uint32FromInt32(range1) {
-			return uintptr(0)
-		}
-		*(*int32)(__ccgo_ptr(dest)) -= adj
-		switch int32(dest) - int32(tm) {
-		case Int32FromUint32(uint32(UintptrFromInt32(0) + 28)):
-		}
-		goto update
-		goto numeric_digits
-	numeric_digits:
-		;
-		neg = 0
-		if int32(*(*int8)(__ccgo_ptr(s))) == int32('+') {
-			s = s + 1
-		} else {
-			if int32(*(*int8)(__ccgo_ptr(s))) == int32('-') {
-				neg = int32(1)
-				s = s + 1
-			}
-		}
-		if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
-			return uintptr(0)
-		}
-		v1 = Int32FromInt32(0)
-		i = v1
-		*(*int32)(__ccgo_ptr(dest)) = v1
-		for {
-			if !(i < w && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
-				break
-			}
-			v9 = s
-			s = s + 1
-			*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
-			goto _52
-		_52:
+		_11:
 			;
-			i = i + 1
-		}
-		if neg != 0 {
-			*(*int32)(__ccgo_ptr(dest)) = -*(*int32)(__ccgo_ptr(dest))
-		}
-		*(*int32)(__ccgo_ptr(dest)) -= adj
-		goto update
-		goto symbolic_range
-	symbolic_range:
-		;
-		i = int32(2)*range1 - int32(1)
-		for {
-			if !(i >= 0) {
-				break
+			dest = tm + 24
+			min = int32(ABDAY_1)
+			range1 = int32(7)
+			goto symbolic_range
+		_15:
+			;
+		_14:
+			;
+		_13:
+			;
+			dest = tm + 16
+			min = int32(ABMON_1)
+			range1 = int32(12)
+			goto symbolic_range
+		_16:
+			;
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_T_FMT)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
 			}
-			ex = Xnl_langinfo(tls, min+i)
+			goto _42
+		_17:
+			;
+			dest = bp + 4
+			if w < 0 {
+				w = int32(2)
+			}
+			want_century = want_century | int32(2)
+			goto numeric_digits
+		_19:
+			;
+		_18:
+			;
+			dest = tm + 12
+			min = int32(1)
+			range1 = int32(31)
+			goto numeric_range
+		_20:
+			;
+			s = Xstrptime(tls, s, __ccgo_ts+1657, tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_21:
+			;
+			dest = tm + 8
+			min = 0
+			range1 = int32(24)
+			goto numeric_range
+		_22:
+			;
+			dest = tm + 8
+			min = int32(1)
+			range1 = int32(12)
+			goto numeric_range
+		_23:
+			;
+			dest = tm + 28
+			min = int32(1)
+			range1 = int32(366)
+			adj = int32(1)
+			goto numeric_range
+		_24:
+			;
+			dest = tm + 16
+			min = int32(1)
+			range1 = int32(12)
+			adj = int32(1)
+			goto numeric_range
+		_25:
+			;
+			dest = tm + 4
+			min = 0
+			range1 = int32(60)
+			goto numeric_range
+		_27:
+			;
+		_26:
+			;
+		_45:
+			;
+			if v8 = *(*int8)(__ccgo_ptr(s)) != 0; v8 {
+				v1 = int32(*(*int8)(__ccgo_ptr(s)))
+				v2 = BoolInt32(v1 == int32(' ') || Uint32FromInt32(v1)-uint32('\t') < uint32(5))
+				goto _48
+			_48:
+			}
+			if !(v8 && v2 != 0) {
+				goto _43
+			}
+			goto _44
+		_44:
+			;
+			s = s + 1
+			goto _45
+			goto _43
+		_43:
+			;
+			goto _42
+		_28:
+			;
+			ex = Xnl_langinfo(tls, int32(AM_STR))
 			len1 = _strlen(tls, ex)
-			if Xstrncasecmp(tls, s, ex, len1) != 0 {
-				goto _55
+			if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
+				*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
+				s = s + uintptr(len1)
+				goto _42
 			}
-			s = s + uintptr(len1)
-			*(*int32)(__ccgo_ptr(dest)) = i % range1
-			break
-			goto _55
-		_55:
+			ex = Xnl_langinfo(tls, int32(PM_STR))
+			len1 = _strlen(tls, ex)
+			if !(Xstrncasecmp(tls, s, ex, len1) != 0) {
+				*(*int32)(__ccgo_ptr(tm + 8)) %= int32(12)
+				*(*int32)(__ccgo_ptr(tm + 8)) += int32(12)
+				s = s + uintptr(len1)
+				goto _42
+			}
+			r = uintptr(0)
+			goto _1
+		_29:
 			;
-			i = i - 1
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT_AMPM)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_30:
+			;
+			s = Xstrptime(tls, s, __ccgo_ts+1675, tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_31:
+			;
+			dest = tm
+			min = 0
+			range1 = int32(61)
+			goto numeric_range
+		_32:
+			;
+			s = Xstrptime(tls, s, __ccgo_ts+1681, tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_34:
+			;
+		_33:
+			;
+			/* Throw away result, for now. (FIXME?) */
+			dest = bp
+			min = 0
+			range1 = int32(54)
+			goto numeric_range
+		_35:
+			;
+			dest = tm + 24
+			min = 0
+			range1 = int32(7)
+			goto numeric_range
+		_36:
+			;
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(D_FMT)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_37:
+			;
+			s = Xstrptime(tls, s, Xnl_langinfo(tls, int32(T_FMT)), tm)
+			if !(s != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_38:
+			;
+			dest = bp + 8
+			w = int32(2)
+			want_century = want_century | int32(1)
+			goto numeric_digits
+		_39:
+			;
+			dest = tm + 20
+			if w < 0 {
+				w = int32(4)
+			}
+			adj = int32(1900)
+			want_century = 0
+			goto numeric_digits
+		_40:
+			;
+			v9 = s
+			s = s + 1
+			if int32(*(*int8)(__ccgo_ptr(v9))) != int32('%') {
+				r = uintptr(0)
+				goto _1
+			}
+			goto _42
+		_41:
+			;
+			r = uintptr(0)
+			goto _1
+			goto numeric_range
+		numeric_range:
+			;
+			if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			*(*int32)(__ccgo_ptr(dest)) = 0
+			i = int32(1)
+			for {
+				if !(i <= min+range1 && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
+					break
+				}
+				v9 = s
+				s = s + 1
+				*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
+				goto _51
+			_51:
+				;
+				i = i * int32(10)
+			}
+			if Uint32FromInt32(*(*int32)(__ccgo_ptr(dest))-min) >= Uint32FromInt32(range1) {
+				r = uintptr(0)
+				goto _1
+			}
+			*(*int32)(__ccgo_ptr(dest)) -= adj
+			switch int32(dest) - int32(tm) {
+			case Int32FromUint32(uint32(UintptrFromInt32(0) + 28)):
+			}
+			goto update
+			goto numeric_digits
+		numeric_digits:
+			;
+			neg = 0
+			if int32(*(*int8)(__ccgo_ptr(s))) == int32('+') {
+				s = s + 1
+			} else {
+				if int32(*(*int8)(__ccgo_ptr(s))) == int32('-') {
+					neg = int32(1)
+					s = s + 1
+				}
+			}
+			if !(BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-Uint32FromUint8('0') < Uint32FromInt32(10)) != 0) {
+				r = uintptr(0)
+				goto _1
+			}
+			v1 = Int32FromInt32(0)
+			i = v1
+			*(*int32)(__ccgo_ptr(dest)) = v1
+			for {
+				if !(i < w && BoolInt32(Uint32FromInt8(*(*int8)(__ccgo_ptr(s)))-uint32('0') < uint32(10)) != 0) {
+					break
+				}
+				v9 = s
+				s = s + 1
+				*(*int32)(__ccgo_ptr(dest)) = *(*int32)(__ccgo_ptr(dest))*int32(10) + int32(*(*int8)(__ccgo_ptr(v9))) - int32('0')
+				goto _53
+			_53:
+				;
+				i = i + 1
+			}
+			if neg != 0 {
+				*(*int32)(__ccgo_ptr(dest)) = -*(*int32)(__ccgo_ptr(dest))
+			}
+			*(*int32)(__ccgo_ptr(dest)) -= adj
+			goto update
+			goto symbolic_range
+		symbolic_range:
+			;
+			i = int32(2)*range1 - int32(1)
+			for {
+				if !(i >= 0) {
+					break
+				}
+				ex = Xnl_langinfo(tls, min+i)
+				len1 = _strlen(tls, ex)
+				if Xstrncasecmp(tls, s, ex, len1) != 0 {
+					goto _56
+				}
+				s = s + uintptr(len1)
+				*(*int32)(__ccgo_ptr(dest)) = i % range1
+				break
+				goto _56
+			_56:
+				;
+				i = i - 1
+			}
+			if i < 0 {
+				r = uintptr(0)
+				goto _1
+			}
+			goto update
+			goto update
+		update:
+			;
+			//FIXME
+		_42:
 		}
-		if i < 0 {
-			return uintptr(0)
-		}
-		goto update
-		goto update
-	update:
-		;
-		//FIXME
-	_41:
-	}
-	if want_century != 0 {
-		(*Ttm)(unsafe.Pointer(tm)).Ftm_year = *(*int32)(__ccgo_ptr(bp + 8))
-		if want_century&int32(2) != 0 {
-			*(*int32)(__ccgo_ptr(tm + 20)) += *(*int32)(__ccgo_ptr(bp + 4))*int32(100) - int32(1900)
-		} else {
-			if (*Ttm)(unsafe.Pointer(tm)).Ftm_year <= int32(68) {
-				*(*int32)(__ccgo_ptr(tm + 20)) += int32(100)
+		if want_century != 0 {
+			(*Ttm)(unsafe.Pointer(tm)).Ftm_year = *(*int32)(__ccgo_ptr(bp + 8))
+			if want_century&int32(2) != 0 {
+				*(*int32)(__ccgo_ptr(tm + 20)) += *(*int32)(__ccgo_ptr(bp + 4))*int32(100) - int32(1900)
+			} else {
+				if (*Ttm)(unsafe.Pointer(tm)).Ftm_year <= int32(68) {
+					*(*int32)(__ccgo_ptr(tm + 20)) += int32(100)
+				}
 			}
 		}
+		r = s
+		goto _1
 	}
-	return s
+_1:
+	return r
 }
 
 func Xtime(tls *TLS, t uintptr) (r Ttime_t) {

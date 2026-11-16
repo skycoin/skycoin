@@ -31,6 +31,15 @@
 // pays a mmap/munmap round trip per turnover. Use Allocator.Trim to
 // hand the retained regions back.
 //
+// # Size classes
+//
+// Allocations of up to 16 KiB share pages, in slots of a fixed set of size
+// classes: on 64-bit 16 to 128 bytes in steps of 16, then four classes per
+// power of two (160, 192, 224, 256, 320, ...). A request just above a power
+// of two thus no longer takes almost twice its size. Every slot is aligned to
+// 2*unsafe.Sizeof(uintptr(0)) bytes. UsableSize reports the class size, and
+// UsableSizeFor tells it in advance, from the request size alone.
+//
 // # Benchmarks
 //
 //	jnml@3900x:~/src/modernc.org/memory$ date ; go version ; go test -run @ -bench . -benchmem |& tee log
@@ -83,9 +92,92 @@ const (
 	pageSize       = 1 << pageSizeLog
 )
 
+// Size classes. A request for up to maxSlotSize bytes is served from a slot of
+// the smallest size class that fits it. The classes are linearClasses
+// multiples of mallocAllign, then classesPerDoubling evenly spaced classes
+// between each power of two and the next, up to maxSlotSize. On 64-bit:
+//
+//	16, 32, 48, 64, 80, 96, 112, 128,
+//	160, 192, 224, 256,
+//	320, 384, 448, 512,
+//	...
+//	10240, 12288, 14336, 16384
+//
+// A request wastes less than mallocAllign bytes up to 8*mallocAllign, and less
+// than a fifth of its slot above that, where with power-of-two classes a
+// request just above a power of two wasted almost half. Every power of two from
+// mallocAllign to maxSlotSize remains a class, so a power-of-two request is
+// served exactly. Slots sit back to back after the page header, so every slot
+// is mallocAllign aligned, but no more than that.
+const (
+	linearClasses      = 8
+	classesPerDoubling = 4
+
+	// maxClasses bounds the number of size classes, including class 0, which
+	// marks a dedicated page. It is a power of two: class indexes are masked
+	// with maxClasses-1 to spare bounds checks.
+	maxClasses = 64
+)
+
+// sizeClass describes the slots of a size class.
+type sizeClass struct {
+	size  uint32 // bytes per slot
+	slots uint32 // slots per page
+}
+
+var (
+	classes [maxClasses]sizeClass
+
+	// sizeToClass[i] is the class serving requests for i*mallocAllign+1 to
+	// (i+1)*mallocAllign bytes.
+	sizeToClass [maxSlotSize / mallocAllign]uint8
+)
+
 func init() {
 	if unsafe.Sizeof(page{})%mallocAllign != 0 {
 		panic("internal error")
+	}
+
+	initClasses(linearClasses, classesPerDoubling)
+}
+
+// initClasses fills the size class tables: linear classes mallocAllign apart,
+// starting at mallocAllign, then perDoubling classes per power of two, up to
+// maxSlotSize. initClasses(1, 1) yields the power-of-two classes.
+func initClasses(linear, perDoubling int) {
+	classes = [maxClasses]sizeClass{}
+	n := 0
+	add := func(size int) {
+		if n++; n == maxClasses {
+			panic("internal error: too many size classes")
+		}
+
+		classes[n] = sizeClass{uint32(size), uint32(int(pageAvail) / size)}
+	}
+	q := int(mallocAllign)
+	for i := 1; i <= linear; i++ {
+		add(i * q)
+	}
+	for base := linear * q; base < maxSlotSize; base *= 2 {
+		step := base / perDoubling
+		if step%q != 0 || base%perDoubling != 0 {
+			panic("internal error: misaligned size class")
+		}
+
+		for size := base + step; size <= 2*base; size += step {
+			add(size)
+		}
+	}
+	if classes[n].size != maxSlotSize {
+		panic("internal error: size classes do not end at maxSlotSize")
+	}
+
+	c := 1
+	for i := range sizeToClass {
+		for int(classes[c].size) < (i+1)*q {
+			c++
+		}
+		sizeToClass[i] = uint8(c)
 	}
 }
 
@@ -97,10 +189,10 @@ type node struct {
 }
 
 type page struct {
-	brk  int
-	log  uint
-	size int
-	used int
+	brk   int  // shared page: slots carved so far
+	class uint // shared page: size class of its slots; 0: dedicated page
+	size  int  // bytes mapped
+	used  int  // shared page: live slots
 }
 
 // Allocator allocates and frees memory. Its zero value is ready for use.  The
@@ -109,12 +201,11 @@ type page struct {
 //
 // An Allocator retains empty regions for reuse, see Trim.
 type Allocator struct {
-	Allocs    int // # of allocs.
-	Bytes     int // Asked from OS.
-	cap       [64]int
-	lists     [64]uintptr          // *node
+	Allocs    int                  // # of allocs.
+	Bytes     int                  // Asked from OS.
+	lists     [maxClasses]uintptr  // *node, free slots of a size class
 	Mmaps     int                  // Asked from OS.
-	pages     [64]uintptr          // *page
+	pages     [maxClasses]uintptr  // *page, carve target of a size class
 	regs      map[uintptr]struct{} // map[*page]struct{}
 	freed     map[int][]uintptr    // empty regions retained for reuse, keyed by region size
 	freedSize int                  // total bytes in freed
@@ -221,8 +312,8 @@ func (a *Allocator) mmap(size int) (uintptr /* *page */, error) {
 	}
 
 	//TODO(jnml) The returned size may now be nearly as twice as large as we asked
-	//for. Use that extra capacity. For that we need to move the respective
-	//Allocator.cap item into the page struct so the page cap becomes dynamic.
+	//for. Use that extra capacity. For that we need to move the slot count of
+	//the size class into the page struct so the page cap becomes dynamic.
 	//
 	// Related: This is a consequence of fixing the bigsort.test failures on
 	// linux/s390x, see: https://gitlab.com/cznic/sqlite/-/issues/207
@@ -251,22 +342,20 @@ func (a *Allocator) newPage(size int) (uintptr /* *page */, error) {
 		return 0, err
 	}
 
-	(*page)(unsafe.Pointer(p)).log = 0
+	(*page)(unsafe.Pointer(p)).class = 0
 	return p, nil
 }
 
-func (a *Allocator) newSharedPage(log uint) (uintptr /* *page */, error) {
-	if a.cap[log] == 0 {
-		a.cap[log] = int(pageAvail) / (1 << log)
-	}
-	size := int(headerSize) + a.cap[log]<<log
+func (a *Allocator) newSharedPage(class uint) (uintptr /* *page */, error) {
+	c := classes[class]
+	size := int(headerSize) + int(c.slots)*int(c.size)
 	p, err := a.mmap(size)
 	if err != nil {
 		return 0, err
 	}
 
-	a.pages[log] = p
-	(*page)(unsafe.Pointer(p)).log = log
+	a.pages[class] = p
+	(*page)(unsafe.Pointer(p)).class = class
 	return p, nil
 }
 
@@ -368,29 +457,30 @@ func (a *Allocator) UintptrFree(p uintptr) (err error) {
 		a.Allocs--
 	}
 	pg := p &^ uintptr(pageMask)
-	log := (*page)(unsafe.Pointer(pg)).log
-	if log == 0 {
+	class := (*page)(unsafe.Pointer(pg)).class
+	if class == 0 {
 		return a.release(pg)
 	}
 
 	(*node)(unsafe.Pointer(p)).prev = 0
-	(*node)(unsafe.Pointer(p)).next = a.lists[log]
+	(*node)(unsafe.Pointer(p)).next = a.lists[class]
 	if next := (*node)(unsafe.Pointer(p)).next; next != 0 {
 		(*node)(unsafe.Pointer(next)).prev = p
 	}
-	a.lists[log] = p
+	a.lists[class] = p
 	(*page)(unsafe.Pointer(pg)).used--
 	if (*page)(unsafe.Pointer(pg)).used != 0 {
 		return nil
 	}
 
+	size := uintptr(classes[class].size)
 	for i := 0; i < (*page)(unsafe.Pointer(pg)).brk; i++ {
-		n := pg + headerSize + uintptr(i)<<log
+		n := pg + headerSize + uintptr(i)*size
 		next := (*node)(unsafe.Pointer(n)).next
 		prev := (*node)(unsafe.Pointer(n)).prev
 		switch {
 		case prev == 0:
-			a.lists[log] = next
+			a.lists[class] = next
 			if next != 0 {
 				(*node)(unsafe.Pointer(next)).prev = 0
 			}
@@ -406,9 +496,9 @@ func (a *Allocator) UintptrFree(p uintptr) (err error) {
 	// rather than returning it to the OS, unless the class already has one.
 	// Otherwise a pattern that repeatedly drains the class pays a mmap/munmap
 	// round trip per turnover. Trim releases the pages retained this way.
-	if a.pages[log] == 0 || a.pages[log] == pg {
+	if a.pages[class] == 0 || a.pages[class] == pg {
 		(*page)(unsafe.Pointer(pg)).brk = 0
-		a.pages[log] = pg
+		a.pages[class] = pg
 		return nil
 	}
 
@@ -436,8 +526,7 @@ func (a *Allocator) UintptrMalloc(size int) (r uintptr, err error) {
 	if counters {
 		a.Allocs++
 	}
-	log := uint(bits.Len(uint((size+int(mallocAllign)-1)&^int(mallocAllign-1) - 1)))
-	if log > maxSlotSizeLog {
+	if size > maxSlotSize {
 		p, err := a.newPage(size)
 		if err != nil {
 			return 0, err
@@ -446,24 +535,29 @@ func (a *Allocator) UintptrMalloc(size int) (r uintptr, err error) {
 		return p + headerSize, nil
 	}
 
-	if a.lists[log] == 0 && a.pages[log] == 0 {
-		if _, err := a.newSharedPage(log); err != nil {
+	// The mask is a no-op on the table's values and spares the bounds checks
+	// on the per-class arrays below.
+	class := uint(sizeToClass[uintptr(size-1)/mallocAllign]) & (maxClasses - 1)
+	if a.lists[class] == 0 && a.pages[class] == 0 {
+		if _, err := a.newSharedPage(class); err != nil {
 			return 0, err
 		}
 	}
 
-	if p := a.pages[log]; p != 0 {
-		(*page)(unsafe.Pointer(p)).used++
-		(*page)(unsafe.Pointer(p)).brk++
-		if (*page)(unsafe.Pointer(p)).brk == a.cap[log] {
-			a.pages[log] = 0
+	if p := a.pages[class]; p != 0 {
+		pg := (*page)(unsafe.Pointer(p))
+		c := classes[class]
+		r := p + headerSize + uintptr(pg.brk)*uintptr(c.size)
+		pg.used++
+		if pg.brk++; pg.brk == int(c.slots) {
+			a.pages[class] = 0
 		}
-		return p + headerSize + uintptr((*page)(unsafe.Pointer(p)).brk-1)<<log, nil
+		return r, nil
 	}
 
-	n := a.lists[log]
+	n := a.lists[class]
 	p := n &^ uintptr(pageMask)
-	a.lists[log] = (*node)(unsafe.Pointer(n)).next
+	a.lists[class] = (*node)(unsafe.Pointer(n)).next
 	if next := (*node)(unsafe.Pointer(n)).next; next != 0 {
 		(*node)(unsafe.Pointer(next)).prev = 0
 	}
@@ -521,8 +615,8 @@ func UintptrUsableSize(p uintptr) (r int) {
 
 func usableSize(p uintptr) (r int) {
 	pg := p &^ uintptr(pageMask)
-	if log := (*page)(unsafe.Pointer(pg)).log; log != 0 {
-		return 1 << log
+	if class := (*page)(unsafe.Pointer(pg)).class; class != 0 {
+		return int(classes[class&(maxClasses-1)].size)
 	}
 
 	return (*page)(unsafe.Pointer(pg)).size - int(headerSize)
@@ -612,13 +706,13 @@ func (a *Allocator) Trim() (err error) {
 			fmt.Fprintf(os.Stderr, "Trim() %v\n", err)
 		}()
 	}
-	for log := range a.pages {
-		pg := a.pages[log]
+	for class := range a.pages {
+		pg := a.pages[class]
 		if pg == 0 || (*page)(unsafe.Pointer(pg)).used != 0 {
 			continue
 		}
 
-		a.pages[log] = 0
+		a.pages[class] = 0
 		a.live -= (*page)(unsafe.Pointer(pg)).size
 		if e := a.unmap(pg); e != nil && err == nil {
 			err = e
@@ -642,6 +736,46 @@ func (a *Allocator) Trim() (err error) {
 // The allocated memory block size can be larger than the size originally
 // requested from Calloc, Malloc or Realloc.
 func UsableSize(p *byte) (r int) { return UintptrUsableSize(uintptr(unsafe.Pointer(p))) }
+
+// UsableSizeFor returns the usable size, as UsableSize reports it, of the
+// block that Malloc or Calloc, or their Unsafe and Uintptr variants, return for
+// a request of size bytes. For size up to 16 KiB it is the size of the size
+// class serving the request, and it is exact: a cache of freed blocks keyed by
+// usable size, like the per-thread one of modernc.org/libc, can thus serve a
+// request without asking the Allocator. For the size s of a size class,
+// UsableSizeFor(s) is s. A larger block can come out larger still, in the rare
+// case the OS refuses to trim a fresh mapping. The result is never less than
+// size. UsableSizeFor(0) is 0, and UsableSizeFor panics for a negative size,
+// as Malloc does.
+//
+// UsableSizeFor depends on no Allocator, so unlike the methods of Allocator it
+// is safe for concurrent use.
+func UsableSizeFor(size int) int {
+	if i := uintptr(size-1) / mallocAllign; i < uintptr(len(sizeToClass)) {
+		return int(classes[sizeToClass[i]&(maxClasses-1)].size)
+	}
+
+	return usableSizeForBig(size)
+}
+
+// usableSizeForBig is UsableSizeFor for sizes that do not fit a slot.
+func usableSizeForBig(size int) int {
+	switch {
+	case size < 0:
+		panic("invalid malloc size")
+	case size == 0:
+		return 0
+	case size > int(^uint(0)>>1)-int(headerSize):
+		return size // Malloc fails
+	}
+
+	// A dedicated page, as newPage maps it.
+	if n := mmapSize(size+int(headerSize)) - int(headerSize); n >= size {
+		return n
+	}
+
+	return size // mmapSize overflows, Malloc fails
+}
 
 // UnsafeCalloc is like Calloc except it returns an unsafe.Pointer.
 func (a *Allocator) UnsafeCalloc(size int) (r unsafe.Pointer, err error) {

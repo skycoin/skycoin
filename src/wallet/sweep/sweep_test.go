@@ -1,7 +1,6 @@
 package sweep
 
 import (
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -11,9 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/wallet"
 	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"   // registers the bip44 wallet type
 	_ "github.com/skycoin/skycoin/src/wallet/collection"    // registers the collection wallet type
@@ -58,197 +55,38 @@ func accountAddrs(t *testing.T, w wallet.Wallet, acct uint32) []cipher.Address {
 	return out
 }
 
-func TestExposed(t *testing.T) {
+func TestWalletAddresses(t *testing.T) {
 	ws := newWallets(t)
 	w := newBip44(t, ws, "b.wlt", nil)
 	addrs, err := walletAddresses(w)
 	require.NoError(t, err)
 	a0, a1 := accountAddrs(t, w, 0), accountAddrs(t, w, 1)
-
-	t.Run("every address of a shared account, including those that never sent", func(t *testing.T) {
-		exp := exposed(Rule{SharedAccounts: []uint32{0}}, addrs, nil)
-		change, err := w.GetEntries(wallet.OptionAccount(0), wallet.OptionChange())
-		require.NoError(t, err)
-		require.NotEmpty(t, change)
-		require.True(t, exp[change[0].Address.(cipher.Address)], "the change chain is derivable from the account xpub too")
-		require.Len(t, exp, len(a0)+len(change))
-		for _, a := range a0 {
-			require.True(t, exp[a])
-		}
-		for _, a := range a1 {
-			require.False(t, exp[a])
-		}
-	})
-
-	t.Run("an address that sent is exposed, one that never sent is not", func(t *testing.T) {
-		exp := exposed(Rule{}, addrs, map[cipher.Address]bool{a1[2]: true})
-		require.Equal(t, map[cipher.Address]bool{a1[2]: true}, exp)
-	})
-
-	t.Run("a hand added address must have sent or be shared", func(t *testing.T) {
-		r := Rule{Wallet: "b.wlt", Addresses: []string{a1[0].String()}}
-		require.ErrorContains(t, checkManual(r, addrs, nil), "never sent")
-		require.NoError(t, checkManual(r, addrs, map[cipher.Address]bool{a1[0]: true}))
-		r = Rule{Wallet: "b.wlt", SharedAccounts: []uint32{1}, Addresses: []string{a1[0].String()}}
-		require.NoError(t, checkManual(r, addrs, nil))
-		r = Rule{Wallet: "b.wlt", Addresses: []string{testutil.MakeAddress().String()}}
-		require.ErrorContains(t, checkManual(r, addrs, nil), "not in wallet")
-	})
-
-	t.Run("deterministic wallet addresses are exposed only once they sent", func(t *testing.T) {
-		_, err := ws.CreateWallet("d.wlt", wallet.Options{Label: "d", Seed: "d seed", Type: wallet.WalletTypeDeterministic, GenerateN: 3})
-		require.NoError(t, err)
-		d, err := ws.GetWallet("d.wlt")
-		require.NoError(t, err)
-		das, err := walletAddresses(d)
-		require.NoError(t, err)
-		require.Len(t, das, 3)
-		require.Empty(t, exposed(Rule{}, das, nil))
-		exp := exposed(Rule{}, das, map[cipher.Address]bool{das[1].addr: true})
-		require.Equal(t, map[cipher.Address]bool{das[1].addr: true}, exp)
-	})
-}
-
-func TestGapNeeds(t *testing.T) {
-	ws := newWallets(t)
-	w := newBip44(t, ws, "b.wlt", nil)
-	addrs, err := walletAddresses(w)
+	exp := Rule{SharedAccounts: []uint32{0}}.Exposed(addrs, nil)
+	change, err := w.GetEntries(wallet.OptionAccount(0), wallet.OptionChange())
 	require.NoError(t, err)
-	a0 := accountAddrs(t, w, 0)
-	r := Rule{SharedAccounts: []uint32{0}, Gap: 3}
+	require.NotEmpty(t, change)
+	require.True(t, exp[change[0].Address.(cipher.Address)], "the change chain is listed with its account")
+	require.Len(t, exp, len(a0)+len(change))
+	for _, a := range a1 {
+		require.False(t, exp[a])
+	}
 
-	require.Empty(t, gapNeeds(r, addrs, nil), "five unused addresses cover a gap of three")
-	require.Equal(t, map[uint32]uint64{0: 2}, gapNeeds(r, addrs, map[cipher.Address]bool{a0[3]: true}))
-	require.Equal(t, map[uint32]uint64{0: 20}, gapNeeds(Rule{SharedAccounts: []uint32{0}}, addrs, map[cipher.Address]bool{a0[4]: true}))
+	_, err = ws.CreateWallet("d.wlt", wallet.Options{Label: "d", Seed: "d seed", Type: wallet.WalletTypeDeterministic, GenerateN: 3})
+	require.NoError(t, err)
+	d, err := ws.GetWallet("d.wlt")
+	require.NoError(t, err)
+	das, err := walletAddresses(d)
+	require.NoError(t, err)
+	require.Len(t, das, 3)
+	require.False(t, das[0].Bip44)
 }
 
-func TestRuleCheck(t *testing.T) {
-	one, zero := uint32(1), uint32(0)
-	ok := Rule{Wallet: "w", SharedAccounts: []uint32{0}, Destination: Destination{Kind: DestAccount, Account: &one}}
-	require.NoError(t, ok.check())
-
-	bad := ok
-	bad.Destination.Account = &zero
-	require.ErrorContains(t, bad.check(), "is shared")
-
-	bad = Rule{Wallet: "w", SharedAccounts: []uint32{0, 2}, Destination: Destination{Kind: DestAccount, Account: &one}}
-	require.ErrorContains(t, bad.check(), "must come after shared account 2")
-
-	require.ErrorContains(t, Rule{Wallet: "w", Destination: Destination{Kind: "x"}}.check(), "unknown destination")
-	require.ErrorContains(t, Rule{Wallet: "w", Destination: Destination{Kind: DestAddress, Address: "nope"}}.check(), "invalid destination")
-}
-
-func TestCheckDestination(t *testing.T) {
-	a, b := testutil.MakeAddress(), testutil.MakeAddress()
-	require.NoError(t, checkDestination(a, map[cipher.Address]bool{b: true}, nil))
-	require.ErrorIs(t, checkDestination(a, map[cipher.Address]bool{a: true}, nil), ErrDestinationExposed)
-	require.ErrorIs(t, checkDestination(a, nil, map[cipher.Address]bool{a: true}), ErrDestinationExposed)
-}
-
-func makeUx(t *testing.T, addr cipher.Address, coins, hours uint64, seed byte) coin.UxOut {
+func makeUx(t *testing.T, addr cipher.Address, coins uint64, seed byte) coin.UxOut {
 	t.Helper()
 	return coin.UxOut{
 		Head: coin.UxHead{Time: 1000, BkSeq: 1},
-		Body: coin.UxBody{SrcTransaction: cipher.SumSHA256([]byte{seed}), Address: addr, Coins: coins, Hours: hours},
+		Body: coin.UxBody{SrcTransaction: cipher.SumSHA256([]byte{seed}), Address: addr, Coins: coins, Hours: 10},
 	}
-}
-
-func TestPlanBurnsEveryHour(t *testing.T) {
-	to := testutil.MakeAddress()
-	from := testutil.MakeAddress()
-	uxs := coin.UxArray{makeUx(t, from, 2e6, 50, 1), makeUx(t, from, 3e6, 70, 2), makeUx(t, from, 1e6, 0, 3)}
-
-	plan, err := Plan(uxs, 1000, to, params.UserVerifyTxn.MaxTransactionSize)
-	require.NoError(t, err)
-	require.Len(t, plan, 1)
-	sw := plan[0]
-	require.Len(t, sw.Txn.In, 3, "the output without hours joins the last transaction")
-	require.Len(t, sw.Txn.Out, 1)
-	require.Equal(t, uint64(6e6), sw.Txn.Out[0].Coins)
-	require.Zero(t, sw.Txn.Out[0].Hours)
-	require.Equal(t, uint64(120), sw.Fee)
-
-	// The verifier accepts burning every hour, at any burn factor.
-	for _, bf := range []uint32{params.MinBurnFactor, params.UserVerifyTxn.BurnFactor, 10, 1000} {
-		require.NoError(t, fee.VerifyTransactionFee(sw.Txn, sw.Fee, bf))
-	}
-	inHours, err := sw.Inputs.CoinHours(1000)
-	require.NoError(t, err)
-	txnFee, err := fee.TransactionFee(sw.Txn, 1000, sw.Inputs)
-	require.NoError(t, err)
-	require.Equal(t, inHours, txnFee)
-	require.NoError(t, sw.Txn.VerifyUnsigned(), "the unsigned shape is a valid transaction body")
-}
-
-func TestPlanNoHours(t *testing.T) {
-	from := testutil.MakeAddress()
-	_, err := Plan(coin.UxArray{makeUx(t, from, 1e6, 0, 1)}, 1000, testutil.MakeAddress(), params.UserVerifyTxn.MaxTransactionSize)
-	require.ErrorIs(t, err, ErrNoHours)
-}
-
-// TestPlanNoSubsetPaysMore checks that no subset of a transaction's inputs pays
-// more per byte than the transaction, so an attacker who spends some of the same
-// outputs from their own hours cannot outbid the sweep.
-func TestPlanNoSubsetPaysMore(t *testing.T) {
-	from, to := testutil.MakeAddress(), testutil.MakeAddress()
-	hours := []uint64{5000, 4900, 30, 20, 4800, 1, 2, 600}
-	var uxs coin.UxArray
-	for i, h := range hours {
-		uxs = append(uxs, makeUx(t, from, uint64(i+1)*1e6, h, byte(i))) //nolint:gosec // test value
-	}
-	plan, err := Plan(uxs, 1000, to, params.UserVerifyTxn.MaxTransactionSize)
-	require.NoError(t, err)
-	require.Greater(t, len(plan), 1, "the low hour outputs go in their own transaction")
-
-	sizes := sizeTable{to: to}
-	var swept int
-	for _, sw := range plan {
-		swept += len(sw.Inputs)
-		size, err := sw.Txn.Size()
-		require.NoError(t, err)
-		n := len(sw.Inputs)
-		for mask := 1; mask < 1<<n; mask++ {
-			var h uint64
-			var k int
-			for i := range n {
-				if mask&(1<<i) != 0 {
-					c, err := sw.Inputs[i].CoinHours(1000)
-					require.NoError(t, err)
-					h += c
-					k++
-				}
-			}
-			ks, err := sizes.size(k)
-			require.NoError(t, err)
-			require.False(t, ratioLess(sw.Fee, size, h, ks), "subset %b pays more per byte than the sweep", mask)
-		}
-	}
-	require.Equal(t, len(uxs), swept)
-}
-
-func TestPlanSplitsBySize(t *testing.T) {
-	from, to := testutil.MakeAddress(), testutil.MakeAddress()
-	var uxs coin.UxArray
-	for i := range 700 {
-		uxs = append(uxs, coin.UxOut{
-			Head: coin.UxHead{Time: 1000, BkSeq: 1},
-			Body: coin.UxBody{SrcTransaction: cipher.SumSHA256([]byte{byte(i), byte(i >> 8)}), Address: from, Coins: 1e6, Hours: 100},
-		})
-	}
-	plan, err := Plan(uxs, 1000, to, params.UserVerifyTxn.MaxTransactionSize)
-	require.NoError(t, err)
-	require.Greater(t, len(plan), 1)
-	seen := make(map[cipher.SHA256]bool)
-	for _, sw := range plan {
-		size, err := sw.Txn.Size()
-		require.NoError(t, err)
-		require.LessOrEqual(t, size, params.UserVerifyTxn.MaxTransactionSize)
-		for _, h := range sw.Txn.In {
-			require.False(t, seen[h])
-			seen[h] = true
-		}
-	}
-	require.Len(t, seen, 700)
 }
 
 // fakeChain holds outputs and history for unit tests.
@@ -317,7 +155,7 @@ func TestLockedWalletPauses(t *testing.T) {
 	pw := []byte("pwd")
 	w := newBip44(t, ws, "e.wlt", pw)
 	a0 := accountAddrs(t, w, 0)
-	chain := &fakeChain{seq: 2, time: 1000 + 3600*10, unspent: []coin.UxOut{makeUx(t, a0[3], 7e6, 10, 1)}}
+	chain := &fakeChain{seq: 2, time: 1000 + 3600*10, unspent: []coin.UxOut{makeUx(t, a0[3], 7e6, 1)}}
 	inj := &captureInjector{chain: chain}
 	dir := t.TempDir()
 	s, err := NewService(Config{Dir: dir}, ws, chain, inj)
@@ -384,7 +222,7 @@ func TestSetRuleRefusesExposedDestination(t *testing.T) {
 	_, err = s.SetRule(Rule{Wallet: "b.wlt", SharedAccounts: []uint32{0}, Destination: Destination{Kind: DestWallet}})
 	require.NoError(t, err, "accepted, but a wallet destination of the same bip44 wallet is account 0")
 	r, _ := s.Rule("b.wlt")
-	_, err = s.destination(r, listing{w: w}, nil)
+	_, err = s.destination(r, r.Destination, &listing{w: w}, nil, nil)
 	require.ErrorIs(t, err, ErrDestinationExposed)
 
 	r, err = s.SetRule(Rule{Wallet: "b.wlt", SharedAccounts: []uint32{0}, Destination: Destination{Kind: DestAddress, Address: a1[1].String()}})
@@ -406,7 +244,7 @@ func TestAccountDestinationCreatesAccount(t *testing.T) {
 
 	l, err := s.list(r, nil)
 	require.NoError(t, err)
-	dest, err := s.destination(r, l, nil)
+	dest, err := s.destination(r, r.Destination, &l, nil, nil)
 	require.NoError(t, err)
 	w, err := ws.GetWallet("b.wlt")
 	require.NoError(t, err)
@@ -416,7 +254,7 @@ func TestAccountDestinationCreatesAccount(t *testing.T) {
 	// A used destination address is followed by a new one.
 	l.st.Seen = map[cipher.Address]bool{dest: true}
 	l.w = w
-	next, err := s.destination(r, l, nil)
+	next, err := s.destination(r, r.Destination, &l, nil, nil)
 	require.NoError(t, err)
 	require.NotEqual(t, dest, next)
 	w, err = ws.GetWallet("b.wlt")
@@ -439,7 +277,6 @@ func TestRulesFileRoundTrip(t *testing.T) {
 	empty, err := loadRules(t.TempDir())
 	require.NoError(t, err)
 	require.Empty(t, empty)
-	require.False(t, errors.Is(err, ErrNoHours))
 }
 
 func TestRunSweepsAtStartAndOnNewBlocks(t *testing.T) {
@@ -447,7 +284,7 @@ func TestRunSweepsAtStartAndOnNewBlocks(t *testing.T) {
 	pw := []byte("pwd")
 	w := newBip44(t, ws, "e.wlt", pw)
 	a0 := accountAddrs(t, w, 0)
-	chain := &fakeChain{seq: 0, time: 1000 + 3600*10, unspent: []coin.UxOut{makeUx(t, a0[1], 2e6, 10, 1)}}
+	chain := &fakeChain{seq: 0, time: 1000 + 3600*10, unspent: []coin.UxOut{makeUx(t, a0[1], 2e6, 1)}}
 	inj := &captureInjector{chain: chain}
 	dir := t.TempDir()
 	require.NoError(t, saveRules(dir, map[string]Rule{"e.wlt": {Wallet: "e.wlt", SharedAccounts: []uint32{0}, Destination: Destination{Kind: DestAccount}, Enabled: true}}))
@@ -465,11 +302,90 @@ func TestRunSweepsAtStartAndOnNewBlocks(t *testing.T) {
 
 	chain.mu.Lock()
 	chain.seq = 1
-	chain.unspent = append(chain.unspent, makeUx(t, a0[2], 3e6, 10, 2))
+	chain.unspent = append(chain.unspent, makeUx(t, a0[2], 3e6, 2))
 	chain.mu.Unlock()
 	require.Eventually(t, func() bool { return len(s.Status("e.wlt").Pending) == 2 }, 5*time.Second, 5*time.Millisecond, "a new block triggers a pass")
 
 	close(quit)
 	<-done
 	require.False(t, s.Status("e.wlt").Unlocked, "stopping forgets every password")
+}
+
+func TestMappingsWithLevel1Off(t *testing.T) {
+	ws := newWallets(t)
+	w := newBip44(t, ws, "b.wlt", nil)
+	_, err := ws.CreateWallet("cold.wlt", wallet.Options{Label: "cold", Seed: "cold seed", Type: wallet.WalletTypeDeterministic, GenerateN: 2})
+	require.NoError(t, err)
+	cold, err := ws.GetWallet("cold.wlt")
+	require.NoError(t, err)
+	coldAddrs, err := walletAddresses(cold)
+	require.NoError(t, err)
+	a0, a1 := accountAddrs(t, w, 0), accountAddrs(t, w, 1)
+	fixed := testutil.MakeAddress()
+
+	chain := &fakeChain{seq: 1, time: 1000 + 3600*10, sent: map[cipher.Address]bool{a0[0]: true, a0[1]: true, a1[0]: true}}
+	chain.unspent = []coin.UxOut{
+		makeUx(t, a0[0], 1e6, 1), // sent, mapped to the fixed address
+		makeUx(t, a0[1], 2e6, 2), // sent, not mapped
+		makeUx(t, a1[0], 3e6, 3), // sent, covered by the account 1 mapping
+		makeUx(t, a1[2], 4e6, 4), // never sent
+	}
+	inj := &captureInjector{chain: chain}
+	s, err := NewService(Config{Dir: t.TempDir()}, ws, chain, inj)
+	require.NoError(t, err)
+
+	one := uint32(1)
+	_, err = s.SetRule(Rule{Wallet: "b.wlt", Mappings: []Mapping{{From: Source{Address: a1[2].String()}, To: Destination{Kind: DestAddress, Address: fixed.String()}}}})
+	require.ErrorContains(t, err, "never sent", "a mapping cannot sweep a single address that never sent")
+	_, err = s.SetRule(Rule{Wallet: "b.wlt", Mappings: []Mapping{{From: Source{Address: a0[0].String()}, To: Destination{Kind: DestAddress, Address: a0[1].String()}}}})
+	require.ErrorIs(t, err, ErrDestinationExposed, "a mapping destination that has sent")
+
+	r, err := s.SetRule(Rule{Wallet: "b.wlt", Mappings: []Mapping{
+		{From: Source{Address: a0[0].String()}, To: Destination{Kind: DestAddress, Address: fixed.String()}},
+		{From: Source{Account: &one}, To: Destination{Kind: DestWallet, Wallet: "cold.wlt"}},
+	}})
+	require.NoError(t, err)
+	require.False(t, r.Enabled)
+	require.Equal(t, DestAccount, r.Destination.Kind, "level 1 gets its default even while off")
+
+	s.Pass()
+	st := s.Status("b.wlt")
+	require.Empty(t, st.LastError)
+	require.True(t, st.Active)
+	require.False(t, st.Enabled)
+	require.Equal(t, 3, st.Exposed)
+	require.Equal(t, 1, st.Uncovered, "the unmapped address that sent is left alone")
+	require.Len(t, inj.txns, 2)
+	paid := map[cipher.Address]uint64{}
+	for _, txn := range inj.txns {
+		require.Len(t, txn.Out, 1)
+		require.Zero(t, txn.Out[0].Hours)
+		paid[txn.Out[0].Address] += txn.Out[0].Coins
+	}
+	require.Equal(t, map[cipher.Address]uint64{fixed: 1e6, coldAddrs[0].Address: 3e6}, paid)
+	require.ElementsMatch(t, []string{fixed.String(), coldAddrs[0].Address.String()}, st.Destinations)
+
+	// Level 1 takes the rest, to account 2, the first after the source account.
+	inj.txns = nil
+	r.Enabled = true
+	_, err = s.SetRule(r)
+	require.NoError(t, err)
+	s.Pass()
+	require.Len(t, inj.txns, 1)
+	w, err = ws.GetWallet("b.wlt")
+	require.NoError(t, err)
+	require.Len(t, w.Accounts(), 3)
+	require.Equal(t, accountAddrs(t, w, 2)[0], inj.txns[0].Out[0].Address)
+	require.Equal(t, uint64(2e6), inj.txns[0].Out[0].Coins)
+	require.Zero(t, s.Status("b.wlt").Uncovered)
+
+	// Turning off the has-sent inclusion leaves only what is listed.
+	f := false
+	r.IncludeSpent = &f
+	r.Mappings = r.Mappings[:1]
+	_, err = s.SetRule(r)
+	require.NoError(t, err)
+	l, err := s.list(r, nil)
+	require.NoError(t, err)
+	require.Equal(t, map[cipher.Address]bool{a0[0]: true}, r.Exposed(l.addrs, l.st.Sent))
 }

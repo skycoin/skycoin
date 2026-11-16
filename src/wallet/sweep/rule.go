@@ -9,128 +9,37 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/wallet/sweep/plan"
 )
 
 // RulesFile is the file in the wallet directory that holds the sweep rules. It
 // holds no secrets.
 const RulesFile = "sweep.json"
 
-// DefaultGap is how many unused addresses are kept generated past the last used
-// one on the external chain of a shared account, so a payment to an address the
-// wallet has not generated yet is still seen.
-const DefaultGap = 20
+// The rule types live in package plan, which the browser cipher shares.
+type (
+	// Rule is the sweep rule of one wallet.
+	Rule = plan.Rule
+	// Destination says where swept coins go.
+	Destination = plan.Destination
+	// Mapping sends what its source holds to its own destination.
+	Mapping = plan.Mapping
+	// Source is what a mapping sweeps from.
+	Source = plan.Source
+)
 
 // Destination kinds
 const (
-	// DestAccount is the next unused address of another account of the same bip44
-	// wallet. It is the default for a bip44 wallet.
-	DestAccount = "account"
-	// DestWallet is the next unused address of a wallet, the same one for a
-	// deterministic wallet. It is the default for other wallets.
-	DestWallet = "wallet"
-	// DestAddress is a fixed address.
-	DestAddress = "address"
+	DestAccount = plan.DestAccount
+	DestWallet  = plan.DestWallet
+	DestAddress = plan.DestAddress
 )
 
-// Destination says where swept coins go.
-type Destination struct {
-	Kind string `json:"kind"`
-	// Account is the destination account for DestAccount. Nil picks the first
-	// account after the shared ones and creates it when needed.
-	Account *uint32 `json:"account,omitempty"`
-	// Wallet is the destination wallet for DestWallet. Empty means the wallet itself.
-	Wallet string `json:"wallet,omitempty"`
-	// Address is the destination for DestAddress.
-	Address string `json:"address,omitempty"`
-}
+// DefaultGap is plan.DefaultGap.
+const DefaultGap = plan.DefaultGap
 
-// Rule is the sweep rule of one wallet.
-type Rule struct {
-	Wallet string `json:"wallet"`
-	// SharedAccounts are bip44 accounts whose xpub was shared. Every address of
-	// such an account is exposed, including those that never sent.
-	SharedAccounts []uint32 `json:"shared_accounts,omitempty"`
-	// Addresses are added by hand. Each must have sent, or belong to a shared
-	// account, because sweeping a single address that never sent would make it
-	// send for the first time.
-	Addresses   []string    `json:"addresses,omitempty"`
-	Destination Destination `json:"destination"`
-	Enabled     bool        `json:"enabled"`
-	// Gap overrides DefaultGap when not zero.
-	Gap uint32 `json:"gap,omitempty"`
-}
-
-func (r Rule) gap() uint32 {
-	if r.Gap == 0 {
-		return DefaultGap
-	}
-	return r.Gap
-}
-
-func (r Rule) shared() map[uint32]bool {
-	m := make(map[uint32]bool, len(r.SharedAccounts))
-	for _, a := range r.SharedAccounts {
-		m[a] = true
-	}
-	return m
-}
-
-func (r Rule) maxShared() (uint32, bool) {
-	var maxIdx uint32
-	for _, a := range r.SharedAccounts {
-		maxIdx = max(maxIdx, a)
-	}
-	return maxIdx, len(r.SharedAccounts) > 0
-}
-
-// check validates what can be checked without the wallet or the blockchain.
-func (r Rule) check() error {
-	if r.Wallet == "" {
-		return errors.New("wallet is required")
-	}
-	seen := make(map[uint32]bool)
-	for _, a := range r.SharedAccounts {
-		if seen[a] {
-			return fmt.Errorf("account %d is listed twice", a)
-		}
-		seen[a] = true
-	}
-	for _, s := range r.Addresses {
-		if _, err := cipher.DecodeBase58Address(s); err != nil {
-			return fmt.Errorf("invalid address %q: %w", s, err)
-		}
-	}
-	d := r.Destination
-	switch d.Kind {
-	case DestAccount:
-		if d.Wallet != "" || d.Address != "" {
-			return errors.New("an account destination takes only an account")
-		}
-		if d.Account != nil {
-			if seen[*d.Account] {
-				return fmt.Errorf("destination account %d is shared", *d.Account)
-			}
-			if m, ok := r.maxShared(); ok && *d.Account <= m {
-				return fmt.Errorf("destination account %d must come after shared account %d", *d.Account, m)
-			}
-		}
-	case DestWallet:
-		if d.Account != nil || d.Address != "" {
-			return errors.New("a wallet destination takes only a wallet")
-		}
-	case DestAddress:
-		if d.Account != nil || d.Wallet != "" {
-			return errors.New("an address destination takes only an address")
-		}
-		if _, err := cipher.DecodeBase58Address(d.Address); err != nil {
-			return fmt.Errorf("invalid destination address %q: %w", d.Address, err)
-		}
-	default:
-		return fmt.Errorf("unknown destination kind %q", d.Kind)
-	}
-	return nil
-}
+// ErrDestinationExposed is returned for a destination that is itself exposed.
+var ErrDestinationExposed = plan.ErrDestinationExposed
 
 func loadRules(dir string) (map[string]Rule, error) {
 	b, err := os.ReadFile(filepath.Join(dir, RulesFile)) //nolint:gosec // the configured wallet directory

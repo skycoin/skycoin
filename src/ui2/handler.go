@@ -378,6 +378,14 @@ func coinHandler(n Node, o Options) http.Handler {
 		}
 		return SentView(back, txid, "")
 	}))
+	// A sweep of a browser wallet, signed in the page. The answer is read by bw.js.
+	mux.HandleFunc("/bw/sweep/inject", post(func(_ http.ResponseWriter, r *http.Request) templ.Component {
+		txid, err := n.InjectEncodedTransaction(r.PostFormValue("rawtx"))
+		if err != nil {
+			return BrowserSweepInjected("", err.Error())
+		}
+		return BrowserSweepInjected(txid, "")
+	}))
 	return mux
 }
 

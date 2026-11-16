@@ -111,6 +111,40 @@ select, input, textarea {
   font-size: $font-size-standard;
 }
 
+.-advanced {
+  margin: 12px 0;
+
+  > summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+}
+
+.-map-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .-mono {
+    overflow-wrap: anywhere;
+  }
+}
+
+.-map-add {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .-buttons {
   display: flex;
   flex-wrap: wrap;

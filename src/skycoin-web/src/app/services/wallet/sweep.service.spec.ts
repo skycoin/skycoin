@@ -1,6 +1,6 @@
 import { of } from 'rxjs';
 
-import { SweepService } from './sweep.service';
+import { SweepService, sweepKind, sweepActive } from './sweep.service';
 import { ApiService } from '../api.service';
 
 describe('SweepService', () => {
@@ -33,5 +33,21 @@ describe('SweepService', () => {
     expect(api.post).toHaveBeenCalledWith('wallet/sweep/unlock', { id: 'w.wlt', password: 'pw', ttl_seconds: 0 }, {}, true);
     service.lock('w.wlt').subscribe();
     expect(api.post).toHaveBeenCalledWith('wallet/sweep/lock', { id: 'w.wlt' }, {}, true);
+  });
+
+  it('says who sweeps a wallet', () => {
+    const coin: any = { isGateway: () => false };
+    expect(sweepKind({ label: 'n', filename: 'n.wlt', addresses: [] }, true, coin)).toBe('node');
+    expect(sweepKind({ label: 'b', addresses: [] }, false, coin)).toBe('browser');
+    expect(sweepKind({ label: 'h', isHardware: true, addresses: [] }, false, coin)).toBe('hardware');
+    expect(sweepKind({ label: 't', temporary: true, addresses: [] }, false, coin)).toBeNull();
+    expect(sweepKind({ label: 'x', walletType: 'xpub', addresses: [] }, true, coin)).toBeNull();
+    expect(sweepKind({ label: 'b', addresses: [] }, false, { isGateway: () => true } as any)).toBeNull();
+  });
+
+  it('says a rule with only mappings is active', () => {
+    expect(sweepActive(null)).toBeFalse();
+    expect(sweepActive({ wallet: 'w', enabled: false, destination: { kind: 'wallet' } })).toBeFalse();
+    expect(sweepActive({ wallet: 'w', enabled: false, destination: { kind: 'wallet' }, mappings: [{ from: { address: 'a' }, to: { kind: 'wallet' } }] })).toBeTrue();
   });
 });

@@ -58,15 +58,17 @@ describe('WalletOptionsComponent auto-sweep option', () => {
     expect(optionsFor({ filename: 'a.wlt', walletType: 'bip44' }).showSweepOption).toBeTrue();
   });
 
-  it('is hidden where the node cannot sign', () => {
-    expect(optionsFor({ filename: 'a.wlt', isHardware: true }).showSweepOption).toBeFalse();
+  it('is offered for a hardware wallet, whose panel says why it is not swept', () => {
+    expect(optionsFor({ filename: 'a.wlt', isHardware: true }).showSweepOption).toBeTrue();
   });
 
-  it('is hidden for a temporary, xpub or browser wallet', () => {
+  it('is offered for a browser wallet, which the page sweeps', () => {
+    expect(optionsFor({ label: 'browser' }).showSweepOption).toBeTrue();
+  });
+
+  it('is hidden for a temporary or xpub wallet', () => {
     expect(optionsFor({ filename: 't.wlt', temporary: true }).showSweepOption).toBeFalse();
     TestBed.resetTestingModule();
     expect(optionsFor({ filename: 'x.wlt', walletType: 'xpub' }).showSweepOption).toBeFalse();
-    TestBed.resetTestingModule();
-    expect(optionsFor({ label: 'browser' }).showSweepOption).toBeFalse();
   });
 });

@@ -55,12 +55,16 @@ describe('WalletDetailComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('offers auto-sweep for a wallet the node keeps, not for a hardware wallet', () => {
+  it('offers auto-sweep for node, browser and hardware wallets, not temporary or xpub ones', () => {
     component.wallet = { label: 'w', filename: 'w.wlt', addresses: [] };
     expect(component.canAutoSweep).toBeTrue();
     component.wallet = { label: 'hw', isHardware: true, filename: 'hw', addresses: [] };
-    expect(component.canAutoSweep).toBeFalse();
+    expect(component.canAutoSweep).withContext('to say why it is not swept').toBeTrue();
     component.wallet = { label: 'b', addresses: [] };
+    expect(component.canAutoSweep).withContext('this page sweeps a browser wallet').toBeTrue();
+    component.wallet = { label: 't', temporary: true, addresses: [] };
+    expect(component.canAutoSweep).toBeFalse();
+    component.wallet = { label: 'x', walletType: 'xpub', addresses: [] };
     expect(component.canAutoSweep).toBeFalse();
   });
 

@@ -18,6 +18,7 @@ import { HwWalletSeedWordService } from '../../../services/hw-wallet-seed-word.s
 import { HwConfirmTxDialogComponent } from '../hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { WALLET_SCOPE_CLASS } from '../../../wallet-scope';
 import { WalletService } from '../../../services/wallet/wallet.service';
+import { BrowserSweepService } from '../../../services/wallet/browser-sweep.service';
 
 /**
  * The wallet's frame: cipher start-up, the node status bar, the outlet for the
@@ -60,7 +61,10 @@ export class WalletShellComponent implements OnInit, OnDestroy {
     hwWalletService: HwWalletService,
     private changeDetectorRef: ChangeDetectorRef,
     public walletService: WalletService,
+    browserSweep: BrowserSweepService,
   ) {
+    // Wallets kept in this browser are swept by this page while it is open.
+    browserSweep.start();
     // Set component references to avoid circular dependencies
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
     hwWalletSeedWordService.requestWordComponent = HwSeedWordDialogComponent;

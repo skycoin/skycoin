@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   encrypted wallet is swept only while the node holds its password in memory.
   A single address that never sent is never swept, and an exposed
   destination is refused.
+  `skycoin-cli sweepRule [wallet]` shows the rule or sets it, with `--map`
+  for level 2, and `sweepUnlock` and `sweepLock` hand the node the password
+  of an encrypted wallet and take it back.
 - A server rendered explorer, built with templ and htmx in the
   `src/explorerui` package, is now the explorer at `/` and the `/app/` paths.
   It serves every page of the Angular one at the same paths, the blocks list,

@@ -95,6 +95,18 @@ func TestWalletSweepHandlers(t *testing.T) {
 	require.Equal(t, sweep.DestAccount, resp.Rule.Destination.Kind)
 	require.True(t, resp.Status.Enabled)
 
+	// Mappings and include_spent travel as JSON.
+	var raw map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(`{"wallet":"m.wlt","include_spent":false,"mappings":[{"from":{"account":2},"to":{"kind":"wallet","wallet":"cold.wlt"}},{"from":{"address":"addrA"},"to":{"kind":"account"}}]}`), &raw))
+	code, resp, _ = do(http.MethodPost, "/api/v2/wallet/sweep", raw)
+	require.Equal(t, http.StatusOK, code)
+	require.Len(t, resp.Rule.Mappings, 2)
+	require.Equal(t, uint32(2), *resp.Rule.Mappings[0].From.Account)
+	require.Equal(t, "cold.wlt", resp.Rule.Mappings[0].To.Wallet)
+	require.Equal(t, "addrA", resp.Rule.Mappings[1].From.Address)
+	require.Nil(t, resp.Rule.Mappings[1].To.Account)
+	require.False(t, resp.Rule.SweepsSpent())
+
 	code, _, _ = do(http.MethodPost, "/api/v2/wallet/sweep", sweep.Rule{Wallet: "missing.wlt"})
 	require.Equal(t, http.StatusNotFound, code)
 

@@ -116,7 +116,6 @@ Available Commands:
   addressSpent         Check whether addresses have ever sent coins
   addressTransactions  Show detail for transaction associated with one or more specified addresses
   addresscount         Get the count of addresses with unspent outputs (coins)
-  autoSweep            Have the node sweep exposed addresses of a wallet on every block
   blocks               Lists the content of a single block or a range of blocks
   broadcastTransaction Broadcast a raw transaction to the network
   checkDBDecoding      Verify the database data encoding
@@ -146,6 +145,9 @@ Available Commands:
   pqKeyGen             Generate a post-quantum block publisher key pair
   pqSend               Send coins from a post-quantum address
   sweep                Move every coin in a wallet to one new address
+  sweepLock            Make the node forget the sweep password of a wallet
+  sweepRule            Show or set how the node moves coins off exposed addresses of a wallet
+  sweepUnlock          Let the node sign sweeps of an encrypted wallet
   transaction          Show detail info of specific transaction
   verifyAddress        Verify a skycoin address
   verifyTransaction    Verify if the specific transaction is spendable
@@ -405,17 +407,33 @@ never been revealed. `--to` sends the coins to another address instead.
 
 **Sweep exposed addresses on every block:**
 ```bash
-$ skycoin cli autoSweep set reward.wlt --shared-account 0 --enable
-$ skycoin cli autoSweep unlock reward.wlt --ttl 24h
-$ skycoin cli autoSweep show reward.wlt
+$ skycoin cli sweepRule reward.wlt --shared-account 0 --enable
+$ skycoin cli sweepUnlock reward.wlt --ttl 24h
+$ skycoin cli sweepRule reward.wlt
 ```
 
 The running node moves the coins of every address of account 0, whose xpub was
 shared, and of every address that has sent, to the next unused address of
 account 1, in the block after they arrive. Each sweep burns every coin hour of
-its inputs, the highest fee the rules allow. `unlock` is needed for an encrypted
-wallet only, and the node keeps the password in memory. `show` prints the rule
-and its status, including why a sweep is paused.
+its inputs, the highest fee the rules allow. `sweepUnlock` is needed for an
+encrypted wallet only, and the node keeps the password in memory until
+`sweepLock`, the TTL or a restart. `sweepRule` with no flags prints the rule and
+its status, including why a sweep is paused.
+
+That is level 1, one destination for every exposed address. Level 2 maps a
+source, an address or an account number, to its own destination:
+
+```bash
+$ skycoin cli sweepRule reward.wlt --map 2=wallet:cold.wlt --map <address>=account:5
+$ skycoin cli sweepRule reward.wlt --disable --include-spent=false
+```
+
+A destination is `account:N`, `next-account`, `wallet` for the wallet itself,
+`wallet:ID` or an address. Mappings sweep whether level 1 is on or not, and an
+exposed address no mapping covers goes to the level 1 destination when it is
+on, else it stays. `--include-spent=false` stops sweeping addresses that sent
+without being listed, so the rule covers only shared accounts, `--address` and
+mapping sources. `--map` replaces the mappings and `--clear-maps` removes them.
 
 **Create raw transaction:**
 ```bash

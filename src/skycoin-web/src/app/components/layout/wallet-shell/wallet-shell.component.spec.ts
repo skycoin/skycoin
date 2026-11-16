@@ -16,6 +16,7 @@ import { HwWalletService } from '../../../services/hw-wallet.service';
 import { HwWalletPinService } from '../../../services/hw-wallet-pin.service';
 import { HwWalletSeedWordService } from '../../../services/hw-wallet-seed-word.service';
 import { WalletService } from '../../../services/wallet/wallet.service';
+import { BrowserSweepService } from '../../../services/wallet/browser-sweep.service';
 
 describe('WalletShellComponent', () => {
   let component: WalletShellComponent;
@@ -28,6 +29,7 @@ describe('WalletShellComponent', () => {
       providers: [
         { provide: HwWalletService, useClass: MockHwWalletService },
         { provide: WalletService, useValue: { locked: new BehaviorSubject<boolean>(false) } },
+        { provide: BrowserSweepService, useValue: { start: () => undefined } },
         // The component only stores a component reference on it.
         { provide: HwWalletPinService, useValue: {} },
         { provide: HwWalletSeedWordService, useValue: {} },

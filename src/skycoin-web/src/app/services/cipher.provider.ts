@@ -216,6 +216,29 @@ export class CipherProvider {
     return this.resultOrError<string>(tx, 'prepare the signed transaction');
   }
 
+  /**
+   * Validates a sweep rule of a browser wallet against its addresses with the
+   * node's own rule code (src/skycoin-lite/liteclient/sweep.go SweepCheck).
+   */
+  sweepCheck(request: object): Observable<void> {
+    const result = (window as any)['SkycoinCipher'].sweepCheck(JSON.stringify(request));
+    if (result && result.error) {
+      return throwError(() => new Error(result.error));
+    }
+
+    return of(undefined);
+  }
+
+  /**
+   * Runs one sweep pass of a browser wallet with the node's rule code and gives
+   * the unsigned sweeps, or the destinations it needs first (SweepPlan).
+   */
+  sweepPlan(request: object): Observable<any> {
+    const result = (window as any)['SkycoinCipher'].sweepPlan(JSON.stringify(request));
+
+    return this.resultOrError<string>(result, 'plan the sweep').pipe(map(s => JSON.parse(s)));
+  }
+
   /** Signs a 32 byte hash, given as hex, with a secret key. Returns the signature as hex. */
   signHash(hash: string, secret: string): Observable<string> {
     const extras = (window as any)['SkycoinCipherExtras'];

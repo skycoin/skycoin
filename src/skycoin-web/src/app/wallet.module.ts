@@ -91,6 +91,7 @@ import { CreateWalletFormComponent } from './components/pages/wallets/create-wal
 import { ScanAddressesComponent } from './components/pages/wallets/scan-addresses/scan-addresses.component';
 import { AutoSweepComponent } from './components/pages/wallets/auto-sweep/auto-sweep.component';
 import { SweepService } from './services/wallet/sweep.service';
+import { BrowserSweepService } from './services/wallet/browser-sweep.service';
 import { NodesComponent } from './components/pages/settings/nodes/nodes.component';
 import { EthEndpointsComponent } from './components/pages/settings/nodes/eth-endpoints/eth-endpoints.component';
 import { AppPasswordComponent } from './components/pages/settings/app-password/app-password.component';
@@ -245,6 +246,7 @@ import { QrScanDialogComponent } from './components/layout/qr-scan-dialog/qr-sca
         NetworkService,
         AddressExposureService,
         SweepService,
+        BrowserSweepService,
         BalanceService,
         HistoryService,
         SpendingService,

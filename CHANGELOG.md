@@ -28,11 +28,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - The browser cipher, skycoin-lite, runs the same sweep rule code as the node
   through `sweepCheck` and `sweepPlan`, so a wallet kept in the browser can
   be swept by the page with the node's exposure, routing and fee rules.
-- The ui2 wallet sweeps wallets kept in the browser too. The rule is kept in
-  the browser and the password only in the page's memory for the time
-  chosen, so such a wallet is swept only while its page is open and
+- The ui2 and Angular wallets sweep wallets kept in the browser too. The
+  rule is kept in the browser and the password only in the page's memory
+  for the time chosen, so such a wallet is swept only while its page is open and
   unlocked, which also moves everything already waiting. Hardware wallets
   are left out, since the device must confirm every signature.
+- The sweep panels of both web wallets show level 1 on top and the mappings,
+  the has sent toggle, shared accounts and extra addresses under Advanced.
 - A server rendered explorer, built with templ and htmx in the
   `src/explorerui` package, is now the explorer at `/` and the `/app/` paths.
   It serves every page of the Angular one at the same paths, the blocks list,

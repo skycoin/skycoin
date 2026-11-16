@@ -368,3 +368,25 @@ func TestBuildSplitsBySize(t *testing.T) {
 	}
 	require.Len(t, seen, 700)
 }
+
+func TestParseMapping(t *testing.T) {
+	addr := testutil.MakeAddress().String()
+	for in, want := range map[string]string{
+		"2=wallet:cold.wlt":                    "2=wallet:cold.wlt",
+		"account:3=next-account":               "3=next-account",
+		addr + "=account:5":                    addr + "=account:5",
+		"address:" + addr + "=address:" + addr: addr + "=" + addr,
+		" 7 = wallet ":                         "7=wallet",
+	} {
+		m, err := ParseMapping(in)
+		require.NoError(t, err, in)
+		require.Equal(t, want, m.String(), in)
+		again, err := ParseMapping(m.String())
+		require.NoError(t, err)
+		require.Equal(t, m, again, "String round trips")
+	}
+	for _, bad := range []string{"nodest", "=wallet", "2=", "2=account:x"} {
+		_, err := ParseMapping(bad)
+		require.Error(t, err, bad)
+	}
+}

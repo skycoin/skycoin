@@ -4,14 +4,13 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/wallet/sweep"
+	"github.com/skycoin/skycoin/src/wallet/sweep/plan"
 )
 
 // sweepFlags are the flags of sweepRule.
@@ -26,64 +25,6 @@ type sweepFlags struct {
 	gap          uint
 	enable       bool
 	disable      bool
-}
-
-// parseSource reads the source of a --map: an account number or "account:N",
-// else an address, optionally written "address:X".
-func parseSource(s string) (sweep.Source, error) {
-	if v, ok := strings.CutPrefix(s, "account:"); ok {
-		s = v
-	} else if v, ok := strings.CutPrefix(s, "address:"); ok {
-		return sweep.Source{Address: v}, nil
-	}
-	if n, err := strconv.ParseUint(s, 10, 32); err == nil {
-		a := uint32(n)
-		return sweep.Source{Account: &a}, nil
-	}
-	if s == "" {
-		return sweep.Source{}, errors.New("the source is empty")
-	}
-	return sweep.Source{Address: s}, nil
-}
-
-// parseDestination reads the destination of a --map: "account:N",
-// "next-account", "wallet" for the wallet itself, "wallet:ID", or an address,
-// optionally written "address:X".
-func parseDestination(s string) (sweep.Destination, error) {
-	switch {
-	case s == "next-account":
-		return sweep.Destination{Kind: sweep.DestAccount}, nil
-	case s == "wallet":
-		return sweep.Destination{Kind: sweep.DestWallet}, nil
-	case strings.HasPrefix(s, "account:"):
-		n, err := strconv.ParseUint(strings.TrimPrefix(s, "account:"), 10, 32)
-		if err != nil {
-			return sweep.Destination{}, fmt.Errorf("bad account in %q", s)
-		}
-		a := uint32(n)
-		return sweep.Destination{Kind: sweep.DestAccount, Account: &a}, nil
-	case strings.HasPrefix(s, "wallet:"):
-		return sweep.Destination{Kind: sweep.DestWallet, Wallet: strings.TrimPrefix(s, "wallet:")}, nil
-	case s == "":
-		return sweep.Destination{}, errors.New("the destination is empty")
-	}
-	return sweep.Destination{Kind: sweep.DestAddress, Address: strings.TrimPrefix(s, "address:")}, nil
-}
-
-func parseMapping(s string) (sweep.Mapping, error) {
-	from, to, ok := strings.Cut(s, "=")
-	if !ok {
-		return sweep.Mapping{}, fmt.Errorf("--map %q: want <source>=<destination>", s)
-	}
-	src, err := parseSource(from)
-	if err != nil {
-		return sweep.Mapping{}, fmt.Errorf("--map %q: %w", s, err)
-	}
-	dst, err := parseDestination(to)
-	if err != nil {
-		return sweep.Mapping{}, fmt.Errorf("--map %q: %w", s, err)
-	}
-	return sweep.Mapping{From: src, To: dst}, nil
 }
 
 // applySweepFlags changes base by the flags that were set.
@@ -127,9 +68,9 @@ func applySweepFlags(base sweep.Rule, f sweepFlags, changed func(string) bool) (
 	if changed("map") {
 		r.Mappings = make([]sweep.Mapping, 0, len(f.maps))
 		for _, s := range f.maps {
-			m, err := parseMapping(s)
+			m, err := plan.ParseMapping(s)
 			if err != nil {
-				return sweep.Rule{}, err
+				return sweep.Rule{}, fmt.Errorf("--map %w", err)
 			}
 			r.Mappings = append(r.Mappings, m)
 		}

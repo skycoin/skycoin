@@ -2,8 +2,10 @@
 package ui2
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/wallet/sweep"
+	"github.com/skycoin/skycoin/src/wallet/sweep/plan"
 )
 
 // Destination choices of the sweep form. "next" is the first account after
@@ -62,7 +65,15 @@ type SweepView struct {
 }
 
 // Active says the node sweeps this wallet now.
-func (v SweepView) Active() bool { return v.Status.Enabled && v.Status.Paused == "" }
+func (v SweepView) Active() bool { return v.Status.Active && v.Status.Paused == "" }
+
+// SweepsSpent says the rule also sweeps addresses that sent without being listed.
+func (v SweepView) SweepsSpent() bool { return v.Rule.SweepsSpent() }
+
+// Advanced says the rule uses more than level 1, so the advanced section opens.
+func (v SweepView) Advanced() bool {
+	return len(v.Rule.Mappings) > 0 || !v.Rule.SweepsSpent() || len(v.Rule.Addresses) > 0
+}
 
 // statusOnly is v for the status block inside the panel, which shows any
 // error itself.
@@ -148,15 +159,18 @@ var (
 	errSweepBurn    = errors.New("sweep.err-burn")
 	errSweepAccount = errors.New("sweep.err-account")
 	errSweepTo      = errors.New("sweep.err-destination")
+	errSweepMap     = errors.New("sweep.err-mapping")
 )
 
 // ParseSweepRule builds the rule a sweep form posts, on top of the rule the
-// node has, so the gap and any field the form leaves out are kept.
-func ParseSweepRule(base sweep.Rule, bip44 bool, post func(string) string, posts []string, addrs string) (sweep.Rule, error) {
+// node has, so the gap and any field the form leaves out are kept. op "add"
+// appends the mapping in map_from and map_to, and "remove-N" drops mapping N.
+func ParseSweepRule(base sweep.Rule, bip44 bool, form url.Values) (sweep.Rule, error) {
+	post := form.Get
 	r := base
 	r.SharedAccounts = nil
 	if bip44 {
-		for _, s := range posts {
+		for _, s := range form["shared"] {
 			a, err := strconv.ParseUint(s, 10, 32)
 			if err != nil {
 				return r, errSweepAccount
@@ -164,7 +178,41 @@ func ParseSweepRule(base sweep.Rule, bip44 bool, post func(string) string, posts
 			r.SharedAccounts = append(r.SharedAccounts, uint32(a))
 		}
 	}
-	r.Addresses = strings.Fields(addrs)
+	r.Addresses = strings.Fields(post("addresses"))
+	r.IncludeSpent = nil
+	if post("include_spent") == "" {
+		off := false
+		r.IncludeSpent = &off
+	}
+	r.Mappings = nil
+	for _, s := range form["map"] {
+		m, err := plan.ParseMapping(s)
+		if err != nil {
+			return r, errSweepMap
+		}
+		r.Mappings = append(r.Mappings, m)
+	}
+	op := post("op")
+	if i, ok := strings.CutPrefix(op, "remove-"); ok {
+		if n, err := strconv.Atoi(i); err == nil && n >= 0 && n < len(r.Mappings) {
+			r.Mappings = slices.Delete(r.Mappings, n, n+1)
+		}
+	}
+	if op == "add" {
+		to := post("map_to")
+		if to == sweepToAddress {
+			to = strings.TrimSpace(post("map_to_address"))
+		}
+		src, err := plan.ParseSource(post("map_from"))
+		if err != nil {
+			return r, errSweepMap
+		}
+		dst, err := plan.ParseDestination(to)
+		if err != nil {
+			return r, errSweepMap
+		}
+		r.Mappings = append(r.Mappings, sweep.Mapping{From: src, To: dst})
+	}
 	switch post("to") {
 	case sweepToNext:
 		r.Destination = sweep.Destination{Kind: sweep.DestAccount}
@@ -192,7 +240,7 @@ func ParseSweepRule(base sweep.Rule, bip44 bool, post func(string) string, posts
 		return r, errSweepTo
 	}
 	r.Enabled = post("enabled") != ""
-	if r.Enabled && !base.Enabled && post("burn_ok") == "" {
+	if r.Active() && !base.Active() && post("burn_ok") == "" {
 		return r, errSweepBurn
 	}
 	return r, nil
@@ -220,7 +268,7 @@ func sweepHandlers(mux *http.ServeMux, n Node, page func(func(*http.Request) tem
 		if v.Err != "" {
 			return SweepPanel(v)
 		}
-		rule, err := ParseSweepRule(v.Rule, v.Bip44, r.PostFormValue, r.PostForm["shared"], r.PostFormValue("addresses"))
+		rule, err := ParseSweepRule(v.Rule, v.Bip44, r.PostForm)
 		if err == nil {
 			var resp *api.SweepResponse
 			if resp, err = n.SetWalletSweep(rule); err == nil {
@@ -275,4 +323,27 @@ func sweepTime(t *time.Time) string {
 		return ""
 	}
 	return t.UTC().Format("2006-01-02 15:04:05 UTC")
+}
+
+func sweepSourceText(ctx context.Context, s sweep.Source) string {
+	if s.Account != nil {
+		return T(ctx, "wallet.account-n", "n", utoa(uint64(*s.Account)))
+	}
+	return s.Address
+}
+
+func sweepDestText(ctx context.Context, d sweep.Destination) string {
+	switch d.Kind {
+	case sweep.DestAccount:
+		if d.Account == nil {
+			return T(ctx, "sweep.to-next")
+		}
+		return T(ctx, "wallet.account-n", "n", utoa(uint64(*d.Account)))
+	case sweep.DestWallet:
+		if d.Wallet == "" {
+			return T(ctx, "sweep.to-self")
+		}
+		return d.Wallet
+	}
+	return d.Address
 }

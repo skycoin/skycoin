@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/skydex/db"
 	"github.com/skycoin/skycoin/src/skydex/message"

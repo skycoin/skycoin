@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/cmd/monitor-peers/connection"

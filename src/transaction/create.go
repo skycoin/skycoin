@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/0magnet/logrus"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"

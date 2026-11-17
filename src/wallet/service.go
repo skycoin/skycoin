@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip44"

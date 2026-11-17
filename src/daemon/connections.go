@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/params"

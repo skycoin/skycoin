@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util/mathutil"

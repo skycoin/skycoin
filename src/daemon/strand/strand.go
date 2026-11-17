@@ -11,7 +11,7 @@ package strand
 import (
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )

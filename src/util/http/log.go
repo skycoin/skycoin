@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type responseWithError struct {

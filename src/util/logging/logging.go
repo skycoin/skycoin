@@ -10,7 +10,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var log = NewMasterLogger()

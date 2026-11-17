@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Logger wraps logrus.FieldLogger

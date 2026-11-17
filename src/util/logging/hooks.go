@@ -4,7 +4,7 @@ package logging
 import (
 	"io"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // WriteHook is a logrus.Hook that logs to an io.Writer

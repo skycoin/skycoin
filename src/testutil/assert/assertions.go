@@ -6,7 +6,7 @@ package testutil
 import (
 	"fmt"
 
-	logrus "github.com/0magnet/logrus"
+	logrus "github.com/sirupsen/logrus"
 	assert "github.com/stretchr/testify/assert"
 )
 

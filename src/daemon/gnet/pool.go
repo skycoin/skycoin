@@ -17,7 +17,7 @@ import (
 
 	"io"
 
-	"github.com/0magnet/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"

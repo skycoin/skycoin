@@ -81,6 +81,13 @@ func init() {
 			}
 		}
 	}
+	if commit == unknown && ok && (bi.Main.Path == ModulePath || bi.Main.Path == "") {
+		for _, s := range bi.Settings {
+			if s.Key == "vcs.revision" && s.Value != "" {
+				commit = s.Value
+			}
+		}
+	}
 }
 
 func parseVersionInfo(ver string) {

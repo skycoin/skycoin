@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, filter, map, shareReplay, switchMap } from 'rxjs';
@@ -7,6 +7,7 @@ import { BaseCoin } from '../coins/basecoin';
 import { ApiService } from './api.service';
 import { CoinService } from './coin.service';
 import { shouldUpgradeVersion } from '../utils/semver';
+import { NODE_CSRF_GUARDS_ACCESS } from '../node-access';
 
 /** What the header warns about the node the wallet uses. */
 export interface NodeNotices {
@@ -31,7 +32,12 @@ export class NodeNoticesService {
 
   readonly notices: Observable<NodeNotices>;
 
-  constructor(private http: HttpClient, private apiService: ApiService, coinService: CoinService) {
+  constructor(
+    private http: HttpClient,
+    private apiService: ApiService,
+    coinService: CoinService,
+    @Inject(NODE_CSRF_GUARDS_ACCESS) private csrfGuardsNode: boolean,
+  ) {
     this.notices = coinService.currentCoin.pipe(
       filter(coin => !!coin),
       switchMap(coin => this.check(coin)),
@@ -47,7 +53,7 @@ export class NodeNoticesService {
     return this.apiService.get('health').pipe(
       switchMap((health: any) => {
         // A public node runs without CSRF and without the wallet API, and then CSRF guards nothing.
-        const csrfDisabled = health.csrf_enabled === false && health.wallet_api_enabled === true;
+        const csrfDisabled = this.csrfGuardsNode && health.csrf_enabled === false && health.wallet_api_enabled === true;
         const nodeVersion = (health.version && health.version.version) || '';
         // Only skycoin's own node is a skycoin release, and an empty
         // version_url is how a node turns version checks off.

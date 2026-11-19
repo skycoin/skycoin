@@ -7,6 +7,7 @@ import { NodeNotices, NodeNoticesService } from './node-notices.service';
 import { ApiService } from './api.service';
 import { CoinService } from './coin.service';
 import { MockCoinService } from '../utils/test-mocks';
+import { NODE_CSRF_GUARDS_ACCESS } from '../node-access';
 
 describe('NodeNoticesService', () => {
   let http: HttpTestingController;
@@ -16,9 +17,10 @@ describe('NodeNoticesService', () => {
     return of({ coin, csrf_enabled: csrf, wallet_api_enabled: walletApi, version: { version }, fiber: { version_url: versionUrl } });
   }
 
-  function notices(): NodeNotices | undefined {
+  function notices(extraProviders: any[] = []): NodeNotices | undefined {
     TestBed.configureTestingModule({
       providers: [
+        ...extraProviders,
         NodeNoticesService,
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -87,6 +89,11 @@ describe('NodeNoticesService', () => {
   it('warns when the node has CSRF turned off', () => {
     health = healthOf('0.28.7', false, 'mycoin');
     expect(notices()!.csrfDisabled).toBeTrue();
+  });
+
+  it('does not warn when a host app proxies the node behind its own login', () => {
+    health = healthOf('0.28.7', false, 'mycoin');
+    expect(notices([{ provide: NODE_CSRF_GUARDS_ACCESS, useValue: false }])!.csrfDisabled).toBeFalse();
   });
 
   it('does not warn for a public node without the wallet API', () => {

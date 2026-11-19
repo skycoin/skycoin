@@ -18,6 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/skycoin/skycoin/src/util/buildinfo"
 	"github.com/skycoin/skycoin/src/util/calvin"
 
 	"github.com/skycoin/skycoin/src/fiber"
@@ -169,7 +170,7 @@ var RootCmd = &cobra.Command{
 			Node: nodeConfig,
 			Build: readable.BuildInfo{
 				Version: Version,
-				Commit:  Commit,
+				Commit:  buildCommit(),
 				Branch:  Branch,
 			},
 		}, logger)
@@ -185,4 +186,16 @@ var RootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+// buildCommit is the ldflags Commit, else the commit the Go build info records
+// for this module, so a node embedded in another program still reports it.
+func buildCommit() string {
+	if Commit != "" {
+		return Commit
+	}
+	if c := buildinfo.Commit(); c != "unknown" {
+		return c
+	}
+	return ""
 }

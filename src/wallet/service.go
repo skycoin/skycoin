@@ -614,6 +614,63 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	return SkycoinAddresses(addrs), nil
 }
 
+// ScanAhead scans every skycoin bip44 and xpub wallet as ScanAddresses does
+// with gap, and keeps the addresses it finds. Coins sent to a fresh address
+// past the stored ones, such as a reward paid to an account xpub, then show.
+func (serv *Service) ScanAhead(gap uint64, tf TransactionsFinder) error {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.config.EnableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
+	var errs []error
+	for id, w := range serv.wallets {
+		if w.Coin() != CoinTypeSkycoin || (w.Type() != WalletTypeBip44 && w.Type() != WalletTypeXPub) {
+			continue
+		}
+		w2 := w.Clone()
+		before, err := entriesCount(w2)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", id, err))
+			continue
+		}
+		if _, err := w2.ScanAddresses(gap, tf); err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", id, err))
+			continue
+		}
+		after, err := entriesCount(w2)
+		if err != nil || after == before {
+			continue
+		}
+		if !w2.Temp() {
+			if err := Save(w2, serv.config.WalletDir); err != nil {
+				errs = append(errs, fmt.Errorf("%s: %w", id, err))
+				continue
+			}
+		}
+		serv.wallets.set(w2)
+	}
+	return errors.Join(errs...)
+}
+
+// entriesCount is how many addresses w holds on every account and chain.
+func entriesCount(w Wallet) (int, error) {
+	accounts := w.Accounts()
+	if len(accounts) == 0 {
+		return w.EntriesLen()
+	}
+	var n int
+	for _, a := range accounts {
+		l, err := w.EntriesLen(OptionAccount(a.Index))
+		if err != nil {
+			return 0, err
+		}
+		n += l
+	}
+	return n, nil
+}
+
 // GetSkycoinAddresses returns all addresses in given wallet
 // func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
 // 	serv.RLock()

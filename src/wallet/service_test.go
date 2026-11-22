@@ -4677,3 +4677,60 @@ func TestServiceEthereumWallet(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, addrs[0].String(), encAddrs[0].String())
 }
+
+func TestServiceScanAhead(t *testing.T) {
+	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	// The first external addresses of account 0 of bip44Seed.
+	used := cipher.MustDecodeBase58Address("Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ") // index 5
+	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
+
+	dir := prepareWltDir()
+	defer os.RemoveAll(dir) //nolint:errcheck
+	conf := wallet.Config{WalletDir: dir, CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure, EnableWalletAPI: true}
+	s, err := wallet.NewService(conf)
+	require.NoError(t, err)
+
+	bw, err := s.CreateWallet(wallet.NewWalletFilename(), wallet.Options{
+		Type: wallet.WalletTypeBip44, Label: "bip44", Seed: bip44Seed,
+		Encrypt: true, Password: []byte("pwd"),
+	})
+	require.NoError(t, err)
+	xw, err := s.CreateWallet(wallet.NewWalletFilename(), wallet.Options{Type: wallet.WalletTypeXPub, Label: "xpub", XPub: xpub})
+	require.NoError(t, err)
+	xaddrs, err := xw.GetAddresses()
+	require.NoError(t, err)
+	require.Len(t, xaddrs, 1)
+
+	// Nothing used past the stored addresses keeps the wallets as they are.
+	require.NoError(t, s.ScanAhead(20, mockTxnsFinder{}))
+	w, err := s.GetWallet(bw.Filename())
+	require.NoError(t, err)
+	n, err := w.EntriesLen(wallet.OptionExternal())
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	// The xpub wallet derives its addresses the same way, so find its fourth too.
+	xpubUsed, err := wallet.NewWallet("x.wlt", "x", "", wallet.Options{Type: wallet.WalletTypeXPub, XPub: xpub, GenerateN: 4})
+	require.NoError(t, err)
+	xpubAddrs, err := xpubUsed.GetAddresses()
+	require.NoError(t, err)
+
+	require.NoError(t, s.ScanAhead(20, mockTxnsFinder{used: true, xpubAddrs[3]: true}))
+
+	// Both are kept on disk, so a restart still lists them.
+	s, err = wallet.NewService(conf)
+	require.NoError(t, err)
+	w, err = s.GetWallet(bw.Filename())
+	require.NoError(t, err)
+	require.True(t, w.Encrypted())
+	addrs, err := w.GetAddresses(wallet.OptionExternal())
+	require.NoError(t, err)
+	require.Len(t, addrs, 6)
+	require.Equal(t, used, addrs[5])
+
+	w, err = s.GetWallet(xw.Filename())
+	require.NoError(t, err)
+	addrs, err = w.GetAddresses()
+	require.NoError(t, err)
+	require.Equal(t, xpubAddrs, addrs)
+}

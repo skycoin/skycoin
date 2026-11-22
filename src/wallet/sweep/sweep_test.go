@@ -389,3 +389,37 @@ func TestMappingsWithLevel1Off(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, map[cipher.Address]bool{a0[0]: true}, r.Exposed(l.addrs, l.st.Sent))
 }
+
+type seenFinder map[cipher.Address]bool
+
+func (f seenFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	out := make([]bool, len(addrs))
+	for i, a := range addrs {
+		out[i] = f[a.(cipher.Address)]
+	}
+	return out, nil
+}
+
+func TestPassScansAheadWithoutRule(t *testing.T) {
+	ws := newWallets(t)
+	w := newBip44(t, ws, "a.wlt", []byte("pwd"))
+	stored := accountAddrs(t, w, 0)
+
+	// Derive the address two past the stored ones from a second copy.
+	ws2 := newWallets(t)
+	_, err := ws2.CreateWallet("b.wlt", wallet.Options{Label: "b", Seed: testSeed, Type: wallet.WalletTypeBip44, GenerateN: uint64(len(stored) + 2)})
+	require.NoError(t, err)
+	w2, err := ws2.GetWallet("b.wlt")
+	require.NoError(t, err)
+	paid := accountAddrs(t, w2, 0)[len(stored)+1]
+
+	s, err := NewService(Config{Dir: t.TempDir(), Finder: seenFinder{paid: true}}, ws, &fakeChain{seq: 1, time: 1000}, &captureInjector{})
+	require.NoError(t, err)
+	s.Pass()
+
+	w, err = ws.GetWallet("a.wlt")
+	require.NoError(t, err)
+	got := accountAddrs(t, w, 0)
+	require.Len(t, got, len(stored)+2)
+	require.Equal(t, paid, got[len(got)-1])
+}

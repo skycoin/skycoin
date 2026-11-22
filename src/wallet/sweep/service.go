@@ -40,6 +40,9 @@ type Config struct {
 	// RetryAfter is how long a failed pass waits before it runs again without a
 	// new block. Zero means ten seconds.
 	RetryAfter time.Duration
+	// Finder, when set, has each pass scan every bip44 and xpub wallet for used
+	// addresses past its last one, DefaultGap at a time.
+	Finder wallet.TransactionsFinder
 }
 
 // Status is the state of the sweep of one wallet.
@@ -179,6 +182,12 @@ func (s *Service) poke() {
 func (s *Service) Pass() {
 	s.passMu.Lock()
 	defer s.passMu.Unlock()
+
+	if s.cfg.Finder != nil {
+		if err := s.wallets.ScanAhead(DefaultGap, s.cfg.Finder); err != nil {
+			logger.WithError(err).Error("scan ahead failed")
+		}
+	}
 
 	s.mu.Lock()
 	rules := make([]Rule, 0, len(s.rules))

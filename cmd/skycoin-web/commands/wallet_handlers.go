@@ -44,6 +44,8 @@ func handleWalletAPI(c *webCtx, apiPath string, wltService *wallet.Service, node
 		handleCreateTempWallet(c, wltService)
 	case path == "/v1/wallet/newAddress" && method == http.MethodPost:
 		handleNewAddresses(c, wltService)
+	case path == "/v1/wallet/scan" && method == http.MethodPost:
+		handleScanAddresses(c, wltService, nodeURL)
 	case path == "/v1/wallet/update" && method == http.MethodPost:
 		handleUpdateWallet(c, wltService)
 	case path == "/v1/wallets" && method == http.MethodGet:

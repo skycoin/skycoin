@@ -106,6 +106,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   addresses past its last one, at start and on each new block, with a gap of
   20. A reward paid to the next index of an account xpub showed up only after
   a manual scan or in the Angular wallet, never in the ui2 wallet or the CLI.
+- The web wallet with `--wallet-dir` passed `/api/v1/wallet/scan` on to the
+  remote node, which has no such wallet and refuses the endpoint, so its
+  wallets could not be scanned at all. It now scans them itself, asking the
+  node which addresses received coins, and scans every bip44 and xpub wallet
+  it keeps at start and once a minute with a gap of 20.
 - The hardware wallet signer sent each input's address index as a path of
   that many zeros, so the device signed index 0 inputs with no key and others
   with the key of index 0. It now sends the index itself.

@@ -617,6 +617,7 @@ func serve(ctx context.Context) error {
 	// it can't take down an embedding process. Uses the net/http mux (so the
 	// web wallet also builds under TinyGo) wrapped in the recovery middleware.
 	go rediscoverCoins(ctx, coins)
+	go scanAhead(ctx, table)
 	handler := recoverMiddleware(sameOriginWrites(mux))
 	if Mount != nil {
 		Mount(handler)
@@ -709,6 +710,8 @@ func needsWalletLookup(path, method string) bool {
 	case path == "/v1/wallet" && method == http.MethodGet:
 		return true
 	case path == "/v1/wallet/newAddress" && method == http.MethodPost:
+		return true
+	case path == "/v1/wallet/scan" && method == http.MethodPost:
 		return true
 	case path == "/v1/wallet/update" && method == http.MethodPost:
 		return true

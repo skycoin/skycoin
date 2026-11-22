@@ -102,6 +102,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- The node now scans every skycoin bip44 and xpub wallet it keeps for used
+  addresses past its last one, at start and on each new block, with a gap of
+  20. A reward paid to the next index of an account xpub showed up only after
+  a manual scan or in the Angular wallet, never in the ui2 wallet or the CLI.
 - The hardware wallet signer sent each input's address index as a path of
   that many zeros, so the device signed index 0 inputs with no key and others
   with the key of index 0. It now sends the index itself.

@@ -233,7 +233,7 @@ func (c *Coin) Run() error {
 	var sweeper *sweep.Service
 	if wconf.EnableWalletAPI {
 		c.logger.Info("sweep.NewService")
-		sweeper, err = sweep.NewService(sweep.Config{Dir: wconf.WalletDir}, w, v, d)
+		sweeper, err = sweep.NewService(sweep.Config{Dir: wconf.WalletDir, Finder: v.TransactionsFinder()}, w, v, d)
 		if err != nil {
 			c.logger.WithError(err).Error("sweep.NewService failed")
 			return err

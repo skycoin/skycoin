@@ -169,11 +169,20 @@ check-newcoin-templates: ## Verify newcoin templates export and round-trip with 
 check-descriptors: ## Fail if a Go file lacks its c<layer>-<domain>-<system> descriptor, or a package mixes two (docs/code-descriptors.md)
 	bash scripts/check-descriptors.sh
 
+check-names: ## Fail on a new generic name, generic package or is/has bool (AGENTS.md Naming, scripts/guard/names-allowlist.txt only shrinks)
+	go run ./scripts/guard names
+
+check-ifaces: ## Fail on a new interface that embeds another interface (scripts/guard/iface-allowlist.txt only shrinks)
+	go run ./scripts/guard ifaces
+
+check-inits: ## Fail on a new func init() outside package main (scripts/guard/init-allowlist.txt only shrinks)
+	go run ./scripts/guard inits
+
 check-release-nocgo: ## Verify cmd/release builds without CGO (no hardware wallet)
 	CGO_ENABLED=0 go build -o /dev/null ./cmd/release/
 	@echo "cmd/release builds OK with CGO_ENABLED=0"
 
-check: lint check-descriptors clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
+check: lint check-descriptors check-names check-ifaces check-inits clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
 
 integration-tests-stable: integration-test-stable \
 	integration-test-stable-disable-wallet-api \

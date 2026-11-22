@@ -92,6 +92,11 @@ This repository is a cryptocurrency node. Consensus, cipher and wallet code
 decides whether coins move correctly, so a change there is verified against a
 running node and the integration tests, not against reasoning alone.
 
+A speed claim about a hot loop needs more than one build to back it. Where the
+linker places a loop can move a benchmark by 30 to 40 percent with no change
+to the code (skycoin-cx #470). Compare medians over several builds, or count
+the operations, before calling a change faster or slower.
+
 ## Commits
 
 The subject line is `package: lowercase summary` with no trailing period. Use a

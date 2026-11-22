@@ -1,0 +1,12 @@
+src/api/gateway.go:Gatewayer embeds Daemoner
+src/api/gateway.go:Gatewayer embeds Storer
+src/api/gateway.go:Gatewayer embeds Visorer
+src/api/gateway.go:Gatewayer embeds Walleter
+src/daemon/gnet/message.go:Message embeds Handler
+src/daemon/gnet/message.go:Message embeds Serializer
+src/hardware-wallet-daemon/api/gateway.go:Gatewayer embeds skyWallet.Devicer
+src/hardware-wallet/skywallet/usb/bus.go:Device embeds io.ReadWriter
+src/skydex/chain/chain.go:Store embeds ExplorerConfigStore
+src/skydex/chain/chain.go:Store embeds SellCoinConfigStore
+src/wallet/decoders.go:AddressSecKeyDecoder embeds AddressDecoder
+src/wallet/decoders.go:AddressSecKeyDecoder embeds SecKeyDecoder

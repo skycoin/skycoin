@@ -121,6 +121,16 @@ Branch from `develop`, which is the default branch. `master` carries releases.
 stable integration tests and the newcoin template check. `make test` alone runs
 the unit tests.
 
+`make check-names` enforces the Naming section. Existing names are listed in
+`scripts/guard/names-allowlist.txt`, which only shrinks.
+
+`make check-ifaces` fails when an interface embeds another interface. List the
+methods instead. `scripts/guard/iface-allowlist.txt` only shrinks.
+
+`make check-inits` fails on a `func init()` outside package main. Call an
+explicit setup function from main instead. `scripts/guard/init-allowlist.txt`
+only shrinks.
+
 `make format` formats with goimports, and `make lint` needs
 `make install-linters` first.
 

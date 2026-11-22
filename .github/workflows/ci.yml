@@ -69,6 +69,9 @@ jobs:
       - name: Check Go File Descriptors
         run: make check-descriptors
 
+      - name: Check Naming, Interface and Init Guards
+        run: make check-names check-ifaces check-inits
+
       - name: Check newcoin Templates Round-Trip
         run: make check-newcoin-templates
 

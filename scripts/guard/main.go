@@ -1,3 +1,5 @@
+// Package main scripts/guard/main.go c4-coin-tool
+//
 // Command guard checks the Naming, interface and init rules of AGENTS.md.
 // Existing violations are listed in an allowlist that may only shrink.
 //

@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.28.8
 
 ### Added
 
@@ -99,6 +99,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - The server rendered wallet supports the Skywallet at `/hw`: it sets up the
   device's seed, PIN, passphrase protection and label, adds its wallet to the
   browser in the Angular wallet's format, and sends with the device signing.
+- A send too large for one transaction can go as several. `split` in
+  `POST /api/v1/wallet/transaction` and `POST /api/v2/transaction` makes
+  `transaction.CreateSplit` build every part at once from disjoint outputs,
+  so no part spends another's change and all of them can be injected in
+  any order. The CLI, ui2 and skycoin-web send in parts this way.
+- `/ui2/` gained the rest of the Angular wallet's pages: settings, backup,
+  outputs and pending transactions, offline, unsigned and joint
+  transactions, password reset, bip44 accounts, address QR codes and
+  payment links, a QR scanner, post-quantum and temporary browser wallets,
+  and under `skycoin web` pages for Bitcoin, Ether and ERC-20 tokens.
+- `/api/v1/version` reports the build commit of a node built without
+  `-ldflags`, so a develop build can be told apart from the last tag.
+
+### Changed
+
+- Exported booleans and predicates no longer start with is or has, for
+  example `Wallet.IsEncrypted` is now `Encrypted` and
+  `Transaction.IsFullySigned` is now `FullySigned`. JSON keys and wire
+  names are unchanged. Code importing these packages must be updated.
+- Startup, config, encoder and gnet code returns errors where it panicked
+  on bad input, such as a bad `USER_*` override or `fiber.toml` key.
+  `params.Distribution` accessors and the config constructors now return
+  an error.
+- The module and CI build with Go 1.27.3.
+- Go dependencies are updated, among them modernc.org/sqlite 1.63.0,
+  modernc.org/libc 1.82.13, klauspost/compress 1.20.5 and sirupsen/logrus
+  at its master branch.
 
 ### Fixed
 
@@ -135,6 +162,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   once the transaction is sent.
 - Unlocking an encrypted deterministic browser wallet uses the next seed
   after its addresses, not an older stored one.
+- `/ui2/` warned that CSRF was not working on any node with CSRF off, such
+  as node.skycoin.com, where the wallet API is off and the wallets live in
+  the browser. It now warns only when the wallet API is on, as the Angular
+  wallet does. A host app such as the skywire hypervisor can turn the
+  skycoin-web warning off with `NODE_CSRF_GUARDS_ACCESS`.
+- skycoin-web no longer spins for an hour on a send when the node cannot be
+  reached. The node check is retried, and a send fails with a message after
+  30 seconds.
+- skydex-client refuses cross-site writes on its whole control API. Before,
+  only the `/ui2` client had the same-origin check.
 
 ## 0.28.7
 

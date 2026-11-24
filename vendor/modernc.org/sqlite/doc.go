@@ -180,11 +180,13 @@
 //
 // A driver connection reached through [sql.Conn.Raw] is not safe for
 // concurrent use, and must not be used after the function passed to Raw
-// returns. Every connection is opened with SQLITE_OPEN_FULLMUTEX, but that
-// serializes access only inside SQLite: the driver's own per-connection
-// state, including the [modernc.org/libc.TLS] every call into SQLite runs
-// on, is used before that mutex is reached, and two goroutines using one
-// connection can corrupt memory.
+// returns; two goroutines using one connection can corrupt memory. Every
+// connection is opened with SQLITE_OPEN_NOMUTEX, SQLite's multi-thread
+// mode: SQLite keeps connections that share a cache apart, but does not
+// serialize calls on one connection. Nor did SQLITE_OPEN_FULLMUTEX, which
+// connections were opened with up to v1.62.0: every call on a connection
+// runs on the same [modernc.org/libc.TLS], and SQLite's connection mutex
+// lets in any caller on the TLS that holds it.
 //
 // # Debug and development versions
 //

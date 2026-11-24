@@ -758,3 +758,15 @@ func Xclock(t *TLS) time.Clock_t {
 	}
 	return time.Clock_t(gotime.Since(startTime) * gotime.Duration(time.CLOCKS_PER_SEC) / gotime.Second)
 }
+
+// int strerror_r(int errnum, char *buf, size_t buflen);
+func Xstrerror_r(t *TLS, errnum int32, buf uintptr, buflen size_t) int32 {
+	if __ccgo_strace {
+		trc("t=%v errnum=%v buf=%v buflen=%v, (%v:)", t, errnum, buf, buflen, origin(2))
+	}
+	panic(todo(""))
+}
+
+// tmSetZone would set the zone fields of tm, which this struct tm does not
+// have.
+func tmSetZone(tm *time.Tm, name string, off int) {}

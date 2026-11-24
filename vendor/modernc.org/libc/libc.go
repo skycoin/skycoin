@@ -52,8 +52,6 @@ var (
 	allocMu            sync.Mutex
 	environInitialized bool
 	isWindows          bool
-	ungetcMu           sync.Mutex
-	ungetc             = map[uintptr]byte{}
 )
 
 // Keep these outside of the var block otherwise go generate will miss them.
@@ -985,6 +983,36 @@ func Xllabs(tls *TLS, a int64) int64 {
 	}
 
 	return -a
+}
+
+// Tdiv_t is C's div_t.
+type Tdiv_t = struct {
+	Fquot int32
+	Frem  int32
+}
+
+// Tldiv_t is C's ldiv_t.
+type Tldiv_t = struct {
+	Fquot long
+	Frem  long
+}
+
+// div_t div(int num, int den);
+func Xdiv(tls *TLS, num, den int32) (r Tdiv_t) {
+	if __ccgo_strace {
+		trc("tls=%v num=%v den=%v, (%v:)", tls, num, den, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	return Tdiv_t{Fquot: num / den, Frem: num % den}
+}
+
+// ldiv_t ldiv(long num, long den);
+func Xldiv(tls *TLS, num, den long) (r Tldiv_t) {
+	if __ccgo_strace {
+		trc("tls=%v num=%v den=%v, (%v:)", tls, num, den, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	return Tldiv_t{Fquot: num / den, Frem: num % den}
 }
 
 func X__builtin_isnan(t *TLS, x float64) int32 {
@@ -2231,25 +2259,184 @@ func posixTZLocation(s string) (*gotime.Location, bool) {
 }
 
 // time_t mktime(struct tm *tm);
+//
+// mktime reads tm as a local time, with fields outside their ranges, and
+// ignores tm_wday and tm_yday. A tm_isdst > 0 says DST is in effect and 0 says
+// it is not, which picks the offset of a wall time the zone repeats or skips;
+// a negative one lets the zone decide. On success mktime sets every field of tm
+// to the normalized time, as localtime_r does. If the result does not fit
+// time_t or tm_year, it returns -1, sets EOVERFLOW and leaves tm alone.
 func Xmktime(t *TLS, ptm uintptr) (r time.Time_t) {
 	if __ccgo_strace {
 		trc("t=%v ptm=%v, (%v:)", t, ptm, origin(2))
+		defer func() { trc("-> %v", r) }()
 	}
-	loc := getLocalLocation()
-	tt := gotime.Date(
-		int((*time.Tm)(unsafe.Pointer(ptm)).Ftm_year+1900),
-		gotime.Month((*time.Tm)(unsafe.Pointer(ptm)).Ftm_mon+1),
-		int((*time.Tm)(unsafe.Pointer(ptm)).Ftm_mday),
-		int((*time.Tm)(unsafe.Pointer(ptm)).Ftm_hour),
-		int((*time.Tm)(unsafe.Pointer(ptm)).Ftm_min),
-		int((*time.Tm)(unsafe.Pointer(ptm)).Ftm_sec),
-		0,
-		loc,
-	)
-	(*time.Tm)(unsafe.Pointer(ptm)).Ftm_wday = int32(tt.Weekday())
-	(*time.Tm)(unsafe.Pointer(ptm)).Ftm_yday = int32(tt.YearDay() - 1)
-	r = time.Time_t(tt.Unix())
-	return r
+	u, ok := mktime(t, ptm, unsafe.Sizeof(time.Time_t(0)) == 4)
+	if !ok {
+		return -1
+	}
+
+	return time.Time_t(u)
+}
+
+// mktime does the work of mktime for a time_t of 32 bits if time32 is set, else
+// of 64 bits.
+func mktime(t *TLS, ptm uintptr, time32 bool) (int64, bool) {
+	tm := (*time.Tm)(unsafe.Pointer(ptm))
+	// time.Date would normalize the fields too, but in int, which has 32 bits on
+	// 386 and arm, where tm_year INT_MAX and the carries would wrap.
+	sec, min, hour, day := int64(tm.Ftm_sec), int64(tm.Ftm_min), int64(tm.Ftm_hour), int64(tm.Ftm_mday)
+	min, sec = min+floorDiv(sec, 60), floorMod(sec, 60)
+	hour, min = hour+floorDiv(min, 60), floorMod(min, 60)
+	day, hour = day+floorDiv(hour, 24), floorMod(hour, 24)
+	year, mon := int64(tm.Ftm_year)+1900+floorDiv(int64(tm.Ftm_mon), 12), floorMod(int64(tm.Ftm_mon), 12)
+	if c := day / tmCycleDays; c != 0 {
+		day -= c * tmCycleDays
+		year += c * tmCycleYears
+	}
+	k := tmCyclesOfYear(year)
+	tt := gotime.Date(int(year-k*tmCycleYears), gotime.Month(mon)+1, int(day), int(hour), int(min), int(sec), 0, getLocalLocation())
+	if tm.Ftm_isdst >= 0 && tt.IsDST() != (tm.Ftm_isdst > 0) {
+		tt = mktimeOtherOffset(tt, tm.Ftm_isdst > 0)
+	}
+	u := tt.Unix() + k*tmCycleSecs
+	if y := int64(tt.Year()) + k*tmCycleYears - 1900; y != int64(int32(y)) || time32 && u != int64(int32(u)) {
+		t.setErrno(errno.EOVERFLOW)
+		return -1, false
+	}
+
+	setTm(tm, tt, k)
+	return u, true
+}
+
+// Go's time.Date takes, and Time.Year returns, the year as an int, which has
+// 32 bits on 386 and arm, while mktime and localtime_r reach years up to
+// tm_year INT_MAX. Times that far away are moved by whole 400-year Gregorian
+// cycles into the years 9970 to 10369, or -6430 to -6031 for the past, and
+// moved back after. A cycle is 146097 days, a whole number of weeks, so dates,
+// weekdays and leap days repeat exactly. So does the local time: that far from
+// the zone's transitions it follows the zone's yearly rule, or its first
+// offset before them.
+const (
+	tmCycleYears = 400
+	tmCycleDays  = 146097
+	tmCycleSecs  = tmCycleDays * 86400
+	tmFarYears   = 1 << 20 // well past any zone's transitions, well within 32 bits
+	tmFarSecs    = tmFarYears * 31556952
+)
+
+// tmCyclesOfYear returns the number of cycles to move year by.
+func tmCyclesOfYear(year int64) int64 {
+	switch {
+	case year > tmFarYears:
+		return (year - 9970) / tmCycleYears
+	case year < -tmFarYears:
+		return floorDiv(year+6430, tmCycleYears)
+	}
+	return 0
+}
+
+// tmCyclesOfSecs returns the number of cycles to move the time ut, in seconds
+// since the epoch, by.
+func tmCyclesOfSecs(ut int64) int64 {
+	switch {
+	case ut > tmFarSecs:
+		return ut/tmCycleSecs - 20
+	case ut < -tmFarSecs:
+		return floorDiv(ut, tmCycleSecs) + 21
+	}
+	return 0
+}
+
+func floorDiv(a, b int64) int64 {
+	q := a / b
+	if a%b != 0 && (a < 0) != (b < 0) {
+		q--
+	}
+	return q
+}
+
+func floorMod(a, b int64) int64 { return a - floorDiv(a, b)*b }
+
+// localtimeTm writes the local time at ut seconds since the epoch to tm, as
+// localtime_r does. If the time cannot be represented, because it is outside
+// the range musl accepts or its year does not fit tm_year, it writes nothing,
+// sets EOVERFLOW unless t is nil, and returns false.
+func localtimeTm(t *TLS, ut int64, tm *time.Tm) bool {
+	const max = math.MaxInt32 * 31622400 // as musl's __secs_to_tm
+	if ut >= -max && ut <= max {
+		k := tmCyclesOfSecs(ut)
+		tt := gotime.Unix(ut-k*tmCycleSecs, 0).In(getLocalLocation())
+		if y := int64(tt.Year()) + k*tmCycleYears - 1900; y == int64(int32(y)) {
+			setTm(tm, tt, k)
+			return true
+		}
+	}
+
+	if t != nil {
+		t.setErrno(errno.EOVERFLOW)
+	}
+	return false
+}
+
+// setTm writes the broken-down time tt, k cycles later, to tm, including the
+// zone fields where this struct tm has them. The year must fit tm_year.
+func setTm(tm *time.Tm, tt gotime.Time, k int64) {
+	name, off := tt.Zone()
+	tm.Ftm_sec = int32(tt.Second())
+	tm.Ftm_min = int32(tt.Minute())
+	tm.Ftm_hour = int32(tt.Hour())
+	tm.Ftm_mday = int32(tt.Day())
+	tm.Ftm_mon = int32(tt.Month() - 1)
+	tm.Ftm_year = int32(int64(tt.Year()) + k*tmCycleYears - 1900)
+	tm.Ftm_wday = int32(tt.Weekday())
+	tm.Ftm_yday = int32(tt.YearDay() - 1)
+	tm.Ftm_isdst = Bool32(tt.IsDST())
+	tmSetZone(tm, name, off)
+}
+
+var (
+	tzAbbrevMu sync.Mutex
+	tzAbbrevs  = map[string][]byte{}
+)
+
+// tzAbbrev returns the zone abbreviation s as a C string for tm_zone. Like the
+// system libcs, it keeps one copy of each abbreviation for the life of the
+// process. The copies are Go memory that the map keeps alive.
+func tzAbbrev(s string) uintptr {
+	tzAbbrevMu.Lock()
+
+	defer tzAbbrevMu.Unlock()
+
+	b, ok := tzAbbrevs[s]
+	if !ok {
+		b = append([]byte(s), 0)
+		tzAbbrevs[s] = b
+	}
+	return uintptr(unsafe.Pointer(&b[0]))
+}
+
+// mktimeOtherOffset returns the instant at which the wall clock shows what it
+// shows at tt, read with the offset of the zone period next to tt's whose DST
+// state is dst, as musl does with its opposite offset. It returns tt if neither
+// neighboring period has that state.
+func mktimeOtherOffset(tt gotime.Time, dst bool) gotime.Time {
+	_, off := tt.Zone()
+	start, end := tt.ZoneBounds()
+	var near []gotime.Time
+	if !start.IsZero() {
+		near = append(near, start.Add(-gotime.Second))
+	}
+	if !end.IsZero() {
+		near = append(near, end)
+	}
+	for _, u := range near {
+		if u = u.In(tt.Location()); u.IsDST() == dst {
+			_, o := u.Zone()
+			return tt.Add(gotime.Duration(off-o) * gotime.Second)
+		}
+	}
+	return tt
 }
 
 // char *strpbrk(const char *s, const char *accept);

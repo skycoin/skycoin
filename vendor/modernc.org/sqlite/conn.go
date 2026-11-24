@@ -111,13 +111,22 @@ func newConn(dsn string) (*conn, error) {
 	// completes. sqlite3_initialize fires implicitly inside openV2 the
 	// first time; after that point SQLITE_CONFIG_PCACHE2 can no longer be
 	// installed. See pagecache.go for the lifecycle contract.
+	//
+	// SQLITE_OPEN_NOMUTEX: SQLite's connection mutex is recursive and knows
+	// its owner by the libc.TLS, and every call on c runs on c.tls, so the
+	// mutex SQLITE_OPEN_FULLMUTEX adds never kept a second goroutine using
+	// c out; it only cost a lock and an unlock per sqlite3_column_* call.
+	// The one call made on c.db with another TLS, sqlite3_interrupt, does
+	// not take it. Connections sharing a cache are still serialized by the
+	// BtShared mutex, which does not depend on this flag. See
+	// https://github.com/modernc-org/sqlite/issues/13.
 	var db uintptr
 	if gateErr := withOpenGate(func() error {
 		db, err = c.openV2(
 			dsn,
 			vfsName,
 			sqlite3.SQLITE_OPEN_READWRITE|sqlite3.SQLITE_OPEN_CREATE|
-				sqlite3.SQLITE_OPEN_FULLMUTEX|
+				sqlite3.SQLITE_OPEN_NOMUTEX|
 				sqlite3.SQLITE_OPEN_URI,
 		)
 		return err
@@ -273,7 +282,9 @@ func (c *conn) columnBlob(pstmt uintptr, iCol int) (v []byte, err error) {
 	}
 
 	if p == 0 || len == 0 {
-		return nil, nil
+		// A zero-length BLOB has no pointer. Return an empty slice, since
+		// database/sql reads nil as NULL.
+		return make([]byte, 0), nil
 	}
 
 	v = make([]byte, len)

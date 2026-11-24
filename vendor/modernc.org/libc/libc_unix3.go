@@ -44,3 +44,22 @@ func Xgmtime_r(tls *TLS, t uintptr, tm uintptr) (r uintptr) {
 	(*ctime.Tm)(unsafe.Pointer(tm)).Ftm_zone = uintptr(unsafe.Pointer(&x___utc))
 	return tm
 }
+
+// writeAll writes b to fd for fwrite. It continues after short writes and
+// EINTR, and returns the number of bytes written and the error that stopped
+// it, if any.
+func writeAll(fd int, b []byte) (n int, err error) {
+	for n < len(b) {
+		var m int
+		if m, err = unix.Write(fd, b[n:]); err != nil {
+			if err == unix.EINTR {
+				continue
+			}
+
+			return n, err
+		}
+
+		n += m
+	}
+	return n, nil
+}

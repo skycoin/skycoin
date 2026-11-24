@@ -4756,7 +4756,7 @@ TEXT ·Y__dns_parse(SB),$56-44
 	MOVL AX, r1+40(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -7201,7 +7201,7 @@ TEXT ·Y__qsort_r(SB),$56-48
 	CALL ·X__qsort_r(SB)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -7480,7 +7480,7 @@ TEXT ·Y__rtnetlink_enumerate(SB),$48-36
 	MOVL AX, r1+32(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -9805,7 +9805,7 @@ TEXT ·Ybsearch(SB),$64-56
 	MOVQ AX, r+48(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -13833,7 +13833,7 @@ TEXT ·Yfloorl(SB),$24-24
 	MOVQ AX, r+16(FP)
 	RET
 
-// func Yfma(tls *TLS, x float64, y float64, z float64) (r1 float64)
+// func Yfma(tls *TLS, x float64, y float64, z float64) (r float64)
 TEXT ·Yfma(SB),$40-40
 	GO_ARGS
 	NO_LOCAL_POINTERS
@@ -13847,7 +13847,7 @@ TEXT ·Yfma(SB),$40-40
 	MOVQ AX, 24(SP)
 	CALL ·Xfma(SB)
 	MOVQ 32(SP), AX
-	MOVQ AX, r1+32(FP)
+	MOVQ AX, r+32(FP)
 	RET
 
 // func Yfmaf(t *TLS, x, y, z float32) (r float32)
@@ -14835,7 +14835,7 @@ TEXT ·Yftw(SB),$48-36
 	MOVL AX, r+32(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -16521,7 +16521,7 @@ TEXT ·Yglob(SB),$56-44
 	MOVL AX, r+40(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -18337,7 +18337,7 @@ TEXT ·Ylfind(SB),$64-56
 	MOVQ AX, r+48(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -19069,7 +19069,7 @@ TEXT ·Ylsearch(SB),$64-56
 	MOVQ AX, r+48(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -20375,7 +20375,7 @@ TEXT ·Ynftw(SB),$48-36
 	MOVL AX, r1+32(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -22678,7 +22678,7 @@ TEXT ·Yqsort(SB),$48-40
 	CALL ·Xqsort(SB)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -22731,7 +22731,7 @@ TEXT ·Yqsort_r(SB),$56-48
 	CALL ·Xqsort_r(SB)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -23757,7 +23757,7 @@ TEXT ·Yscandir(SB),$56-44
 	MOVL AX, r+40(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $32, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -25473,30 +25473,30 @@ TEXT ·Ysprintf(SB),$40-36
 	MOVL AX, r+32(FP)
 	RET
 
-// func Ysqrt(tls *TLS, x1 float64) (r1 float64)
+// func Ysqrt(tls *TLS, x float64) (r float64)
 TEXT ·Ysqrt(SB),$24-24
 	GO_ARGS
 	NO_LOCAL_POINTERS
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ x1+8(FP), AX
+	MOVQ x+8(FP), AX
 	MOVQ AX, 8(SP)
 	CALL ·Xsqrt(SB)
 	MOVQ 16(SP), AX
-	MOVQ AX, r1+16(FP)
+	MOVQ AX, r+16(FP)
 	RET
 
-// func Ysqrtf(tls *TLS, x1 float32) (r1 float32)
+// func Ysqrtf(tls *TLS, x float32) (r float32)
 TEXT ·Ysqrtf(SB),$24-20
 	GO_ARGS
 	NO_LOCAL_POINTERS
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVL x1+8(FP), AX
+	MOVL x+8(FP), AX
 	MOVL AX, 8(SP)
 	CALL ·Xsqrtf(SB)
 	MOVL 16(SP), AX
-	MOVL AX, r1+16(FP)
+	MOVL AX, r+16(FP)
 	RET
 
 // func Ysqrtl(tls *TLS, x float64) (r float64)
@@ -27058,7 +27058,7 @@ TEXT ·Ytdelete(SB),$48-40
 	MOVQ AX, r+32(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -27105,7 +27105,7 @@ TEXT ·Ytdestroy(SB),$32-24
 	CALL ·Xtdestroy(SB)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -27212,7 +27212,7 @@ TEXT ·Ytfind(SB),$48-40
 	MOVQ AX, r+32(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -27700,7 +27700,7 @@ TEXT ·Ytsearch(SB),$48-40
 	MOVQ AX, r1+32(FP)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 
@@ -27777,7 +27777,7 @@ TEXT ·Ytwalk(SB),$32-24
 	CALL ·Xtwalk(SB)
 	MOVQ tls+0(FP), AX
 	MOVQ AX, 0(SP)
-	MOVQ $0, 8(SP)
+	MOVQ $16, 8(SP)	// 16*(number of func ptrs in signature)
 	CALL modernc·org∕libc·TLSFree(SB)
 	RET
 

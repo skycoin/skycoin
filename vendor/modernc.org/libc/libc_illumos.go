@@ -7,7 +7,6 @@ package libc // import "modernc.org/libc"
 import (
 	// "encoding/hex"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -82,6 +81,20 @@ func (f file) setErr()           { f.state().flags |= fileErr }
 func (f file) clearErr()         { f.state().flags &^= fileErr | fileEOF }
 func (f file) eof() bool         { return f.state().flags&fileEOF != 0 }
 func (f file) setEOF()           { f.state().flags |= fileEOF }
+func (f file) clearEOF()         { f.state().flags &^= fileEOF }
+
+// id returns the address that identifies f, see stdio_unbuffered.go.
+func (f file) id() uintptr { return uintptr(f) }
+
+// sysRead reads up to n bytes into the C memory at p from the descriptor of f.
+func (f file) sysRead(p uintptr, n int) (int, error) {
+	m, err := libcall(&libc_ccgo_read, uintptr(f.fd()), p, uintptr(n))
+	if int64(m) < 0 {
+		return 0, err
+	}
+
+	return int(m), nil
+}
 
 // include/stdio_iso.h: #define stdin (&__iob[0]), stdout and stderr are
 // __iob[1] and __iob[2]. newFile returns them for the three standard
@@ -134,14 +147,6 @@ func X___errno(t *TLS) uintptr {
 		trc("t=%v, (%v:)", t, origin(2))
 	}
 	return t.errnop
-}
-
-// void clearerr(FILE *stream);
-func Xclearerr(t *TLS, stream uintptr) {
-	if __ccgo_strace {
-		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
-	}
-	file(stream).clearErr()
 }
 
 // int fprintf(FILE *stream, const char *format, ...);
@@ -205,19 +210,11 @@ func Xlocaltime(t *TLS, timep uintptr) uintptr {
 }
 
 // struct tm *localtime_r(const time_t *timep, struct tm *result);
-func Xlocaltime_r(_ *TLS, timep, result uintptr) uintptr {
-	loc := getLocalLocation()
-	ut := *(*types.Time_t)(unsafe.Pointer(timep))
-	t := time.Unix(int64(ut), 0).In(loc)
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_sec = int32(t.Second())
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_min = int32(t.Minute())
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_hour = int32(t.Hour())
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_mday = int32(t.Day())
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_mon = int32(t.Month() - 1)
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_year = int32(t.Year() - 1900)
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_wday = int32(t.Weekday())
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_yday = int32(t.YearDay() - 1)
-	(*ctime.Tm)(unsafe.Pointer(result)).Ftm_isdst = Bool32(isTimeDST(t))
+func Xlocaltime_r(t *TLS, timep, result uintptr) uintptr {
+	if !localtimeTm(t, int64(*(*types.Time_t)(unsafe.Pointer(timep))), (*ctime.Tm)(unsafe.Pointer(result))) {
+		return 0
+	}
+
 	return result
 }
 
@@ -690,28 +687,6 @@ func Xgetpid(t *TLS) int32 {
 	return int32(os.Getpid())
 }
 
-// int system(const char *command);
-func Xsystem(t *TLS, command uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v command=%v, (%v:)", t, command, origin(2))
-	}
-	s := GoString(command)
-	if command == 0 {
-		panic(todo(""))
-	}
-
-	cmd := exec.Command("sh", "-c", s)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		ps := err.(*exec.ExitError)
-		return int32(ps.ExitCode())
-	}
-
-	return 0
-}
-
 // int setvbuf(FILE *stream, char *buf, int mode, size_t size);
 func Xsetvbuf(t *TLS, stream, buf uintptr, mode int32, size types.Size_t) int32 {
 	if __ccgo_strace {
@@ -987,20 +962,6 @@ func Xtzset(t *TLS) {
 	//TODO
 }
 
-var strerrorBuf [100]byte
-
-// char *strerror(int errnum);
-func Xstrerror(t *TLS, errnum int32) uintptr {
-	if __ccgo_strace {
-		trc("t=%v errnum=%v, (%v:)", t, errnum, origin(2))
-	}
-	// 	if dmesgs {
-	// 		dmesg("%v: %v\n%s", origin(1), errnum, debug.Stack())
-	// 	}
-	copy(strerrorBuf[:], fmt.Sprintf("strerror(%d)\x00", errnum))
-	return uintptr(unsafe.Pointer(&strerrorBuf[0]))
-}
-
 // void *dlopen(const char *filename, int flags);
 func Xdlopen(t *TLS, filename uintptr, flags int32) uintptr {
 	if __ccgo_strace {
@@ -1043,14 +1004,6 @@ func Xperror(tls *TLS, msg uintptr) {
 	}
 	errstr := Xstrerror(tls, *(*int32)(unsafe.Pointer(X__errno_location(tls))))
 	fmt.Fprintf(os.Stderr, "%s\n", GoString(errstr))
-}
-
-// int pclose(FILE *stream);
-func Xpclose(t *TLS, stream uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
-	}
-	panic(todo(""))
 }
 
 // getaddrinfo, freeaddrinfo and gai_strerror are the system libc's. The musl
@@ -1230,28 +1183,12 @@ func Xfork(t *TLS) int32 {
 
 var emptyStr = [1]byte{}
 
-// char *setlocale(int category, const char *locale);
-func Xsetlocale(t *TLS, category int32, locale uintptr) uintptr {
-	if __ccgo_strace {
-		trc("t=%v category=%v locale=%v, (%v:)", t, category, locale, origin(2))
-	}
-	return uintptr(unsafe.Pointer(&emptyStr)) //TODO
-}
-
 // char *nl_langinfo(nl_item item);
 func Xnl_langinfo(t *TLS, item langinfo.Nl_item) uintptr {
 	if __ccgo_strace {
 		trc("t=%v item=%v, (%v:)", t, item, origin(2))
 	}
 	return uintptr(unsafe.Pointer(&emptyStr)) //TODO
-}
-
-// FILE *popen(const char *command, const char *type);
-func Xpopen(t *TLS, command, type1 uintptr) uintptr {
-	if __ccgo_strace {
-		trc("t=%v type1=%v, (%v:)", t, type1, origin(2))
-	}
-	panic(todo(""))
 }
 
 // char *realpath(const char *path, char *resolved_path);
@@ -1365,39 +1302,6 @@ func Xfflush(t *TLS, stream uintptr) int32 {
 	return 0 //TODO
 }
 
-// size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-func Xfread(t *TLS, ptr uintptr, size, nmemb types.Size_t, stream uintptr) types.Size_t {
-	if __ccgo_strace {
-		trc("t=%v ptr=%v nmemb=%v stream=%v, (%v:)", t, ptr, nmemb, stream, origin(2))
-	}
-	if size == 0 || nmemb == 0 {
-		return 0
-	}
-
-	want := uintptr(size * nmemb)
-	var got uintptr
-	for got < want {
-		m, err := libcall(&libc_ccgo_read, uintptr(file(stream).fd()), ptr+got, want-got)
-		if int64(m) < 0 {
-			if err == errno.EINTR {
-				continue
-			}
-
-			t.setErrno(err)
-			file(stream).setErr()
-			break
-		}
-
-		if m == 0 {
-			file(stream).setEOF()
-			break
-		}
-
-		got += m
-	}
-	return types.Size_t(got) / size
-}
-
 // size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 func Xfwrite(t *TLS, ptr uintptr, size, nmemb types.Size_t, stream uintptr) types.Size_t {
 	if __ccgo_strace {
@@ -1426,14 +1330,6 @@ func Xfwrite(t *TLS, ptr uintptr, size, nmemb types.Size_t, stream uintptr) type
 	return types.Size_t(got) / size
 }
 
-// int fclose(FILE *stream);
-func Xfclose(t *TLS, stream uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
-	}
-	return file(stream).close(t)
-}
-
 // int fputc(int c, FILE *stream);
 func Xfputc(t *TLS, c int32, stream uintptr) int32 {
 	if __ccgo_strace {
@@ -1447,76 +1343,12 @@ func Xfputc(t *TLS, c int32, stream uintptr) int32 {
 	return int32(byte(c))
 }
 
-// int fseek(FILE *stream, long offset, int whence);
-func Xfseek(t *TLS, stream uintptr, offset long, whence int32) int32 {
-	if __ccgo_strace {
-		trc("t=%v stream=%v offset=%v whence=%v, (%v:)", t, stream, offset, whence, origin(2))
-	}
-	if n := Xlseek(t, int32(file(stream).fd()), types.Off_t(offset), whence); n < 0 {
-		// if dmesgs {
-		// 	dmesg("%v: fd %v, off %#x, whence %v: %v", origin(1), file(stream).fd(), offset, whenceStr(whence), n)
-		// }
-		file(stream).setErr()
-		return -1
-	}
-
-	// if dmesgs {
-	// 	dmesg("%v: fd %v, off %#x, whence %v: ok", origin(1), file(stream).fd(), offset, whenceStr(whence))
-	// }
-	file(stream).state().flags &^= fileEOF
-	ungetcMu.Lock()
-	delete(ungetc, stream)
-	ungetcMu.Unlock()
-	return 0
-}
-
-// long ftell(FILE *stream);
-func Xftell(t *TLS, stream uintptr) long {
-	if __ccgo_strace {
-		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
-	}
-	n := Xlseek(t, file(stream).fd(), 0, stdio.SEEK_CUR)
-	if n < 0 {
-		file(stream).setErr()
-		return -1
-	}
-
-	// if dmesgs {
-	// 	dmesg("%v: fd %v, n %#x: ok %#x", origin(1), file(stream).fd(), n, long(n))
-	// }
-	return long(n)
-}
-
 // int ferror(FILE *stream);
 func Xferror(t *TLS, stream uintptr) int32 {
 	if __ccgo_strace {
 		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
 	}
 	return Bool32(file(stream).err())
-}
-
-// int ungetc(int c, FILE *stream);
-func Xungetc(t *TLS, c int32, stream uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v c=%v stream=%v, (%v:)", t, c, stream, origin(2))
-	}
-	if c == stdio.EOF {
-		return c
-	}
-
-	ungetcMu.Lock()
-	ungetc[stream] = byte(c)
-	ungetcMu.Unlock()
-	file(stream).state().flags &^= fileEOF
-	return int32(byte(c))
-}
-
-// int fscanf(FILE *stream, const char *format, ...);
-func Xfscanf(t *TLS, stream, format, va uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v va=%v, (%v:)", t, va, origin(2))
-	}
-	return scanf(&byteScanner{t: t, stream: stream}, format, va)
 }
 
 // int fputs(const char *s, FILE *stream);
@@ -1995,33 +1827,6 @@ func Xposix_fadvise(t *TLS, fd int32, offset, len types.Off_t, advice int32) int
 	return int32(r)
 }
 
-// int fgetc(FILE *stream);
-func Xfgetc(t *TLS, stream uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
-	}
-	ungetcMu.Lock()
-	c, ok := ungetc[stream]
-	delete(ungetc, stream)
-	ungetcMu.Unlock()
-	if ok {
-		return int32(c)
-	}
-
-	p := t.Alloc(1)
-	defer t.Free(1)
-	switch n, err := libcall(&libc_ccgo_read, uintptr(file(stream).fd()), p, 1); int64(n) {
-	case 1:
-		return int32(*(*byte)(unsafe.Pointer(p)))
-	case 0:
-		file(stream).setEOF()
-	default:
-		t.setErrno(err)
-		file(stream).setErr()
-	}
-	return stdio.EOF
-}
-
 // int getchar(void);
 //
 // <stdio.h> defines getchar as a macro only when _REENTRANT is not defined.
@@ -2245,36 +2050,6 @@ func Xnanosleep(t *TLS, req, rem uintptr) int32 {
 	return 0
 }
 
-func Xfeof(t *TLS, f uintptr) (r int32) {
-	if __ccgo_strace {
-		trc("t=%v f=%v, (%v:)", t, f, origin(2))
-		defer func() { trc("-> %v", r) }()
-	}
-	return Bool32(file(f).eof())
-}
-
-type byteScanner struct {
-	t      *TLS
-	stream uintptr
-
-	last byte
-}
-
-func (s *byteScanner) ReadByte() (byte, error) {
-	c := Xfgetc(s.t, s.stream)
-	if c < 0 {
-		return 0, io.EOF
-	}
-
-	s.last = byte(c)
-	return byte(c), nil
-}
-
-func (s *byteScanner) UnreadByte() error {
-	Xungetc(s.t, int32(s.last), s.stream)
-	return nil
-}
-
 // int clock_gettime(clockid_t clk_id, struct timespec *tp);
 func Xclock_gettime(t *TLS, clk_id int32, tp uintptr) int32 {
 	if __ccgo_strace {
@@ -2381,3 +2156,7 @@ func Xpthread_mutexattr_settype(tls *TLS, a uintptr, type1 int32) int32 {
 		return errno.EINVAL
 	}
 }
+
+// tmSetZone would set the zone fields of tm, which this struct tm does not
+// have.
+func tmSetZone(tm *ctime.Tm, name string, off int) {}

@@ -9,6 +9,8 @@ package libc // import "modernc.org/libc"
 import (
 	"bytes"
 	"fmt"
+	"math"
+	"math/bits"
 	"runtime"
 	"strconv"
 	"strings"
@@ -116,6 +118,7 @@ flags:
 			break flags
 		}
 	}
+	flags := spec[1:]
 	format, width, hasWidth := parseFieldWidth(format, args)
 	if hasWidth {
 		spec += strconv.Itoa(width)
@@ -157,16 +160,11 @@ more:
 			panic(todo("", mod))
 		}
 
-		if arg == 0 && hasPrecision && prec == 0 {
-			break
+		u := uint64(arg)
+		if arg < 0 {
+			u = -u
 		}
-
-		if hasPrecision {
-			panic(todo("", prec))
-		}
-
-		f := spec + "d"
-		str = fmt.Sprintf(f, arg)
+		str = printfInteger(arg < 0, u, c, flags, width, intPrec(hasPrecision, prec))
 	case 'u':
 		// The unsigned int argument is converted to unsigned decimal notation. The
 		// precision, if any, gives the minimum number of digits that must appear; if
@@ -195,16 +193,7 @@ more:
 			panic(todo("", mod))
 		}
 
-		if arg == 0 && hasPrecision && prec == 0 {
-			break
-		}
-
-		if hasPrecision {
-			panic(todo("", prec))
-		}
-
-		f := spec + "d"
-		str = fmt.Sprintf(f, arg)
+		str = printfInteger(false, arg, c, flags, width, intPrec(hasPrecision, prec))
 	case 'o':
 		// The unsigned int argument is converted to unsigned octal notation. The
 		// precision, if any, gives the minimum number of digits that must appear; if
@@ -231,16 +220,7 @@ more:
 			panic(todo("", mod))
 		}
 
-		if arg == 0 && hasPrecision && prec == 0 {
-			break
-		}
-
-		if hasPrecision {
-			panic(todo("", prec))
-		}
-
-		f := spec + "o"
-		str = fmt.Sprintf(f, arg)
+		str = printfInteger(false, arg, c, flags, width, intPrec(hasPrecision, prec))
 	case 'b':
 		// Base 2.
 		format++
@@ -352,21 +332,7 @@ more:
 			panic(todo("", mod))
 		}
 
-		if arg == 0 && hasPrecision && prec == 0 {
-			break
-		}
-
-		if strings.Contains(spec, "#") && arg == 0 {
-			spec = strings.ReplaceAll(spec, "#", "")
-		}
-		var f string
-		switch {
-		case hasPrecision:
-			f = fmt.Sprintf("%s.%d%c", spec, prec, c)
-		default:
-			f = spec + string(c)
-		}
-		str = fmt.Sprintf(f, arg)
+		str = printfInteger(false, arg, c, flags, width, intPrec(hasPrecision, prec))
 	case 'e', 'E':
 		// The double argument is rounded and converted in the style [-]d.ddde±dd where
 		// there is one digit before the decimal-point character and the number of
@@ -377,7 +343,11 @@ more:
 		// zero, the exponent is 00.
 		format++
 		arg := VaFloat64(args)
-		if !hasPrecision {
+		if math.IsInf(arg, 0) || math.IsNaN(arg) {
+			str = printfNonFinite(arg, flags, width, c == 'E')
+			break
+		}
+		if !hasPrecision || prec < 0 {
 			prec = 6
 		}
 		f := fmt.Sprintf("%s.%d%c", spec, prec, c)
@@ -391,11 +361,15 @@ more:
 		// digit appears before it.
 		format++
 		arg := VaFloat64(args)
-		if !hasPrecision {
+		if math.IsInf(arg, 0) || math.IsNaN(arg) {
+			str = printfNonFinite(arg, flags, width, c == 'F')
+			break
+		}
+		if !hasPrecision || prec < 0 {
 			prec = 6
 		}
 		f := fmt.Sprintf("%s.%d%c", spec, prec, c)
-		str = fixNanInf(fmt.Sprintf(f, arg))
+		str = fmt.Sprintf(f, arg)
 	case 'G':
 		fallthrough
 	case 'g':
@@ -408,7 +382,11 @@ more:
 		// if it is followed by at least one digit.
 		format++
 		arg := VaFloat64(args)
-		if !hasPrecision {
+		if math.IsInf(arg, 0) || math.IsNaN(arg) {
+			str = printfNonFinite(arg, flags, width, c == 'G')
+			break
+		}
+		if !hasPrecision || prec < 0 {
 			prec = 6
 		}
 		if prec == 0 {
@@ -416,7 +394,28 @@ more:
 		}
 
 		f := fmt.Sprintf("%s.%d%c", spec, prec, c)
-		str = fixNanInf(fmt.Sprintf(f, arg))
+		str = fmt.Sprintf(f, arg)
+	case 'a', 'A':
+		// For a conversion, the double argument is converted to hexadecimal
+		// notation (using the letters abcdef) in the style [-]0xh.hhhhp±d; for A
+		// conversion the prefix 0X, the letters ABCDEF, and the exponent
+		// separator P is used.  There is one hexadecimal digit before the
+		// decimal point, and the number of digits after it is equal to the
+		// precision.  The default precision suffices for an exact
+		// representation of the value if an exact representation in base 2
+		// exists and otherwise is sufficiently large to distinguish values of
+		// type double.  The digit before the decimal point is unspecified for
+		// nonnormalized numbers, and nonzero but otherwise unspecified for
+		// normalized numbers.  The exponent always contains at least one
+		// digit; if the value is zero, the exponent is 0.
+		format++
+		if !hasWidth {
+			width = 0
+		}
+		if !hasPrecision {
+			prec = -1
+		}
+		str = printfHexFloat(VaFloat64(args), flags, width, prec, c == 'A')
 	case 's':
 		// If  no l modifier is present: the const char * argument is expected to be a
 		// pointer to an array of character type (pointer to a string).  Characters
@@ -443,15 +442,25 @@ more:
 		arg := VaUintptr(args)
 		switch mod {
 		case modNone:
-			var f string
-			switch {
-			case hasPrecision:
-				f = fmt.Sprintf("%s.%ds", spec, prec)
-				str = fmt.Sprintf(f, GoString(arg))
+			// Like musl: bytes, not runes, a NULL pointer is "(null)", and
+			// the '0' flag doesn't apply.
+			var s string
+			switch prec := intPrec(hasPrecision, prec); {
+			case arg == 0:
+				s = "(null)"
+				if prec >= 0 && prec < len(s) {
+					s = s[:prec]
+				}
+			case prec >= 0:
+				n := 0
+				for n < prec && *(*byte)(unsafe.Pointer(arg + uintptr(n))) != 0 {
+					n++
+				}
+				s = string(unsafe.Slice((*byte)(unsafe.Pointer(arg)), n))
 			default:
-				f = spec + "s"
-				str = fmt.Sprintf(f, GoString(arg))
+				s = GoString(arg)
 			}
+			str = printfPad("", "", s, flags, width, false)
 		default:
 			panic(todo(""))
 		}
@@ -459,19 +468,34 @@ more:
 		// The void * pointer argument is printed in hexadecimal (as if by %#x or
 		// %#lx).
 		format++
+		var s string
 		switch runtime.GOOS {
 		case "windows":
 			switch runtime.GOARCH {
 			case "386", "arm":
-				fmt.Fprintf(buf, "%08X", VaUintptr(args))
+				s = fmt.Sprintf("%08X", VaUintptr(args))
 			default:
-				fmt.Fprintf(buf, "%016X", VaUintptr(args))
+				s = fmt.Sprintf("%016X", VaUintptr(args))
 			}
 		case "illumos":
 			// Like the system libc: no 0x prefix, NULL is 0.
-			fmt.Fprintf(buf, "%x", VaUintptr(args))
+			s = fmt.Sprintf("%x", VaUintptr(args))
 		default:
-			fmt.Fprintf(buf, "%#0x", VaUintptr(args))
+			s = fmt.Sprintf("%#0x", VaUintptr(args))
+		}
+		// Of the flags, only '-' applies: C leaves the others undefined
+		// for %p, and the C libraries pad it with spaces. A negative
+		// width from '*' put a '-' into spec too.
+		if width < 0 {
+			width = -width
+		}
+		switch {
+		case !hasWidth:
+			str = s
+		case strings.Contains(spec, "-"):
+			str = fmt.Sprintf("%-*s", width, s)
+		default:
+			str = fmt.Sprintf("%*s", width, s)
 		}
 	case 'c':
 		// If no l modifier is present, the int argument is converted to an unsigned
@@ -482,8 +506,8 @@ more:
 		format++
 		switch mod {
 		case modNone:
-			arg := VaInt32(args)
-			buf.WriteByte(byte(arg))
+			// The width applies, the '0' flag doesn't, as in musl.
+			str = printfPad("", "", string([]byte{byte(VaInt32(args))}), flags, width, false)
 		default:
 			panic(todo(""))
 		}
@@ -675,13 +699,194 @@ func parseLengthModifier(format uintptr) (_ uintptr, n int) {
 	}
 }
 
-func fixNanInf(s string) string {
-	switch s {
-	case "NaN":
-		return "nan"
-	case "+Inf", "-Inf":
-		return "inf"
-	default:
-		return s
+// intPrec returns the precision of a conversion, or -1 if there is none. A
+// negative precision from '*' counts as none.
+func intPrec(hasPrecision bool, prec int) int {
+	if !hasPrecision || prec < 0 {
+		return -1
 	}
+
+	return prec
+}
+
+// printfInteger formats %d, %i, %u, %o, %x or %X like musl does. u is the
+// magnitude, and neg is set for a negative %d or %i. A precision (prec >= 0)
+// gives the minimum number of digits, and the '0' flag then doesn't apply.
+// Precision 0 prints no digits for 0, except for %#o, which always starts
+// with a 0. '#' prefixes a nonzero %x or %X with 0x or 0X. '+' and ' ' apply
+// only to %d and %i. A negative width adjusts left, as the '-' flag does.
+func printfInteger(neg bool, u uint64, conv byte, flags string, width, prec int) string {
+	var digits string
+	switch {
+	case u == 0:
+		// No digits: the precision decides, see below.
+	case conv == 'o':
+		digits = strconv.FormatUint(u, 8)
+	case conv == 'x':
+		digits = strconv.FormatUint(u, 16)
+	case conv == 'X':
+		digits = strings.ToUpper(strconv.FormatUint(u, 16))
+	default:
+		digits = strconv.FormatUint(u, 10)
+	}
+	var sign string
+	switch conv {
+	case 'd', 'i':
+		switch {
+		case neg:
+			sign = "-"
+		case strings.Contains(flags, "+"):
+			sign = "+"
+		case strings.Contains(flags, " "):
+			sign = " "
+		}
+	case 'x', 'X':
+		if u != 0 && strings.Contains(flags, "#") {
+			sign = "0" + string(conv)
+		}
+	}
+	zeroOK := prec < 0
+	if conv == 'o' && strings.Contains(flags, "#") && prec < len(digits)+1 {
+		prec = len(digits) + 1
+	}
+	switch {
+	case u == 0 && prec == 0:
+		// Nothing.
+	case u == 0:
+		prec = max(prec, 1)
+	default:
+		prec = max(prec, len(digits))
+	}
+	if prec > len(digits) {
+		digits = strings.Repeat("0", prec-len(digits)) + digits
+	}
+	return printfPad(sign, "", digits, flags, width, zeroOK)
+}
+
+// printfNonFinite formats an infinity or a NaN for %a, %e, %f and %g like
+// musl does: inf or nan, or INF or NAN if upper is set, with the sign of x or
+// the sign the '+' or ' ' flag asks for, and padded with spaces even with the
+// '0' flag. A negative width adjusts left, as the '-' flag does.
+func printfNonFinite(x float64, flags string, width int, upper bool) string {
+	s := "inf"
+	if math.IsNaN(x) {
+		s = "nan"
+	}
+	if upper {
+		s = strings.ToUpper(s)
+	}
+	return printfPad(printfSign(x, flags), "", s, flags, width, false)
+}
+
+// printfSign returns the sign that %a, %e, %f and %g write before x.
+func printfSign(x float64, flags string) string {
+	switch {
+	case math.Signbit(x):
+		return "-"
+	case strings.Contains(flags, "+"):
+		return "+"
+	case strings.Contains(flags, " "):
+		return " "
+	default:
+		return ""
+	}
+}
+
+// printfPad pads sign+prefix+body to width: on the right with spaces if the
+// '-' flag is set or width is negative, otherwise on the left with zeros
+// after the prefix if zeroOK and the '0' flag are set, otherwise on the left
+// with spaces.
+func printfPad(sign, prefix, body, flags string, width int, zeroOK bool) string {
+	left := strings.Contains(flags, "-")
+	if width < 0 {
+		left = true
+		width = -width
+	}
+	n := width - len(sign) - len(prefix) - len(body)
+	switch {
+	case n <= 0:
+		return sign + prefix + body
+	case left:
+		return sign + prefix + body + strings.Repeat(" ", n)
+	case zeroOK && strings.Contains(flags, "0"):
+		return sign + prefix + strings.Repeat("0", n) + body
+	default:
+		return strings.Repeat(" ", n) + sign + prefix + body
+	}
+}
+
+// printfHexFloat formats x for %a, or for %A if upper is set, like musl does.
+// A nonzero x has the leading digit 1, subnormals included. Without a
+// precision (prec < 0) the fraction has as many digits as x needs, otherwise
+// x is rounded half to even to prec digits, and the leading digit can then
+// become 2. The exponent has only the digits it needs. A negative width
+// adjusts left, as the '-' flag does.
+func printfHexFloat(x float64, flags string, width, prec int, upper bool) string {
+	if math.IsInf(x, 0) || math.IsNaN(x) {
+		return printfNonFinite(x, flags, width, upper)
+	}
+
+	digits := "0123456789abcdef"
+	prefix := "0x"
+	expSep := "p"
+	if upper {
+		digits = "0123456789ABCDEF"
+		prefix = "0X"
+		expSep = "P"
+	}
+	b := math.Float64bits(x)
+	e := int(b>>52) & 0x7ff
+	m := b & (1<<52 - 1)
+	switch {
+	case e == 0 && m == 0:
+		// Zero has the exponent 0.
+	case e == 0:
+		n := bits.LeadingZeros64(m) - 11
+		m <<= n
+		e = -1022 - n
+	default:
+		m |= 1 << 52
+		e -= 1023
+	}
+	// m is now the leading digit followed by 13 hexadecimal digits of
+	// fraction.
+	nd := 13
+	if prec >= 0 && prec < nd {
+		drop := uint(4 * (nd - prec))
+		rem := m & (1<<drop - 1)
+		m >>= drop
+		if half := uint64(1) << (drop - 1); rem > half || rem == half && m&1 != 0 {
+			m++
+		}
+		nd = prec
+	}
+	frac := make([]byte, nd, max(nd, prec))
+	for i := nd - 1; i >= 0; i-- {
+		frac[i] = digits[m&15]
+		m >>= 4
+	}
+	switch {
+	case prec < 0:
+		frac = bytes.TrimRight(frac, "0")
+	default:
+		for len(frac) < prec {
+			frac = append(frac, '0')
+		}
+	}
+	var sb strings.Builder
+	sb.WriteByte(digits[m])
+	if len(frac) != 0 || strings.Contains(flags, "#") {
+		sb.WriteByte('.')
+	}
+	sb.Write(frac)
+	sb.WriteString(expSep)
+	switch {
+	case e < 0:
+		sb.WriteByte('-')
+		e = -e
+	default:
+		sb.WriteByte('+')
+	}
+	sb.WriteString(strconv.Itoa(e))
+	return printfPad(printfSign(x, flags), prefix, sb.String(), flags, width, true)
 }

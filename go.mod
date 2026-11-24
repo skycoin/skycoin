@@ -3,7 +3,7 @@ module github.com/skycoin/skycoin
 go 1.27.3
 
 require (
-	github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a
+	github.com/0magnet/bbolt v1.5.1-0.20261004204806-45fff0d5382d
 	github.com/0magnet/coloredcobra v1.0.3
 	github.com/a-h/templ v0.3.1118
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
@@ -17,12 +17,12 @@ require (
 	github.com/google/gousb v1.1.3
 	github.com/google/uuid v1.6.0
 	github.com/gopherjs/gopherjs v1.21.0
-	github.com/klauspost/compress v1.20.4
+	github.com/klauspost/compress v1.20.5
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rs/cors v1.11.1
 	github.com/shopspring/decimal v1.6.0
-	github.com/sirupsen/logrus v1.10.3-0.20261117174421-40042a1bf4df
+	github.com/sirupsen/logrus v1.10.3-0.20261118153946-954b418844d9
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
@@ -32,7 +32,7 @@ require (
 	golang.org/x/crypto v0.59.0
 	golang.org/x/term v0.48.0
 	golang.org/x/time v0.16.0
-	modernc.org/sqlite v1.62.0
+	modernc.org/sqlite v1.63.0
 )
 
 require (
@@ -60,7 +60,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
-	modernc.org/libc v1.81.2 // indirect
+	modernc.org/libc v1.82.13 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.13.0 // indirect
 	mvdan.cc/sh/v3 v3.14.1 // indirect

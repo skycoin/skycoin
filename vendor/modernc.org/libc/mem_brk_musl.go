@@ -298,6 +298,9 @@ func MemStat() MemAllocatorStat {
 	return MemAllocatorStat{}
 }
 
+// MemTrim does nothing: this allocator never gives memory back.
+func MemTrim() error { return nil }
+
 // MemAuditStart locks the memory allocator, initializes and enables memory
 // auditing. Finaly it unlocks the memory allocator.
 //

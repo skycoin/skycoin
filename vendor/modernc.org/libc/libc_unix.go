@@ -393,6 +393,58 @@ func Xfdopen(t *TLS, fd int32, mode uintptr) uintptr {
 	return p
 }
 
+var (
+	popenMu   sync.Mutex
+	popenPids = map[uintptr]int{} // FILE * from popen -> pid of its child
+)
+
+// FILE *popen(const char *command, const char *mode);
+//
+// See popen for how it differs from the BSD libcs.
+func Xpopen(t *TLS, command, mode uintptr) (r uintptr) {
+	if __ccgo_strace {
+		trc("t=%v command=%v mode=%v, (%v:)", t, command, mode, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	op, ok := popenMode(t, mode)
+	if !ok {
+		return 0
+	}
+
+	f, pid := popen(t, command, op, func(fd int32) uintptr { return newFile(t, fd) })
+	if f != 0 {
+		popenMu.Lock()
+		popenPids[f] = pid
+		popenMu.Unlock()
+	}
+	return f
+}
+
+// int pclose(FILE *stream);
+func Xpclose(t *TLS, stream uintptr) (r int32) {
+	if __ccgo_strace {
+		trc("t=%v stream=%v, (%v:)", t, stream, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	popenMu.Lock()
+	pid, ok := popenPids[stream]
+	delete(popenPids, stream)
+	popenMu.Unlock()
+	if !ok {
+		t.setErrno(errno.ECHILD)
+		return -1
+	}
+
+	Xfclose(t, stream)
+	ws, err := waitStatus(pid)
+	if err != nil {
+		t.setErrno(errnoOf(err))
+		return -1
+	}
+
+	return ws
+}
+
 // struct passwd *getpwnam(const char *name);
 func Xgetpwnam(t *TLS, name uintptr) uintptr {
 	if __ccgo_strace {
@@ -1140,14 +1192,6 @@ func Xrandom_r(t *TLS, buf, result uintptr) int32 {
 	}
 	*(*int32)(unsafe.Pointer(result)) = mr.Int31()
 	return 0
-}
-
-// int strerror_r(int errnum, char *buf, size_t buflen);
-func Xstrerror_r(t *TLS, errnum int32, buf uintptr, buflen size_t) int32 {
-	if __ccgo_strace {
-		trc("t=%v errnum=%v buf=%v buflen=%v, (%v:)", t, errnum, buf, buflen, origin(2))
-	}
-	panic(todo(""))
 }
 
 // void endpwent(void);

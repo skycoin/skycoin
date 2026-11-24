@@ -12,7 +12,6 @@ import (
 	"modernc.org/libc/fcntl"
 	"modernc.org/libc/fts"
 	"modernc.org/libc/sys/types"
-	"modernc.org/libc/time"
 	"modernc.org/libc/utime"
 )
 
@@ -235,19 +234,6 @@ func Xchmod(t *TLS, pathname uintptr, mode types.Mode_t) int32 {
 		dmesg("%v: %q %#o: ok", origin(1), GoString(pathname), mode)
 	}
 	return 0
-}
-
-// time_t time(time_t *tloc);
-func Xtime(t *TLS, tloc uintptr) time.Time_t {
-	if __ccgo_strace {
-		trc("t=%v tloc=%v, (%v:)", t, tloc, origin(2))
-	}
-	panic(todo(""))
-	// n := time.Now().UTC().Unix()
-	// if tloc != 0 {
-	// 	*(*types.Time_t)(unsafe.Pointer(tloc)) = types.Time_t(n)
-	// }
-	// return types.Time_t(n)
 }
 
 // int utimes(const char *filename, const struct timeval times[2]);

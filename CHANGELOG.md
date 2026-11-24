@@ -111,6 +111,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   and under `skycoin web` pages for Bitcoin, Ether and ERC-20 tokens.
 - `/api/v1/version` reports the build commit of a node built without
   `-ldflags`, so a develop build can be told apart from the last tag.
+- An open `/ui2/` tab reloads itself onto a new build of the node. It checks
+  `/build` every minute and on focus, and waits while a send, a dialog,
+  unlocked keys or typed input would be lost, showing a notice instead.
 
 ### Changed
 

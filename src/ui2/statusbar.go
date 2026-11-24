@@ -30,7 +30,8 @@ func LoadBar(n Node) Bar {
 	b := Bar{
 		NoPeers: h.OpenConnections == 0,
 		Pending: h.BlockchainMetadata.Unconfirmed,
-		NoCSRF:  !h.CSRFEnabled,
+		// CSRF guards only the wallet API, so a node without it has nothing to warn about.
+		NoCSRF: !h.CSRFEnabled && h.WalletAPIEnabled,
 	}
 	if p, err := n.BlockchainProgress(); err == nil && p.Highest > p.Current {
 		b.Syncing, b.Current, b.Highest = true, p.Current, p.Highest

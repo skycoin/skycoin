@@ -21,6 +21,9 @@ type Options struct {
 	// Coins, when set, is a host serving several coins, as skycoin web does.
 	// The pages then offer a coin picker and the coins' own pages.
 	Coins *CoinHost
+	// Build, when set, names the build of what the host serves beside the
+	// pages, such as the cipher wasm, so open pages reload when it changes.
+	Build func() string
 }
 
 // Handler serves the pages, reading the node through n. It expects any mount
@@ -39,6 +42,7 @@ func Handler(n Node, o Options) http.Handler {
 // coinHandler serves the pages of one Skycoin or fiber coin, read through n.
 func coinHandler(n Node, o Options) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/build", serveBuild(o))
 	sendForm := func(r *http.Request) SendForm {
 		f := ParseSendForm(r.PostFormValue)
 		f.ReadRows(func(k string) []string { return r.PostForm[k] })
@@ -410,6 +414,7 @@ func render(w http.ResponseWriter, r *http.Request, o Options, c templ.Component
 		Lang:    PickLang(lang, r.Header.Get("Accept-Language")),
 		Classic: o.Classic,
 		Root:    o.Root,
+		Build:   BuildID(o),
 	}
 	if cs, ok := r.Context().Value(coinsKey{}).(*coinState); ok {
 		p.Coin, p.Coins = cs.cur, cs.all

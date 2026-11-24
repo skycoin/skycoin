@@ -20,6 +20,11 @@
 	var root = page.getAttribute('data-bw-root') || '';
 	var WALLETS = 'wallets', LOCKED = 'lockedWallets';
 	var appPassword = null;
+	// hold and holdWhile keep ui2.js from reloading onto a new build while a
+	// write runs or keys are unlocked in memory.
+	function hold(p) { return window.ui2Hold ? window.ui2Hold(p) : p; }
+	function holdWhile(f) { if (window.ui2HoldWhile) window.ui2HoldWhile(f); }
+	holdWhile(function () { return appPassword !== null; });
 
 	function $(id) { return document.getElementById(id); }
 	function msg(name) { return page.getAttribute('data-msg-' + name) || name; }
@@ -79,7 +84,8 @@
 	function readTemp() {
 		try { return JSON.parse(sessionStorage.getItem(TEMP) || '[]'); } catch (_) { return []; }
 	}
-	function writeStored(list) {
+	function writeStored(list) { return hold(writeStoredNow(list)); }
+	function writeStoredNow(list) {
 		try { sessionStorage.setItem(TEMP, JSON.stringify(list.filter(function (w) { return w.temporary; }))); } catch (_) { /* private mode */ }
 		var s = JSON.stringify(list.filter(function (w) { return !w.temporary; }));
 		if (localStorage.getItem(LOCKED)) {
@@ -564,6 +570,7 @@
 
 	function sendFlow(id) {
 		var form = $('bw-send'), session = null;
+		holdWhile(function () { return session !== null; });
 		withList(function (list) {
 			var w = list.filter(shown).find(function (x) { return firstAddress(x) === id; });
 			if (!w) throw new Error(msg('missing'));
@@ -1123,6 +1130,7 @@
 		var session = null; // { sec, password, expires }
 		var state = { pending: [], confirmed: 0, last: '', txids: [], dests: [], error: '', paused: '', res: null };
 		var busy = false, lastSeq = -1, retryAt = 0, others = [];
+		holdWhile(function () { return busy || session !== null; });
 
 		function rule() { return sweepRules()[id] || null; }
 		function wallet() {

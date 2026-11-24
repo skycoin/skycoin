@@ -2,6 +2,8 @@
 package gui
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"io/fs"
 	"net/http"
 	"path"
@@ -14,8 +16,9 @@ import (
 // that compiled it. They are registered by the binary that carries them rather
 // than embedded here, so a host that ships its own cipher links only that one.
 var (
-	cipherWasmGz []byte
-	cipherExecJS []byte
+	cipherWasmGz  []byte
+	cipherExecJS  []byte
+	cipherVersion string
 )
 
 // RegisterCipherWasm supplies the gzipped cipher wasm and its wasm_exec.js.
@@ -23,10 +26,18 @@ var (
 func RegisterCipherWasm(gz, execJS []byte) {
 	cipherWasmGz = gz
 	cipherExecJS = execJS
+	h := sha256.New()
+	h.Write(gz)
+	h.Write(execJS)
+	cipherVersion = hex.EncodeToString(h.Sum(nil))[:16]
 }
 
 // CipherWasmRegistered reports whether a cipher wasm is available to serve.
 func CipherWasmRegistered() bool { return len(cipherWasmGz) > 0 && len(cipherExecJS) > 0 }
+
+// CipherWasmVersion is a hash of the registered cipher wasm and its loader,
+// empty when none is registered.
+func CipherWasmVersion() string { return cipherVersion }
 
 // ServeCipherWasm serves the cipher wasm at /assets/scripts/skycoin-lite.wasm.
 // It is handed over gzipped, as committed, to any client that accepts that.

@@ -18,6 +18,7 @@
   "bar.pending": "{{ count }} transacción(es) pendiente(s). Los datos que ve pueden no estar actualizados.",
   "bar.syncing": "El nodo se está sincronizando, {{ percent }}% ({{ current }} de {{ highest }} bloques). Los datos que ve pueden no estar actualizados.",
   "bar.unreachable": "No se puede conectar con el nodo.",
+  "bar.update": "Hay una nueva versión de la billetera. Se carga cuando la página está inactiva, o haga clic para recargar ahora.",
   "bw.app-change": "Cambiar la contraseña de la aplicación",
   "bw.app-password": "Contraseña de la aplicación",
   "bw.app-password-help": "La contraseña de la aplicación encripta toda la lista de billeteras guardadas en este navegador, además de la contraseña de cada billetera, y se pide al abrir una página.",

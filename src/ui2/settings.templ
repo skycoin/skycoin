@@ -217,6 +217,7 @@ templ BackupPage(b Backup) {
 
 // SeedBox is a wallet's seed, and its passphrase when it has one.
 templ SeedBox(seed, passphrase string) {
+	<i data-no-reload hidden></i>
 	<div class="alert warn">
 		<p>{ T(ctx, "backup.seed-warning") }</p>
 	</div>

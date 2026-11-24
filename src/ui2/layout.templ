@@ -18,7 +18,7 @@ templ Layout(title, nav string) {
 			<script src={ Asset("hw.js") } defer></script>
 			<script src={ Asset("bw.js") } defer></script>
 		</head>
-		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-cached={ T(ctx, "history.cached") } data-insecure={ T(ctx, "bw.insecure") } data-csrf={ From(ctx).Root + "api/v1/csrf" }>
+		<body data-unreachable={ T(ctx, "ui2.unreachable") } data-cached={ T(ctx, "history.cached") } data-insecure={ T(ctx, "bw.insecure") } data-csrf={ From(ctx).Root + "api/v1/csrf" } data-build={ From(ctx).Build }>
 			<header class="top">
 				<a class="brand" href="./">
 					<img src={ From(ctx).Root + "assets/icons/icon-192.png" } alt="" width="32" height="32"/>
@@ -58,6 +58,9 @@ templ Layout(title, nav string) {
 				</div>
 			</header>
 			<div id="statusbar" hx-get="statusbar" hx-trigger="load, every 30s" hx-swap="innerHTML"></div>
+			<div id="update-bar" class="statusbar" hidden>
+				<a class="sb warn" href="" data-update-reload><span class="mi">refresh</span>{ T(ctx, "bar.update") }</a>
+			</div>
 			<main>
 				{ children... }
 			</main>

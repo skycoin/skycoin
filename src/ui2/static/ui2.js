@@ -416,3 +416,91 @@ document.addEventListener('htmx:beforeRequest', function (e) {
 	var el = e.detail.elt;
 	if (el && el.hasAttribute && el.hasAttribute('data-poll-open') && el.closest('details:not([open])')) e.preventDefault();
 });
+
+// Reload onto a new build (BuildID, src/ui2/build.go) once the page is idle,
+// else show #update-bar until it is or the user clicks it.
+(function () {
+	'use strict';
+	var POLL_MS = 60000, RETRY_MS = 5000, TRIED = 'ui2-build-tried';
+	var booted = document.body.getAttribute('data-build');
+	if (!booted) return;
+	var holds = 0, writes = 0, whiles = [], latest = '', timer = 0;
+
+	window.ui2Hold = function (p) {
+		holds++;
+		var done = function () { holds--; later(); };
+		return Promise.resolve(p).then(function (v) { done(); return v; }, function (err) { done(); throw err; });
+	};
+	window.ui2HoldWhile = function (f) { whiles.push(f); };
+	document.addEventListener('htmx:beforeRequest', function (e) {
+		if (e.detail.requestConfig && e.detail.requestConfig.verb !== 'get') { writes++; }
+	});
+	document.addEventListener('htmx:afterRequest', function (e) {
+		if (e.detail.requestConfig && e.detail.requestConfig.verb !== 'get') { writes = Math.max(0, writes - 1); later(); }
+	});
+
+	function changed(el) {
+		if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button') return false;
+		if (el.type === 'checkbox' || el.type === 'radio') return el.checked !== el.defaultChecked;
+		if (el.tagName === 'SELECT') {
+			if (el.multiple) return Array.prototype.some.call(el.options, function (o) { return o.selected !== o.defaultSelected; });
+			var def = 0;
+			Array.prototype.forEach.call(el.options, function (o, i) { if (o.defaultSelected) def = i; });
+			return el.options.length > 0 && el.selectedIndex !== def;
+		}
+		return el.value !== el.defaultValue;
+	}
+	// idle is false while anything would be lost to a reload: a write or a
+	// device call in flight, keys unlocked, a create, seed or review step on
+	// screen, an open dialog, or a field the user typed in.
+	function idle() {
+		if (holds > 0 || writes > 0) return false;
+		if (whiles.some(function (f) { try { return f(); } catch (_) { return true; } })) return false;
+		if (document.querySelector('[data-no-reload], dialog[open]')) return false;
+		var a = document.activeElement;
+		if (a && a.closest && a.closest('main') && a.matches('input, textarea, select')) return false;
+		return !Array.prototype.some.call(document.querySelectorAll('main input, main textarea, main select'), changed);
+	}
+	function tried() { try { return sessionStorage.getItem(TRIED); } catch (_) { return null; } }
+	function reload() {
+		try { sessionStorage.setItem(TRIED, latest); } catch (_) { /* private mode */ }
+		window.location.reload();
+	}
+	function later() {
+		if (!latest || timer) return;
+		timer = setTimeout(function () { timer = 0; settle(); }, 0);
+	}
+	function settle() {
+		if (!latest) return;
+		var bar = document.getElementById('update-bar');
+		if (bar) bar.hidden = false;
+		// A server that still hands out the old page after a reload, such as
+		// one behind a mixed pool, gets the notice instead of a reload loop.
+		if (tried() !== latest && idle()) { reload(); return; }
+		clearTimeout(timer);
+		timer = setTimeout(function () { timer = 0; settle(); }, RETRY_MS);
+	}
+	function check() {
+		fetch('build', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) {
+			return r.ok ? r.text() : '';
+		}).then(function (v) {
+			v = (v || '').trim();
+			if (!v || v === booted) return;
+			latest = v;
+			settle();
+		}).catch(function () { /* the server is away, try on the next poll */ });
+	}
+	if (tried() === booted) {
+		try { sessionStorage.removeItem(TRIED); } catch (_) { /* private mode */ }
+	}
+	document.addEventListener('click', function (e) {
+		if (!e.target.closest || !e.target.closest('[data-update-reload]')) return;
+		e.preventDefault();
+		window.location.reload();
+	});
+	setInterval(check, POLL_MS);
+	setTimeout(check, 3000);
+	document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+	window.addEventListener('focus', check);
+	window.addEventListener('pageshow', function (e) { if (e.persisted) check(); });
+})();

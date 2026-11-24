@@ -18,6 +18,7 @@
   "bar.pending": "{{ count }} pending transaction(s). Data you see may not be updated.",
   "bar.syncing": "The node is synchronizing, {{ percent }}% ({{ current }} of {{ highest }} blocks). Data you see may not be updated.",
   "bar.unreachable": "Cannot reach the node.",
+  "bar.update": "A new version of the wallet is available. It loads when the page is idle, or click to reload now.",
   "bw.app-change": "Change the app password",
   "bw.app-password": "App password",
   "bw.app-password-help": "An app password encrypts the whole list of wallets kept in this browser, on top of each wallet's own password, and is asked for when a page opens.",

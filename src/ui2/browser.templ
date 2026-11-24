@@ -154,6 +154,7 @@ templ BrowserWalletView(w Wallet) {
 // has a name, so nothing in this form can be sent anywhere.
 templ BrowserCreatePage(load bool) {
 	@Layout(createTitle(ctx, load), "wallets") {
+		<i data-no-reload hidden></i>
 		<script src={ From(ctx).Root + "assets/scripts/wasm_exec.js" }></script>
 		<div class="page-head">
 			<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>

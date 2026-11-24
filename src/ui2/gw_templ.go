@@ -1516,14 +1516,14 @@ func GwReview(v GwSendView) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<div class=\"card sub\"><h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<i data-no-reload hidden></i><div class=\"card sub\"><h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var93 string
 		templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.review-title"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 231, Col: 35}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 232, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
 		if templ_7745c5c3_Err != nil {
@@ -1536,7 +1536,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var94 string
 		templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.to"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 233, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 234, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
 		if templ_7745c5c3_Err != nil {
@@ -1549,7 +1549,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var95 string
 		templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(v.To)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 234, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 235, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 		if templ_7745c5c3_Err != nil {
@@ -1562,7 +1562,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var96 string
 		templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "gw.amount", "symbol", v.Coin.CoinSymbol))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 235, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 236, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 		if templ_7745c5c3_Err != nil {
@@ -1575,7 +1575,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var97 string
 		templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(v.Amount)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 236, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 237, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 		if templ_7745c5c3_Err != nil {
@@ -1588,7 +1588,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var98 string
 		templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.fee"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 237, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 238, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 		if templ_7745c5c3_Err != nil {
@@ -1601,7 +1601,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var99 string
 		templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "gw.speed-"+v.Preset))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 238, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 239, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 		if templ_7745c5c3_Err != nil {
@@ -1614,7 +1614,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var100 string
 		templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(v.FeeText)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 238, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 239, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 		if templ_7745c5c3_Err != nil {
@@ -1627,7 +1627,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var101 string
 		templ_7745c5c3_Var101, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.ID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 241, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 242, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var101)
 		if templ_7745c5c3_Err != nil {
@@ -1640,7 +1640,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var102 string
 		templ_7745c5c3_Var102, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.To).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 242, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 243, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var102)
 		if templ_7745c5c3_Err != nil {
@@ -1653,7 +1653,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var103 string
 		templ_7745c5c3_Var103, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.Amount).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 243, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 244, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var103)
 		if templ_7745c5c3_Err != nil {
@@ -1666,7 +1666,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var104 string
 		templ_7745c5c3_Var104, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.Preset).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 244, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 245, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var104)
 		if templ_7745c5c3_Err != nil {
@@ -1684,7 +1684,7 @@ func GwReview(v GwSendView) templ.Component {
 			var templ_7745c5c3_Var105 string
 			templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.password"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 247, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 248, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 			if templ_7745c5c3_Err != nil {
@@ -1702,7 +1702,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var106 string
 		templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.send"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 252, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 253, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 		if templ_7745c5c3_Err != nil {
@@ -1715,7 +1715,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var107 string
 		templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "send.cancel"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 253, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 254, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
 		if templ_7745c5c3_Err != nil {
@@ -1728,7 +1728,7 @@ func GwReview(v GwSendView) templ.Component {
 		var templ_7745c5c3_Var108 string
 		templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "ui2.working"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 254, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 255, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
 		if templ_7745c5c3_Err != nil {
@@ -1784,7 +1784,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var111 string
 			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "nav.coins"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 267, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 268, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 			if templ_7745c5c3_Err != nil {
@@ -1797,7 +1797,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var112 string
 			templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.endpoints"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 269, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 270, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var112))
 			if templ_7745c5c3_Err != nil {
@@ -1818,7 +1818,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var113 string
 			templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.name"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 276, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 277, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var113))
 			if templ_7745c5c3_Err != nil {
@@ -1831,7 +1831,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var114 string
 			templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.kind"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 277, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 278, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var114))
 			if templ_7745c5c3_Err != nil {
@@ -1849,7 +1849,7 @@ func CoinsPage(v CoinsView) templ.Component {
 				var templ_7745c5c3_Var115 string
 				templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinStringErrs(c.Label())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 284, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 285, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var115))
 				if templ_7745c5c3_Err != nil {
@@ -1862,7 +1862,7 @@ func CoinsPage(v CoinsView) templ.Component {
 				var templ_7745c5c3_Var116 string
 				templ_7745c5c3_Var116, templ_7745c5c3_Err = templruntime.NewAttributeExpression(T(ctx, "coins.kind")).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 285, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 286, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var116)
 				if templ_7745c5c3_Err != nil {
@@ -1875,7 +1875,7 @@ func CoinsPage(v CoinsView) templ.Component {
 				var templ_7745c5c3_Var117 string
 				templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(c.CoinType)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 285, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 286, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var117))
 				if templ_7745c5c3_Err != nil {
@@ -1893,7 +1893,7 @@ func CoinsPage(v CoinsView) templ.Component {
 					var templ_7745c5c3_Var118 string
 					templ_7745c5c3_Var118, templ_7745c5c3_Err = templruntime.NewAttributeExpression(removeVals(c.CustomID)).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 288, Col: 95}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 289, Col: 95}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var118)
 					if templ_7745c5c3_Err != nil {
@@ -1906,7 +1906,7 @@ func CoinsPage(v CoinsView) templ.Component {
 					var templ_7745c5c3_Var119 string
 					templ_7745c5c3_Var119, templ_7745c5c3_Err = templruntime.NewAttributeExpression(T(ctx, "coins.remove-confirm")).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 288, Col: 141}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 289, Col: 141}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var119)
 					if templ_7745c5c3_Err != nil {
@@ -1919,7 +1919,7 @@ func CoinsPage(v CoinsView) templ.Component {
 					var templ_7745c5c3_Var120 string
 					templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.remove"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 288, Col: 212}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 289, Col: 212}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
 					if templ_7745c5c3_Err != nil {
@@ -1942,7 +1942,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var121 string
 			templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.add-title"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 299, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 300, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var121))
 			if templ_7745c5c3_Err != nil {
@@ -1955,7 +1955,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var122 string
 			templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.kind"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 302, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 303, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var122))
 			if templ_7745c5c3_Err != nil {
@@ -1968,7 +1968,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var123 string
 			templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.kind-fiber"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 304, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 305, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var123))
 			if templ_7745c5c3_Err != nil {
@@ -1981,7 +1981,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var124 string
 			templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.kind-erc20"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 305, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 306, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var124))
 			if templ_7745c5c3_Err != nil {
@@ -1994,7 +1994,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var125 string
 			templ_7745c5c3_Var125, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.name"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 309, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 310, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var125))
 			if templ_7745c5c3_Err != nil {
@@ -2007,7 +2007,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var126 string
 			templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.ticker"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 313, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 314, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var126))
 			if templ_7745c5c3_Err != nil {
@@ -2020,7 +2020,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var127 string
 			templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.node-url"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 317, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 318, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var127))
 			if templ_7745c5c3_Err != nil {
@@ -2033,7 +2033,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var128 string
 			templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.contract"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 321, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 322, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var128))
 			if templ_7745c5c3_Err != nil {
@@ -2046,7 +2046,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var129 string
 			templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.decimals"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 325, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 326, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var129))
 			if templ_7745c5c3_Err != nil {
@@ -2059,7 +2059,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var130 string
 			templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.add-help"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 328, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 329, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var130))
 			if templ_7745c5c3_Err != nil {
@@ -2072,7 +2072,7 @@ func CoinsPage(v CoinsView) templ.Component {
 			var templ_7745c5c3_Var131 string
 			templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.add"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 329, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 330, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var131))
 			if templ_7745c5c3_Err != nil {
@@ -2130,7 +2130,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 			var templ_7745c5c3_Var134 string
 			templ_7745c5c3_Var134, templ_7745c5c3_Err = templruntime.NewAttributeExpression(T(ctx, "nav.coins")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 341, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 342, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var134)
 			if templ_7745c5c3_Err != nil {
@@ -2143,7 +2143,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 			var templ_7745c5c3_Var135 string
 			templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.endpoints"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 342, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 343, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var135))
 			if templ_7745c5c3_Err != nil {
@@ -2173,7 +2173,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var136 string
 				templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.no-eth"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 348, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 349, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var136))
 				if templ_7745c5c3_Err != nil {
@@ -2192,7 +2192,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var137 string
 				templ_7745c5c3_Var137, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.endpoints-help"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 351, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 352, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var137))
 				if templ_7745c5c3_Err != nil {
@@ -2205,7 +2205,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var138 string
 				templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.rpc-urls"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 354, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 355, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var138))
 				if templ_7745c5c3_Err != nil {
@@ -2218,7 +2218,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var139 string
 				templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.JoinStringErrs(joinLines(v.Endpoints.RPCURLs))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 355, Col: 126}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 356, Col: 126}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var139))
 				if templ_7745c5c3_Err != nil {
@@ -2231,7 +2231,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var140 string
 				templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.indexer-url"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 358, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 359, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var140))
 				if templ_7745c5c3_Err != nil {
@@ -2244,7 +2244,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var141 string
 				templ_7745c5c3_Var141, templ_7745c5c3_Err = templruntime.NewAttributeExpression(v.Endpoints.IndexerURL).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 359, Col: 75}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 360, Col: 75}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var141)
 				if templ_7745c5c3_Err != nil {
@@ -2257,7 +2257,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var142 string
 				templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.defaults", "rpc", joinComma(v.Endpoints.DefaultRPCURLs), "indexer", v.Endpoints.DefaultIndexerURL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 361, Col: 140}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 362, Col: 140}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var142))
 				if templ_7745c5c3_Err != nil {
@@ -2270,7 +2270,7 @@ func EndpointsPage(v EndpointsView) templ.Component {
 				var templ_7745c5c3_Var143 string
 				templ_7745c5c3_Var143, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "coins.save"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 362, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `gw.templ`, Line: 363, Col: 86}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var143))
 				if templ_7745c5c3_Err != nil {

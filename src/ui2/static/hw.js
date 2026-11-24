@@ -91,6 +91,10 @@
 	var pinTitle = 'pin';
 	// run calls the daemon and answers its requests until the operation ends.
 	function run(method, route, body) {
+		var p = runNow(method, route, body);
+		return window.ui2Hold ? window.ui2Hold(p) : p;
+	}
+	function runNow(method, route, body) {
 		function step(d) {
 			if (typeof d !== 'string') return d;
 			var next = null;

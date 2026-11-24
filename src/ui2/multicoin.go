@@ -39,6 +39,7 @@ func newMultiCoin(base Node, o Options) *multiCoin {
 	m := &multiCoin{base: base, o: o, pages: map[int]http.Handler{}}
 	m.own = http.NewServeMux()
 	m.own.Handle("/static/", assets)
+	m.own.HandleFunc("/build", serveBuild(o))
 	m.own.HandleFunc("/coins", m.coinsPage)
 	m.own.HandleFunc("/coins/endpoints", m.endpointsPage)
 	return m
@@ -69,7 +70,7 @@ func (m *multiCoin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sort.SliceStable(all, func(i, j int) bool { return all[i].ID < all[j].ID })
 	cur := pick(r, all)
 	r = r.WithContext(context.WithValue(r.Context(), coinsKey{}, &coinState{cur: cur, all: all}))
-	if r.URL.Path == "/coins" || strings.HasPrefix(r.URL.Path, "/coins/") || strings.HasPrefix(r.URL.Path, "/static/") {
+	if r.URL.Path == "/coins" || r.URL.Path == "/build" || strings.HasPrefix(r.URL.Path, "/coins/") || strings.HasPrefix(r.URL.Path, "/static/") {
 		m.own.ServeHTTP(w, r)
 		return
 	}

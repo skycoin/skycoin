@@ -167,10 +167,17 @@ func fmaFiniteNonzero(x float64) bool {
 // rounded square root in integer arithmetic. math.Sqrt is correctly rounded
 // too and compiles to the instruction. Like the translated original it makes
 // no signal check.
+//
+// A negative or NaN x takes musl's __math_invalid path. The instruction makes
+// the same NaN, but with GO386=softfloat math.Sqrt is the pure Go one, which
+// returns math.NaN() or x itself instead.
 func Xsqrt(tls *TLS, x float64) (r float64) {
 	if __ccgo_strace {
 		trc("tls=%v x=%v, (%v:)", tls, x, origin(2))
 		defer func() { trc("-> %v", r) }()
+	}
+	if !(x >= 0) {
+		return (x - x) / (x - x)
 	}
 	return math.Sqrt(x)
 }

@@ -1,4 +1,4 @@
-# github.com/0magnet/bbolt v1.5.1-0.20261004201233-f6a048c19b9a
+# github.com/0magnet/bbolt v1.5.1-0.20261004204806-45fff0d5382d
 ## explicit; go 1.26.0
 github.com/0magnet/bbolt
 github.com/0magnet/bbolt/errors
@@ -87,7 +87,7 @@ github.com/itchyny/gojq
 # github.com/itchyny/timefmt-go v0.1.9
 ## explicit; go 1.24
 github.com/itchyny/timefmt-go
-# github.com/klauspost/compress v1.20.4
+# github.com/klauspost/compress v1.20.5
 ## explicit; go 1.25
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
@@ -142,7 +142,7 @@ github.com/sergi/go-diff/diffmatchpatch
 # github.com/shopspring/decimal v1.6.0
 ## explicit; go 1.10
 github.com/shopspring/decimal
-# github.com/sirupsen/logrus v1.10.3-0.20261117174421-40042a1bf4df
+# github.com/sirupsen/logrus v1.10.3-0.20261118153946-954b418844d9
 ## explicit; go 1.23
 github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
@@ -216,7 +216,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.16.0
 ## explicit; go 1.26.0
 golang.org/x/time/rate
-# modernc.org/libc v1.81.2
+# modernc.org/libc v1.82.13
 ## explicit; go 1.26.0
 modernc.org/libc
 modernc.org/libc/errno
@@ -226,6 +226,7 @@ modernc.org/libc/grp
 modernc.org/libc/honnef.co/go/netdb
 modernc.org/libc/langinfo
 modernc.org/libc/limits
+modernc.org/libc/locale
 modernc.org/libc/netdb
 modernc.org/libc/netinet/in
 modernc.org/libc/poll
@@ -250,7 +251,7 @@ modernc.org/mathutil
 # modernc.org/memory v1.13.0
 ## explicit; go 1.23.0
 modernc.org/memory
-# modernc.org/sqlite v1.62.0
+# modernc.org/sqlite v1.63.0
 ## explicit; go 1.26.0
 modernc.org/sqlite
 modernc.org/sqlite/lib

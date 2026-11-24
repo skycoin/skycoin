@@ -2755,7 +2755,7 @@ func Yfloorf(tls *TLS, x3 float32) (r float32)
 func Yfloorl(tls *TLS, x float64) (r float64)
 
 //go:noescape
-func Yfma(tls *TLS, x float64, y float64, z float64) (r1 float64)
+func Yfma(tls *TLS, x float64, y float64, z float64) (r float64)
 
 //go:noescape
 func Yfmaf(t *TLS, x, y, z float32) (r float32)
@@ -5125,10 +5125,10 @@ func Ysplice(tls *TLS, fd_in int32, off_in uintptr, fd_out int32, off_out uintpt
 func Ysprintf(tls *TLS, s uintptr, fmt uintptr, va uintptr) (r int32)
 
 //go:noescape
-func Ysqrt(tls *TLS, x1 float64) (r1 float64)
+func Ysqrt(tls *TLS, x float64) (r float64)
 
 //go:noescape
-func Ysqrtf(tls *TLS, x1 float32) (r1 float32)
+func Ysqrtf(tls *TLS, x float32) (r float32)
 
 //go:noescape
 func Ysqrtl(tls *TLS, x float64) (r float64)

@@ -236,19 +236,6 @@ func Xchmod(t *TLS, pathname uintptr, mode types.Mode_t) int32 {
 	return 0
 }
 
-// time_t time(time_t *tloc);
-func Xtime(t *TLS, tloc uintptr) time.Time_t {
-	if __ccgo_strace {
-		trc("t=%v tloc=%v, (%v:)", t, tloc, origin(2))
-	}
-	panic(todo(""))
-	// n := time.Now().UTC().Unix()
-	// if tloc != 0 {
-	// 	*(*types.Time_t)(unsafe.Pointer(tloc)) = types.Time_t(n)
-	// }
-	// return types.Time_t(n)
-}
-
 // int utimes(const char *filename, const struct timeval times[2]);
 func Xutimes(t *TLS, filename, times uintptr) int32 {
 	if __ccgo_strace {

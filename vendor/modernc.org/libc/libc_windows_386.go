@@ -6,8 +6,6 @@ package libc // import "modernc.org/libc"
 
 import (
 	"golang.org/x/sys/windows"
-	"os"
-	"strings"
 	gotime "time"
 	"unsafe"
 
@@ -292,24 +290,6 @@ func Xgetrlimit64(t *TLS, resource int32, rlim uintptr) int32 {
 	// 	return 0
 }
 
-// time_t time(time_t *tloc);
-func Xtime(t *TLS, tloc uintptr) types.Time_t {
-	if __ccgo_strace {
-		trc("t=%v tloc=%v, (%v:)", t, tloc, origin(2))
-	}
-	panic(todo(""))
-	// 	n, _, err := unix.Syscall(unix.SYS_TIME, tloc, 0, 0)
-	// 	if err != 0 {
-	// 		t.setErrno(err)
-	// 		return types.Time_t(-1)
-	// 	}
-	//
-	// 	if tloc != 0 {
-	// 		*(*types.Time_t)(unsafe.Pointer(tloc)) = types.Time_t(n)
-	// 	}
-	// 	return types.Time_t(n)
-}
-
 // int mkdir(const char *path, mode_t mode);
 func Xmkdir(t *TLS, path uintptr, mode types.Mode_t) int32 {
 	if __ccgo_strace {
@@ -478,39 +458,7 @@ func Xfopen64(t *TLS, pathname, mode uintptr) uintptr {
 	if __ccgo_strace {
 		trc("t=%v mode=%v, (%v:)", t, mode, origin(2))
 	}
-
-	m := strings.ReplaceAll(GoString(mode), "b", "")
-	var flags int
-	switch m {
-	case "r":
-		flags = os.O_RDONLY
-	case "r+":
-		flags = os.O_RDWR
-	case "w":
-		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
-	case "w+":
-		flags = os.O_RDWR | os.O_CREATE | os.O_TRUNC
-	case "a":
-		flags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
-	case "a+":
-		flags = os.O_RDWR | os.O_CREATE | os.O_APPEND
-	default:
-		panic(m)
-	}
-	//TODO- flags |= fcntl.O_LARGEFILE
-	h, err := windows.Open(GoString(pathname), int(flags), uint32(0666))
-	if err != nil {
-		t.setErrno(err)
-		return 0
-	}
-
-	p, _ := wrapFdHandle(h)
-	if p != 0 {
-		return p
-	}
-	_ = windows.Close(h)
-	t.setErrno(errno.ENOMEM)
-	return 0
+	return fopen(t, pathname, mode)
 }
 
 func Xrecv(t *TLS, sockfd uint32, buf uintptr, len, flags int32) int32 {

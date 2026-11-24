@@ -296,6 +296,19 @@ func MemStat() MemAllocatorStat {
 	return MemAllocatorStat{}
 }
 
+// MemTrim returns to the OS the empty pages the allocator retains for reuse.
+// Pages that still hold a live block stay mapped.
+//
+// MemTrim is never necessary for correctness. It trades a smaller resident set
+// now for the cost of mapping the pages again later.
+func MemTrim() error {
+	allocatorMu.Lock()
+
+	defer allocatorMu.Unlock()
+
+	return allocator.Trim()
+}
+
 func Xmalloc_usable_size(tls *TLS, p uintptr) (r Tsize_t) {
 	return UsableSize(p)
 }

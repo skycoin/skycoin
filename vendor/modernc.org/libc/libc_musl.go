@@ -82,8 +82,14 @@
 //
 // # Signals
 //
-// Signal handling in translated C code is not coordinated with the Go runtime.
-// This is probably the same as when running C code via CGo.
+// A handler that C code installs with signal or sigaction gets the signal
+// through os/signal. It runs on the C thread that installed it, at that
+// thread's next check point: when a function that took stack memory from its
+// TLS returns, and in some native routines such as fabs. Unlike in C, a handler
+// does not interrupt the code running at the time, so a loop that reaches no
+// check point, an interpreter running an empty endless loop for example, never
+// runs it. A Go program that must handle such a signal promptly can catch it
+// with os/signal itself.
 //
 // # Environmental variables
 //
@@ -123,7 +129,6 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"os/exec"
 	gosignal "os/signal"
 	"path/filepath"
 	"runtime"
@@ -279,6 +284,10 @@ type tlsStackSlot struct {
 	sz Tsize_t
 }
 
+// The TLSAlloc fast paths in tls_linux_amd64.s and tls_linux_arm64.s index
+// tls.stack by shifting sp left by 4, the size of a slot on 64-bit targets.
+var _ = [1]struct{}{}[unsafe.Sizeof(tlsStackSlot{})-2*unsafe.Sizeof(uintptr(0))]
+
 // TLS emulates thread local storage. TLS is not safe for concurrent use by
 // multiple goroutines.
 type TLS struct {
@@ -315,11 +324,11 @@ type TLS struct {
 
 	allocaSeq uintptr // numbers the alloca regions, see TLSCheckpoint
 
-	// Free malloc slots, indexed by the log of the slot size, see
-	// mem_musl.go. Unused by the libc.membrk and libc.memgrind allocators.
-	// The length is a power of two so that masking the index makes the
-	// bounds check go away.
-	tcache [16]tcacheBin
+	// Free malloc slots, a bin for each size class of modernc.org/memory
+	// up to tcacheMaxSize, see mem_musl.go. Unused by the libc.membrk and
+	// libc.memgrind allocators. The length is a power of two so that
+	// masking the index makes the bounds check go away.
+	tcache [64]tcacheBin
 }
 
 // tcacheBin is a stack of free malloc slots of one size, linked through their
@@ -1264,27 +1273,6 @@ func Xdlclose(t *TLS, handle uintptr) int32 {
 	panic(todo(""))
 }
 
-func Xsystem(t *TLS, command uintptr) int32 {
-	if __ccgo_strace {
-		trc("t=%v command=%v, (%v:)", t, command, origin(2))
-	}
-	s := GoString(command)
-	if command == 0 {
-		panic(todo(""))
-	}
-
-	cmd := exec.Command("sh", "-c", s)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		ps := err.(*exec.ExitError)
-		return int32(ps.ExitCode())
-	}
-
-	return 0
-}
-
 func Xsched_yield(tls *TLS) int32 {
 	runtime.Gosched()
 	return 0
@@ -1545,9 +1533,25 @@ func Xfts_read(t *TLS, ftsp uintptr) uintptr {
 	panic(todo(""))
 }
 
-// FILE *popen(const char *command, const char *type);
-func Xpopen(t *TLS, command, type1 uintptr) uintptr {
-	panic(todo(""))
+// FILE *popen(const char *command, const char *mode);
+//
+// musl's pclose, which waits for f->pipe_pid, works with it unchanged. See
+// popen for how it differs from musl's.
+func Xpopen(t *TLS, command, mode uintptr) (r uintptr) {
+	if __ccgo_strace {
+		trc("t=%v command=%v mode=%v, (%v:)", t, command, mode, origin(2))
+		defer func() { trc("-> %v", r) }()
+	}
+	op, ok := popenMode(t, mode)
+	if !ok {
+		return 0
+	}
+
+	f, pid := popen(t, command, op, func(fd int32) uintptr { return Xfdopen(t, fd, mode) })
+	if f != 0 {
+		(*TFILE)(unsafe.Pointer(f)).Fpipe_pid = int32(pid)
+	}
+	return f
 }
 
 // int sysctlbyname(const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen);

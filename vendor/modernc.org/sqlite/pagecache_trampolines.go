@@ -41,9 +41,8 @@ import (
 //
 // Threading invariant: all Cache callbacks for a single pcacheBinding
 // are serialised by the SQLite engine, but not always on one goroutine.
-// Without shared cache, a binding belongs to one connection, which is
-// opened SQLITE_OPEN_FULLMUTEX and which database/sql never uses from
-// two goroutines at once. With cache=shared in a "file:" DSN, every
+// Without shared cache, a binding belongs to one connection, which
+// database/sql never uses from two goroutines at once. With cache=shared in a "file:" DSN, every
 // connection sharing the cache reaches the same binding, each from its
 // own goroutine, and SQLite serialises them through the BtShared mutex.
 // The mutex on pcacheBinding gives the race detector the happens-before

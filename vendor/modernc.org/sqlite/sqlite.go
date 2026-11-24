@@ -588,7 +588,7 @@ type FunctionImpl struct {
 	// When in doubt, leave VolatileArgs at its default (false) — the driver
 	// already pools the argument-slice header (issue #226), so the per-row
 	// overhead with VolatileArgs=false is one make([]byte) per BLOB column
-	// and one libc.GoString per TEXT column, not a fresh slice header.
+	// and one copy of the string per TEXT column, not a fresh slice header.
 	//
 	// Similarly, do not re-enter SQLite on the same connection while a
 	// volatile argument is in scope. A nested Query/Exec on the same conn
@@ -993,16 +993,17 @@ func functionArgs(tls *libc.TLS, ctx uintptr, argc int32, argv uintptr, volatile
 
 		switch valType := sqlite3.Xsqlite3_value_type(tls, valPtr); valType {
 		case sqlite3.SQLITE_TEXT:
-			if volatile {
-				p := sqlite3.Xsqlite3_value_text(tls, valPtr)
-				n := sqlite3.Xsqlite3_value_bytes(tls, valPtr)
-				if p == 0 || n == 0 {
-					args[i] = ""
-				} else {
-					args[i] = unsafe.String((*byte)(unsafe.Pointer(p)), int(n))
-				}
-			} else {
-				args[i] = libc.GoString(sqlite3.Xsqlite3_value_text(tls, valPtr))
+			// The length is SQLite's: a TEXT value can hold a NUL, and the
+			// first one is not its end.
+			p := sqlite3.Xsqlite3_value_text(tls, valPtr)
+			n := sqlite3.Xsqlite3_value_bytes(tls, valPtr)
+			switch {
+			case p == 0 || n == 0:
+				args[i] = ""
+			case volatile:
+				args[i] = unsafe.String((*byte)(unsafe.Pointer(p)), int(n))
+			default:
+				args[i] = string((*libc.RawMem)(unsafe.Pointer(p))[:n:n])
 			}
 		case sqlite3.SQLITE_INTEGER:
 			args[i] = sqlite3.Xsqlite3_value_int64(tls, valPtr)

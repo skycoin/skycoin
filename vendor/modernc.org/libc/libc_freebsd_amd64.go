@@ -237,19 +237,6 @@ func Xchmod(t *TLS, pathname uintptr, mode types.Mode_t) int32 {
 	return 0
 }
 
-// time_t time(time_t *tloc);
-func Xtime(t *TLS, tloc uintptr) time.Time_t {
-	if __ccgo_strace {
-		trc("t=%v tloc=%v, (%v:)", t, tloc, origin(2))
-	}
-	panic(todo(""))
-	// n := time.Now().UTC().Unix()
-	// if tloc != 0 {
-	// 	*(*types.Time_t)(unsafe.Pointer(tloc)) = types.Time_t(n)
-	// }
-	// return types.Time_t(n)
-}
-
 // int utimes(const char *filename, const struct timeval times[2]);
 func Xutimes(t *TLS, filename, times uintptr) int32 {
 	if __ccgo_strace {
@@ -902,40 +889,6 @@ func Xfstatfs(t *TLS, fd int32, buf uintptr) int32 {
 		dmesg("%v: %v: ok", origin(1), fd)
 	}
 	return 0
-}
-
-type lconv = struct {
-	Fdecimal_point      uintptr
-	Fthousands_sep      uintptr
-	Fgrouping           uintptr
-	Fint_curr_symbol    uintptr
-	Fcurrency_symbol    uintptr
-	Fmon_decimal_point  uintptr
-	Fmon_thousands_sep  uintptr
-	Fmon_grouping       uintptr
-	Fpositive_sign      uintptr
-	Fnegative_sign      uintptr
-	Fint_frac_digits    int8
-	Ffrac_digits        int8
-	Fp_cs_precedes      int8
-	Fp_sep_by_space     int8
-	Fn_cs_precedes      int8
-	Fn_sep_by_space     int8
-	Fp_sign_posn        int8
-	Fn_sign_posn        int8
-	Fint_p_cs_precedes  int8
-	Fint_p_sep_by_space int8
-	Fint_n_cs_precedes  int8
-	Fint_n_sep_by_space int8
-	Fint_p_sign_posn    int8
-	Fint_n_sign_posn    int8
-	F__ccgo_pad1        [2]byte
-}
-
-var posix_lconv = lconv{Fdecimal_point: ts + 23, Fthousands_sep: ts + 13, Fgrouping: ts + 13, Fint_curr_symbol: ts + 13, Fcurrency_symbol: ts + 13, Fmon_decimal_point: ts + 13, Fmon_thousands_sep: ts + 13, Fmon_grouping: ts + 13, Fpositive_sign: ts + 13, Fnegative_sign: ts + 13, Fint_frac_digits: Int8FromInt32(255), Ffrac_digits: Int8FromInt32(255), Fp_cs_precedes: Int8FromInt32(255), Fp_sep_by_space: Int8FromInt32(255), Fn_cs_precedes: Int8FromInt32(255), Fn_sep_by_space: Int8FromInt32(255), Fp_sign_posn: Int8FromInt32(255), Fn_sign_posn: Int8FromInt32(255), Fint_p_cs_precedes: Int8FromInt32(255), Fint_p_sep_by_space: Int8FromInt32(255), Fint_n_cs_precedes: Int8FromInt32(255), Fint_n_sep_by_space: Int8FromInt32(255), Fint_p_sign_posn: Int8FromInt32(255), Fint_n_sign_posn: Int8FromInt32(255)} /* localeconv.c:4:27 */
-
-func Xlocaleconv(tls *TLS) uintptr { /* localeconv.c:31:14: */
-	return uintptr(unsafe.Pointer(&posix_lconv))
 }
 
 func X__tolower(tls *TLS, c int32) int32 { /* table.c:1878:20: */

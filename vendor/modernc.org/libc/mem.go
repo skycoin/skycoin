@@ -154,6 +154,19 @@ func MemStat() MemAllocatorStat {
 	}
 }
 
+// MemTrim returns to the OS the empty pages the allocator retains for reuse.
+// Pages that still hold a live block stay mapped.
+//
+// MemTrim is never necessary for correctness. It trades a smaller resident set
+// now for the cost of mapping the pages again later.
+func MemTrim() error {
+	allocMu.Lock()
+
+	defer allocMu.Unlock()
+
+	return allocator.Trim()
+}
+
 // MemAuditStart locks the memory allocator, initializes and enables memory
 // auditing. Finaly it unlocks the memory allocator.
 //

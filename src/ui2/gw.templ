@@ -227,6 +227,7 @@ templ GwSendPage(v GwSendView) {
 // GwReview confirms a gateway send and asks for the password, which goes
 // only with the request that sends.
 templ GwReview(v GwSendView) {
+	<i data-no-reload hidden></i>
 	<div class="card sub">
 		<h2>{ T(ctx, "send.review-title") }</h2>
 		<dl class="kv">

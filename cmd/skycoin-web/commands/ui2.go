@@ -16,7 +16,7 @@ import (
 // node choice and dialer as the Angular wallet.
 func mountUIs(mux *http.ServeMux, guiFS fs.FS) {
 	client := api.HandlerClient(mux, "localhost")
-	mux.Handle("/", ui2.Handler(client, ui2.Options{Coins: ui2.NewCoinHost(mux, "localhost")}))
+	mux.Handle("/", ui2.Handler(client, ui2.Options{Coins: ui2.NewCoinHost(mux, "localhost"), Build: gui.CipherWasmVersion}))
 	mux.Handle("/ui2/", api.MovedPrefix("/ui2", ""))
 	api.MountAngular(mux, gui.HandlerFS(guiFS), true)
 }

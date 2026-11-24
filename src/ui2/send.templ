@@ -59,6 +59,7 @@ func sendTitle(ctx context.Context, s Send) string {
 // ReviewView shows the signed transaction before it is sent. Its own form
 // carries only the transaction, never the password.
 templ ReviewView(r Review) {
+	<i data-no-reload hidden></i>
 	if r.Err != "" {
 		if strings.HasPrefix(r.Err, "send.") {
 			@ErrorBox(T(ctx, r.Err))
@@ -147,6 +148,7 @@ templ SentAllView(back string, txids []string, total int, err string) {
 // UnsignedView is a transaction made without signatures, to sign on
 // another machine or by another wallet and broadcast later.
 templ UnsignedView(r Review) {
+	<i data-no-reload hidden></i>
 	if r.Err != "" {
 		@ErrorBox(T(ctx, r.Err))
 	} else {

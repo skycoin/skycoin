@@ -9,6 +9,7 @@ import (
 // wallet from a seed the user already has.
 templ CreatePage(load bool) {
 	@Layout(createTitle(ctx, load), "wallets") {
+		<i data-no-reload hidden></i>
 		<div class="page-head">
 			<a class="icon-btn" href="./" aria-label={ T(ctx, "nav.wallets") }><span class="mi">arrow_back</span></a>
 			<h1>{ createTitle(ctx, load) }</h1>
@@ -106,6 +107,7 @@ func createTitle(ctx context.Context, load bool) string {
 // SeedStep shows a new seed once and asks for it back before the wallet is
 // made. The seed only lives in this form until the create call.
 templ SeedStep(seed string) {
+	<i data-no-reload hidden></i>
 	<div class="alert warn">
 		<p><strong>{ T(ctx, "create.seed-warning-title") }</strong></p>
 		<p>{ T(ctx, "create.seed-warning") }</p>

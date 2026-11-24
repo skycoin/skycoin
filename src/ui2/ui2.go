@@ -50,6 +50,8 @@ type Page struct {
 	Lang    string
 	Classic string
 	Root    string
+	// Build is the BuildID the page was served with.
+	Build string
 	// Coin is the coin the pages are about, and Coins every coin the host
 	// offers, when it serves several.
 	Coin  *Coin

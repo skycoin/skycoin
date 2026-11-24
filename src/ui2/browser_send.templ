@@ -72,6 +72,7 @@ templ BrowserSendPage(id, from string) {
 // BrowserReview shows the unsigned transaction. bw.js checks its outputs
 // against the form, signs it in the page and posts only the signed result.
 templ BrowserReview(r Review, s SignRequest) {
+	<i data-no-reload hidden></i>
 	if r.Err != "" {
 		if strings.HasPrefix(r.Err, "send.") || strings.HasPrefix(r.Err, "bw.") {
 			@ErrorBox(T(ctx, r.Err))
@@ -117,6 +118,7 @@ templ BrowserSendSources(s Send) {
 // BrowserUnsigned is a browser wallet's transaction left unsigned. bw.js
 // stores the fresh change address it pays before showing it.
 templ BrowserUnsigned(r Review, s SignRequest) {
+	<i data-no-reload hidden></i>
 	if r.Err != "" {
 		@ErrorBox(T(ctx, r.Err))
 	} else {

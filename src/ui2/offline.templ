@@ -55,6 +55,7 @@ templ walletSelect(ws []WalletChoice, sel, label string, optional bool) {
 
 // TxReviewView is a decoded transaction with what can be done with it next.
 templ TxReviewView(v TxView) {
+	<i data-no-reload hidden></i>
 	if v.Txid == "" {
 		@ErrorBox(T(ctx, v.Err))
 	} else {
@@ -264,6 +265,7 @@ templ OwnOutputsList(o OwnOutputs) {
 
 // JointCreated is a new joint transaction, ready to review and sign.
 templ JointCreated(raw, id string) {
+	<i data-no-reload hidden></i>
 	<div class="alert ok"><p>{ T(ctx, "joint.created") }</p></div>
 	<label class="raw">
 		{ T(ctx, "tx.raw") }

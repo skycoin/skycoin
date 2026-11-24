@@ -565,7 +565,9 @@ func (c *Coin) createGUI(gw *api.Gateway, sweeper *sweep.Service, host string, q
 			}
 			config.WebWallet = wallet
 		}
-		config.UI2 = func(client *api.Client) http.Handler { return ui2.Handler(client, ui2.Options{}) }
+		config.UI2 = func(client *api.Client) http.Handler {
+			return ui2.Handler(client, ui2.Options{Build: gui.CipherWasmVersion})
+		}
 	}
 
 	var s *api.Server

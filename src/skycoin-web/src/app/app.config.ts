@@ -11,6 +11,11 @@ export const config = {
       code: 'es',
       name: 'Español',
       iconName: 'es.png'
+    },
+    {
+      code: 'zh',
+      name: '中文',
+      iconName: 'zh.png'
     }
   ],
   defaultLanguage: 'en'

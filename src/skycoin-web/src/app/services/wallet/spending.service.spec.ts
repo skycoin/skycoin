@@ -106,7 +106,7 @@ describe('SpendingService', () => {
           return 'to perform transaction!';
         }
 
-        return undefined;
+        return param;
       });
     });
 

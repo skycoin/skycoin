@@ -12,7 +12,7 @@
         <div class="-headers">
           <div class="flex-fill -one-line-ellipsis">{{ wallet.label }}</div>
           <div class="-width-150 -text-right -not-on-small-and-below">{{ currentCoin.coinSymbol }}</div>
-          <div class="-width-150 -text-right -not-on-small-and-below">{{ currentCoin.hoursName }}</div>
+          <div class="-width-150 -text-right -not-on-small-and-below">{{ currentCoin.hoursName | translate }}</div>
         </div>
         <div class="-paper">
           @for (address of wallet.addresses; track address; let i = $index) {
@@ -45,7 +45,7 @@
                     <div class="-one-line-ellipsis">{{ output.coins | number:'1.0-6' }}</div>
                   </div>
                   <div class="list-row">
-                    <div class="element-label">{{ currentCoin.hoursName }}:</div>
+                    <div class="element-label">{{ currentCoin.hoursName | translate }}:</div>
                     <div class="-one-line-ellipsis">{{ output.calculated_hours | number:'1.0-0' }}</div>
                   </div>
                 </div>

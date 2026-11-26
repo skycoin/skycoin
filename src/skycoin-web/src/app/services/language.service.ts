@@ -18,7 +18,10 @@ export class LanguageData {
 export class LanguageService {
   currentLanguage = new ReplaySubject<LanguageData>();
 
+  // The Skywire dashboard keeps its language under the same localStorage key,
+  // and its ui2 pages in a cookie, so an embedded wallet starts in that language.
   private readonly storageKey = 'lang';
+  private readonly hostCookieName = 'ui2-lang';
 
   private languagesInternal: LanguageData[] = [];
   get languages(): LanguageData[] {
@@ -50,16 +53,29 @@ export class LanguageService {
 
   changeLanguage(langCode: string) {
     this.translate.use(langCode);
+    localStorage.setItem(this.storageKey, langCode);
   }
 
   private onLanguageChanged(event: LangChangeEvent) {
     this.currentLanguage.next(this.languages.find(val => val.code === event.lang)!);
-    localStorage.setItem(this.storageKey, event.lang);
   }
 
+  // The saved choice is only rewritten when the user picks a language, so a
+  // dashboard language the wallet lacks is kept for the dashboard.
   private loadCurrentLanguage() {
-    const storedLang = localStorage.getItem(this.storageKey);
-    const currentLang = storedLang ? storedLang : config.defaultLanguage;
-    this.translate.use(currentLang);
+    const candidates = [localStorage.getItem(this.storageKey), this.readCookie(this.hostCookieName)];
+    const currentLang = candidates.find(code => this.languages.some(lang => lang.code === code));
+    this.translate.use(currentLang ?? config.defaultLanguage);
+  }
+
+  private readCookie(name: string): string | null {
+    for (const part of document.cookie.split(';')) {
+      const [key, value] = part.trim().split('=');
+      if (key === name) {
+        return value ?? null;
+      }
+    }
+
+    return null;
   }
 }

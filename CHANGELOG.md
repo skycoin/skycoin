@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+### Added
+
+- The web wallet and its ui2 pages have a Simplified Chinese translation.
+  Embedded in the Skywire dashboard the wallet starts in the dashboard
+  language, and Coin Hours is translated wherever it is shown.
+  `make check-lang-zh` runs in CI and fails when an English text has no
+  Chinese entry.
+
 ### Fixed
 
 - A node built without version -ldflags, such as `skywire skycoin daemon`,

@@ -89,6 +89,9 @@ jobs:
       - name: Check OnPush change detection marks
         run: make check-onpush
 
+      - name: Check the Chinese wallet translation is complete
+        run: make check-lang-zh
+
       - name: Test UI
         run: make test-ui
 

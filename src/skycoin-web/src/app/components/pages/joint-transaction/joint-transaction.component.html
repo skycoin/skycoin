@@ -42,7 +42,7 @@
                     <mat-option [value]="out">
                       <span class="truncated-label">{{ out.hash }}</span> -
                       {{ out.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}
-                      ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }})
+                      ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }})
                     </mat-option>
                   }
                 </mat-select>
@@ -58,7 +58,7 @@
               <div class="-found">
                 <span class="truncated-label">{{ out.address }}</span> -
                 {{ out.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}
-                ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }})
+                ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }})
               </div>
             }
             @for (hash of missingHashes; track hash) {
@@ -75,7 +75,7 @@
                     [attr.aria-label]="'joint-tx.address' | translate">
                   <input formControlName="coins" [placeholder]="currentCoin?.coinSymbol || ''" class="-amount"
                     [attr.aria-label]="'joint-tx.coins' | translate">
-                  <input formControlName="hours" [placeholder]="currentCoin?.hoursName || ''" class="-amount"
+                  <input formControlName="hours" [placeholder]="(currentCoin?.hoursName || '') | translate" class="-amount"
                     [attr.aria-label]="'joint-tx.hours' | translate">
                   @if (destinations.length > 1) {
                     <span class="-remove" (click)="removeDestination(i)">&times;</span>
@@ -94,12 +94,12 @@
           <div class="-summary">
             <div>{{ 'joint-tx.inputs-total' | translate }}
               <b>{{ inputCoins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</b>,
-              <b>{{ inputHours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b></div>
+              <b>{{ inputHours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }}</b></div>
             <div>{{ 'joint-tx.outputs-total' | translate }}
               <b>{{ outputCoins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</b>,
-              <b>{{ outputHours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b></div>
+              <b>{{ outputHours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }}</b></div>
             <div>{{ 'joint-tx.fee' | translate }}
-              <b>{{ fee.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b>
+              <b>{{ fee.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }}</b>
               ({{ 'joint-tx.minimum' | translate }} {{ minimumFee.toString() | number:'1.0-0' }})</div>
             @if (leftoverCoins.isGreaterThan(0)) {
               <div>{{ 'joint-tx.change-coins' | translate }}
@@ -159,7 +159,7 @@
               <tr>
                 <td class="-addr">{{ input.address }}</td>
                 <td>{{ input.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</td>
-                <td>{{ input.hours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</td>
+                <td>{{ input.hours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }}</td>
                 <td [class.-yes]="input.signed">{{ (input.signed ? 'joint-tx.signed' : 'joint-tx.unsigned') | translate }}</td>
                 <td>@if (input.mine) {<b>{{ 'joint-tx.yours' | translate }}</b>}</td>
               </tr>
@@ -171,7 +171,7 @@
               <tr>
                 <td class="-addr">{{ output.address }}</td>
                 <td>{{ output.coins.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin?.coinSymbol }}</td>
-                <td>{{ output.hours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</td>
+                <td>{{ output.hours.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }}</td>
                 <td></td>
                 <td>@if (output.mine) {<b>{{ 'joint-tx.yours' | translate }}</b>}</td>
               </tr>
@@ -179,7 +179,7 @@
           </table>
           <div class="-summary">
             <div>{{ 'joint-tx.fee' | translate }}
-              <b>{{ tx.fee.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName }}</b>
+              <b>{{ tx.fee.toString() | number:'1.0-0' }} {{ currentCoin?.hoursName | translate }}</b>
               ({{ 'joint-tx.minimum' | translate }} {{ tx.minimumFee.toString() | number:'1.0-0' }})</div>
             <div>{{ 'joint-tx.signed-count' | translate:{ signed: tx.signedCount, total: tx.inputs.length } }}</div>
             @if (tx.fullySigned) {

@@ -559,7 +559,7 @@ export class SpendingService {
 
     if (totalCoins.isLessThan(amount) || totalHours.isLessThan(minimumHours)) {
       throw new Error(
-        `${this.translate.instant('service.wallet.not-enough-hours1')} ${ this.currentCoin.hoursName } ${ this.translate.instant('service.wallet.not-enough-hours2') }`
+        `${this.translate.instant('service.wallet.not-enough-hours1')} ${ this.translate.instant(this.currentCoin.hoursName || ' ') } ${ this.translate.instant('service.wallet.not-enough-hours2') }`
       );
     }
 

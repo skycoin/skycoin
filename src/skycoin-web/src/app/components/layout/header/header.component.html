@@ -30,7 +30,7 @@
           <p>{{ 'header.syncing-blocks' | translate }} {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}</p>
         }
         @if (!loading && currentCoin.hasHours()) {
-          <p>{{ hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }}</p>
+          <p>{{ hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName | translate }}</p>
         }
         <div class="-on-small-and-below-only">
           @if (this.problemUpdatingBalance) {

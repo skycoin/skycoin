@@ -97,3 +97,83 @@ func TestDepVersion(t *testing.T) {
 		}
 	})
 }
+
+func TestReleaseVersionFromModuleVersion(t *testing.T) {
+	cases := map[string]string{
+		"v0.28.8":                                     "0.28.8",
+		"v0.28.9-0.20261126101500-0123456789ab":       "0.28.8",
+		"v0.28.9-0.20261126101500-0123456789ab+dirty": "0.28.8",
+		"v0.29.0-rc1.0.20261126101500-0123456789ab":   "0.29.0-rc1",
+		"v0.29.0-rc1":                                 "0.29.0-rc1",
+		"v0.0.0-20261126101500-0123456789ab":          "",
+		"v0.28.0-0.20261126101500-0123456789ab":       "",
+		"(devel)":                                     "",
+		"":                                            "",
+	}
+	for moduleVersion, want := range cases {
+		if got := releaseVersionFromModuleVersion(moduleVersion); got != want {
+			t.Errorf("releaseVersionFromModuleVersion(%q) = %q, want %q", moduleVersion, got, want)
+		}
+	}
+}
+
+// skywire embeds the node, so the release comes from skywire's record of us.
+func TestReleaseVersionWhenEmbeddedInAnotherProgram(t *testing.T) {
+	withBuildInfo(t, &debug.BuildInfo{
+		Main: debug.Module{Path: "github.com/skycoin/skywire", Version: "v1.3.113"},
+		Deps: []*debug.Module{
+			{Path: ModulePath, Version: "v0.28.9-0.20261126101500-0123456789ab"},
+		},
+	}, func() {
+		if got := ReleaseVersion(); got != "0.28.8" {
+			t.Errorf("ReleaseVersion() = %q, want 0.28.8", got)
+		}
+	})
+}
+
+func TestReleaseVersionFollowsReplace(t *testing.T) {
+	withBuildInfo(t, &debug.BuildInfo{
+		Main: debug.Module{Path: "github.com/skycoin/skywire", Version: "v1.3.113"},
+		Deps: []*debug.Module{{
+			Path:    ModulePath,
+			Version: "v0.28.7",
+			Replace: &debug.Module{Path: "github.com/0magnet/skycoin", Version: "v0.28.8"},
+		}},
+	}, func() {
+		if got := ReleaseVersion(); got != "0.28.8" {
+			t.Errorf("ReleaseVersion() = %q, want the replacement's 0.28.8", got)
+		}
+	})
+}
+
+// The host's own version must never be reported as ours.
+func TestReleaseVersionIgnoresTheHostVersion(t *testing.T) {
+	withBuildInfo(t, &debug.BuildInfo{
+		Main: debug.Module{Path: "github.com/skycoin/skywire", Version: "v1.3.113"},
+	}, func() {
+		if got := ReleaseVersionWithLdflags(""); got != ReleaseFallback {
+			t.Errorf("ReleaseVersionWithLdflags(\"\") = %q, want %q", got, ReleaseFallback)
+		}
+	})
+}
+
+func TestReleaseVersionWithLdflagsPrefersLdflags(t *testing.T) {
+	withBuildInfo(t, &debug.BuildInfo{
+		Main: debug.Module{Path: ModulePath, Version: "v0.28.8"},
+	}, func() {
+		if got := ReleaseVersionWithLdflags("0.29.0"); got != "0.29.0" {
+			t.Errorf("ReleaseVersionWithLdflags(\"0.29.0\") = %q, want the ldflags value", got)
+		}
+		if got := ReleaseVersionWithLdflags(""); got != "0.28.8" {
+			t.Errorf("ReleaseVersionWithLdflags(\"\") = %q, want the build info's 0.28.8", got)
+		}
+	})
+}
+
+func TestReleaseVersionWithoutBuildInfo(t *testing.T) {
+	withBuildInfo(t, nil, func() {
+		if got := ReleaseVersionWithLdflags(""); got != ReleaseFallback {
+			t.Errorf("ReleaseVersionWithLdflags(\"\") = %q, want %q", got, ReleaseFallback)
+		}
+	})
+}

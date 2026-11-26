@@ -6,6 +6,8 @@ import (
 	"reflect"
 
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/util/buildinfo"
 )
 
 func versionCmd() *cobra.Command {
@@ -21,10 +23,10 @@ func versionCmd() *cobra.Command {
 				RPC     string `json:"rpc"`
 				Wallet  string `json:"wallet"`
 			}{
-				Version,
-				Version,
-				Version,
-				Version,
+				cliVersion(),
+				cliVersion(),
+				cliVersion(),
+				cliVersion(),
 			}
 
 			jsonOutput, err := c.Flags().GetBool("json")
@@ -48,4 +50,10 @@ func versionCmd() *cobra.Command {
 	versionCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
 
 	return versionCmd
+}
+
+// cliVersion is the ldflags Version, else the release the Go build info
+// records for this module.
+func cliVersion() string {
+	return buildinfo.ReleaseVersionWithLdflags(Version)
 }

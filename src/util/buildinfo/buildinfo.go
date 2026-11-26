@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 )
 
@@ -238,4 +239,75 @@ func (info *Info) WriteTo(w io.Writer) (int64, error) {
 	msg := fmt.Sprintf("Version %q built on %q against commit %q\n", info.Version, info.Date, info.Commit)
 	n, err := w.Write([]byte(msg))
 	return int64(n), err
+}
+
+// ReleaseFallback is the release a build reports when neither -ldflags nor the
+// Go build info name one, as in a test binary or a GOPATH build.
+const ReleaseFallback = "0.28.8"
+
+var (
+	releasePseudoAfterRelease    = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)-0\.\d{14}-[0-9a-f]{12}$`)
+	releasePseudoAfterPrerelease = regexp.MustCompile(`^(v\d+\.\d+\.\d+-.+)\.0\.\d{14}-[0-9a-f]{12}$`)
+	releaseTagged                = regexp.MustCompile(`^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$`)
+)
+
+// ReleaseVersionWithLdflags is the release this build reports. The -ldflags
+// value wins, then ReleaseVersion, then ReleaseFallback.
+func ReleaseVersionWithLdflags(ldflagsVersion string) string {
+	if ldflagsVersion != "" {
+		return ldflagsVersion
+	}
+	if v := ReleaseVersion(); v != "" {
+		return v
+	}
+	return ReleaseFallback
+}
+
+// ReleaseVersion is the skycoin release the Go build info records for this
+// module, without the leading v, or "" when it records none. This works both
+// when skycoin is the program and when another program, such as skywire,
+// embeds it.
+func ReleaseVersion() string {
+	return releaseVersionFromModuleVersion(moduleVersion())
+}
+
+// moduleVersion is this module's version in the build info, following a replace.
+func moduleVersion() string {
+	if bi == nil {
+		return ""
+	}
+	if bi.Main.Path == ModulePath {
+		return bi.Main.Version
+	}
+	for _, dep := range bi.Deps {
+		if dep.Path != ModulePath {
+			continue
+		}
+		if dep.Replace != nil && dep.Replace.Version != "" {
+			return dep.Replace.Version
+		}
+		return dep.Version
+	}
+	return ""
+}
+
+// releaseVersionFromModuleVersion turns a module version into a release. A
+// pseudo-version names the release it was built after, see
+// https://go.dev/ref/mod#pseudo-versions.
+func releaseVersionFromModuleVersion(moduleVersion string) string {
+	v, _, _ := strings.Cut(moduleVersion, "+")
+	if m := releasePseudoAfterRelease.FindStringSubmatch(v); m != nil {
+		patch, err := strconv.Atoi(m[3])
+		if err != nil || patch == 0 {
+			return ""
+		}
+		return fmt.Sprintf("%s.%s.%d", m[1], m[2], patch-1)
+	}
+	if m := releasePseudoAfterPrerelease.FindStringSubmatch(v); m != nil {
+		return strings.TrimPrefix(m[1], "v")
+	}
+	if releaseTagged.MatchString(v) && !commitRegex.MatchString(v) {
+		return strings.TrimPrefix(v, "v")
+	}
+	return ""
 }

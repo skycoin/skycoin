@@ -36,8 +36,9 @@ import (
 
 var (
 	// DB VERSION - WARNING: CHANGING WILL MAKE THE SYNCED BLOCKCHAIN NOT WORK WITH OLDER SOFTWARE VERSIONS
-	// Version of the node. Can be set by -ldflags
-	Version = "0.28.7"
+	// Version of the node. A release build sets it by -ldflags, otherwise
+	// nodeVersion takes it from the Go build info.
+	Version = ""
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -169,7 +170,7 @@ var RootCmd = &cobra.Command{
 		coin := skycoin.NewCoin(skycoin.Config{
 			Node: nodeConfig,
 			Build: readable.BuildInfo{
-				Version: Version,
+				Version: nodeVersion(),
 				Commit:  buildCommit(),
 				Branch:  Branch,
 			},
@@ -186,6 +187,12 @@ var RootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+// nodeVersion is the ldflags Version, else the release the Go build info
+// records for this module, so a node embedded in another program reports it.
+func nodeVersion() string {
+	return buildinfo.ReleaseVersionWithLdflags(Version)
 }
 
 // buildCommit is the ldflags Commit, else the commit the Go build info records

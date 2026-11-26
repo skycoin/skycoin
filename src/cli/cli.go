@@ -31,8 +31,9 @@ import (
 )
 
 var (
-	// Version is the CLI Version
-	Version = "0.28.7"
+	// Version is the CLI version. A release build sets it by -ldflags, otherwise
+	// cliVersion takes it from the Go build info.
+	Version = ""
 )
 
 const (
@@ -251,7 +252,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		haltCmd(),
 	}
 
-	skyCLI.Version = Version
+	skyCLI.Version = cliVersion()
 	skyCLI.SuggestionsMinimumDistance = 1
 	skyCLI.SilenceUsage = true
 	skyCLI.AddCommand(commands...)

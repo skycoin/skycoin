@@ -17,6 +17,7 @@ type Lang struct {
 var Langs = []Lang{
 	{"en", "English"},
 	{"es", "Español"},
+	{"zh", "中文"},
 }
 
 // LangCookie holds the chosen language. ui2.js keeps it in step with the

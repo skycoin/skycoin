@@ -18,7 +18,7 @@
             }</div>
             <div class="-width-130 -align-right">{{ currentCoin.coinSymbol }}</div>
             @if (currentCoin.hasHours()) {
-              <div class="-width-130 -align-right">{{ currentCoin.hoursName }}</div>
+              <div class="-width-130 -align-right">{{ currentCoin.hoursName | translate }}</div>
             }
           </div>
         </div>

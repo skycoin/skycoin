@@ -29,7 +29,7 @@
               @if (wallet.balance && wallet.hours) {
                 <span>
                   {{ (wallet.balance ? wallet.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                  ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                  ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName | translate }})
                 </span>
               }
             </option>
@@ -56,14 +56,14 @@
             @for (addr of addresses; track addr) {
               <mat-option [value]="addr">
                 <span class="truncated-label">{{ addr.address }}</span> - {{ (addr.balance ? addr.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                ({{ addr.hours!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                ({{ addr.hours!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName | translate }})
               </mat-option>
             }
             <mat-select-trigger>
               @for (address of form.get('addresses')!.value; track address) {
                 <div>
                   <span class="truncated-label">{{ address.address }}</span> - {{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                  ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                  ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName | translate }})
                 </div>
               }
             </mat-select-trigger>
@@ -89,14 +89,14 @@
           @for (out of unspentOutputs; track out) {
             <mat-option [value]="out">
               <span class="truncated-label">{{ out.hash }}</span> - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-              ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+              ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName | translate }})
             </mat-option>
           }
           <mat-select-trigger>
             @for (out of form.get('outputs')!.value; track out) {
               <div>
                 <span class="truncated-label">{{ out.hash }}</span> - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName | translate }})
               </div>
             }
           </mat-select-trigger>

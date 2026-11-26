@@ -30,7 +30,7 @@
 .PHONY: test-skyhw test-skyhw-race lint-skyhw check-skyhw
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
-.PHONY: check-lang check-lang-es
+.PHONY: check-lang check-lang-es check-lang-zh
 .PHONY: install-deps-ui lint-ui test-ui build-ui check-ui check-onpush
 .PHONY: test-explorer-e2e test-web-wallet-joint-e2e test-web-wallet-send-e2e build-wasm check-wasm
 
@@ -279,7 +279,10 @@ lint-ui:  ## Lint every Angular front-end
 check-lang-es: ## Check the Spanish translation of the wallet
 	cd $(SKYCOIN_WEB_DIR)/src/assets/i18n && node check.js es
 
-check-lang: check-lang-es
+check-lang-zh: ## Check the Chinese translation of the wallet has every English key
+	cd $(SKYCOIN_WEB_DIR)/src/assets/i18n && node check.js zh
+
+check-lang: check-lang-es check-lang-zh
 
 test-ui:  ## Run the unit tests of the Angular front-ends that have a working suite
 	@set -e; for d in $(ANGULAR_UI_TEST_DIRS); do \

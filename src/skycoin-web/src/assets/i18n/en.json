@@ -857,5 +857,6 @@
     "invalid-tx": "This is not a valid transaction.",
     "invalid-signature": "The cipher returned an invalid signature.",
     "broadcast-done": "The joint transaction was sent."
-  }
+  },
+  "Coin Hours": "Coin Hours"
 }

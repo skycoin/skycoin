@@ -13,7 +13,7 @@
         <div class="-headers">
           <div class="flex-fill -not-on-small-and-below">{{ 'pending-txs.txid' | translate }}</div>
           <div class="-width-150 -not-on-small-and-below">{{ currentCoin.coinSymbol }}</div>
-          <div class="-width-150 -not-on-small-and-below">{{ currentCoin.hoursName }}</div>
+          <div class="-width-150 -not-on-small-and-below">{{ currentCoin.hoursName | translate }}</div>
           <div class="-width-150 -not-on-small-and-below">{{ 'pending-txs.timestamp' | translate }}</div>
           <div class="-width-80 -not-on-small-and-below"></div>
           <div class="flex-fill -on-small-and-below-only">{{ 'pending-txs.transactions' | translate }}</div>
@@ -44,7 +44,7 @@
                     <div class="-one-line-ellipsis">{{ (transaction.amount ? transaction.amount.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
                   </div>
                   <div class="list-row">
-                    <div class="element-label">{{ currentCoin.hoursName }}:</div>
+                    <div class="element-label">{{ currentCoin.hoursName | translate }}:</div>
                     <div class="-one-line-ellipsis">{{ (transaction.hours ? transaction.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
                   </div>
                   <div class="list-row">

@@ -1,0 +1,5 @@
+# Python toolchain for building the documentation site (mkdocs.yml).
+# Used by .github/workflows/docs.yml and `make docs-install`.
+mkdocs-material==9.5.*
+mkdocs-awesome-pages-plugin==2.9.*
+pymdown-extensions==10.*
